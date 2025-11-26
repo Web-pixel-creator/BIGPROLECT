@@ -14,7 +14,41 @@ export default class GoogleProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     /*
-     * Essential fallback models - only the most reliable/stable ones
+     * Gemini 2.5 Flash - Latest and most capable flash model
+     * 1M context, up to 65K output tokens
+     */
+    {
+      name: 'gemini-2.5-flash-preview-05-20',
+      label: 'Gemini 2.5 Flash (Preview)',
+      provider: 'Google',
+      maxTokenAllowed: 1000000,
+      maxCompletionTokens: 65536,
+    },
+
+    /*
+     * Gemini 2.0 Flash - Fast and efficient
+     * 1M context, 8K output limit
+     */
+    {
+      name: 'gemini-2.0-flash',
+      label: 'Gemini 2.0 Flash',
+      provider: 'Google',
+      maxTokenAllowed: 1000000,
+      maxCompletionTokens: 8192,
+    },
+
+    /*
+     * Gemini 2.0 Flash Experimental - Latest experimental
+     */
+    {
+      name: 'gemini-2.0-flash-exp',
+      label: 'Gemini 2.0 Flash (Experimental)',
+      provider: 'Google',
+      maxTokenAllowed: 1000000,
+      maxCompletionTokens: 8192,
+    },
+
+    /*
      * Gemini 1.5 Pro: 2M context, 8K output limit (verified from API docs)
      */
     {
@@ -71,9 +105,10 @@ export default class GoogleProvider extends BaseProvider {
     // Filter out models with very low token limits and experimental/unstable models
     const data = res.models.filter((model: any) => {
       const hasGoodTokenLimit = (model.outputTokenLimit || 0) > 8000;
-      const isStable = !model.name.includes('exp') || model.name.includes('flash-exp');
+      const isStable = !model.name.includes('exp') || model.name.includes('flash-exp') || model.name.includes('2.5');
+      const isGemini = model.name.includes('gemini');
 
-      return hasGoodTokenLimit && isStable;
+      return hasGoodTokenLimit && isStable && isGemini;
     });
 
     return data.map((m: any) => {
@@ -85,6 +120,8 @@ export default class GoogleProvider extends BaseProvider {
       if (m.inputTokenLimit && m.outputTokenLimit) {
         // Use the input limit as the primary context window (typically larger)
         contextWindow = m.inputTokenLimit;
+      } else if (modelName.includes('gemini-2.5')) {
+        contextWindow = 1000000; // Gemini 2.5 has 1M context
       } else if (modelName.includes('gemini-1.5-pro')) {
         contextWindow = 2000000; // Gemini 1.5 Pro has 2M context
       } else if (modelName.includes('gemini-1.5-flash')) {
