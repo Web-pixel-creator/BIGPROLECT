@@ -266,8 +266,9 @@ ${value.content}
       }
 
       try {
-        await setMessages(db, id, initialMessages, urlId, description.get(), undefined, metadata);
-        chatMetadata.set(metadata);
+        const merged = { ...chatMetadata.get(), ...metadata };
+        await setMessages(db, id, initialMessages, urlId, description.get(), undefined, merged);
+        chatMetadata.set(merged);
       } catch (error) {
         toast.error('Failed to update chat metadata');
         console.error(error);
@@ -332,6 +333,14 @@ ${value.content}
         return;
       }
 
+      // compute preview url and persist in metadata
+      const mergedMetadata = { ...chatMetadata.get() };
+      const preview = extractPreviewImage([...archivedMessages, ...messages]);
+      if (preview) {
+        mergedMetadata.previewUrl = preview;
+        chatMetadata.set(mergedMetadata);
+      }
+
       await setMessages(
         db,
         finalChatId, // Use the potentially updated chatId
@@ -339,7 +348,7 @@ ${value.content}
         urlId,
         description.get(),
         undefined,
-        chatMetadata.get(),
+        mergedMetadata,
       );
     },
     duplicateCurrentChat: async (listItemId: string) => {
@@ -408,4 +417,51 @@ function navigateChat(nextId: string) {
   url.pathname = `/chat/${nextId}`;
 
   window.history.replaceState({}, '', url);
+}
+
+function extractPreviewImage(messages: Message[]): string | undefined {
+  type Candidate = { url: string; score: number };
+  const candidates: Candidate[] = [];
+  const keywordRe = /(hero|preview|landing|screenshot|ui|design|page)/i;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    const content = Array.isArray(message.content)
+      ? message.content.map((part: any) => (typeof part === 'string' ? part : part?.text || '')).join('\n')
+      : typeof message.content === 'string'
+        ? message.content
+        : '';
+
+    const pushUrl = (url?: string) => {
+      if (!url) return;
+      let score = 0;
+      const isHttp = url.startsWith('http');
+      const isData = url.startsWith('data:image/');
+      const keyword = keywordRe.test(url);
+      const isImageExt = /\.(png|jpe?g|webp|gif)$/i.test(url);
+
+      if (isHttp) score += 3;
+      if (isImageExt) score += 1;
+      if (keyword) score += 2;
+      if (isData) score -= 1;
+
+      candidates.push({ url, score });
+    };
+
+    const htmlImgs = [...content.matchAll(/<img[^>]*src=["'](?<url>[^"']+)["'][^>]*>/gi)];
+    htmlImgs.forEach((m) => pushUrl(m.groups?.url));
+
+    const markdownImgs = [...content.matchAll(/!\[[^\]]*\]\((?<url>[^)\s]+)\)/g)];
+    markdownImgs.forEach((m) => pushUrl(m.groups?.url));
+
+    const plainImgs = [...content.matchAll(/(https?:\/\/[^\s)]+?\.(png|jpe?g|webp|gif))/gi)];
+    plainImgs.forEach((m) => pushUrl(m[1]));
+
+    const dataUris = [...content.matchAll(/(data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+)/g)];
+    dataUris.forEach((m) => pushUrl(m[1]));
+  }
+
+  if (!candidates.length) return undefined;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0].url;
 }

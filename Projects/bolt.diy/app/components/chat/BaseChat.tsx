@@ -469,27 +469,30 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 />
               </div>
             </StickToBottom>
-            <div className="flex flex-col justify-center">
-              {!chatStarted && (
-                <div className="flex justify-center gap-2">
-                  {ImportButtons(importChat)}
-                  <GitCloneButton importChat={importChat} />
+            {!chatStarted && (
+              <>
+                <div className="mt-6">
+                  <RecentChats />
                 </div>
-              )}
-              <div className="flex flex-col gap-5">
-                {!chatStarted &&
-                  ExamplePrompts((event, messageInput) => {
-                    if (isStreaming) {
-                      handleStop?.();
-                      return;
-                    }
+                <div className="flex flex-col justify-center">
+                  <div className="flex justify-center gap-2">
+                    {ImportButtons(importChat)}
+                    <GitCloneButton importChat={importChat} />
+                  </div>
+                  <div className="flex flex-col gap-5">
+                    {ExamplePrompts((event, messageInput) => {
+                      if (isStreaming) {
+                        handleStop?.();
+                        return;
+                      }
 
-                    handleSendMessage?.(event, messageInput);
-                  })}
-                {!chatStarted && <StarterTemplates />}
-                {!chatStarted && <RecentChats />}
-              </div>
-            </div>
+                      handleSendMessage?.(event, messageInput);
+                    })}
+                    <StarterTemplates />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <ClientOnly>
             {() => (
