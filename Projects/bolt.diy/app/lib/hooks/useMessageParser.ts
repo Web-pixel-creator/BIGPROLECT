@@ -2,13 +2,9 @@ import type { Message } from 'ai';
 import { useCallback, useState } from 'react';
 import { EnhancedStreamingMessageParser } from '~/lib/runtime/enhanced-message-parser';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { PreviewsStore } from '~/lib/stores/previews';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('useMessageParser');
-
-// Get previews store instance for auto-refresh
-const previewsStore = new PreviewsStore(workbenchStore.webcontainer);
 
 const messageParser = new EnhancedStreamingMessageParser({
   callbacks: {
@@ -17,7 +13,7 @@ const messageParser = new EnhancedStreamingMessageParser({
 
       workbenchStore.showWorkbench.set(true);
       workbenchStore.addArtifact(data);
-      
+
       // Auto-switch to preview when artifact is created
       setTimeout(() => {
         workbenchStore.currentView.set('preview');
@@ -27,12 +23,6 @@ const messageParser = new EnhancedStreamingMessageParser({
       logger.trace('onArtifactClose');
 
       workbenchStore.updateArtifact(data, { closed: true });
-      
-      // Auto-refresh preview when artifact is closed (all files created)
-      setTimeout(() => {
-        previewsStore.refreshAllPreviews();
-        logger.trace('Auto-refreshed previews after artifact close');
-      }, 1000);
     },
     onActionOpen: (data) => {
       logger.trace('onActionOpen', data.action);
@@ -57,13 +47,6 @@ const messageParser = new EnhancedStreamingMessageParser({
       }
 
       workbenchStore.runAction(data);
-      
-      // Auto-refresh preview after file actions complete
-      if (data.action.type === 'file') {
-        setTimeout(() => {
-          previewsStore.refreshAllPreviews();
-        }, 500);
-      }
     },
     onActionStream: (data) => {
       logger.trace('onActionStream', data.action);
