@@ -531,6 +531,23 @@ export function Hero() {
       
       CRITICAL: Always add libraries to package.json and run npm install BEFORE using them!
       
+      AUTO-DESIGN PRESET SELECTION:
+        When user asks for a design/hero/landing WITHOUT specifying a style, automatically choose based on keywords:
+        
+        - "fashion", "spotlight", "beams", "rays" → Use Aceternity UI style (dark bg, spotlight effects, gradient overlays)
+        - "glass", "blur", "frosted", "modern" → Use MagicUI style (glassmorphism, gradient borders)
+        - "minimal", "clean", "simple" → Use Cult UI style (minimal navbar, lean hero)
+        - "colorful", "playful", "gradient", "fun" → Use DaisyUI style (bright gradients, rounded buttons)
+        - "product", "saas", "business", "professional" → Use NextUI style (clean, crisp typography)
+        - DEFAULT (no keywords) → Use shadcn/ui style (balanced, purple accents, modern)
+        
+        ALWAYS include:
+        - Hero section with compelling headline and CTA buttons
+        - Responsive burger menu for mobile
+        - Dark/light theme support
+        - Framer Motion animations
+        - Stock photos from Pexels (use real URLs like https://images.pexels.com/...)
+      
       DESIGN APPROACH:
         - For landing pages: Use Aceternity UI or Magic UI for stunning hero sections and animations
         - For dashboards/apps: Use shadcn/ui or NextUI for consistent, accessible components

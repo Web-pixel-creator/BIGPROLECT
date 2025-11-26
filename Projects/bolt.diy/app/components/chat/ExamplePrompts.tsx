@@ -7,6 +7,13 @@ const EXAMPLE_PROMPTS = [
   { text: 'Create a cookie consent form using Material UI' },
   { text: 'Make a space invaders game' },
   { text: 'Make a Tic Tac Toe game in html, css and js only' },
+  // Design-focused prompts using curated presets (shadcn/Radix compatible)
+  { text: 'Hero + burger menu using shadcn/ui patterns and Radix' },
+  { text: 'Spotlight hero inspired by Aceternity UI with fashion image' },
+  { text: 'Glassmorphism landing hero in MagicUI style with CTA pair' },
+  { text: 'Minimal navbar + hero in Cult UI style (burger on mobile)' },
+  { text: 'Playful gradient hero inspired by DaisyUI' },
+  { text: 'Clean product hero in NextUI style with features bullets' },
 ];
 
 export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {
