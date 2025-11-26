@@ -13,6 +13,11 @@ const messageParser = new EnhancedStreamingMessageParser({
 
       workbenchStore.showWorkbench.set(true);
       workbenchStore.addArtifact(data);
+      
+      // Auto-switch to preview when artifact is created
+      setTimeout(() => {
+        workbenchStore.currentView.set('preview');
+      }, 500);
     },
     onArtifactClose: (data) => {
       logger.trace('onArtifactClose');
