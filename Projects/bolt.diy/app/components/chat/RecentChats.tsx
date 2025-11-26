@@ -94,29 +94,51 @@ function PreviewImage({ messages, metadata }: { messages: ChatHistoryItem['messa
 
   if (!url) {
     return (
-      <div className="mb-3 aspect-video w-full rounded-lg bg-gradient-to-br from-purple-900/40 via-purple-600/20 to-transparent border border-gray-200/60 dark:border-gray-800/60 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
-        Preview unavailable
+      <div className="mb-3 aspect-video w-full rounded-lg bg-gradient-to-br from-purple-900/20 via-purple-600/10 to-gray-900/20 dark:from-purple-900/40 dark:via-purple-600/20 dark:to-transparent border border-gray-200/60 dark:border-gray-800/60 flex flex-col items-center justify-center p-4 text-center">
+        <div className="h-12 w-12 mb-2 text-gray-400 dark:text-gray-600 i-ph:image" />
+        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Hero Preview</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">No image found</div>
       </div>
     );
   }
 
   return (
-    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
-      <img src={url} alt="Preview" className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]" />
+    <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 relative group/preview">
+      <img 
+        src={url} 
+        alt="Project Preview" 
+        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+        onError={(e) => {
+          // Fallback if image fails to load
+          const target = e.target as HTMLImageElement;
+          target.style.display = 'none';
+          const parent = target.parentElement;
+          if (parent) {
+            parent.innerHTML = `
+              <div class="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/20 via-purple-600/10 to-gray-900/20">
+                <div class="h-12 w-12 mb-2 text-gray-400 i-ph:image"></div>
+                <div class="text-xs text-gray-500">Preview unavailable</div>
+              </div>
+            `;
+          }
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200" />
     </div>
   );
 }
 
 /**
  * Try to pick the most relevant preview image:
- * - Scan сообщения с конца (самые свежие)
- * - Поддерживаем markdown, HTML <img> и голые http(s) ссылки на изображения
- * - Если нет http(s), вернём data URI, если есть
+ * - Scan messages from end (most recent)
+ * - Support markdown, HTML <img> and plain http(s) image links
+ * - Extract images from code artifacts (boltAction tags)
+ * - Prioritize hero/landing/preview images
  */
 function findPreviewImage(messages: ChatHistoryItem['messages']): string | undefined {
   type Candidate = { url: string; score: number };
   const candidates: Candidate[] = [];
-  const keywordRe = /(hero|preview|landing|screenshot|ui|design|page)/i;
+  const keywordRe = /(hero|preview|landing|screenshot|ui|design|page|banner|header)/i;
 
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
@@ -126,23 +148,41 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
         ? message.content
         : '';
 
-    const pushUrl = (url?: string) => {
+    const pushUrl = (url?: string, extraScore = 0) => {
       if (!url) return;
-      let score = 0;
+      let score = extraScore;
       const isHttp = url.startsWith('http');
       const isData = url.startsWith('data:image/');
       const keyword = keywordRe.test(url);
-      const isImageExt = /\.(png|jpe?g|webp|gif)$/i.test(url);
+      const isImageExt = /\.(png|jpe?g|webp|gif|svg)$/i.test(url);
 
       if (isHttp) score += 3;
       if (isImageExt) score += 1;
-      if (keyword) score += 2;
-      if (isData) score -= 1; // data-uri в самом конце при отсутствии других
+      if (keyword) score += 3; // Higher priority for hero/landing images
+      if (isData) score -= 1; // data-uri as last resort
 
       candidates.push({ url, score });
     };
 
-    // HTML <img src="...">
+    // Extract images from boltAction file content (HTML/JSX code)
+    const boltActions = [...content.matchAll(/<boltAction[^>]*type=["']file["'][^>]*>([\s\S]*?)<\/boltAction>/gi)];
+    boltActions.forEach((action) => {
+      const fileContent = action[1];
+      
+      // Find images in HTML/JSX code with higher priority
+      const codeImgs = [...fileContent.matchAll(/<img[^>]*src=["'](?<url>[^"']+)["'][^>]*>/gi)];
+      codeImgs.forEach((m) => pushUrl(m.groups?.url, 2)); // +2 bonus for images in code
+      
+      // Find background images in CSS
+      const bgImgs = [...fileContent.matchAll(/background(?:-image)?:\s*url\(["']?(?<url>[^"')]+)["']?\)/gi)];
+      bgImgs.forEach((m) => pushUrl(m.groups?.url, 2));
+      
+      // Find image imports in JS/JSX
+      const imports = [...fileContent.matchAll(/import\s+\w+\s+from\s+["'](?<url>[^"']+\.(png|jpe?g|webp|gif|svg))["']/gi)];
+      imports.forEach((m) => pushUrl(m.groups?.url, 1));
+    });
+
+    // HTML <img src="..."> in message text
     const htmlImgs = [...content.matchAll(/<img[^>]*src=["'](?<url>[^"']+)["'][^>]*>/gi)];
     htmlImgs.forEach((m) => pushUrl(m.groups?.url));
 
@@ -151,17 +191,21 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
     markdownImgs.forEach((m) => pushUrl(m.groups?.url));
 
     // Plain http image link
-    const plainImgs = [...content.matchAll(/(https?:\/\/[^\s)]+?\.(png|jpe?g|webp|gif))/gi)];
+    const plainImgs = [...content.matchAll(/(https?:\/\/[^\s)]+?\.(png|jpe?g|webp|gif|svg))/gi)];
     plainImgs.forEach((m) => pushUrl(m[1]));
 
-    // Data URI base64 image
+    // Unsplash/placeholder images (common in demos)
+    const unsplashImgs = [...content.matchAll(/(https?:\/\/(?:images\.unsplash\.com|via\.placeholder\.com|picsum\.photos)[^\s)"']+)/gi)];
+    unsplashImgs.forEach((m) => pushUrl(m[1], 2));
+
+    // Data URI base64 image (lowest priority)
     const dataUris = [...content.matchAll(/(data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+)/g)];
     dataUris.forEach((m) => pushUrl(m[1]));
   }
 
   if (!candidates.length) return undefined;
 
-  // Выбираем лучший по score; при равенстве — самый свежий (идём с конца, поэтому берем первый из отсортированных по порядку добавления)
+  // Sort by score (highest first), then by order (most recent first)
   candidates.sort((a, b) => b.score - a.score);
   return candidates[0].url;
 }
