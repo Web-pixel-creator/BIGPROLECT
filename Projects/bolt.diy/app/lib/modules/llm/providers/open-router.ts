@@ -2,7 +2,7 @@ import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createOpenAI } from '@ai-sdk/openai';
 
 interface OpenRouterModel {
   name: string;
@@ -104,10 +104,15 @@ export default class OpenRouterProvider extends BaseProvider {
       throw new Error(`Missing API key for ${this.name} provider`);
     }
 
-    const openRouter = createOpenRouter({
+    // Use OpenAI-compatible provider instead of @openrouter/ai-sdk-provider
+    // to avoid logprobs validation issues
+    const openRouter = createOpenAI({
       apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      compatibility: 'compatible', // Relaxed validation for OpenRouter
     });
-    const instance = openRouter.chat(model) as LanguageModelV1;
+    
+    const instance = openRouter(model) as LanguageModelV1;
 
     return instance;
   }
