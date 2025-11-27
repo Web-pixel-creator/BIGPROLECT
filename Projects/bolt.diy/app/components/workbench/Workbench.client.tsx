@@ -369,7 +369,7 @@ export const Workbench = memo(
 
     const handleSelectFile = useCallback((filePath: string) => {
       workbenchStore.setSelectedFile(filePath);
-      workbenchStore.currentView.set('diff');
+      // Don't auto-switch to diff view - let user control navigation
     }, []);
 
     const handleSyncFiles = useCallback(async () => {
