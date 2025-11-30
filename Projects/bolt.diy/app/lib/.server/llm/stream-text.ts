@@ -167,13 +167,15 @@ export async function streamText(props: {
   // Component matching - analyze user request and add relevant components
   try {
     // Get the last user message to analyze
-    const lastUserMessage = processedMessages.filter(m => m.role === 'user').pop();
+    const lastUserMessage = processedMessages.filter((m) => m.role === 'user').pop();
+
     if (lastUserMessage && typeof lastUserMessage.content === 'string') {
-      // Load components from MD file (cached after first load)
-      await componentMatcher.loadComponentsFromMD('shadcnui-blocks.md');
-      
+      // Load all component MD files (cached after first load)
+      await componentMatcher.loadAllComponentFiles();
+
       // Generate context with matching components
       const componentContext = componentMatcher.generateContextForPrompt(lastUserMessage.content, 5);
+
       if (componentContext) {
         systemPrompt = `${systemPrompt}\n${componentContext}`;
         logger.info('Added matching UI components to prompt context');

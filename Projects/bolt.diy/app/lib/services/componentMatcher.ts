@@ -68,8 +68,7 @@ const THEME_KEYWORDS: Record<string, string[]> = {
 export class ComponentMatcher {
   private static _instance: ComponentMatcher;
   private _componentsIndex: Map<string, ComponentMatch[]> = new Map();
-  private _mdContent: string = '';
-  private _isLoaded: boolean = false;
+  private _loadedFiles: Set<string> = new Set();
 
   static getInstance(): ComponentMatcher {
     if (!ComponentMatcher._instance) {
@@ -79,31 +78,47 @@ export class ComponentMatcher {
   }
 
   async loadComponentsFromMD(mdFilePath: string): Promise<void> {
-    if (this._isLoaded) return;
+    // Skip if already loaded this file
+    if (this._loadedFiles.has(mdFilePath)) return;
 
     try {
       // In server context, read the file
       if (typeof window === 'undefined') {
         const fullPath = path.resolve(process.cwd(), mdFilePath);
-        this._mdContent = fs.readFileSync(fullPath, 'utf-8');
-        this._parseComponents();
-        this._isLoaded = true;
-        logger.info(`Loaded ${this._componentsIndex.size} component categories from MD`);
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        this._parseComponents(content, mdFilePath);
+        this._loadedFiles.add(mdFilePath);
+        logger.info(`Loaded components from ${mdFilePath}`);
       }
     } catch (error) {
-      logger.error('Failed to load components from MD:', error);
+      logger.error(`Failed to load components from ${mdFilePath}:`, error);
     }
   }
 
-  private _parseComponents(): void {
-    const lines = this._mdContent.split('\n');
-    let currentCategory = '';
+  async loadAllComponentFiles(): Promise<void> {
+    // Load all component MD files
+    const mdFiles = [
+      'shadcnui-blocks.md',
+      'aceternity-components.md',
+    ];
+
+    for (const file of mdFiles) {
+      await this.loadComponentsFromMD(file);
+    }
+
+    const stats = this.getStats();
+    logger.info(`Total loaded: ${stats.totalComponents} components in ${stats.categories} categories`);
+  }
+
+  private _parseComponents(content: string, source: string): void {
+    const lines = content.split('\n');
+    let currentCategory = source.replace('.md', '').toLowerCase(); // Default category from filename
     let currentComponent: Partial<ComponentMatch> | null = null;
     let codeBuffer: string[] = [];
     let inCodeBlock = false;
 
     for (const line of lines) {
-      // Category header (## UI, ## Blocks, ## Components)
+      // Category header (## UI, ## Blocks, ## Components, ## sparkles-demo, etc.)
       if (line.startsWith('## ')) {
         currentCategory = line.replace('## ', '').split(' ')[0].toLowerCase();
         continue;
