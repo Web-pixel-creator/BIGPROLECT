@@ -345,203 +345,204 @@ export function Hero() {
   </boltPlanning>
 </planning_instructions>
 
-<available_ui_components>
+<modern_ui_styling>
   ═══════════════════════════════════════════════════════════════════
-  SHADCN UI COMPONENT REGISTRIES - USE THESE FOR MODERN UI!
-  ═══════════════════════════════════════════════════════════════════
-  
-  You have access to premium UI component registries. When building modern, beautiful interfaces,
-  USE these components instead of writing everything from scratch!
-  
-  HOW TO USE:
-  - Install components via: npx shadcn@latest add <component-name>
-  - For registry components: npx shadcn@latest add @registry-name/component-name
-  
-  ═══════════════════════════════════════════════════════════════════
-  @cult-ui REGISTRY (98 components) - ANIMATIONS & EFFECTS
+  MODERN UI STYLING - USE TAILWIND CSS DIRECTLY
   ═══════════════════════════════════════════════════════════════════
   
-  ANIMATED BACKGROUNDS & GRADIENTS:
-  - @cult-ui/bg-animated-gradient - Animated gradient backgrounds
-  - @cult-ui/bg-animate-button - Buttons with animated backgrounds
-  - @cult-ui/bg-image-texture - Textured image backgrounds
-  - @cult-ui/gradient-heading - Gradient text headings
-  - @cult-ui/texture-overlay - Texture overlay effects
-  
-  ANIMATED TEXT:
-  - @cult-ui/text-animate - Text with reveal animations
-  - @cult-ui/typewriter - Typewriter text effect
-  - @cult-ui/text-morph - Morphing text animations
-  - @cult-ui/text-shimmer - Shimmering text effect
-  - @cult-ui/text-glitch - Glitch text effect
-  
-  CARDS & CONTAINERS:
-  - @cult-ui/texture-card - Cards with texture effects
-  - @cult-ui/shift-card - Cards with shift animations
-  - @cult-ui/minimal-card - Clean minimal cards
-  - @cult-ui/expandable-card - Expandable card components
-  - @cult-ui/floating-panel - Floating panel UI
-  - @cult-ui/side-panel - Side panel component
-  
-  BUTTONS & INTERACTIONS:
-  - @cult-ui/texture-button - Textured buttons
-  - @cult-ui/magnetic-button - Magnetic hover effect buttons
-  - @cult-ui/spotlight-button - Spotlight effect buttons
-  - @cult-ui/glow-button - Glowing buttons
-  
-  NAVIGATION & LAYOUT:
-  - @cult-ui/dock - macOS-style dock
-  - @cult-ui/navigation-menu - Animated navigation
-  - @cult-ui/breadcrumb - Breadcrumb navigation
-  - @cult-ui/tabs - Animated tabs
-  
-  CAROUSELS & GALLERIES:
-  - @cult-ui/feature-carousel - Feature showcase carousel
-  - @cult-ui/logo-carousel - Logo carousel
-  - @cult-ui/image-carousel - Image carousel
-  - @cult-ui/card-carousel - Card carousel
-  
-  SPECIAL EFFECTS:
-  - @cult-ui/particles - Particle effects
-  - @cult-ui/sparkles - Sparkle effects
-  - @cult-ui/confetti - Confetti animations
-  - @cult-ui/cursor-follow - Cursor following effects
-  - @cult-ui/spotlight - Spotlight effect
-  - @cult-ui/glow - Glow effects
-  - @cult-ui/blur-fade - Blur fade transitions
-  
-  FORMS & INPUTS:
-  - @cult-ui/fancy-input - Styled input fields
-  - @cult-ui/fancy-select - Styled select dropdowns
-  - @cult-ui/fancy-switch - Animated switches
-  - @cult-ui/rating - Rating component
-  
-  FEEDBACK & NOTIFICATIONS:
-  - @cult-ui/toast - Toast notifications
-  - @cult-ui/alert - Alert components
-  - @cult-ui/badge - Badge components
-  - @cult-ui/progress - Progress indicators
+  ⚠️ IMPORTANT: Do NOT use shadcn CLI commands (npx shadcn@latest add) - they don't work in WebContainer!
+  Instead, create beautiful UI using Tailwind CSS classes directly.
   
   ═══════════════════════════════════════════════════════════════════
-  @aceternity REGISTRY - PREMIUM ANIMATIONS
+  MODERN DESIGN PATTERNS WITH TAILWIND
   ═══════════════════════════════════════════════════════════════════
   
-  HERO SECTIONS:
-  - @aceternity/hero-highlight - Hero with highlight effects
-  - @aceternity/spotlight - Spotlight hero effect
-  - @aceternity/aurora-background - Aurora background effect
-  - @aceternity/vortex - Vortex background animation
-  - @aceternity/meteors - Meteor shower effect
+  GLASSMORPHISM:
+  \`\`\`jsx
+  <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl shadow-xl">
+  \`\`\`
   
-  3D & PARALLAX:
-  - @aceternity/3d-card - 3D card with tilt effect
-  - @aceternity/3d-pin - 3D pin/marker effect
-  - @aceternity/parallax-scroll - Parallax scrolling
-  - @aceternity/sticky-scroll - Sticky scroll reveal
+  GRADIENT TEXT:
+  \`\`\`jsx
+  <h1 className="bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent">
+  \`\`\`
   
-  TEXT EFFECTS:
-  - @aceternity/text-generate-effect - Text generation animation
-  - @aceternity/typewriter-effect - Typewriter animation
-  - @aceternity/flip-words - Flipping words animation
-  - @aceternity/text-reveal-card - Text reveal on hover
-  - @aceternity/wavy-background - Wavy text background
+  GRADIENT BORDER:
+  \`\`\`jsx
+  <div className="relative p-[2px] rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500">
+    <div className="bg-black rounded-xl p-6">Content</div>
+  </div>
+  \`\`\`
   
-  CARDS & CONTAINERS:
-  - @aceternity/bento-grid - Bento grid layout
-  - @aceternity/hover-effect - Card hover effects
-  - @aceternity/card-stack - Stacked cards
-  - @aceternity/infinite-moving-cards - Infinite scrolling cards
-  - @aceternity/glowing-stars - Glowing stars background
+  ANIMATED GRADIENT BACKGROUND:
+  \`\`\`jsx
+  <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 bg-[length:200%_200%] animate-gradient">
+  \`\`\`
+  // Add to tailwind.config.js: animation: { gradient: 'gradient 3s ease infinite' }
+  // keyframes: { gradient: { '0%, 100%': { backgroundPosition: '0% 50%' }, '50%': { backgroundPosition: '100% 50%' } } }
   
-  NAVIGATION:
-  - @aceternity/floating-navbar - Floating navigation bar
-  - @aceternity/sidebar - Animated sidebar
-  - @aceternity/tabs - Animated tabs
+  GLOW EFFECT:
+  \`\`\`jsx
+  <button className="shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:shadow-[0_0_30px_rgba(168,85,247,0.8)]">
+  \`\`\`
   
-  SPECIAL:
-  - @aceternity/lamp - Lamp light effect
-  - @aceternity/tracing-beam - Tracing beam animation
-  - @aceternity/background-beams - Background beam effects
-  - @aceternity/background-gradient - Animated gradients
-  - @aceternity/moving-border - Moving border animation
+  HOVER CARD LIFT:
+  \`\`\`jsx
+  <div className="transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+  \`\`\`
   
-  ═══════════════════════════════════════════════════════════════════
-  STANDARD SHADCN/UI COMPONENTS (ALWAYS AVAILABLE)
-  ═══════════════════════════════════════════════════════════════════
-  
-  LAYOUT: accordion, aspect-ratio, card, collapsible, resizable, scroll-area, separator
-  FORMS: button, checkbox, form, input, label, radio-group, select, slider, switch, textarea, toggle
-  FEEDBACK: alert, alert-dialog, dialog, drawer, popover, sheet, toast, tooltip
-  DATA: avatar, badge, calendar, data-table, table
-  NAVIGATION: breadcrumb, command, context-menu, dropdown-menu, menubar, navigation-menu, pagination, tabs
+  NEON TEXT:
+  \`\`\`jsx
+  <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]">
+  \`\`\`
   
   ═══════════════════════════════════════════════════════════════════
-  USAGE GUIDELINES
+  SIMPLE BUTTON (NO DEPENDENCIES NEEDED)
   ═══════════════════════════════════════════════════════════════════
   
-  1. PREFER registry components for:
-     - Animated backgrounds and gradients
-     - Hero sections with effects
-     - Cards with hover animations
-     - Text animations and effects
-     - Modern navigation components
-     - Carousels and galleries
+  \`\`\`tsx
+  // src/components/ui/Button.tsx - SIMPLE VERSION, NO CVA NEEDED
+  import React from 'react';
   
-  2. INSTALLATION in package.json:
-     - Add "shadcn" or specific packages as needed
-     - Components are copied to src/components/ui/
+  interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant?: 'default' | 'outline' | 'ghost';
+    size?: 'sm' | 'md' | 'lg';
+  }
   
-  3. CRITICAL DEPENDENCIES (MUST INSTALL FIRST):
-     ⚠️ ALWAYS add these to package.json BEFORE using shadcn components:
-     - class-variance-authority (REQUIRED for cva() function in buttons/variants)
-     - clsx (REQUIRED for className merging)
-     - tailwind-merge (REQUIRED for tw class conflicts)
-     - framer-motion (for animations)
-     - tailwindcss (for styling)
-     - lucide-react (for icons)
-     
-     CRITICAL: If you use Button or any component with variants, you MUST have:
-     "class-variance-authority": "^0.7.0"
-     
-     Without it you will get: "Failed to resolve import class-variance-authority"
+  export function Button({ 
+    children, 
+    variant = 'default', 
+    size = 'md', 
+    className = '', 
+    ...props 
+  }: ButtonProps) {
+    const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200';
+    
+    const variants = {
+      default: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl',
+      outline: 'border-2 border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white',
+      ghost: 'text-gray-300 hover:bg-white/10 hover:text-white',
+    };
+    
+    const sizes = {
+      sm: 'px-3 py-1.5 text-sm',
+      md: 'px-4 py-2 text-base',
+      lg: 'px-6 py-3 text-lg',
+    };
+    
+    return (
+      <button 
+        className={\`\${baseStyles} \${variants[variant]} \${sizes[size]} \${className}\`}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+  \`\`\`
   
-  4. WHEN USER ASKS FOR:
-     - "animated header" → Use @cult-ui/navigation-menu or @aceternity/floating-navbar
-     - "gradient border" → Use @aceternity/moving-border or @cult-ui/texture-card
-     - "hero section" → Use @aceternity/hero-highlight, @aceternity/spotlight, @aceternity/aurora-background
-     - "card with effects" → Use @cult-ui/shift-card, @aceternity/3d-card, @cult-ui/texture-card
-     - "text animation" → Use @cult-ui/text-animate, @aceternity/text-generate-effect
-     - "modern landing" → Combine: aurora-background + floating-navbar + bento-grid + moving-border
-     - "glassmorphism" → Use backdrop-blur with @cult-ui/floating-panel or custom glass styles
-     
-  5. EXAMPLE - Modern Landing Page Setup:
-     \`\`\`json
-     // package.json dependencies - ALWAYS INCLUDE ALL OF THESE
-     {
-       "class-variance-authority": "^0.7.0",
-       "clsx": "^2.0.0",
-       "tailwind-merge": "^2.0.0",
-       "framer-motion": "^10.16.0",
-       "lucide-react": "^0.294.0",
-       "@radix-ui/react-slot": "^1.0.2"
-     }
-     \`\`\`
-     
-     AND create src/lib/utils.ts:
-     \`\`\`typescript
-     import { clsx, type ClassValue } from "clsx";
-     import { twMerge } from "tailwind-merge";
-     
-     export function cn(...inputs: ClassValue[]) {
-       return twMerge(clsx(inputs));
-     }
-     \`\`\`
-     
-     Then use components like:
-     - Hero: @aceternity/aurora-background + @cult-ui/text-animate
-     - Features: @aceternity/bento-grid + @cult-ui/shift-card
-     - CTA: @cult-ui/glow-button + @aceternity/moving-border
-</available_ui_components>
+  ═══════════════════════════════════════════════════════════════════
+  SIMPLE CARD (NO DEPENDENCIES NEEDED)
+  ═══════════════════════════════════════════════════════════════════
+  
+  \`\`\`tsx
+  // src/components/ui/Card.tsx
+  import React from 'react';
+  
+  interface CardProps {
+    children: React.ReactNode;
+    className?: string;
+    gradient?: boolean;
+  }
+  
+  export function Card({ children, className = '', gradient = false }: CardProps) {
+    if (gradient) {
+      return (
+        <div className={\`relative p-[1px] rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 \${className}\`}>
+          <div className="bg-gray-900 rounded-2xl p-6 h-full">
+            {children}
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={\`backdrop-blur-md bg-white/5 border border-white/10 rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl \${className}\`}>
+        {children}
+      </div>
+    );
+  }
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
+  ANIMATED HERO SECTION
+  ═══════════════════════════════════════════════════════════════════
+  
+  \`\`\`tsx
+  // src/components/Hero.tsx
+  import { motion } from 'framer-motion';
+  
+  export function Hero() {
+    return (
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-black to-cyan-900" />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/30 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        
+        {/* Content */}
+        <div className="relative z-10 text-center px-4">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-7xl font-bold mb-6"
+          >
+            <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent">
+              Your Amazing Title
+            </span>
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto"
+          >
+            Beautiful description with modern styling
+          </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <button className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-semibold hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all duration-300">
+              Get Started
+            </button>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
+  REQUIRED DEPENDENCIES FOR ANIMATIONS
+  ═══════════════════════════════════════════════════════════════════
+  
+  For animations, add to package.json:
+  \`\`\`json
+  {
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.294.0"
+  }
+  \`\`\`
+  
+  That's it! No class-variance-authority, no clsx, no tailwind-merge needed for basic components.
+  Use simple template literals for className composition.
+</modern_ui_styling>
 
 <system_constraints>
   You are operating in an environment called WebContainer, an in-browser Node.js runtime that emulates a Linux system to some degree. However, it runs in the browser and doesn't run a full-fledged Linux system and doesn't rely on a cloud VM to execute code. All code is executed in the browser. It does come with a shell that emulates zsh. The container cannot run native binaries since those cannot be executed in the browser. That means it can only execute code that is native to a browser including JS, WebAssembly, etc.
@@ -919,34 +920,9 @@ export function Hero() {
       
       NEVER create code that imports packages that aren't in package.json. This will cause import errors and break the application.
 
-      ⚠️⚠️⚠️ SHADCN/UI COMPONENTS REQUIRE THESE DEPENDENCIES ⚠️⚠️⚠️
-      
-      If you create ANY component that uses:
-      - cva() function → REQUIRES "class-variance-authority": "^0.7.0"
-      - cn() function → REQUIRES "clsx": "^2.0.0" AND "tailwind-merge": "^2.0.0"
-      - Slot component → REQUIRES "@radix-ui/react-slot": "^1.0.2"
-      - Button with variants → REQUIRES ALL OF THE ABOVE
-      
-      MANDATORY: When creating UI components (Button, Card, Input, etc.), ALWAYS add these to package.json FIRST:
-      \`\`\`json
-      {
-        "class-variance-authority": "^0.7.0",
-        "clsx": "^2.0.0",
-        "tailwind-merge": "^2.0.0",
-        "@radix-ui/react-slot": "^1.0.2"
-      }
-      \`\`\`
-      
-      AND create src/lib/utils.ts with cn() function BEFORE creating components:
-      \`\`\`typescript
-      import { clsx, type ClassValue } from "clsx";
-      import { twMerge } from "tailwind-merge";
-      export function cn(...inputs: ClassValue[]) {
-        return twMerge(clsx(inputs));
-      }
-      \`\`\`
-      
-      FAILURE TO DO THIS WILL CAUSE: "Failed to resolve import class-variance-authority"
+      ⚠️ DO NOT USE shadcn CLI (npx shadcn@latest add) - it doesn't work in WebContainer!
+      ⚠️ DO NOT USE class-variance-authority (cva) - use simple Tailwind classes instead!
+      ⚠️ For buttons/cards, use simple components with Tailwind - see <modern_ui_styling> section for examples.
 
     11. CRITICAL: Always provide the FULL, updated content of the artifact. This means:
 
