@@ -10,6 +10,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import { registryService } from '~/lib/services/registryService';
 
 export type Messages = Message[];
 
@@ -161,6 +162,16 @@ export async function streamText(props: {
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
     }) ?? getSystemPrompt();
+
+  // Add registry components to prompt for design inspiration
+  try {
+    const registryPrompt = await registryService.generateComponentsPromptSection();
+    if (registryPrompt) {
+      systemPrompt = `${systemPrompt}\n${registryPrompt}`;
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch registry components for prompt:', error);
+  }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
