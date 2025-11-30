@@ -42,10 +42,27 @@ const COMPONENT_KEYWORDS: Record<string, string[]> = {
   form: ['form', 'форма', 'input', 'ввод', 'регистрация', 'signup', 'login', 'вход'],
   button: ['button', 'кнопка', 'кнопки', 'btn'],
   
-  // Effects
-  animation: ['animation', 'анимация', 'animated', 'анимированный', 'эффект', 'effect'],
-  gradient: ['gradient', 'градиент', 'градиентный'],
-  parallax: ['parallax', 'параллакс'],
+  // Effects & Animations
+  animation: ['animation', 'анимация', 'animated', 'анимированный', 'эффект', 'effect', 'движение'],
+  gradient: ['gradient', 'градиент', 'градиентный', 'переход цвета'],
+  parallax: ['parallax', 'параллакс', 'прокрутка', 'scroll'],
+  
+  // Aceternity Effects (русские синонимы)
+  sparkles: ['sparkles', 'искры', 'искорки', 'блёстки', 'блестки', 'сияние', 'мерцание', 'звёздочки', 'звездочки'],
+  spotlight: ['spotlight', 'прожектор', 'свет', 'подсветка', 'луч', 'фокус'],
+  lamp: ['lamp', 'лампа', 'свечение', 'glow', 'светящийся'],
+  beams: ['beams', 'лучи', 'rays', 'линии', 'полосы', 'background-beams'],
+  stars: ['stars', 'звёзды', 'звезды', 'glowing-stars', 'ночное небо'],
+  particles: ['particles', 'частицы', 'точки', 'dots', 'пыль'],
+  meteor: ['meteor', 'метеор', 'метеорит', 'падающие звёзды', 'комета'],
+  tracing: ['tracing', 'трассировка', 'след', 'линия', 'tracing-beam'],
+  reveal: ['reveal', 'появление', 'раскрытие', 'text-reveal', 'показать'],
+  generate: ['generate', 'генерация', 'печатание', 'typewriter', 'text-generate'],
+  moving: ['moving', 'движущийся', 'бегущий', 'infinite-moving', 'автопрокрутка'],
+  sticky: ['sticky', 'липкий', 'фиксированный', 'sticky-scroll'],
+  pin: ['pin', 'пин', 'маркер', '3d-pin', 'указатель', 'точка на карте'],
+  mask: ['mask', 'маска', 'svg-mask', 'вырез', 'контур'],
+  evervault: ['evervault', 'шифрование', 'матрица', 'код', 'хакер'],
   
   // Themes
   dark: ['dark', 'темный', 'темная', 'ночной'],
