@@ -163,15 +163,16 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
-  // Add registry components to prompt for design inspiration
-  try {
-    const registryPrompt = await registryService.generateComponentsPromptSection();
-    if (registryPrompt) {
-      systemPrompt = `${systemPrompt}\n${registryPrompt}`;
-    }
-  } catch (error) {
-    logger.warn('Failed to fetch registry components for prompt:', error);
-  }
+  // Registry components integration - disabled for now to prevent blocking
+  // TODO: Implement non-blocking registry fetch with caching
+  // try {
+  //   const registryPrompt = await registryService.generateComponentsPromptSection();
+  //   if (registryPrompt) {
+  //     systemPrompt = `${systemPrompt}\n${registryPrompt}`;
+  //   }
+  // } catch (error) {
+  //   logger.warn('Failed to fetch registry components for prompt:', error);
+  // }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
