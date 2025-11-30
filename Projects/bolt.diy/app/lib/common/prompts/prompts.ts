@@ -491,11 +491,19 @@ export function Hero() {
      - Add "shadcn" or specific packages as needed
      - Components are copied to src/components/ui/
   
-  3. DEPENDENCIES commonly needed:
+  3. CRITICAL DEPENDENCIES (MUST INSTALL FIRST):
+     ⚠️ ALWAYS add these to package.json BEFORE using shadcn components:
+     - class-variance-authority (REQUIRED for cva() function in buttons/variants)
+     - clsx (REQUIRED for className merging)
+     - tailwind-merge (REQUIRED for tw class conflicts)
      - framer-motion (for animations)
      - tailwindcss (for styling)
-     - clsx, tailwind-merge (for class utilities)
      - lucide-react (for icons)
+     
+     CRITICAL: If you use Button or any component with variants, you MUST have:
+     "class-variance-authority": "^0.7.0"
+     
+     Without it you will get: "Failed to resolve import class-variance-authority"
   
   4. WHEN USER ASKS FOR:
      - "animated header" → Use @cult-ui/navigation-menu or @aceternity/floating-navbar
@@ -508,12 +516,24 @@ export function Hero() {
      
   5. EXAMPLE - Modern Landing Page Setup:
      \`\`\`json
-     // package.json dependencies
+     // package.json dependencies - ALWAYS INCLUDE ALL OF THESE
      {
-       "framer-motion": "^10.16.0",
+       "class-variance-authority": "^0.7.0",
        "clsx": "^2.0.0",
        "tailwind-merge": "^2.0.0",
-       "lucide-react": "^0.294.0"
+       "framer-motion": "^10.16.0",
+       "lucide-react": "^0.294.0",
+       "@radix-ui/react-slot": "^1.0.2"
+     }
+     \`\`\`
+     
+     AND create src/lib/utils.ts:
+     \`\`\`typescript
+     import { clsx, type ClassValue } from "clsx";
+     import { twMerge } from "tailwind-merge";
+     
+     export function cn(...inputs: ClassValue[]) {
+       return twMerge(clsx(inputs));
      }
      \`\`\`
      
