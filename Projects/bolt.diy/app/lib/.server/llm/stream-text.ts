@@ -11,6 +11,7 @@ import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { registryService } from '~/lib/services/registryService';
+import { componentMatcher } from '~/lib/services/componentMatcher';
 
 export type Messages = Message[];
 
@@ -163,16 +164,24 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
-  // Registry components integration - disabled for now to prevent blocking
-  // TODO: Implement non-blocking registry fetch with caching
-  // try {
-  //   const registryPrompt = await registryService.generateComponentsPromptSection();
-  //   if (registryPrompt) {
-  //     systemPrompt = `${systemPrompt}\n${registryPrompt}`;
-  //   }
-  // } catch (error) {
-  //   logger.warn('Failed to fetch registry components for prompt:', error);
-  // }
+  // Component matching - analyze user request and add relevant components
+  try {
+    // Get the last user message to analyze
+    const lastUserMessage = processedMessages.filter(m => m.role === 'user').pop();
+    if (lastUserMessage && typeof lastUserMessage.content === 'string') {
+      // Load components from MD file (cached after first load)
+      await componentMatcher.loadComponentsFromMD('shadcnui-blocks.md');
+      
+      // Generate context with matching components
+      const componentContext = componentMatcher.generateContextForPrompt(lastUserMessage.content, 5);
+      if (componentContext) {
+        systemPrompt = `${systemPrompt}\n${componentContext}`;
+        logger.info('Added matching UI components to prompt context');
+      }
+    }
+  } catch (error) {
+    logger.warn('Failed to match components for prompt:', error);
+  }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
