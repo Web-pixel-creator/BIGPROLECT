@@ -354,6 +354,49 @@ export function Hero() {
   Instead, create beautiful UI using Tailwind CSS classes directly.
   
   ═══════════════════════════════════════════════════════════════════
+  CRITICAL CSS RULES - AVOID POSTCSS ERRORS
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ DO NOT use @apply with arbitrary values! This causes PostCSS errors:
+  ❌ WRONG: @apply bg-[#123456];
+  ❌ WRONG: @apply text-[14px];
+  ❌ WRONG: @apply w-[200px];
+  
+  ✅ CORRECT: Use @apply only with standard Tailwind classes:
+  ✅ @apply bg-purple-500 text-white rounded-lg;
+  
+  ✅ For custom values, use regular CSS:
+  \`\`\`css
+  .my-class {
+    background-color: #123456;
+    font-size: 14px;
+    width: 200px;
+  }
+  \`\`\`
+  
+  ✅ Or use inline styles in JSX:
+  \`\`\`jsx
+  <div style={{ backgroundColor: '#123456', fontSize: '14px' }}>
+  \`\`\`
+  
+  CORRECT index.css / globals.css structure:
+  \`\`\`css
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  
+  /* Custom styles go AFTER tailwind directives */
+  body {
+    @apply bg-gray-900 text-white;
+  }
+  
+  /* For custom values, use regular CSS, not @apply */
+  .custom-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
   MODERN DESIGN PATTERNS WITH TAILWIND
   ═══════════════════════════════════════════════════════════════════
   
