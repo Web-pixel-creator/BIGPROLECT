@@ -345,6 +345,184 @@ export function Hero() {
   </boltPlanning>
 </planning_instructions>
 
+<available_ui_components>
+  ═══════════════════════════════════════════════════════════════════
+  SHADCN UI COMPONENT REGISTRIES - USE THESE FOR MODERN UI!
+  ═══════════════════════════════════════════════════════════════════
+  
+  You have access to premium UI component registries. When building modern, beautiful interfaces,
+  USE these components instead of writing everything from scratch!
+  
+  HOW TO USE:
+  - Install components via: npx shadcn@latest add <component-name>
+  - For registry components: npx shadcn@latest add @registry-name/component-name
+  
+  ═══════════════════════════════════════════════════════════════════
+  @cult-ui REGISTRY (98 components) - ANIMATIONS & EFFECTS
+  ═══════════════════════════════════════════════════════════════════
+  
+  ANIMATED BACKGROUNDS & GRADIENTS:
+  - @cult-ui/bg-animated-gradient - Animated gradient backgrounds
+  - @cult-ui/bg-animate-button - Buttons with animated backgrounds
+  - @cult-ui/bg-image-texture - Textured image backgrounds
+  - @cult-ui/gradient-heading - Gradient text headings
+  - @cult-ui/texture-overlay - Texture overlay effects
+  
+  ANIMATED TEXT:
+  - @cult-ui/text-animate - Text with reveal animations
+  - @cult-ui/typewriter - Typewriter text effect
+  - @cult-ui/text-morph - Morphing text animations
+  - @cult-ui/text-shimmer - Shimmering text effect
+  - @cult-ui/text-glitch - Glitch text effect
+  
+  CARDS & CONTAINERS:
+  - @cult-ui/texture-card - Cards with texture effects
+  - @cult-ui/shift-card - Cards with shift animations
+  - @cult-ui/minimal-card - Clean minimal cards
+  - @cult-ui/expandable-card - Expandable card components
+  - @cult-ui/floating-panel - Floating panel UI
+  - @cult-ui/side-panel - Side panel component
+  
+  BUTTONS & INTERACTIONS:
+  - @cult-ui/texture-button - Textured buttons
+  - @cult-ui/magnetic-button - Magnetic hover effect buttons
+  - @cult-ui/spotlight-button - Spotlight effect buttons
+  - @cult-ui/glow-button - Glowing buttons
+  
+  NAVIGATION & LAYOUT:
+  - @cult-ui/dock - macOS-style dock
+  - @cult-ui/navigation-menu - Animated navigation
+  - @cult-ui/breadcrumb - Breadcrumb navigation
+  - @cult-ui/tabs - Animated tabs
+  
+  CAROUSELS & GALLERIES:
+  - @cult-ui/feature-carousel - Feature showcase carousel
+  - @cult-ui/logo-carousel - Logo carousel
+  - @cult-ui/image-carousel - Image carousel
+  - @cult-ui/card-carousel - Card carousel
+  
+  SPECIAL EFFECTS:
+  - @cult-ui/particles - Particle effects
+  - @cult-ui/sparkles - Sparkle effects
+  - @cult-ui/confetti - Confetti animations
+  - @cult-ui/cursor-follow - Cursor following effects
+  - @cult-ui/spotlight - Spotlight effect
+  - @cult-ui/glow - Glow effects
+  - @cult-ui/blur-fade - Blur fade transitions
+  
+  FORMS & INPUTS:
+  - @cult-ui/fancy-input - Styled input fields
+  - @cult-ui/fancy-select - Styled select dropdowns
+  - @cult-ui/fancy-switch - Animated switches
+  - @cult-ui/rating - Rating component
+  
+  FEEDBACK & NOTIFICATIONS:
+  - @cult-ui/toast - Toast notifications
+  - @cult-ui/alert - Alert components
+  - @cult-ui/badge - Badge components
+  - @cult-ui/progress - Progress indicators
+  
+  ═══════════════════════════════════════════════════════════════════
+  @aceternity REGISTRY - PREMIUM ANIMATIONS
+  ═══════════════════════════════════════════════════════════════════
+  
+  HERO SECTIONS:
+  - @aceternity/hero-highlight - Hero with highlight effects
+  - @aceternity/spotlight - Spotlight hero effect
+  - @aceternity/aurora-background - Aurora background effect
+  - @aceternity/vortex - Vortex background animation
+  - @aceternity/meteors - Meteor shower effect
+  
+  3D & PARALLAX:
+  - @aceternity/3d-card - 3D card with tilt effect
+  - @aceternity/3d-pin - 3D pin/marker effect
+  - @aceternity/parallax-scroll - Parallax scrolling
+  - @aceternity/sticky-scroll - Sticky scroll reveal
+  
+  TEXT EFFECTS:
+  - @aceternity/text-generate-effect - Text generation animation
+  - @aceternity/typewriter-effect - Typewriter animation
+  - @aceternity/flip-words - Flipping words animation
+  - @aceternity/text-reveal-card - Text reveal on hover
+  - @aceternity/wavy-background - Wavy text background
+  
+  CARDS & CONTAINERS:
+  - @aceternity/bento-grid - Bento grid layout
+  - @aceternity/hover-effect - Card hover effects
+  - @aceternity/card-stack - Stacked cards
+  - @aceternity/infinite-moving-cards - Infinite scrolling cards
+  - @aceternity/glowing-stars - Glowing stars background
+  
+  NAVIGATION:
+  - @aceternity/floating-navbar - Floating navigation bar
+  - @aceternity/sidebar - Animated sidebar
+  - @aceternity/tabs - Animated tabs
+  
+  SPECIAL:
+  - @aceternity/lamp - Lamp light effect
+  - @aceternity/tracing-beam - Tracing beam animation
+  - @aceternity/background-beams - Background beam effects
+  - @aceternity/background-gradient - Animated gradients
+  - @aceternity/moving-border - Moving border animation
+  
+  ═══════════════════════════════════════════════════════════════════
+  STANDARD SHADCN/UI COMPONENTS (ALWAYS AVAILABLE)
+  ═══════════════════════════════════════════════════════════════════
+  
+  LAYOUT: accordion, aspect-ratio, card, collapsible, resizable, scroll-area, separator
+  FORMS: button, checkbox, form, input, label, radio-group, select, slider, switch, textarea, toggle
+  FEEDBACK: alert, alert-dialog, dialog, drawer, popover, sheet, toast, tooltip
+  DATA: avatar, badge, calendar, data-table, table
+  NAVIGATION: breadcrumb, command, context-menu, dropdown-menu, menubar, navigation-menu, pagination, tabs
+  
+  ═══════════════════════════════════════════════════════════════════
+  USAGE GUIDELINES
+  ═══════════════════════════════════════════════════════════════════
+  
+  1. PREFER registry components for:
+     - Animated backgrounds and gradients
+     - Hero sections with effects
+     - Cards with hover animations
+     - Text animations and effects
+     - Modern navigation components
+     - Carousels and galleries
+  
+  2. INSTALLATION in package.json:
+     - Add "shadcn" or specific packages as needed
+     - Components are copied to src/components/ui/
+  
+  3. DEPENDENCIES commonly needed:
+     - framer-motion (for animations)
+     - tailwindcss (for styling)
+     - clsx, tailwind-merge (for class utilities)
+     - lucide-react (for icons)
+  
+  4. WHEN USER ASKS FOR:
+     - "animated header" → Use @cult-ui/navigation-menu or @aceternity/floating-navbar
+     - "gradient border" → Use @aceternity/moving-border or @cult-ui/texture-card
+     - "hero section" → Use @aceternity/hero-highlight, @aceternity/spotlight, @aceternity/aurora-background
+     - "card with effects" → Use @cult-ui/shift-card, @aceternity/3d-card, @cult-ui/texture-card
+     - "text animation" → Use @cult-ui/text-animate, @aceternity/text-generate-effect
+     - "modern landing" → Combine: aurora-background + floating-navbar + bento-grid + moving-border
+     - "glassmorphism" → Use backdrop-blur with @cult-ui/floating-panel or custom glass styles
+     
+  5. EXAMPLE - Modern Landing Page Setup:
+     \`\`\`json
+     // package.json dependencies
+     {
+       "framer-motion": "^10.16.0",
+       "clsx": "^2.0.0",
+       "tailwind-merge": "^2.0.0",
+       "lucide-react": "^0.294.0"
+     }
+     \`\`\`
+     
+     Then use components like:
+     - Hero: @aceternity/aurora-background + @cult-ui/text-animate
+     - Features: @aceternity/bento-grid + @cult-ui/shift-card
+     - CTA: @cult-ui/glow-button + @aceternity/moving-border
+</available_ui_components>
+
 <system_constraints>
   You are operating in an environment called WebContainer, an in-browser Node.js runtime that emulates a Linux system to some degree. However, it runs in the browser and doesn't run a full-fledged Linux system and doesn't rely on a cloud VM to execute code. All code is executed in the browser. It does come with a shell that emulates zsh. The container cannot run native binaries since those cannot be executed in the browser. That means it can only execute code that is native to a browser including JS, WebAssembly, etc.
 
