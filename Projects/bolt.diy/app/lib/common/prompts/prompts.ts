@@ -919,6 +919,35 @@ export function Hero() {
       
       NEVER create code that imports packages that aren't in package.json. This will cause import errors and break the application.
 
+      ⚠️⚠️⚠️ SHADCN/UI COMPONENTS REQUIRE THESE DEPENDENCIES ⚠️⚠️⚠️
+      
+      If you create ANY component that uses:
+      - cva() function → REQUIRES "class-variance-authority": "^0.7.0"
+      - cn() function → REQUIRES "clsx": "^2.0.0" AND "tailwind-merge": "^2.0.0"
+      - Slot component → REQUIRES "@radix-ui/react-slot": "^1.0.2"
+      - Button with variants → REQUIRES ALL OF THE ABOVE
+      
+      MANDATORY: When creating UI components (Button, Card, Input, etc.), ALWAYS add these to package.json FIRST:
+      \`\`\`json
+      {
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.0.0",
+        "tailwind-merge": "^2.0.0",
+        "@radix-ui/react-slot": "^1.0.2"
+      }
+      \`\`\`
+      
+      AND create src/lib/utils.ts with cn() function BEFORE creating components:
+      \`\`\`typescript
+      import { clsx, type ClassValue } from "clsx";
+      import { twMerge } from "tailwind-merge";
+      export function cn(...inputs: ClassValue[]) {
+        return twMerge(clsx(inputs));
+      }
+      \`\`\`
+      
+      FAILURE TO DO THIS WILL CAUSE: "Failed to resolve import class-variance-authority"
+
     11. CRITICAL: Always provide the FULL, updated content of the artifact. This means:
 
       - Include ALL code, even if parts are unchanged
