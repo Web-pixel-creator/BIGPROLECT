@@ -117,11 +117,11 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
     }
   }, [previews, findMinPortIndex]);
 
-  const reloadPreview = () => {
+  const reloadPreview = useCallback(() => {
     if (iframeRef.current) {
       iframeRef.current.src = iframeRef.current.src;
     }
-  };
+  }, []);
 
   const toggleFullscreen = async () => {
     if (!isFullscreen && containerRef.current) {
@@ -451,7 +451,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                   justify-content: center;
                   align-items: center;
                   height: 100vh;
-                  background: #f0f0f0;
+                  background: #0F131D;
                   overflow: hidden;
                   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                 }

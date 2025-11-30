@@ -217,7 +217,7 @@ export function SupabaseConnection() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => fetchSupabaseStats(supabaseConn.token)}
-                          className="px-2 py-1 rounded-md text-xs bg-[#F0F0F0] dark:bg-[#252525] text-bolt-elements-textSecondary hover:bg-[#E5E5E5] dark:hover:bg-[#333333] flex items-center gap-1"
+                          className="px-2 py-1 rounded-md text-xs bg-[#0F131D] dark:bg-[#252525] text-bolt-elements-textSecondary hover:bg-[#0F131D] dark:hover:bg-[#333333] flex items-center gap-1"
                           title="Refresh projects list"
                         >
                           <div className="i-ph:arrows-clockwise w-3 h-3" />
@@ -264,7 +264,7 @@ export function SupabaseConnection() {
                                       'px-3 py-1 rounded-md text-xs',
                                       supabaseConn.selectedProjectId === project.id
                                         ? 'bg-[#3ECF8E] text-white'
-                                        : 'bg-[#F0F0F0] dark:bg-[#252525] text-bolt-elements-textSecondary hover:bg-[#3ECF8E] hover:text-white',
+                                        : 'bg-[#0F131D] dark:bg-[#252525] text-bolt-elements-textSecondary hover:bg-[#3ECF8E] hover:text-white',
                                     )}
                                   >
                                     {supabaseConn.selectedProjectId === project.id ? (

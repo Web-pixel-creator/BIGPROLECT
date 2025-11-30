@@ -341,7 +341,7 @@ export default function VercelConnection() {
                             </div>
                           </div>
                           {project.framework && (
-                            <div className="text-xs text-bolt-elements-textSecondary px-2 py-1 rounded-md bg-[#F0F0F0] dark:bg-[#252525]">
+                            <div className="text-xs text-bolt-elements-textSecondary px-2 py-1 rounded-md bg-[#0F131D] dark:bg-[#252525]">
                               <span className="flex items-center gap-1">
                                 <div className="i-ph:code w-3 h-3" />
                                 {project.framework}

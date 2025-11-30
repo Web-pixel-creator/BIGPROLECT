@@ -575,10 +575,6 @@ export class WorkbenchStore {
         this.setSelectedFile(fullPath);
       }
 
-      if (this.currentView.value !== 'code') {
-        this.currentView.set('code');
-      }
-
       const doc = this.#editorStore.documents.get()[fullPath];
 
       if (!doc) {

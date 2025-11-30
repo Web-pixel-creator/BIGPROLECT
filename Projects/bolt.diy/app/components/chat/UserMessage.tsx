@@ -6,6 +6,7 @@ import { MODEL_REGEX, PROVIDER_REGEX } from '~/utils/constants';
 import { Markdown } from './Markdown';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { Card, CardContent } from '~/components/ui/shadcn';
 import type {
   TextUIPart,
   ReasoningUIPart,
@@ -36,37 +37,43 @@ export function UserMessage({ content, parts }: UserMessageProps) {
     const textContent = stripMetadata(textItem?.text || '');
 
     return (
-      <div className="overflow-hidden flex flex-col gap-3 items-center ">
+      <div className="overflow-hidden flex flex-col gap-3 items-center">
         <div className="flex flex-row items-start justify-center overflow-hidden shrink-0 self-start">
           {profile?.avatar || profile?.username ? (
             <div className="flex items-end gap-2">
               <img
                 src={profile.avatar}
                 alt={profile?.username || 'User'}
-                className="w-[25px] h-[25px] object-cover rounded-full"
+                className="w-[25px] h-[25px] object-cover rounded-full ring-2 ring-purple-500/30"
                 loading="eager"
                 decoding="sync"
               />
-              <span className="text-bolt-elements-textPrimary text-sm">
+              <span className="text-bolt-elements-textPrimary text-sm font-medium">
                 {profile?.username ? profile.username : ''}
               </span>
             </div>
           ) : (
-            <div className="i-ph:user-fill text-accent-500 text-2xl" />
+            <div className="i-ph:user-fill text-purple-400 text-2xl" />
           )}
         </div>
-        <div className="flex flex-col gap-4 bg-accent-500/10 backdrop-blur-sm p-3 py-3 w-auto rounded-lg mr-auto">
-          {textContent && <Markdown html>{textContent}</Markdown>}
-          {images.map((item, index) => (
-            <img
-              key={index}
-              src={`data:${item.mimeType};base64,${item.data}`}
-              alt={`Image ${index + 1}`}
-              className="max-w-full h-auto rounded-lg"
-              style={{ maxHeight: '512px', objectFit: 'contain' }}
-            />
-          ))}
-        </div>
+        <Card className="mr-auto border-purple-500/20 bg-purple-500/5">
+          <CardContent className="p-3">
+            {textContent && <Markdown html>{textContent}</Markdown>}
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {images.map((item, index) => (
+                  <img
+                    key={index}
+                    src={`data:${item.mimeType};base64,${item.data}`}
+                    alt={`Image ${index + 1}`}
+                    className="max-w-full h-auto rounded-lg border border-white/10"
+                    style={{ maxHeight: '512px', objectFit: 'contain' }}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -74,24 +81,27 @@ export function UserMessage({ content, parts }: UserMessageProps) {
   const textContent = stripMetadata(content);
 
   return (
-    <div className="flex flex-col bg-accent-500/10 backdrop-blur-sm px-5 p-3.5 w-auto rounded-lg ml-auto">
-      <div className="flex gap-3.5 mb-4">
-        {images.map((item, index) => (
-          <div className="relative flex rounded-lg border border-bolt-elements-borderColor overflow-hidden">
-            <div className="h-16 w-16 bg-transparent outline-none">
-              <img
-                key={index}
-                src={`data:${item.mimeType};base64,${item.data}`}
-                alt={`Image ${index + 1}`}
-                className="h-full w-full rounded-lg"
-                style={{ objectFit: 'fill' }}
-              />
-            </div>
+    <Card className="ml-auto border-purple-500/20 bg-purple-500/5 max-w-[85%]">
+      <CardContent className="p-4">
+        {images.length > 0 && (
+          <div className="flex gap-3 mb-3">
+            {images.map((item, index) => (
+              <div key={index} className="relative flex rounded-lg border border-white/10 overflow-hidden">
+                <div className="h-16 w-16 bg-transparent outline-none">
+                  <img
+                    src={`data:${item.mimeType};base64,${item.data}`}
+                    alt={`Image ${index + 1}`}
+                    className="h-full w-full rounded-lg"
+                    style={{ objectFit: 'fill' }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <Markdown html>{textContent}</Markdown>
-    </div>
+        )}
+        <Markdown html>{textContent}</Markdown>
+      </CardContent>
+    </Card>
   );
 }
 

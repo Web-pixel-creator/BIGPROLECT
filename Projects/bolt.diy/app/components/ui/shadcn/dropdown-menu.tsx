@@ -118,7 +118,7 @@ DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
 export const DropdownMenuSubTrigger = React.forwardRef<
   HTMLDivElement,
-  DropdownMenuPrimitive.DropdownMenuSubTriggerProps
+  DropdownMenuPrimitive.DropdownMenuSubTriggerProps & { inset?: boolean }
 >(({ className, inset, children, ...props }, ref) => (
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}

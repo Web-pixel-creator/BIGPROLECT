@@ -303,7 +303,6 @@ export const Workbench = memo(
     const selectedView = useStore(workbenchStore.currentView);
     const { showChat } = useStore(chatStore);
     const canHideChat = showWorkbench || !showChat;
-
     const isSmallViewport = useViewport(1024);
     const streaming = useStore(streamingState);
     const { exportChat } = useChatHistory();
@@ -313,26 +312,16 @@ export const Workbench = memo(
       workbenchStore.currentView.set(view);
     };
 
-    useEffect(() => {
-      if (hasPreview) {
-        setSelectedView('preview');
-      }
-    }, [hasPreview]);
-
-    // Auto-switch to preview when streaming completes
+    // Убираем авто-переключение на Preview/Code — оставляем управление пользователю.
+    // Но по завершении стриминга обновляем превью автоматически.
     const prevStreamingRef = useRef(isStreaming);
     useEffect(() => {
-      // Detect when streaming changes from true to false (streaming just finished)
-      if (prevStreamingRef.current && !isStreaming && hasPreview) {
-        // Small delay to ensure files are saved
-        const timer = setTimeout(() => {
-          setSelectedView('preview');
-        }, 500);
-        prevStreamingRef.current = isStreaming;
-        return () => clearTimeout(timer);
+      if (prevStreamingRef.current && !isStreaming) {
+        const previewStore = usePreviewStore();
+        previewStore.refreshAllPreviews();
       }
       prevStreamingRef.current = isStreaming;
-    }, [isStreaming, hasPreview]);
+    }, [isStreaming]);
 
     useEffect(() => {
       workbenchStore.setDocuments(files);
@@ -354,7 +343,7 @@ export const Workbench = memo(
       workbenchStore
         .saveCurrentDocument()
         .then(() => {
-          // Explicitly refresh all previews after a file save
+          // Авто-обновление превью после сохранения
           const previewStore = usePreviewStore();
           previewStore.refreshAllPreviews();
         })
@@ -388,24 +377,23 @@ export const Workbench = memo(
     }, []);
 
     return (
-      chatStarted && (
-        <motion.div
-          initial="closed"
-          animate={showWorkbench ? 'open' : 'closed'}
-          variants={workbenchVariants}
-          className="z-workbench"
+      <motion.div
+        initial="closed"
+        animate={showWorkbench ? 'open' : 'closed'}
+        variants={workbenchVariants}
+        className="z-workbench"
+      >
+        <div
+          className={classNames(
+            'fixed top-[calc(var(--header-height)+1.2rem)] bottom-6 w-[var(--workbench-inner-width)] z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
+            {
+              'w-full': isSmallViewport,
+              'left-0': showWorkbench && isSmallViewport,
+              'left-[var(--workbench-left)]': showWorkbench && !isSmallViewport,
+              'left-[100%]': !showWorkbench,
+            },
+          )}
         >
-          <div
-            className={classNames(
-              'fixed top-[calc(var(--header-height)+1.2rem)] bottom-6 w-[var(--workbench-inner-width)] z-0 transition-[left,width] duration-200 bolt-ease-cubic-bezier',
-              {
-                'w-full': isSmallViewport,
-                'left-0': showWorkbench && isSmallViewport,
-                'left-[var(--workbench-left)]': showWorkbench,
-                'left-[100%]': !showWorkbench,
-              },
-            )}
-          >
             <div className="absolute inset-0 px-2 lg:px-4">
               <div className="h-full flex flex-col bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor shadow-sm rounded-lg overflow-hidden">
                 <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
@@ -524,7 +512,6 @@ export const Workbench = memo(
             </div>
           </div>
         </motion.div>
-      )
     );
   },
 );

@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import { forwardRef } from 'react';
 import type { ForwardedRef } from 'react';
 import type { ProviderInfo } from '~/types/model';
+import { Card, CardContent } from '~/components/ui/shadcn';
 
 interface MessagesProps {
   id?: string;
@@ -65,28 +66,33 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
               return (
                 <div
                   key={index}
-                  className={classNames('flex gap-4 py-3 w-full rounded-lg', {
-                    'mt-4': !isFirst,
+                  className={classNames('flex gap-4 py-4 w-full', {
+                    'mt-2': !isFirst,
+                    'border-b border-white/5 pb-6': !isUserMessage && index < messages.length - 1,
                   })}
                 >
                   <div className="grid grid-col-1 w-full">
                     {isUserMessage ? (
                       <UserMessage content={content} parts={parts} />
                     ) : (
-                      <AssistantMessage
-                        content={content}
-                        annotations={message.annotations}
-                        messageId={messageId}
-                        onRewind={handleRewind}
-                        onFork={handleFork}
-                        append={props.append}
-                        chatMode={props.chatMode}
-                        setChatMode={props.setChatMode}
-                        model={props.model}
-                        provider={props.provider}
-                        parts={parts}
-                        addToolResult={props.addToolResult}
-                      />
+                      <Card className="border-white/5 bg-transparent shadow-none">
+                        <CardContent className="p-0">
+                          <AssistantMessage
+                            content={content}
+                            annotations={message.annotations}
+                            messageId={messageId}
+                            onRewind={handleRewind}
+                            onFork={handleFork}
+                            append={props.append}
+                            chatMode={props.chatMode}
+                            setChatMode={props.setChatMode}
+                            model={props.model}
+                            provider={props.provider}
+                            parts={parts}
+                            addToolResult={props.addToolResult}
+                          />
+                        </CardContent>
+                      </Card>
                     )}
                   </div>
                 </div>
@@ -94,7 +100,11 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
             })
           : null}
         {isStreaming && (
-          <div className="text-center w-full  text-bolt-elements-item-contentAccent i-svg-spinners:3-dots-fade text-4xl mt-4"></div>
+          <Card className="mt-4 border-purple-500/20 bg-purple-500/5">
+            <CardContent className="p-4 flex items-center justify-center">
+              <div className="text-purple-400 i-svg-spinners:3-dots-fade text-3xl"></div>
+            </CardContent>
+          </Card>
         )}
       </div>
     );
