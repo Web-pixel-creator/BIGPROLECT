@@ -28,6 +28,13 @@ export interface StreamingOptions extends Omit<Parameters<typeof _streamText>[0]
 
 const logger = createScopedLogger('stream-text');
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 function getCompletionTokenLimit(modelDetails: any): number {
   // 1. If model specifies completion tokens, use that
   if (modelDetails.maxCompletionTokens && modelDetails.maxCompletionTokens > 0) {
@@ -183,6 +190,17 @@ export async function streamText(props: {
     }
   } catch (error) {
     logger.warn('Failed to match components for prompt:', error);
+  }
+
+  // Registry components (shadcn-compatible registries)
+  try {
+    const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
+    if (registryContext) {
+      systemPrompt = `${systemPrompt}\n${registryContext}`;
+      logger.info('Added registry components to prompt context');
+    }
+  } catch (error) {
+    logger.warn('Failed to load registry components for prompt:', error);
   }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {

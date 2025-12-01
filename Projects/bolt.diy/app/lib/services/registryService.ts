@@ -64,6 +64,8 @@ export class RegistryService {
     }
 
     try {
+      let components: RegistryComponent[] | null = null;
+
       // Try to fetch registry index
       const indexUrl = `${baseUrl}/index.json`;
       logger.debug(`Fetching registry index from ${indexUrl}`);
@@ -84,17 +86,19 @@ export class RegistryService {
         }
         
         const data = await altResponse.json();
-        return this._parseRegistryData(registryName, data);
+        components = this._parseRegistryData(registryName, data);
+      } else {
+        const data = await response.json();
+        components = this._parseRegistryData(registryName, data);
       }
-
-      const data = await response.json();
-      const components = this._parseRegistryData(registryName, data);
       
-      // Update cache
-      this._cache.set(registryName, {
-        components,
-        lastUpdated: Date.now(),
-      });
+      if (components) {
+        // Update cache
+        this._cache.set(registryName, {
+          components,
+          lastUpdated: Date.now(),
+        });
+      }
 
       return components;
     } catch (error) {
