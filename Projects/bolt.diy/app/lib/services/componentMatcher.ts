@@ -342,6 +342,7 @@ export class ComponentMatcher {
     const mdFiles = [
       'shadcnui-blocks.md',
       'aceternity-components.md',
+      'kokonutui-components.md',
     ];
 
     for (const file of mdFiles) {
