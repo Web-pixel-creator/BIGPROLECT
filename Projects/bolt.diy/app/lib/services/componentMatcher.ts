@@ -263,6 +263,90 @@ const COMPONENT_KEYWORDS: Record<string, string[]> = {
   ],
 
   // ═══════════════════════════════════════════════════════════════
+  // REACT BITS EFFECTS (Animations, Backgrounds, Text)
+  // ═══════════════════════════════════════════════════════════════
+  cursor: [
+    'cursor', 'cursor effect', 'mouse cursor', 'custom cursor', 'blob cursor', 'ghost cursor', 'splash cursor',
+    'курсор', 'эффект курсора', 'кастомный курсор', 'следящий курсор',
+  ],
+  glitch: [
+    'glitch', 'glitch effect', 'glitch text', 'distortion', 'noise', 'broken',
+    'глитч', 'помехи', 'искажение', 'шум', 'сломанный эффект',
+  ],
+  aurora: [
+    'aurora', 'northern lights', 'aurora borealis', 'color waves',
+    'аврора', 'северное сияние', 'цветовые волны',
+  ],
+  galaxy: [
+    'galaxy', 'space', 'cosmos', 'universe', 'stars background',
+    'галактика', 'космос', 'вселенная', 'звёздный фон',
+  ],
+  plasma: [
+    'plasma', 'liquid', 'fluid', 'organic', 'morphing',
+    'плазма', 'жидкость', 'органический', 'морфинг',
+  ],
+  hyperspeed: [
+    'hyperspeed', 'warp', 'speed lines', 'motion blur', 'fast',
+    'гиперскорость', 'варп', 'линии скорости', 'быстрый',
+  ],
+  lightning: [
+    'lightning', 'thunder', 'electric', 'bolt', 'storm',
+    'молния', 'гром', 'электричество', 'шторм',
+  ],
+  magnet: [
+    'magnet', 'magnetic', 'attract', 'pull', 'magnet effect',
+    'магнит', 'магнитный', 'притяжение',
+  ],
+  pixel: [
+    'pixel', 'pixelated', 'pixel art', 'retro', '8bit', 'pixel trail', 'pixel transition',
+    'пиксель', 'пиксельный', 'ретро', '8бит',
+  ],
+  ribbon: [
+    'ribbon', 'ribbons', 'flowing', 'silk', 'fabric',
+    'лента', 'ленты', 'шёлк', 'ткань',
+  ],
+  metaball: [
+    'metaball', 'metaballs', 'blob', 'organic shapes', 'lava lamp',
+    'метаболы', 'блоб', 'органические формы', 'лава лампа',
+  ],
+  scramble: [
+    'scramble', 'scrambled', 'shuffle', 'random text', 'decrypt',
+    'перемешивание', 'случайный текст', 'расшифровка',
+  ],
+  counter: [
+    'counter', 'count up', 'count down', 'number animation', 'odometer',
+    'счётчик', 'отсчёт', 'анимация чисел',
+  ],
+  dock: [
+    'dock', 'macos dock', 'taskbar', 'app dock', 'icon bar',
+    'док', 'панель приложений', 'док-панель',
+  ],
+  masonry: [
+    'masonry', 'pinterest', 'grid layout', 'waterfall', 'columns',
+    'мэсонри', 'пинтерест', 'водопад', 'колонки',
+  ],
+  stack: [
+    'stack', 'card stack', 'stacked', 'layered', 'pile',
+    'стопка', 'стек карточек', 'слои',
+  ],
+  tilt: [
+    'tilt', 'tilt effect', '3d tilt', 'perspective', 'rotate on hover',
+    'наклон', '3д наклон', 'перспектива', 'поворот при наведении',
+  ],
+  fluid: [
+    'fluid', 'liquid', 'water', 'flow', 'smooth',
+    'жидкий', 'вода', 'поток', 'плавный',
+  ],
+  lanyard: [
+    'lanyard', 'badge', 'id card', 'hanging', 'swing',
+    'бейдж', 'карточка', 'висящий', 'качающийся',
+  ],
+  stepper: [
+    'stepper', 'steps', 'wizard', 'progress steps', 'multi step',
+    'степпер', 'шаги', 'мастер', 'пошаговый',
+  ],
+
+  // ═══════════════════════════════════════════════════════════════
   // THEMES & STYLES
   // ═══════════════════════════════════════════════════════════════
   dark: [
