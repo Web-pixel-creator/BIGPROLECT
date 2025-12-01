@@ -344,6 +344,7 @@ export class ComponentMatcher {
       'aceternity-components.md',
       'kokonutui-components.md',
       'magicui-components.md',
+      'reactbits-components.md',
     ];
 
     for (const file of mdFiles) {
