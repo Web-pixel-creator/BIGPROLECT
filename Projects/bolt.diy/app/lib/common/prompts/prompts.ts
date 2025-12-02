@@ -614,7 +614,10 @@ export function Hero() {
   ⚠️ This is the "glowing effect" from Aceternity UI / Magic UI!
   A beam of light travels along the border perimeter.
   
-  TECHNIQUE: Animated pseudo-element that moves along border path
+  ⚠️ RECOMMENDATION: Use the SIMPLIFIED version (see below) to avoid import errors!
+  The simplified version doesn't require a separate component file.
+  
+  TECHNIQUE: Animated element that moves along border path
   
   \`\`\`tsx
   // BorderBeam Component
@@ -668,8 +671,61 @@ export function Hero() {
   }
   \`\`\`
   
-  USAGE:
+  ⚠️ CRITICAL: You MUST create the BorderBeam component file FIRST before using it!
+  
+  STEP 1: Create the component file:
   \`\`\`tsx
+  // src/components/ui/BorderBeam.tsx
+  import React from 'react';
+  
+  interface BorderBeamProps {
+    size?: number;
+    duration?: number;
+    delay?: number;
+    colorFrom?: string;
+    colorTo?: string;
+  }
+  
+  export function BorderBeam({
+    size = 200,
+    duration = 15,
+    delay = 0,
+    colorFrom = "#ffaa40",
+    colorTo = "#9c40ff",
+  }: BorderBeamProps) {
+    return (
+      <div
+        style={{
+          "--size": size,
+          "--duration": duration,
+          "--delay": delay,
+          "--color-from": colorFrom,
+          "--color-to": colorTo,
+        } as React.CSSProperties}
+        className="absolute inset-0 rounded-[inherit] [border:calc(var(--size)*1px)_solid_transparent] ![mask-clip:padding-box,border-box] ![mask-composite:intersect] [mask:linear-gradient(transparent,transparent),linear-gradient(white,white)] after:absolute after:aspect-square after:w-[calc(var(--size)*1px)] after:animate-border-beam after:[animation-delay:var(--delay)] after:[background:linear-gradient(to_left,var(--color-from),var(--color-to),transparent)] after:[offset-anchor:calc(var(--size)*-1px)_50%] after:[offset-path:rect(0_auto_auto_0_round_calc(var(--size)*1px))]"
+      />
+    );
+  }
+  \`\`\`
+  
+  STEP 2: Add keyframes to tailwind.config.js/ts:
+  \`\`\`js
+  animation: {
+    'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+  },
+  keyframes: {
+    'border-beam': {
+      '100%': {
+        'offset-distance': '100%',
+      },
+    },
+  },
+  \`\`\`
+  
+  STEP 3: Use the component:
+  \`\`\`tsx
+  import { BorderBeam } from '@/components/ui/BorderBeam';
+  
   <div className="relative rounded-lg border border-gray-800 bg-black p-6">
     <BorderBeam size={250} duration={12} delay={9} />
     <h3>Your Content</h3>
@@ -677,33 +733,79 @@ export function Hero() {
   </div>
   \`\`\`
   
-  SIMPLIFIED VERSION (CSS-only, no component):
+  ═══════════════════════════════════════════════════════════════════
+  ALTERNATIVE: SIMPLIFIED BORDER BEAM (No separate component needed)
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ RECOMMENDED: Use this if you want to avoid creating a separate component!
+  
+  This creates a traveling light beam effect inline without needing BorderBeam.tsx
+  
   \`\`\`tsx
   <div className="relative rounded-lg border border-gray-800 bg-black p-6 overflow-hidden">
-    {/* Border beam */}
-    <div className="absolute inset-0 rounded-[inherit]">
-      <div className="absolute h-full w-[2px] bg-gradient-to-b from-transparent via-purple-500 to-transparent animate-border-beam-travel" />
+    {/* Traveling beam */}
+    <div className="absolute inset-0 rounded-[inherit] pointer-events-none">
+      <div 
+        className="absolute h-full w-[3px] animate-border-beam-travel"
+        style={{
+          background: 'linear-gradient(to bottom, transparent, #ff8800, #9c40ff, transparent)',
+          boxShadow: '0 0 20px rgba(255, 136, 0, 0.8)',
+        }}
+      />
     </div>
     
     <h3 className="relative z-10">Your Content</h3>
   </div>
   \`\`\`
   
-  ADD TO tailwind.config.js:
+  ADD TO tailwind.config.js/ts:
   \`\`\`js
   animation: {
-    'border-beam-travel': 'border-beam-travel 3s linear infinite',
+    'border-beam-travel': 'border-beam-travel 12s linear infinite',
   },
   keyframes: {
     'border-beam-travel': {
-      '0%': { transform: 'translateX(0) translateY(0)' },
-      '25%': { transform: 'translateX(100%) translateY(0)' },
-      '50%': { transform: 'translateX(100%) translateY(100%)' },
-      '75%': { transform: 'translateX(0) translateY(100%)' },
-      '100%': { transform: 'translateX(0) translateY(0)' },
+      '0%': { 
+        transform: 'translateX(0) translateY(0)',
+        opacity: '0'
+      },
+      '5%': { opacity: '1' },
+      '20%': { 
+        transform: 'translateX(calc(100% - 3px)) translateY(0)',
+        opacity: '1'
+      },
+      '25%': { opacity: '0' },
+      '30%': { opacity: '0' },
+      '45%': { 
+        transform: 'translateX(calc(100% - 3px)) translateY(calc(100% - 3px))',
+        opacity: '1'
+      },
+      '50%': { opacity: '0' },
+      '55%': { opacity: '0' },
+      '70%': { 
+        transform: 'translateX(0) translateY(calc(100% - 3px))',
+        opacity: '1'
+      },
+      '75%': { opacity: '0' },
+      '80%': { opacity: '0' },
+      '95%': { 
+        transform: 'translateX(0) translateY(0)',
+        opacity: '1'
+      },
+      '100%': { 
+        transform: 'translateX(0) translateY(0)',
+        opacity: '0'
+      },
     },
   },
   \`\`\`
+  
+  This version:
+  - No separate component file needed
+  - Inline styles for gradient
+  - Travels around the border perimeter
+  - Fades in/out at corners for smooth effect
+  - Customizable colors via inline style
   
   ═══════════════════════════════════════════════════════════════════
   SIMPLE BUTTON (NO DEPENDENCIES NEEDED)
