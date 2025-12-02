@@ -574,7 +574,7 @@ export class ComponentMatcher {
       .slice(0, limit * componentTypes.length);
   }
 
-  generateContextForPrompt(request: string, maxComponents: number = 5): string {
+  generateContextForPrompt(request: string, maxComponents: number = 8): string {
     const { components: componentTypes, theme } = this.analyzeUserRequest(request);
     
     if (componentTypes.length === 0) {
@@ -589,23 +589,34 @@ export class ComponentMatcher {
 
     let context = `
 <matched_ui_components>
-  Based on user request, here are relevant UI components you can use as reference:
-  Theme detected: ${theme || 'general'}
-  Components needed: ${componentTypes.join(', ')}
+  ⚠️ IMPORTANT: Use these components as DIRECT REFERENCE for your implementation!
+  
+  User request analysis:
+  - Theme: ${theme || 'general'}
+  - Components needed: ${componentTypes.join(', ')}
+  - Found ${matchedComponents.length} matching components
+  
+  INSTRUCTIONS:
+  1. Study the code patterns below
+  2. Adapt them to user's specific request
+  3. Combine multiple components if needed
+  4. Keep the animation/styling approach
   
 `;
 
     for (const comp of matchedComponents.slice(0, maxComponents)) {
-      // Truncate code if too long
-      const code = comp.code.length > 2000 
-        ? comp.code.substring(0, 2000) + '\n// ... truncated ...'
+      // Don't truncate code - show full component
+      const code = comp.code.length > 5000 
+        ? comp.code.substring(0, 5000) + '\n// ... code continues ...'
         : comp.code;
 
       context += `
-  --- ${comp.description} (${comp.name}) ---
+  ═══════════════════════════════════════════════════════════════
+  ${comp.description.toUpperCase()} (${comp.name})
   Category: ${comp.category}
+  ═══════════════════════════════════════════════════════════════
   
-  ${code}
+${code}
   
 `;
     }

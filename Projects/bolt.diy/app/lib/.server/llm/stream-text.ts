@@ -180,8 +180,8 @@ export async function streamText(props: {
       // Load all component MD files (cached after first load)
       await componentMatcher.loadAllComponentFiles();
 
-      // Generate context with matching components
-      const componentContext = componentMatcher.generateContextForPrompt(lastUserMessage.content, 5);
+      // Generate context with matching components (increased to 8 for better coverage)
+      const componentContext = componentMatcher.generateContextForPrompt(lastUserMessage.content, 8);
 
       if (componentContext) {
         systemPrompt = `${systemPrompt}\n${componentContext}`;
