@@ -801,6 +801,254 @@ export function Hero() {
   Result: A stunning, production-ready landing page that looks like it cost $10k+
   
   ═══════════════════════════════════════════════════════════════════
+  PERFORMANCE OPTIMIZATION FOR ANIMATIONS
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ CRITICAL: Animations can cause lag if not optimized properly!
+  
+  OPTIMIZATION TECHNIQUES:
+  
+  1. USE requestAnimationFrame FOR SMOOTH ANIMATIONS:
+     \`\`\`tsx
+     useEffect(() => {
+       let animationId: number;
+       const animate = () => {
+         // Update animation state
+         animationId = requestAnimationFrame(animate);
+       };
+       animationId = requestAnimationFrame(animate);
+       return () => cancelAnimationFrame(animationId);
+     }, []);
+     \`\`\`
+  
+  2. LIMIT PARTICLE COUNT:
+     ❌ BAD: 1000+ particles
+     ✅ GOOD: 50-100 particles max
+     
+     \`\`\`tsx
+     const PARTICLE_COUNT = 50; // Not 1000!
+     \`\`\`
+  
+  3. USE CSS TRANSFORMS (GPU ACCELERATED):
+     ✅ transform: translate3d(x, y, 0) - GPU accelerated
+     ❌ left/top properties - CPU only, slow
+     
+     \`\`\`tsx
+     <div style={{ transform: \`translate3d(\${x}px, \${y}px, 0)\` }} />
+     \`\`\`
+  
+  4. DEBOUNCE RESIZE/SCROLL EVENTS:
+     \`\`\`tsx
+     import { useEffect, useState } from 'react';
+     
+     function useDebounce(value: any, delay: number) {
+       const [debouncedValue, setDebouncedValue] = useState(value);
+       useEffect(() => {
+         const handler = setTimeout(() => setDebouncedValue(value), delay);
+         return () => clearTimeout(handler);
+       }, [value, delay]);
+       return debouncedValue;
+     }
+     \`\`\`
+  
+  5. USE will-change CSS PROPERTY:
+     \`\`\`css
+     .animated-element {
+       will-change: transform, opacity;
+     }
+     \`\`\`
+  
+  6. REDUCE BLUR INTENSITY:
+     ❌ blur(100px) - very expensive
+     ✅ blur(20px) - much faster
+  
+  7. USE INTERSECTION OBSERVER:
+     Only animate elements when they're visible:
+     \`\`\`tsx
+     const [isVisible, setIsVisible] = useState(false);
+     const ref = useRef(null);
+     
+     useEffect(() => {
+       const observer = new IntersectionObserver(([entry]) => {
+         setIsVisible(entry.isIntersecting);
+       });
+       if (ref.current) observer.observe(ref.current);
+       return () => observer.disconnect();
+     }, []);
+     \`\`\`
+  
+  8. SIMPLIFY CANVAS OPERATIONS:
+     - Clear only changed areas, not entire canvas
+     - Use offscreen canvas for complex drawings
+     - Reduce canvas resolution on mobile
+  
+  EXAMPLE: OPTIMIZED SPARKLES COMPONENT:
+  \`\`\`tsx
+  export function OptimizedSparkles() {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const particlesRef = useRef<Particle[]>([]);
+    
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Limit particles
+      const PARTICLE_COUNT = 50;
+      
+      // Initialize particles once
+      if (particlesRef.current.length === 0) {
+        particlesRef.current = Array.from({ length: PARTICLE_COUNT }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+        }));
+      }
+      
+      let animationId: number;
+      
+      const animate = () => {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Update and draw particles
+        particlesRef.current.forEach(particle => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+          
+          // Wrap around edges
+          if (particle.x < 0) particle.x = canvas.width;
+          if (particle.x > canvas.width) particle.x = 0;
+          if (particle.y < 0) particle.y = canvas.height;
+          if (particle.y > canvas.height) particle.y = 0;
+          
+          // Draw particle
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        
+        animationId = requestAnimationFrame(animate);
+      };
+      
+      animationId = requestAnimationFrame(animate);
+      
+      return () => cancelAnimationFrame(animationId);
+    }, []);
+    
+    return (
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 pointer-events-none"
+        style={{ willChange: 'transform' }}
+      />
+    );
+  }
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
+  COMPLETE PAGE STRUCTURE - DON'T STOP AT HERO!
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ CRITICAL: When user asks for a "landing page" or "website", create the COMPLETE structure!
+  
+  A COMPLETE LANDING PAGE INCLUDES:
+  
+  1. HERO SECTION (required)
+     - Main headline with gradient text
+     - Subheadline/description
+     - CTA buttons
+     - Background effects (aurora, sparkles, etc.)
+  
+  2. FEATURES SECTION (required)
+     - 3-6 feature cards
+     - Icons or illustrations
+     - Hover effects
+     - Grid or flex layout
+  
+  3. HOW IT WORKS / PROCESS (optional but recommended)
+     - Step-by-step explanation
+     - Numbered steps or timeline
+     - Visual indicators
+  
+  4. TESTIMONIALS / SOCIAL PROOF (optional)
+     - Customer quotes
+     - Ratings/reviews
+     - Company logos
+  
+  5. PRICING (if SaaS/product)
+     - Pricing tiers
+     - Feature comparison
+     - CTA buttons
+  
+  6. CTA SECTION (required)
+     - Final call-to-action
+     - Email signup or demo request
+     - Compelling copy
+  
+  7. FOOTER (required)
+     - Links (About, Contact, Privacy, Terms)
+     - Social media icons
+     - Copyright notice
+  
+  EXAMPLE STRUCTURE:
+  \`\`\`tsx
+  export default function LandingPage() {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        {/* Navigation */}
+        <nav className="fixed top-0 w-full z-50 backdrop-blur-md">
+          {/* Nav content */}
+        </nav>
+        
+        {/* Hero Section */}
+        <section className="min-h-screen relative">
+          <AuroraBackground />
+          <Sparkles />
+          {/* Hero content */}
+        </section>
+        
+        {/* Features Section */}
+        <section className="py-20 px-4">
+          <h2>Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature cards */}
+          </div>
+        </section>
+        
+        {/* How It Works */}
+        <section className="py-20 px-4 bg-gray-900">
+          {/* Steps */}
+        </section>
+        
+        {/* Pricing */}
+        <section className="py-20 px-4">
+          {/* Pricing cards */}
+        </section>
+        
+        {/* Final CTA */}
+        <section className="py-20 px-4 bg-gradient-to-r from-purple-900 to-cyan-900">
+          {/* CTA content */}
+        </section>
+        
+        {/* Footer */}
+        <footer className="py-10 px-4 border-t border-gray-800">
+          {/* Footer content */}
+        </footer>
+      </div>
+    );
+  }
+  \`\`\`
+  
+  ❌ DON'T: Create only Hero section and stop
+  ✅ DO: Create complete, scrollable landing page with all sections
+  
+  ═══════════════════════════════════════════════════════════════════
   REMEMBER: These components are YOUR ADVANTAGE. Use them!
   ═══════════════════════════════════════════════════════════════════
 </premium_ui_components>
