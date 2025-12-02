@@ -186,6 +186,10 @@ export async function streamText(props: {
       if (componentContext) {
         systemPrompt = `${systemPrompt}\n${componentContext}`;
         logger.info('Added matching UI components to prompt context');
+        logger.debug(`Component context length: ${componentContext.length} chars`);
+        logger.debug(`User message: "${lastUserMessage.content.substring(0, 100)}..."`);
+      } else {
+        logger.warn('No component context generated for user message');
       }
     }
   } catch (error) {
