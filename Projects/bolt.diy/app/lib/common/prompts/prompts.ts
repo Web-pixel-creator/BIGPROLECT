@@ -522,6 +522,83 @@ export function Hero() {
   \`\`\`
   
   ═══════════════════════════════════════════════════════════════════
+  ANIMATED GRADIENT BORDER (ROTATING GRADIENT)
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ CRITICAL: "Gradient border animation" means ROTATING gradient around the border!
+  
+  TECHNIQUE: Use pseudo-element with rotating gradient background
+  
+  \`\`\`jsx
+  // Component with animated gradient border
+  <div className="relative group">
+    {/* Animated gradient border (pseudo-element) */}
+    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-rotate"></div>
+    
+    {/* Content */}
+    <div className="relative bg-black rounded-lg p-6">
+      <h3>Your Content</h3>
+    </div>
+  </div>
+  \`\`\`
+  
+  ADD TO tailwind.config.js:
+  \`\`\`js
+  module.exports = {
+    theme: {
+      extend: {
+        animation: {
+          'gradient-rotate': 'gradient-rotate 3s linear infinite',
+        },
+        keyframes: {
+          'gradient-rotate': {
+            '0%': { backgroundPosition: '0% 50%' },
+            '50%': { backgroundPosition: '100% 50%' },
+            '100%': { backgroundPosition: '0% 50%' },
+          },
+        },
+      },
+    },
+  }
+  \`\`\`
+  
+  ALTERNATIVE: CSS-only animated gradient border
+  \`\`\`jsx
+  <div className="relative p-[2px] rounded-lg bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-[length:200%_200%] animate-gradient-xy group-hover:animate-gradient-xy-fast">
+    <div className="bg-black rounded-lg p-6">
+      <h3>Your Content</h3>
+    </div>
+  </div>
+  \`\`\`
+  
+  ADD TO tailwind.config.js:
+  \`\`\`js
+  animation: {
+    'gradient-xy': 'gradient-xy 3s ease infinite',
+    'gradient-xy-fast': 'gradient-xy 1s ease infinite',
+  },
+  keyframes: {
+    'gradient-xy': {
+      '0%, 100%': {
+        'background-position': '0% 50%',
+      },
+      '50%': {
+        'background-position': '100% 50%',
+      },
+    },
+  },
+  \`\`\`
+  
+  SIMPLE VERSION (No animation, just gradient border on hover):
+  \`\`\`jsx
+  <div className="relative p-[1px] rounded-lg bg-gray-800 hover:bg-gradient-to-r hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 transition-all duration-300">
+    <div className="bg-black rounded-lg p-6">
+      <h3>Your Content</h3>
+    </div>
+  </div>
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
   SIMPLE BUTTON (NO DEPENDENCIES NEEDED)
   ═══════════════════════════════════════════════════════════════════
   
@@ -718,6 +795,8 @@ export function Hero() {
      - "sparkles" / "звёзды" → Use Sparkles component
      - "aurora" / "аврора" → Use Aurora Background
      - "gradient" / "градиент" → Use Gradient Text/Background
+     - "gradient border" / "градиент бордер" / "градиентная обводка" → Use ANIMATED GRADIENT BORDER technique (see modern_ui_styling)
+     - "animated border" / "анимированная обводка" → Use rotating gradient border
      - "glow" / "свечение" → Use Glow effects
      - "particles" / "частицы" → Use Particle effects
      - "animated cursor" / "анимированный курсор" → Use Animated Cursor
