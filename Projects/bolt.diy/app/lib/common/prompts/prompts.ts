@@ -522,10 +522,19 @@ export function Hero() {
   \`\`\`
   
   ═══════════════════════════════════════════════════════════════════
-  ANIMATED GRADIENT BORDER (ROTATING GRADIENT)
+  ANIMATED GRADIENT BORDER / BORDER BEAM EFFECT
   ═══════════════════════════════════════════════════════════════════
   
-  ⚠️ CRITICAL: "Gradient border animation" means ROTATING gradient around the border!
+  ⚠️ CRITICAL: There are TWO types of animated gradient borders:
+  
+  1. ROTATING GRADIENT - gradient rotates around entire border
+  2. BORDER BEAM - animated light beam travels along the border (like Aceternity/Magic UI)
+  
+  When user says "glowing effect" or "border beam", they mean TYPE 2!
+  
+  ═══════════════════════════════════════════════════════════════════
+  TYPE 1: ROTATING GRADIENT BORDER
+  ═══════════════════════════════════════════════════════════════════
   
   TECHNIQUE: Use pseudo-element with rotating gradient background
   
@@ -596,6 +605,104 @@ export function Hero() {
       <h3>Your Content</h3>
     </div>
   </div>
+  \`\`\`
+  
+  ═══════════════════════════════════════════════════════════════════
+  TYPE 2: BORDER BEAM EFFECT (Traveling Light Beam)
+  ═══════════════════════════════════════════════════════════════════
+  
+  ⚠️ This is the "glowing effect" from Aceternity UI / Magic UI!
+  A beam of light travels along the border perimeter.
+  
+  TECHNIQUE: Animated pseudo-element that moves along border path
+  
+  \`\`\`tsx
+  // BorderBeam Component
+  interface BorderBeamProps {
+    size?: number;
+    duration?: number;
+    delay?: number;
+    colorFrom?: string;
+    colorTo?: string;
+  }
+  
+  export function BorderBeam({
+    size = 200,
+    duration = 15,
+    delay = 0,
+    colorFrom = "#ffaa40",
+    colorTo = "#9c40ff",
+  }: BorderBeamProps) {
+    return (
+      <div
+        style={{
+          "--size": size,
+          "--duration": duration,
+          "--delay": delay,
+          "--color-from": colorFrom,
+          "--color-to": colorTo,
+        } as React.CSSProperties}
+        className="absolute inset-0 rounded-[inherit] [border:calc(var(--size)*1px)_solid_transparent] ![mask-clip:padding-box,border-box] ![mask-composite:intersect] [mask:linear-gradient(transparent,transparent),linear-gradient(white,white)] after:absolute after:aspect-square after:w-[calc(var(--size)*1px)] after:animate-border-beam after:[animation-delay:var(--delay)] after:[background:linear-gradient(to_left,var(--color-from),var(--color-to),transparent)] after:[offset-anchor:calc(var(--size)*-1px)_50%] after:[offset-path:rect(0_auto_auto_0_round_calc(var(--size)*1px))]"
+      />
+    );
+  }
+  \`\`\`
+  
+  ADD TO tailwind.config.js:
+  \`\`\`js
+  module.exports = {
+    theme: {
+      extend: {
+        animation: {
+          'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
+        },
+        keyframes: {
+          'border-beam': {
+            '100%': {
+              'offset-distance': '100%',
+            },
+          },
+        },
+      },
+    },
+  }
+  \`\`\`
+  
+  USAGE:
+  \`\`\`tsx
+  <div className="relative rounded-lg border border-gray-800 bg-black p-6">
+    <BorderBeam size={250} duration={12} delay={9} />
+    <h3>Your Content</h3>
+    <p>The beam travels around the border</p>
+  </div>
+  \`\`\`
+  
+  SIMPLIFIED VERSION (CSS-only, no component):
+  \`\`\`tsx
+  <div className="relative rounded-lg border border-gray-800 bg-black p-6 overflow-hidden">
+    {/* Border beam */}
+    <div className="absolute inset-0 rounded-[inherit]">
+      <div className="absolute h-full w-[2px] bg-gradient-to-b from-transparent via-purple-500 to-transparent animate-border-beam-travel" />
+    </div>
+    
+    <h3 className="relative z-10">Your Content</h3>
+  </div>
+  \`\`\`
+  
+  ADD TO tailwind.config.js:
+  \`\`\`js
+  animation: {
+    'border-beam-travel': 'border-beam-travel 3s linear infinite',
+  },
+  keyframes: {
+    'border-beam-travel': {
+      '0%': { transform: 'translateX(0) translateY(0)' },
+      '25%': { transform: 'translateX(100%) translateY(0)' },
+      '50%': { transform: 'translateX(100%) translateY(100%)' },
+      '75%': { transform: 'translateX(0) translateY(100%)' },
+      '100%': { transform: 'translateX(0) translateY(0)' },
+    },
+  },
   \`\`\`
   
   ═══════════════════════════════════════════════════════════════════
@@ -795,8 +902,9 @@ export function Hero() {
      - "sparkles" / "звёзды" → Use Sparkles component
      - "aurora" / "аврора" → Use Aurora Background
      - "gradient" / "градиент" → Use Gradient Text/Background
-     - "gradient border" / "градиент бордер" / "градиентная обводка" → Use ANIMATED GRADIENT BORDER technique (see modern_ui_styling)
-     - "animated border" / "анимированная обводка" → Use rotating gradient border
+     - "gradient border" / "градиент бордер" / "градиентная обводка" → Use ROTATING GRADIENT BORDER (Type 1)
+     - "animated border" / "анимированная обводка" → Use rotating gradient border (Type 1)
+     - "border beam" / "glowing effect" / "светящаяся обводка" → Use BORDER BEAM effect (Type 2 - traveling light)
      - "glow" / "свечение" → Use Glow effects
      - "particles" / "частицы" → Use Particle effects
      - "animated cursor" / "анимированный курсор" → Use Animated Cursor
