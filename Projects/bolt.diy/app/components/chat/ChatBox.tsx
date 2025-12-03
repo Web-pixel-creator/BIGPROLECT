@@ -65,6 +65,21 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const quickPrompts = [
+    'Сделай лендинг автосалона: тёмный, hero + 2 CTA, 6 услуг, отзывы, футер.',
+    'Modern SaaS (light): hero + CTA, features, pricing x3, FAQ.',
+    'Доставка еды: тёплый hero с поиском, сетка блюд, отзывы, CTA «Заказать».',
+    'Добавь аурору на hero и плавный параллакс при скролле.',
+    'Градиентная обводка на карточках, glow на hover.',
+  ];
+
+  const setPrompt = (text: string) => {
+    // Простая подстановка текста в инпут через handleInputChange
+    props.handleInputChange?.({
+      target: { value: text },
+    } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+  };
+
   return (
     <div
       className={classNames(
@@ -289,6 +304,18 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
+            <div className="flex flex-wrap gap-1 ml-2">
+              {quickPrompts.map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className="text-xs px-2 py-1 rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                  onClick={() => setPrompt(p)}
+                >
+                  {idx < 3 ? `Быстро: ${idx + 1}` : `Эффект ${idx - 2}`}
+                </button>
+              ))}
+            </div>
             {props.chatStarted && (
               <IconButton
                 title="Discuss"
