@@ -17,6 +17,38 @@ function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function choosePalette(requestLower: string, theme: string | null): string {
+  const lightPalettes = [
+    'Light: white/gray with accent #6B4DFF',
+    'Light: beige/stone with accent #FF7F50',
+    'Light: off-white with slate text and accent #2563EB',
+  ];
+  const darkPalettes = [
+    'Dark: near-black with neon accent #7C3AED',
+    'Dark: charcoal with accent #00E0FF',
+    'Dark: graphite with warm accent #F97316',
+  ];
+
+  const isLight = requestLower.includes('light') || requestLower.includes('бел') || theme === 'construction';
+  const isDark = requestLower.includes('dark') || requestLower.includes('темн');
+
+  if (isLight) return randomChoice(lightPalettes);
+  if (isDark) return randomChoice(darkPalettes);
+
+  // If no strong hint, mix both sets
+  return randomChoice([...lightPalettes, ...darkPalettes]);
+}
+
+function chooseLayout(): string {
+  return randomChoice([
+    'Grid 3x2 for services/cards',
+    'Bento asymmetric layout',
+    'Wide hero + two-column content',
+    'Masonry-like staggered cards',
+    'Split hero (media left, text right) + 3-column services',
+  ]);
+}
+
 export interface ComponentMatch {
   name: string;
   category: string;
@@ -678,17 +710,9 @@ export class ComponentMatcher {
       return '';
     }
 
-    const palette = randomChoice([
-      'Light: white/gray with accent #6B4DFF',
-      'Light: beige/stone with accent #FF7F50',
-      'Dark: near-black with neon accent #7C3AED',
-      'Dark: charcoal with accent #00E0FF',
-    ]);
-    const layout = randomChoice([
-      'Grid 3x2 for services/cards',
-      'Bento asymmetric layout',
-      'Wide hero + two-column content',
-    ]);
+    const requestLower = request.toLowerCase();
+    const palette = choosePalette(requestLower, theme);
+    const layout = chooseLayout();
 
     let context = `
 <matched_ui_components>
