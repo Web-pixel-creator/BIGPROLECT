@@ -28,3 +28,8 @@ Note: Ensure project paths/aliases (`@/lib/utils`, Tailwind tokens, framer-motio
 
 ## Automation
 - Nightly index refresh (03:00 UTC) builds `Projects/bolt.diy/app/lib/services/component-index-cache.json` from MD + registries. If no diff — no commit. Summary is added to the GitHub Action log.
+
+## Prompt panel (UX)
+- Кнопка списка рядом с иконками чата открывает панель подсказок: промпты (RU/EN), эффекты, секции, темы.
+- Выбор элемента подставляет текст в поле ввода (секции/темы добавляются к текущему запросу).
+- В панели есть статус реестров и кнопка «Обновить» (таймаут 5s).
