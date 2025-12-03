@@ -447,430 +447,137 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <SupabaseConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
-        {showPromptPanel && (
-          <div
-            ref={promptPanelRef}
-            className="absolute top-2 right-2 z-30 w-80 max-h-96 overflow-auto rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 shadow-lg p-3 space-y-3"
+
+{showPromptPanel && (
+  <div
+    ref={promptPanelRef}
+    className="absolute top-2 right-2 z-30 w-80 max-h-96 overflow-auto rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 shadow-lg p-3 space-y-3"
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-semibold text-bolt-elements-textPrimary">Быстрые промпты</p>
+        <p className="text-xs text-bolt-elements-textTertiary">Кликни, чтобы подставить в запрос</p>
+      </div>
+      <button
+        className="text-xs text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary"
+        onClick={() => setShowPromptPanel(false)}
+      >
+        Закрыть
+      </button>
+    </div>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Промпты</p>
+      <div className="flex flex-col gap-1">
+        {promptPresets.map((p, idx) => (
+          <button
+            key={`prompt-${idx}`}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => setPrompt(p)}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-bolt-elements-textPrimary">Быстрые промпты</p>
-                <p className="text-xs text-bolt-elements-textTertiary">Кликни, чтобы подставить в запрос</p>
-              </div>
-              <button
-                className="text-xs text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary"
-                onClick={() => setShowPromptPanel(false)}
-              >
-                Закрыть
-              </button>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Промпты</p>
-              <div className="flex flex-col gap-1">
-                {promptPresets.map((p, idx) => (
-                  <button
-                    key={`prompt-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => setPrompt(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Эффекты</p>
-              <div className="flex flex-col gap-1">
-                {effectsPresets.map((p, idx) => (
-                  <button
-                    key={`effect-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => setPrompt(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-xs bg-bolt-elements-background-depth-2 rounded-md border border-bolt-elements-borderColor px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className={classNames(
-                    'w-2 h-2 rounded-full',
-                    registryStatus === 'loading'
-                      ? 'bg-amber-500 animate-pulse'
-                      : registryStatus === 'ok'
-                        ? 'bg-emerald-500'
-                        : registryStatus === 'error'
-                          ? 'bg-rose-500'
-                          : 'bg-bolt-elements-borderColor',
-                  )}
-                ></span>
-                <span className="text-bolt-elements-textSecondary">
-                  {registryStatus === 'loading'
-                    ? 'Обновляем реестры...'
-                    : registryStatus === 'ok'
-                      ? registryCount !== null
-                        ? `??????? ?????? ? ${registryCount}`
-                        : 'Реестры готовы'
-                      : registryStatus === 'error'
-                        ? 'Ошибка реестров'
-                        : '???????'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
-              >
-                Обновить
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Реестры (preview)</p>
-              {registryPreview.length === 0 ? (
-                <p className="text-xs text-bolt-elements-textTertiary">Пока пусто (обновите)</p>
-              ) : (
-                <ul className="space-y-1">
-                  {registryPreview.slice(0, 5).map((item, idx) => (
-                    <li
-                      key={`reg-${idx}`}
-                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
-                    >
-                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
-                      {item.registry ? (
-                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
-                      ) : null}
-                      {item.description ? (
-                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Секции (добавить)</p>
-              <div className="flex flex-col gap-1">
-                {sectionPresets.map((p, idx) => (
-                  <button
-                    key={`section-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Темы (добавить)</p>
-              <div className="flex flex-col gap-1">
-                {themePresets.map((p, idx) => (
-                  <button
-                    key={`theme-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}                ></span>
-                <span className="text-bolt-elements-textSecondary">
-                  {registryStatus === 'loading'
-                    ? '????????? ???????...'
-                    : registryStatus === 'ok'
-                      ? registryCount !== null
-                        ? `??????? ?????? ? ${registryCount}`
-                        : '??????? ??????'
-                      : registryStatus === 'error'
-                        ? '?????? ????????'
-                        : '???????'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
-              >
-                ????????
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">??????? (preview)</p>
-              {registryPreview.length === 0 ? (
-                <p className="text-xs text-bolt-elements-textTertiary">???? ????? (????????)</p>
-              ) : (
-                <ul className="space-y-1">
-                  {registryPreview.slice(0, 5).map((item, idx) => (
-                    <li
-                      key={`reg-${idx}`}
-                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
-                    >
-                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
-                      {item.registry ? (
-                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
-                      ) : null}
-                      {item.description ? (
-                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">?????? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {sectionPresets.map((p, idx) => (
-                  <button
-                    key={`section-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">???? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {themePresets.map((p, idx) => (
-                  <button
-                    key={`theme-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}                ></span>
-                <span className="text-bolt-elements-textSecondary">
-                  {registryStatus === 'loading'
-                    ? '????????? ???????...'
-                    : registryStatus === 'ok'
-                      ? registryCount !== null
-                        ? `??????? ?????? ? ${registryCount}`
-                        : '??????? ??????'
-                      : registryStatus === 'error'
-                        ? '?????? ????????'
-                        : '???????'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
-              >
-                ????????
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">??????? (preview)</p>
-              {registryPreview.length === 0 ? (
-                <p className="text-xs text-bolt-elements-textTertiary">???? ????? (????????)</p>
-              ) : (
-                <ul className="space-y-1">
-                  {registryPreview.slice(0, 5).map((item, idx) => (
-                    <li
-                      key={`reg-${idx}`}
-                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
-                    >
-                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
-                      {item.registry ? (
-                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
-                      ) : null}
-                      {item.description ? (
-                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">?????? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {sectionPresets.map((p, idx) => (
-                  <button
-                    key={`section-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">???? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {themePresets.map((p, idx) => (
-                  <button
-                    key={`theme-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}                ></span>
-                <span className="text-bolt-elements-textSecondary">
-                  {registryStatus === 'loading'
-                    ? '????????? ???????...'
-                    : registryStatus === 'ok'
-                      ? registryCount !== null
-                        ? ??????? ?????? ? 
-                        : '??????? ??????'
-                      : registryStatus === 'error'
-                        ? '?????? ????????'
-                        : '???????'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
-              >
-                ????????
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">??????? (preview)</p>
-              {registryPreview.length === 0 ? (
-                <p className="text-xs text-bolt-elements-textTertiary">???? ????? (????????)</p>
-              ) : (
-                <ul className="space-y-1">
-                  {registryPreview.slice(0, 5).map((item, idx) => (
-                    <li
-                      key={
-eg-}
-                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
-                    >
-                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
-                      {item.registry ? (
-                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
-                      ) : null}
-                      {item.description ? (
-                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">?????? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {sectionPresets.map((p, idx) => (
-                  <button
-                    key={section-}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">???? (????????)</p>
-              <div className="flex flex-col gap-1">
-                {themePresets.map((p, idx) => (
-                  <button
-                    key={	heme-}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}                ></span>
-                <span className="text-bolt-elements-textSecondary">
-                  {registryStatus === 'loading'
-                    ? 'РћР±РЅРѕРІР»СЏРµРј СЂРµРµСЃС‚СЂС‹...'
-                    : registryStatus === 'ok'
-                      ? registryCount !== null
-                        ? `Р РµРµСЃС‚СЂС‹ РіРѕС‚РѕРІС‹ В· ${registryCount}`
-                        : 'Р РµРµСЃС‚СЂС‹ РіРѕС‚РѕРІС‹'
-                      : registryStatus === 'error'
-                        ? 'РћС€РёР±РєР° СЂРµРµСЃС‚СЂРѕРІ'
-                        : 'Р РµРµСЃС‚СЂС‹'}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
-              >
-                РћР±РЅРѕРІРёС‚СЊ
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Р РµРµСЃС‚СЂС‹ (preview)</p>
-              {registryPreview.length === 0 ? (
-                <p className="text-xs text-bolt-elements-textTertiary">РќРµС‚ РґР°РЅРЅС‹С… (РѕР±РЅРѕРІРёС‚Рµ)</p>
-              ) : (
-                <ul className="space-y-1">
-                  {registryPreview.slice(0, 5).map((item, idx) => (
-                    <li
-                      key={`reg-${idx}`}
-                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
-                    >
-                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
-                      {item.registry ? (
-                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
-                      ) : null}
-                      {item.description ? (
-                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">РЎРµРєС†РёРё (РґРѕР±Р°РІРёС‚СЊ)</p>
-              <div className="flex flex-col gap-1">
-                {sectionPresets.map((p, idx) => (
-                  <button
-                    key={`section-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">РўРµРјС‹ (РґРѕР±Р°РІРёС‚СЊ)</p>
-              <div className="flex flex-col gap-1">
-                {themePresets.map((p, idx) => (
-                  <button
-                    key={`theme-${idx}`}
-                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                    onClick={() => appendSnippet(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Эффекты</p>
+      <div className="flex flex-col gap-1">
+        {effectsPresets.map((p, idx) => (
+          <button
+            key={`effect-${idx}`}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => setPrompt(p)}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div className="flex items-center justify-between text-xs bg-bolt-elements-background-depth-2 rounded-md border border-bolt-elements-borderColor px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span
+          className={classNames(
+            'w-2 h-2 rounded-full',
+            registryStatus === 'loading'
+              ? 'bg-amber-500 animate-pulse'
+              : registryStatus === 'ok'
+                ? 'bg-emerald-500'
+                : registryStatus === 'error'
+                  ? 'bg-rose-500'
+                  : 'bg-bolt-elements-borderColor',
+          )}
+        ></span>
+        <span className="text-bolt-elements-textSecondary">
+          {registryStatus === 'loading'
+            ? 'Обновляем реестры...'
+            : registryStatus === 'ok'
+              ? registryCount !== null
+                ? `Реестры готовы · ${registryCount}`
+                : 'Реестры готовы'
+              : registryStatus === 'error'
+                ? 'Ошибка реестров'
+                : 'Реестры'}
+        </span>
+      </div>
+      <button
+        type="button"
+        className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+        onClick={refreshRegistries}
+      >
+        Обновить
+      </button>
+    </div>
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Реестры (preview)</p>
+      {registryPreview.length === 0 ? (
+        <p className="text-xs text-bolt-elements-textTertiary">Пока пусто (обновите)</p>
+      ) : (
+        <ul className="space-y-1">
+          {registryPreview.slice(0, 5).map((item, idx) => (
+            <li
+              key={`reg-${idx}`}
+              className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
+            >
+              <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
+              {item.registry ? (
+                <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
+              ) : null}
+              {item.description ? (
+                <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Секции (добавить)</p>
+      <div className="flex flex-col gap-1">
+        {sectionPresets.map((p, idx) => (
+          <button
+            key={`section-${idx}`}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => appendSnippet(p)}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Темы (добавить)</p>
+      <div className="flex flex-col gap-1">
+        {themePresets.map((p, idx) => (
+          <button
+            key={`theme-${idx}`}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => appendSnippet(p)}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
         )}
       </div>
     </div>
