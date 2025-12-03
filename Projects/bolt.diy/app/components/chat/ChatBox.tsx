@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
@@ -69,6 +69,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
   const [registryStatus, setRegistryStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [registryCount, setRegistryCount] = useState<number | null>(null);
+  const promptPanelRef = useRef<HTMLDivElement | null>(null);
+  const promptToggleRef = useRef<HTMLButtonElement | null>(null);
   const promptPresets = PROMPT_PRESETS;
   const effectsPresets = EFFECT_PRESETS;
   const sectionPresets = SECTION_PRESETS;
@@ -87,6 +89,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     props.handleInputChange?.({
       target: { value: next },
     } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+    setShowPromptPanel(false);
   };
 
   const refreshRegistries = async () => {
@@ -107,6 +110,23 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
       setTimeout(() => setRegistryStatus('idle'), 3000);
     }
   };
+
+  useEffect(() => {
+    if (!showPromptPanel) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        promptPanelRef.current &&
+        !promptPanelRef.current.contains(target) &&
+        promptToggleRef.current &&
+        !promptToggleRef.current.contains(target)
+      ) {
+        setShowPromptPanel(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPromptPanel]);
 
   return (
     <div
@@ -337,6 +357,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 title="Промпты и эффекты"
                 className="transition-all"
                 onClick={() => setShowPromptPanel((v) => !v)}
+                ref={promptToggleRef}
               >
                 <div className="i-ph:list text-xl"></div>
               </IconButton>
@@ -414,7 +435,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
         {showPromptPanel && (
-          <div className="absolute top-2 right-2 z-30 w-80 max-h-96 overflow-auto rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 shadow-lg p-3 space-y-3">
+          <div
+            ref={promptPanelRef}
+            className="absolute top-2 right-2 z-30 w-80 max-h-96 overflow-auto rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 shadow-lg p-3 space-y-3"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-bolt-elements-textPrimary">Быстрые промпты</p>
