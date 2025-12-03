@@ -332,55 +332,37 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
-            <IconButton
-              title="Промпты и эффекты"
-              className="transition-all"
-              onClick={() => setShowPromptPanel((v) => !v)}
-            >
-              <div className="i-ph:list text-xl"></div>
-            </IconButton>
-            <div className="flex items-center gap-1 ml-1">
-              <button
-                type="button"
-                className="text-xs px-2 py-1 rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
+            <div className="relative">
+              <IconButton
+                title="Промпты и эффекты"
+                className="transition-all"
+                onClick={() => setShowPromptPanel((v) => !v)}
               >
-                Обновить реестры
-              </button>
+                <div className="i-ph:list text-xl"></div>
+              </IconButton>
               <span
                 className={classNames(
-                  'inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border',
+                  'absolute -top-1 -right-1 w-2 h-2 rounded-full',
                   registryStatus === 'loading'
-                    ? 'border-amber-500 text-amber-500'
+                    ? 'bg-amber-500 animate-pulse'
                     : registryStatus === 'ok'
-                      ? 'border-emerald-500 text-emerald-500'
+                      ? 'bg-emerald-500'
                       : registryStatus === 'error'
-                        ? 'border-rose-500 text-rose-500'
-                        : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                        ? 'bg-rose-500'
+                        : 'bg-bolt-elements-borderColor',
                 )}
-              >
-                <span
-                  className={classNames(
-                    'w-2 h-2 rounded-full',
-                    registryStatus === 'loading'
-                      ? 'bg-amber-500 animate-pulse'
-                      : registryStatus === 'ok'
-                        ? 'bg-emerald-500'
-                        : registryStatus === 'error'
-                          ? 'bg-rose-500'
-                          : 'bg-bolt-elements-borderColor',
-                  )}
-                ></span>
-                {registryStatus === 'loading'
-                  ? 'Обновление'
-                  : registryStatus === 'ok'
-                    ? registryCount !== null
-                      ? `Готово · ${registryCount}`
-                      : 'Готово'
-                    : registryStatus === 'error'
-                      ? 'Ошибка'
-                      : 'Готово'}
-              </span>
+                title={
+                  registryStatus === 'loading'
+                    ? 'Обновляем реестры'
+                    : registryStatus === 'ok'
+                      ? registryCount !== null
+                        ? `Реестры: ${registryCount}`
+                        : 'Реестры обновлены'
+                      : registryStatus === 'error'
+                        ? 'Ошибка обновления реестров'
+                        : 'Реестры'
+                }
+              ></span>
             </div>
             {props.chatStarted && (
               <IconButton
@@ -472,6 +454,40 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="flex items-center justify-between text-xs bg-bolt-elements-background-depth-2 rounded-md border border-bolt-elements-borderColor px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={classNames(
+                    'w-2 h-2 rounded-full',
+                    registryStatus === 'loading'
+                      ? 'bg-amber-500 animate-pulse'
+                      : registryStatus === 'ok'
+                        ? 'bg-emerald-500'
+                        : registryStatus === 'error'
+                          ? 'bg-rose-500'
+                          : 'bg-bolt-elements-borderColor',
+                  )}
+                ></span>
+                <span className="text-bolt-elements-textSecondary">
+                  {registryStatus === 'loading'
+                    ? 'Обновляем реестры...'
+                    : registryStatus === 'ok'
+                      ? registryCount !== null
+                        ? `Реестры готовы · ${registryCount}`
+                        : 'Реестры готовы'
+                      : registryStatus === 'error'
+                        ? 'Ошибка реестров'
+                        : 'Реестры'}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                onClick={refreshRegistries}
+              >
+                Обновить
+              </button>
             </div>
             <div className="space-y-2">
               <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Секции (добавить)</p>
