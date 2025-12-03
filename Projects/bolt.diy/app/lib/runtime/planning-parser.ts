@@ -2,7 +2,7 @@ import type { PlanningData } from '~/components/chat/PlanningCard';
 
 /**
  * Parses planning blocks from AI responses
- * Supports both XML-style tags and markdown-style planning sections
+ * Supports XML-style tags, markdown-style, and free-form text planning
  */
 export function parsePlanningBlock(content: string): { planning: PlanningData | null; cleanContent: string } {
   let planning: PlanningData | null = null;
@@ -16,14 +16,16 @@ export function parsePlanningBlock(content: string): { planning: PlanningData | 
     return { planning, cleanContent };
   }
 
-  // Try markdown-style planning section (before artifacts/code fences)
-  const mdMatch = content.match(/^([\s\S]*?)(?=\n\n(?:<boltArtifact|```|##\s|Let me|I'll start|Now I'll))/);
-  if (mdMatch && mdMatch[1]) {
-    const potentialPlan = mdMatch[1].trim();
+  // Try to find planning text before artifacts
+  const beforeArtifact = content.split(/<boltArtifact/)[0];
+  if (beforeArtifact && beforeArtifact.trim().length > 50) {
+    const potentialPlan = beforeArtifact.trim();
     if (looksLikePlanningSection(potentialPlan)) {
-      planning = parseMarkdownPlanning(potentialPlan);
-      cleanContent = content.slice(mdMatch[0].length).trim();
-      return { planning, cleanContent };
+      planning = parseFreeFormPlanning(potentialPlan);
+      if (planning && hasEnoughPlanningData(planning)) {
+        cleanContent = content.slice(beforeArtifact.length).trim();
+        return { planning, cleanContent };
+      }
     }
   }
 
@@ -76,130 +78,178 @@ function parseXMLPlanning(xml: string): PlanningData {
   };
 }
 
-function parseMarkdownPlanning(text: string): PlanningData {
-  const lines = text.split('\n');
+/**
+ * Parse free-form planning text (like "I'll create a stunning design with parallax effects...")
+ */
+function parseFreeFormPlanning(text: string): PlanningData {
+  const sentences = text.split(/[.!]\s+/).filter(s => s.trim().length > 10);
+  
   let title = 'Project Plan';
-  const inspiration: string[] = [];
   const features: string[] = [];
-  const techStack: string[] = [];
-  const steps: string[] = [];
   const designConcept: PlanningData['designConcept'] = {};
-  let currentSection = '';
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
+  // Extract title from first sentence or "создам/create" pattern
+  const titleMatch = text.match(/(?:создам|сделаю|create|build|make)\s+(?:для вас\s+)?(?:потрясающ\w*|красив\w*|stunning|beautiful|amazing)?\s*,?\s*(?:кинематографичн\w*)?\s*([\wа-яё\s-]+?)(?:\.|!|,|\s+для|\s+with|\s+с\s)/i);
+  if (titleMatch) {
+    title = titleMatch[1].trim();
+    if (title.length < 5) title = 'Project Plan';
+  }
 
-    // Detect section headers
-    if (/^#+\s/.test(trimmed) || /^[A-ZА-ЯЁ][\w\s-]+:/.test(trimmed)) {
-      const headerText = trimmed.replace(/^#+\s*/, '').replace(/:$/, '').toLowerCase();
-
-      if (headerText.includes('inspir') || headerText.includes('вдохнов')) {
-        currentSection = 'inspiration';
-      } else if (
-        headerText.includes('design') ||
-        headerText.includes('concept') ||
-        headerText.includes('дизайн') ||
-        headerText.includes('концеп')
-      ) {
-        currentSection = 'design';
-      } else if (headerText.includes('feature') || headerText.includes('функц') || headerText.includes('задач')) {
-        currentSection = 'features';
-      } else if (headerText.includes('tech') || headerText.includes('stack') || headerText.includes('техн') || headerText.includes('стек')) {
-        currentSection = 'techStack';
-      } else if (headerText.includes('step') || headerText.includes('шаг') || headerText.includes('план') || headerText.includes('этап')) {
-        currentSection = 'steps';
-      } else if (!title || title === 'Project Plan') {
-        title = trimmed.replace(/^#+\s*/, '').replace(/:$/, '');
-        currentSection = '';
-      }
-      continue;
+  // Extract design concepts from text
+  // Look for effects
+  const effectPatterns = [
+    /параллакс[а-яё-]*/gi,
+    /parallax/gi,
+    /glassmorphism/gi,
+    /blur|размыт/gi,
+    /gradient|градиент/gi,
+    /glow|свечен/gi,
+    /shadow|тен[ьи]/gi,
+    /hover\s*effect/gi,
+    /transition/gi,
+    /многослойн\w*/gi,
+    /иммерсивн\w*/gi,
+    /кинематографичн\w*/gi,
+  ];
+  
+  const foundEffects: string[] = [];
+  for (const pattern of effectPatterns) {
+    const matches = text.match(pattern);
+    if (matches) {
+      foundEffects.push(...matches.map(m => m.toLowerCase()));
     }
+  }
+  if (foundEffects.length > 0) {
+    designConcept.effects = [...new Set(foundEffects)].slice(0, 5).join(', ');
+  }
 
-    // Parse list items
-    if (/^[-*•]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed)) {
-      const item = trimmed.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').trim();
-      switch (currentSection) {
-        case 'inspiration':
-          inspiration.push(item);
-          break;
-        case 'features':
-          features.push(item);
-          break;
-        case 'techStack':
-          techStack.push(item);
-          break;
-        case 'steps':
-          steps.push(item);
-          break;
-      }
-      continue;
+  // Look for animations
+  const animationPatterns = [
+    /плавн\w*\s*анимац\w*/gi,
+    /smooth\s*animation/gi,
+    /fade[\s-]?in/gi,
+    /slide[\s-]?in/gi,
+    /появ\w+\s+с\s+анимац\w*/gi,
+    /элегантн\w*\s*анимац\w*/gi,
+    /scroll\s*animation/gi,
+  ];
+  
+  const foundAnimations: string[] = [];
+  for (const pattern of animationPatterns) {
+    const matches = text.match(pattern);
+    if (matches) {
+      foundAnimations.push(...matches.map(m => m.toLowerCase().trim()));
     }
+  }
+  if (foundAnimations.length > 0) {
+    designConcept.animations = [...new Set(foundAnimations)].slice(0, 3).join(', ');
+  }
 
-    // Parse design concept inline
-    const lower = trimmed.toLowerCase();
-    const isDesignLine =
-      currentSection === 'design' ||
-      lower.includes('design') ||
-      lower.includes('concept') ||
-      lower.includes('дизайн') ||
-      lower.includes('концеп');
+  // Look for colors/theme
+  const colorPatterns = [
+    /темн\w*\s*(?:тем\w*|дизайн|фон)/gi,
+    /dark\s*(?:theme|design|mode)/gi,
+    /светл\w*\s*(?:тем\w*|дизайн)/gi,
+    /light\s*(?:theme|design)/gi,
+    /акцент\w*/gi,
+    /accent/gi,
+    /премиум/gi,
+    /premium/gi,
+  ];
+  
+  const foundColors: string[] = [];
+  for (const pattern of colorPatterns) {
+    const matches = text.match(pattern);
+    if (matches) {
+      foundColors.push(...matches.map(m => m.toLowerCase().trim()));
+    }
+  }
+  if (foundColors.length > 0) {
+    designConcept.colors = [...new Set(foundColors)].slice(0, 3).join(', ');
+  }
 
-    if (isDesignLine) {
-      const colorMatch = trimmed.match(/(?:colors?|palette|цвет[аы]?|палитр[аы]):?\s*(.+)/i);
-      if (colorMatch) designConcept.colors = colorMatch[1].trim();
+  // Extract features from sentences
+  const featureIndicators = [
+    /hero[\s-]?секц\w*/i,
+    /hero\s*section/i,
+    /навигац\w*/i,
+    /navigation/i,
+    /галере\w*/i,
+    /gallery/i,
+    /портфолио/i,
+    /portfolio/i,
+    /контакт\w*/i,
+    /contact/i,
+    /footer/i,
+    /header/i,
+    /карточ\w*/i,
+    /cards?/i,
+    /слайдер/i,
+    /slider/i,
+    /carousel/i,
+  ];
 
-      const effectsMatch = trimmed.match(/(?:effects?|эффект[аы]?|градиент|glow|shadow|блик|тени?):?\s*(.+)/i);
-      if (effectsMatch) designConcept.effects = effectsMatch[1].trim();
-
-      const typographyMatch = trimmed.match(/(?:typography|fonts?|шрифт[аы]?):?\s*(.+)/i);
-      if (typographyMatch) designConcept.typography = typographyMatch[1].trim();
-
-      const animationsMatch = trimmed.match(/(?:animations?|motion|анимац):?\s*(.+)/i);
-      if (animationsMatch) designConcept.animations = animationsMatch[1].trim();
+  for (const sentence of sentences) {
+    for (const pattern of featureIndicators) {
+      if (pattern.test(sentence)) {
+        const feature = sentence.trim().replace(/^[-•*]\s*/, '');
+        if (feature.length > 10 && feature.length < 150 && !features.includes(feature)) {
+          features.push(feature);
+        }
+        break;
+      }
     }
   }
 
-  // Extract tech stack from text if not found in sections
-  if (techStack.length === 0) {
-    const techMatches = text.match(/(?:using|with|built with|на|используя|с)\s+([^.!?\n]+)/gi);
-    if (techMatches) {
-      for (const match of techMatches) {
-        const techs = match
-          .replace(/(?:using|with|built with|на|используя|с)\s+/i, '')
-          .split(/[,/&]| и | and /i)
-          .map((t) => t.trim())
-          .filter((t) => t.length > 1 && t.length < 50);
-        techStack.push(...techs);
+  // If no specific features found, use key sentences as features
+  if (features.length === 0) {
+    for (const sentence of sentences.slice(0, 4)) {
+      const trimmed = sentence.trim();
+      if (trimmed.length > 20 && trimmed.length < 200) {
+        features.push(trimmed);
       }
     }
   }
 
   return {
-    title,
-    inspiration: inspiration.length > 0 ? inspiration : undefined,
+    title: title.length > 3 ? title : 'Project Plan',
     designConcept: Object.keys(designConcept).length > 0 ? designConcept : undefined,
-    features: features.length > 0 ? features : undefined,
-    techStack: techStack.length > 0 ? techStack : undefined,
-    steps: steps.length > 0 ? steps : undefined,
+    features: features.length > 0 ? features.slice(0, 5) : undefined,
     status: 'planning',
   };
 }
 
+function hasEnoughPlanningData(planning: PlanningData): boolean {
+  let score = 0;
+  if (planning.title && planning.title !== 'Project Plan') score++;
+  if (planning.designConcept?.effects) score++;
+  if (planning.designConcept?.animations) score++;
+  if (planning.designConcept?.colors) score++;
+  if (planning.features && planning.features.length > 0) score++;
+  return score >= 2;
+}
+
 function looksLikePlanningSection(text: string): boolean {
   const planningIndicators = [
-    /i'll create|i will create|let me create|let's plan|we should plan/i,
-    /inspiration|вдохнов/i,
-    /design concept|дизайн|концеп/i,
-    /feature|функц|требован/i,
-    /tech stack|technology|техн|стек/i,
-    /step|шаг|этап|plan/i,
-    /color|цвет|palette/i,
-    /animation|анимац/i,
+    // English
+    /i'll create|i will create|let me create|creating|going to create/i,
+    /design|concept|style/i,
+    /animation|effect|transition/i,
+    /feature|section|component/i,
+    /beautiful|stunning|amazing|elegant|modern/i,
+    // Russian
+    /создам|сделаю|буду создавать/i,
+    /дизайн|концеп|стиль/i,
+    /анимац|эффект|переход/i,
+    /секц|компонент|блок/i,
+    /красив|потрясающ|элегантн|современн/i,
+    /иммерсивн|кинематографичн|премиум/i,
+    /параллакс|parallax/i,
+    /hero/i,
   ];
 
   const matchCount = planningIndicators.filter((pattern) => pattern.test(text)).length;
-  return matchCount >= 2;
+  return matchCount >= 3;
 }
 
 /**
