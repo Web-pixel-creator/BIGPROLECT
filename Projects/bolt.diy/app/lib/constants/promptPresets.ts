@@ -18,3 +18,19 @@ export const EFFECT_PRESETS = [
   'Gradient border on cards, glow on hover.',
   'Aurora background + smooth parallax scroll.',
 ] as const;
+
+export const SECTION_PRESETS = [
+  'Секции: hero + преимущества + CTA + футер.',
+  'Секции: hero + услуги (6 карточек) + отзывы.',
+  'Секции: hero + pricing (3 тарифа) + FAQ.',
+  'Секции: hero + галерея + CTA.',
+  'Секции: hero + проекты (3) + блок О нас.',
+] as const;
+
+export const THEME_PRESETS = [
+  'Тема: авто / автосалон',
+  'Тема: tech / SaaS',
+  'Тема: food / доставка еды',
+  'Тема: строительство',
+  'Тема: портфолио фотографа',
+] as const;

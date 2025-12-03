@@ -20,7 +20,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { CustomModelSelector } from './CustomModelSelector';
-import { PROMPT_PRESETS, EFFECT_PRESETS } from '~/lib/constants/promptPresets';
+import { PROMPT_PRESETS, EFFECT_PRESETS, SECTION_PRESETS, THEME_PRESETS } from '~/lib/constants/promptPresets';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -69,12 +69,22 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
   const promptPresets = PROMPT_PRESETS;
   const effectsPresets = EFFECT_PRESETS;
+  const sectionPresets = SECTION_PRESETS;
+  const themePresets = THEME_PRESETS;
 
   const setPrompt = (text: string) => {
     props.handleInputChange?.({
       target: { value: text },
     } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
     setShowPromptPanel(false);
+  };
+
+  const appendSnippet = (text: string) => {
+    const current = props.input || '';
+    const next = current.trim().length ? `${current}\n${text}` : text;
+    props.handleInputChange?.({
+      target: { value: next },
+    } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
   };
 
   return (
@@ -393,6 +403,34 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                     key={`effect-${idx}`}
                     className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
                     onClick={() => setPrompt(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Секции (добавить)</p>
+              <div className="flex flex-col gap-1">
+                {sectionPresets.map((p, idx) => (
+                  <button
+                    key={`section-${idx}`}
+                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                    onClick={() => appendSnippet(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Темы (добавить)</p>
+              <div className="flex flex-col gap-1">
+                {themePresets.map((p, idx) => (
+                  <button
+                    key={`theme-${idx}`}
+                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                    onClick={() => appendSnippet(p)}
                   >
                     {p}
                   </button>
