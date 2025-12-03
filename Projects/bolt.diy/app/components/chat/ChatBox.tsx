@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { classNames } from '~/utils/classNames';
 import { PROVIDER_LIST } from '~/utils/constants';
@@ -65,22 +65,41 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
-  const quickPrompts = [
+  const [showPromptPanel, setShowPromptPanel] = useState(false);
+
+  const promptPresets = [
     'Сделай лендинг автосалона: тёмный, hero + 2 CTA, 6 услуг, отзывы, футер.',
-    'Modern SaaS (light): hero + CTA, features, pricing x3, FAQ.',
+    'IT-стартап (светлый): hero + CTA, преимущества, 3 тарифа, FAQ.',
     'Доставка еды: тёплый hero с поиском, сетка блюд, отзывы, CTA «Заказать».',
+    'Строительная компания: hero с фото, 6 услуг, 3 проекта, блок «О нас», CTA консультация.',
+    'Портфолио фотографа: hero + галерея, отзывы, прайс, CTA «Связаться».',
+    'Dark auto dealership landing: hero + 2 CTAs, services grid (6), testimonials, footer.',
+    'Modern SaaS (light): hero with CTA, features, pricing (3 tiers), FAQ.',
+  ];
+
+  const effectsPresets = [
     'Добавь аурору на hero и плавный параллакс при скролле.',
-    'Градиентная обводка на карточках, glow на hover.',
+    'Градиентная обводка на карточках услуг, лёгкий glow на hover.',
+    'Бегущая строка брендов (marquee) + sparkles в фоне.',
+    'Plasma/mesh фон в CTA и shiny кнопки.',
+    'Blob cursor + плавные появления (stagger fade-in) при скролле.',
+    'Gradient border on cards, glow on hover.',
+    'Aurora background + smooth parallax scroll.',
   ];
 
   const setPrompt = (text: string) => {
-    // Простая подстановка текста в инпут через handleInputChange
+const setPrompt = (text: string) => {
+const setPrompt = (text: string) => {
+const setPrompt = (text: string) => {
+const setPrompt = (text: string) => {
     props.handleInputChange?.({
       target: { value: text },
     } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+    setShowPromptPanel(false);
   };
 
-  return (
+
+    return (
     <div
       className={classNames(
         'relative bg-bolt-elements-background-depth-2 backdrop-blur p-3 rounded-lg border border-bolt-elements-borderColor relative w-full max-w-chat mx-auto z-prompt',
@@ -304,19 +323,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
-            <div className="flex flex-wrap gap-1 ml-2">
-              {quickPrompts.map((p, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className="text-xs px-2 py-1 rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                  onClick={() => setPrompt(p)}
-                >
-                  {idx < 3 ? `Быстро: ${idx + 1}` : `Эффект ${idx - 2}`}
-                </button>
-              ))}
-            </div>
-            {props.chatStarted && (
+            <IconButton
+              title="Промпты и эффекты"
+              className="transition-all"
+              onClick={() => setShowPromptPanel((v) => !v)}
+            >
+              <div className="i-ph:list text-xl"></div>
+            </IconButton>
+                        {props.chatStarted && (
               <IconButton
                 title="Discuss"
                 className={classNames(
@@ -365,6 +379,50 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <SupabaseConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
+        {showPromptPanel && (
+          <div className="absolute top-2 right-2 z-30 w-80 max-h-96 overflow-auto rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-1 shadow-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-bolt-elements-textPrimary">Быстрые промпты</p>
+                <p className="text-xs text-bolt-elements-textTertiary">Кликни, чтобы подставить в запрос</p>
+              </div>
+              <button
+                className="text-xs text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary"
+                onClick={() => setShowPromptPanel(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Промпты</p>
+              <div className="flex flex-col gap-1">
+                {promptPresets.map((p, idx) => (
+                  <button
+                    key={`prompt-${idx}`}
+                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                    onClick={() => setPrompt(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Эффекты</p>
+              <div className="flex flex-col gap-1">
+                {effectsPresets.map((p, idx) => (
+                  <button
+                    key={`effect-${idx}`}
+                    className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                    onClick={() => setPrompt(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
