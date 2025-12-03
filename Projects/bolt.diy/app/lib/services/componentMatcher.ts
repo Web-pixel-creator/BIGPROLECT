@@ -379,6 +379,37 @@ const COMPONENT_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
+// Extra aliases (simple EN/RU) for casual prompts
+const EXTRA_KEYWORDS: Record<string, string[]> = {
+  cursor: ['cursor', 'курсор', 'blob cursor', 'ghost cursor', 'splash cursor'],
+  glitch: ['glitch', 'глитч', 'помехи', 'искажение', 'шум'],
+  aurora: ['aurora', 'аврора', 'северное сияние'],
+  galaxy: ['galaxy', 'космос', 'галактика', 'звёзды'],
+  plasma: ['plasma', 'плазма', 'жидкость', 'морфинг'],
+  hyperspeed: ['hyperspeed', 'гиперскорость', 'warp', 'скоростные линии'],
+  lightning: ['lightning', 'молния', 'электричество', 'гром'],
+  magnet: ['magnet', 'магнит', 'притяжение'],
+  pixel: ['pixel', 'пиксель', 'ретро', '8bit', '8-бит'],
+  ribbon: ['ribbon', 'лента', 'шелк', 'полоса'],
+  metaball: ['metaball', 'метабол', 'blob', 'лава лампа'],
+  scramble: ['scramble', 'перемешивание', 'расшифровка'],
+  counter: ['counter', 'счётчик', 'таймер'],
+  dock: ['dock', 'док', 'панель приложений'],
+  masonry: ['masonry', 'пинтерест', 'водопад', 'водопадная сетка'],
+  stack: ['stack', 'стопка', 'стек', 'колода'],
+  tilt: ['tilt', 'наклон', 'перспектива'],
+  fluid: ['fluid', 'жидкий', 'поток'],
+  lanyard: ['lanyard', 'бейдж', 'карточка'],
+  stepper: ['stepper', 'шаги', 'мастер'],
+};
+
+for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
+  if (!COMPONENT_KEYWORDS[key]) {
+    COMPONENT_KEYWORDS[key] = [];
+  }
+  COMPONENT_KEYWORDS[key] = Array.from(new Set([...(COMPONENT_KEYWORDS[key] || []), ...aliases]));
+}
+
 // Industry/theme keywords
 const THEME_KEYWORDS: Record<string, string[]> = {
   auto: ['авто', 'auto', 'car', 'машина', 'автомобиль', 'automotive', 'vehicle', 'транспорт'],
