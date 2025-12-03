@@ -6,6 +6,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const registry = url.searchParams.get('registry');
   const component = url.searchParams.get('component');
+  const force = url.searchParams.get('refresh') === '1';
 
   try {
     if (component && registry) {
@@ -14,13 +15,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json(comp);
     } else if (registry) {
       // Fetch all components from specific registry
-      const components = await registryService.fetchRegistryIndex(registry);
-      return json({ components });
+      const components = await registryService.fetchRegistryIndex(registry, force);
+      return json({ components, count: components.length });
     } else {
       // Fetch all components from all registries
-      const components = await registryService.getAllComponents();
+      const components = await registryService.getAllComponents(force);
       const registries = registryService.getRegistries();
-      return json({ components, registries });
+      return json({ components, registries, count: components.length });
     }
   } catch (error) {
     console.error('Registry API error:', error);

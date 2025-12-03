@@ -68,6 +68,7 @@ interface ChatBoxProps {
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
   const [registryStatus, setRegistryStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [registryCount, setRegistryCount] = useState<number | null>(null);
   const promptPresets = PROMPT_PRESETS;
   const effectsPresets = EFFECT_PRESETS;
   const sectionPresets = SECTION_PRESETS;
@@ -91,8 +92,12 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const refreshRegistries = async () => {
     try {
       setRegistryStatus('loading');
-      const res = await fetch('/api.registry');
+      const res = await fetch('/api.registry?refresh=1');
       if (!res.ok) throw new Error('Failed to refresh registries');
+      const data = await res.json();
+      if (data?.count !== undefined) {
+        setRegistryCount(data.count);
+      }
       setRegistryStatus('ok');
       toast.success('Реестры обновлены');
     } catch (err) {
@@ -369,7 +374,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 {registryStatus === 'loading'
                   ? 'Обновление'
                   : registryStatus === 'ok'
-                    ? 'Готово'
+                    ? registryCount !== null
+                      ? `Готово · ${registryCount}`
+                      : 'Готово'
                     : registryStatus === 'error'
                       ? 'Ошибка'
                       : 'Готово'}

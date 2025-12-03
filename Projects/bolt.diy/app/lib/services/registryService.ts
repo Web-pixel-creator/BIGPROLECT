@@ -89,7 +89,7 @@ export class RegistryService {
     }
   }
 
-  async fetchRegistryIndex(registryName: string): Promise<RegistryComponent[]> {
+  async fetchRegistryIndex(registryName: string, force = false): Promise<RegistryComponent[]> {
     this.loadRegistriesFromComponentsJson();
     const baseUrl = this._config.registries[registryName];
     if (!baseUrl) {
@@ -99,7 +99,7 @@ export class RegistryService {
 
     // Check cache
     const cached = this._cache.get(registryName);
-    if (cached && Date.now() - cached.lastUpdated < CACHE_TTL) {
+    if (!force && cached && Date.now() - cached.lastUpdated < CACHE_TTL) {
       return cached.components;
     }
 
@@ -219,12 +219,12 @@ export class RegistryService {
     }
   }
 
-  async getAllComponents(): Promise<RegistryComponent[]> {
+  async getAllComponents(force = false): Promise<RegistryComponent[]> {
     this.loadRegistriesFromComponentsJson();
     const allComponents: RegistryComponent[] = [];
     
     for (const registryName of Object.keys(this._config.registries)) {
-      const components = await this.fetchRegistryIndex(registryName);
+      const components = await this.fetchRegistryIndex(registryName, force);
       allComponents.push(...components);
     }
 
