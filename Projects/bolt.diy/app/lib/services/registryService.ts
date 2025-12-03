@@ -28,6 +28,7 @@ export interface ComponentsCache {
 
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
 const FETCH_TIMEOUT = 5000; // 5 seconds
+const MAX_COMPONENTS_PER_REGISTRY = 50; // preview cap to avoid huge payloads
 
 export class RegistryService {
   private static _instance: RegistryService;
@@ -128,13 +129,16 @@ export class RegistryService {
         components = this._parseRegistryData(registryName, data);
       }
       
+      // Cap to avoid huge payloads
+      const limited = (components || []).slice(0, MAX_COMPONENTS_PER_REGISTRY);
+
       // Update cache even if empty to avoid spamming on failures
       this._cache.set(registryName, {
-        components: components || [],
+        components: limited,
         lastUpdated: Date.now(),
       });
 
-      return components || [];
+      return limited;
     } catch (error) {
       logger.error(`Error fetching registry "${registryName}":`, error);
       // cache empty result to prevent repeated failures in short time

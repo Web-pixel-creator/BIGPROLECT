@@ -7,6 +7,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const registry = url.searchParams.get('registry');
   const component = url.searchParams.get('component');
   const force = url.searchParams.get('refresh') === '1';
+  const previewOnly = url.searchParams.get('preview') === '1';
 
   try {
     if (component && registry) {
@@ -16,12 +17,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
     } else if (registry) {
       // Fetch all components from specific registry
       const components = await registryService.fetchRegistryIndex(registry, force);
-      return json({ components, count: components.length });
+      return json({
+        components: previewOnly ? components.slice(0, 10) : components,
+        count: components.length,
+        registry,
+      });
     } else {
       // Fetch all components from all registries
       const components = await registryService.getAllComponents(force);
       const registries = registryService.getRegistries();
-      return json({ components, registries, count: components.length });
+      const payload = previewOnly ? components.slice(0, 30) : components;
+      return json({ components: payload, registries, count: components.length });
     }
   } catch (error) {
     console.error('Registry API error:', error);
