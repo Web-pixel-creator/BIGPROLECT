@@ -6,6 +6,23 @@ import { buildIndex, type ComponentMeta } from './component-index';
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
 
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h << 5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return h >>> 0;
+}
+
+function makeRng(seed: number) {
+  let s = seed || 1;
+  return () => {
+    s = (s * 1664525 + 1013904223) % 4294967296;
+    return s / 4294967296;
+  };
+}
+
 function shuffleArray<T>(arr: T[]): T[] {
   return arr
     .map((item) => ({ item, sort: Math.random() }))
@@ -17,7 +34,11 @@ function randomChoice<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function choosePalette(requestLower: string, theme: string | null): string {
+function randomChoiceSeeded<T>(arr: T[], rng: () => number): T {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+function choosePalette(requestLower: string, theme: string | null): string[] {
   const lightPalettes = [
     'Light: white/gray with accent #6B4DFF',
     'Light: beige/stone with accent #FF7F50',
@@ -32,21 +53,21 @@ function choosePalette(requestLower: string, theme: string | null): string {
   const isLight = requestLower.includes('light') || requestLower.includes('бел') || theme === 'construction';
   const isDark = requestLower.includes('dark') || requestLower.includes('темн');
 
-  if (isLight) return randomChoice(lightPalettes);
-  if (isDark) return randomChoice(darkPalettes);
+  if (isLight) return lightPalettes;
+  if (isDark) return darkPalettes;
 
   // If no strong hint, mix both sets
-  return randomChoice([...lightPalettes, ...darkPalettes]);
+  return [...lightPalettes, ...darkPalettes];
 }
 
-function chooseLayout(): string {
-  return randomChoice([
+function chooseLayout(): string[] {
+  return [
     'Grid 3x2 for services/cards',
     'Bento asymmetric layout',
     'Wide hero + two-column content',
     'Masonry-like staggered cards',
     'Split hero (media left, text right) + 3-column services',
-  ]);
+  ];
 }
 
 export interface ComponentMatch {
@@ -704,6 +725,8 @@ export class ComponentMatcher {
       return '';
     }
 
+    const seed = hashString(request.toLowerCase());
+    const rng = makeRng(seed);
     const matchedComponents = shuffleArray(this.findMatchingComponents(componentTypes, maxComponents));
 
     if (matchedComponents.length === 0) {
@@ -711,8 +734,8 @@ export class ComponentMatcher {
     }
 
     const requestLower = request.toLowerCase();
-    const palette = choosePalette(requestLower, theme);
-    const layout = chooseLayout();
+    const palette = randomChoiceSeeded(choosePalette(requestLower, theme), rng);
+    const layout = randomChoiceSeeded(chooseLayout(), rng);
 
     let context = `
 <matched_ui_components>
@@ -768,3 +791,4 @@ ${code}
 }
 
 export const componentMatcher = ComponentMatcher.getInstance();
+
