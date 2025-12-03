@@ -20,6 +20,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { CustomModelSelector } from './CustomModelSelector';
+import { PROMPT_PRESETS, EFFECT_PRESETS } from '~/lib/constants/promptPresets';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -66,26 +67,8 @@ interface ChatBoxProps {
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
-
-  const promptPresets = [
-    'Сделай лендинг автосалона: тёмный, hero + 2 CTA, 6 услуг, отзывы, футер.',
-    'IT-стартап (светлый): hero + CTA, преимущества, 3 тарифа, FAQ.',
-    'Доставка еды: тёплый hero с поиском, сетка блюд, отзывы, CTA «Заказать».',
-    'Строительная компания: hero с фото, 6 услуг, 3 проекта, блок «О нас», CTA консультация.',
-    'Портфолио фотографа: hero + галерея, отзывы, прайс, CTA «Связаться».',
-    'Dark auto dealership landing: hero + 2 CTAs, services grid (6), testimonials, footer.',
-    'Modern SaaS (light): hero with CTA, features, pricing (3 tiers), FAQ.',
-  ];
-
-  const effectsPresets = [
-    'Добавь аурору на hero и плавный параллакс при скролле.',
-    'Градиентная обводка на карточках услуг, лёгкий glow на hover.',
-    'Бегущая строка брендов (marquee) + sparkles в фоне.',
-    'Plasma/mesh фон в CTA и shiny кнопки.',
-    'Blob cursor + плавные появления (stagger fade-in) при скролле.',
-    'Gradient border on cards, glow on hover.',
-    'Aurora background + smooth parallax scroll.',
-  ];
+  const promptPresets = PROMPT_PRESETS;
+  const effectsPresets = EFFECT_PRESETS;
 
   const setPrompt = (text: string) => {
     props.handleInputChange?.({
