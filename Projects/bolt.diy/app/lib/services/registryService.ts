@@ -1,4 +1,6 @@
-import { createScopedLogger } from '~/utils/logger';
+import * as fs from 'fs';
+import * as path from 'path';
+import { createScopedLogger } from '../../utils/logger';
 
 const logger = createScopedLogger('registry-service');
 
@@ -25,6 +27,7 @@ export interface ComponentsCache {
 }
 
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+const FETCH_TIMEOUT = 5000; // 5 seconds
 
 export class RegistryService {
   private static _instance: RegistryService;
@@ -36,6 +39,7 @@ export class RegistryService {
       '@shadcn': 'https://ui.shadcn.com/registry',
     },
   };
+  private _loadedFromFile = false;
 
   static getInstance(): RegistryService {
     if (!RegistryService._instance) {
@@ -50,7 +54,43 @@ export class RegistryService {
     }
   }
 
+  private async fetchWithTimeout(url: string): Promise<Response> {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    try {
+      return await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(id);
+    }
+  }
+
+  private loadRegistriesFromComponentsJson(): void {
+    if (this._loadedFromFile) return;
+    try {
+      const componentsPath = path.resolve(process.cwd(), 'components.json');
+      if (fs.existsSync(componentsPath)) {
+        const content = fs.readFileSync(componentsPath, 'utf-8');
+        const parsed = JSON.parse(content);
+        if (parsed?.registries && typeof parsed.registries === 'object') {
+          this._config.registries = {
+            ...this._config.registries,
+            ...parsed.registries,
+          };
+          logger.info('Registry config loaded from components.json');
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to load registries from components.json', error);
+    } finally {
+      this._loadedFromFile = true;
+    }
+  }
+
   async fetchRegistryIndex(registryName: string): Promise<RegistryComponent[]> {
+    this.loadRegistriesFromComponentsJson();
     const baseUrl = this._config.registries[registryName];
     if (!baseUrl) {
       logger.warn(`Registry "${registryName}" not configured`);
@@ -69,17 +109,13 @@ export class RegistryService {
       // Try to fetch registry index
       const indexUrl = `${baseUrl}/index.json`;
       logger.debug(`Fetching registry index from ${indexUrl}`);
-      
-      const response = await fetch(indexUrl, {
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+
+      const response = await this.fetchWithTimeout(indexUrl);
 
       if (!response.ok) {
         // Try alternative endpoint
         const altUrl = `${baseUrl}/registry.json`;
-        const altResponse = await fetch(altUrl);
+        const altResponse = await this.fetchWithTimeout(altUrl);
         
         if (!altResponse.ok) {
           throw new Error(`Failed to fetch registry: ${response.status}`);
@@ -92,17 +128,17 @@ export class RegistryService {
         components = this._parseRegistryData(registryName, data);
       }
       
-      if (components) {
-        // Update cache
-        this._cache.set(registryName, {
-          components,
-          lastUpdated: Date.now(),
-        });
-      }
+      // Update cache even if empty to avoid spamming on failures
+      this._cache.set(registryName, {
+        components: components || [],
+        lastUpdated: Date.now(),
+      });
 
-      return components;
+      return components || [];
     } catch (error) {
       logger.error(`Error fetching registry "${registryName}":`, error);
+      // cache empty result to prevent repeated failures in short time
+      this._cache.set(registryName, { components: [], lastUpdated: Date.now() });
       return [];
     }
   }
@@ -150,6 +186,7 @@ export class RegistryService {
   }
 
   async fetchComponent(registryName: string, componentName: string): Promise<RegistryComponent | null> {
+    this.loadRegistriesFromComponentsJson();
     const baseUrl = this._config.registries[registryName];
     if (!baseUrl) {
       logger.warn(`Registry "${registryName}" not configured`);
@@ -160,11 +197,7 @@ export class RegistryService {
       const componentUrl = `${baseUrl}/${componentName}.json`;
       logger.debug(`Fetching component from ${componentUrl}`);
 
-      const response = await fetch(componentUrl, {
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+      const response = await this.fetchWithTimeout(componentUrl);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch component: ${response.status}`);
@@ -187,6 +220,7 @@ export class RegistryService {
   }
 
   async getAllComponents(): Promise<RegistryComponent[]> {
+    this.loadRegistriesFromComponentsJson();
     const allComponents: RegistryComponent[] = [];
     
     for (const registryName of Object.keys(this._config.registries)) {
