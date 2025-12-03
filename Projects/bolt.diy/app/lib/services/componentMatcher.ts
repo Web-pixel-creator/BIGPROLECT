@@ -641,7 +641,7 @@ export class ComponentMatcher {
 
         for (const type of componentTypes) {
           const keywords = ALIAS_COMPONENT_KEYWORDS[type] || [type];
-          
+
           for (const keyword of keywords) {
             if (nameLower.includes(keyword) || descLower.includes(keyword)) {
               component.relevance = 10;

@@ -7,6 +7,8 @@ export type ComponentMeta = {
   category: string;
   source: string;
   code: string;
+  rawCategory?: string;
+  tags?: string[];
 };
 
 export type ComponentIndex = {
@@ -31,13 +33,15 @@ export function buildIndex(mdDir: string = process.cwd()): ComponentIndex {
     const content = fs.readFileSync(fullPath, 'utf8');
     const lines = content.split('\n');
     let currentCategory = file.replace('.md', '').toLowerCase();
+    let currentRawCategory = currentCategory;
     let currentComponent: Partial<ComponentMeta> | null = null;
     let codeBuffer: string[] = [];
     let inCode = false;
 
     for (const line of lines) {
       if (line.startsWith('## ')) {
-        currentCategory = line.replace('## ', '').split(' ')[0].toLowerCase();
+        currentRawCategory = line.replace('## ', '').trim();
+        currentCategory = currentRawCategory.split(' ')[0].toLowerCase();
         continue;
       }
       if (line.startsWith('### ')) {
@@ -48,6 +52,8 @@ export function buildIndex(mdDir: string = process.cwd()): ComponentIndex {
             category: currentCategory,
             source: file,
             code: (currentComponent.code || '').trim(),
+            rawCategory: currentRawCategory,
+            tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
           });
         }
         const match = line.match(/### (.+?) \((.+?)\)/);
@@ -75,15 +81,17 @@ export function buildIndex(mdDir: string = process.cwd()): ComponentIndex {
     }
 
     if (currentComponent?.name) {
-      components.push({
-        name: currentComponent.name,
-        description: currentComponent.description || '',
-        category: currentCategory,
-        source: file,
-        code: (currentComponent.code || '').trim(),
-      });
-    }
-  }
+          components.push({
+            name: currentComponent.name,
+            description: currentComponent.description || '',
+            category: currentCategory,
+            source: file,
+            code: (currentComponent.code || '').trim(),
+            rawCategory: currentRawCategory,
+            tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
+          });
+        }
+      }
 
   return { components, total: components.length };
 }
