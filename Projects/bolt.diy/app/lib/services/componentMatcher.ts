@@ -1,6 +1,7 @@
 import { createScopedLogger } from '~/utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
+import { buildIndex, type ComponentMeta } from './component-index';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
@@ -456,6 +457,7 @@ export class ComponentMatcher {
   private static _instance: ComponentMatcher;
   private _componentsIndex: Map<string, ComponentMatch[]> = new Map();
   private _loadedFiles: Set<string> = new Set();
+  private _prebuilt: ComponentMeta[] | null = null;
 
   static getInstance(): ComponentMatcher {
     if (!ComponentMatcher._instance) {
@@ -483,6 +485,30 @@ export class ComponentMatcher {
   }
 
   async loadAllComponentFiles(): Promise<void> {
+    // Try prebuilt index first
+    if (!this._prebuilt) {
+      try {
+        const idx = buildIndex();
+        this._prebuilt = idx.components;
+        this._componentsIndex.clear();
+        for (const meta of idx.components) {
+          const cat = meta.category || 'other';
+          if (!this._componentsIndex.has(cat)) this._componentsIndex.set(cat, []);
+          this._componentsIndex.get(cat)!.push({
+            name: meta.name,
+            category: cat,
+            description: meta.description,
+            code: meta.code,
+            relevance: 0,
+          });
+        }
+        logger.info(`Loaded prebuilt component index: ${idx.total} items`);
+        return;
+      } catch (e) {
+        logger.warn('Failed to load prebuilt index, fallback to MD parsing');
+      }
+    }
+
     // Load all component MD files
     const mdFiles = [
       'shadcnui-blocks.md',
