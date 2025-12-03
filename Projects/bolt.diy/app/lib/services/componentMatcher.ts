@@ -4,6 +4,13 @@ import * as path from 'path';
 
 const logger = createScopedLogger('component-matcher');
 
+function shuffleArray<T>(arr: T[]): T[] {
+  return arr
+    .map((item) => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ item }) => item);
+}
+
 export interface ComponentMatch {
   name: string;
   category: string;
@@ -422,6 +429,28 @@ const THEME_KEYWORDS: Record<string, string[]> = {
   photo: ['photo', 'фото', 'фотосессия', 'photography', 'photographer', 'фотограф', 'портфолио'],
 };
 
+// Aliases override when external file is present
+let ALIAS_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
+let ALIAS_THEME_KEYWORDS = THEME_KEYWORDS;
+try {
+  const aliasPath = path.resolve(process.cwd(), 'Projects/bolt.diy/app/lib/services/component-aliases.json');
+  if (fs.existsSync(aliasPath)) {
+    const raw = fs.readFileSync(aliasPath, 'utf8');
+    const parsed = JSON.parse(raw) as {
+      componentKeywords?: Record<string, string[]>;
+      themeKeywords?: Record<string, string[]>;
+    };
+    if (parsed.componentKeywords) {
+      ALIAS_COMPONENT_KEYWORDS = parsed.componentKeywords;
+    }
+    if (parsed.themeKeywords) {
+      ALIAS_THEME_KEYWORDS = parsed.themeKeywords;
+    }
+  }
+} catch (error) {
+  logger.warn('Failed to load component-aliases.json, using built-in keywords');
+}
+
 export class ComponentMatcher {
   private static _instance: ComponentMatcher;
   private _componentsIndex: Map<string, ComponentMatch[]> = new Map();
@@ -543,7 +572,7 @@ export class ComponentMatcher {
     let matchedTheme: string | null = null;
 
     // Find matching component types
-    for (const [componentType, keywords] of Object.entries(COMPONENT_KEYWORDS)) {
+    for (const [componentType, keywords] of Object.entries(ALIAS_COMPONENT_KEYWORDS)) {
       for (const keyword of keywords) {
         if (requestLower.includes(keyword)) {
           if (!matchedComponents.includes(componentType)) {
@@ -555,7 +584,7 @@ export class ComponentMatcher {
     }
 
     // Find theme
-    for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
+    for (const [theme, keywords] of Object.entries(ALIAS_THEME_KEYWORDS)) {
       for (const keyword of keywords) {
         if (requestLower.includes(keyword)) {
           matchedTheme = theme;
@@ -584,7 +613,7 @@ export class ComponentMatcher {
         const descLower = component.description.toLowerCase();
 
         for (const type of componentTypes) {
-          const keywords = COMPONENT_KEYWORDS[type] || [type];
+          const keywords = ALIAS_COMPONENT_KEYWORDS[type] || [type];
           
           for (const keyword of keywords) {
             if (nameLower.includes(keyword) || descLower.includes(keyword)) {
@@ -612,7 +641,7 @@ export class ComponentMatcher {
       return '';
     }
 
-    const matchedComponents = this.findMatchingComponents(componentTypes, maxComponents);
+    const matchedComponents = shuffleArray(this.findMatchingComponents(componentTypes, maxComponents));
 
     if (matchedComponents.length === 0) {
       return '';
