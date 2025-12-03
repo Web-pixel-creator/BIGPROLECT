@@ -108,10 +108,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         setRegistryPreview(data.components.slice(0, 10));
       }
       setRegistryStatus('ok');
-      toast.success('Р РµРµСЃС‚СЂС‹ РѕР±РЅРѕРІР»РµРЅС‹');
+      toast.success('Реестры обновлены');
     } catch (err) {
       setRegistryStatus('error');
-      toast.error('РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ СЂРµРµСЃС‚СЂС‹');
+      toast.error('Не удалось обновить реестры');
     } finally {
       setTimeout(() => setRegistryStatus('idle'), 3000);
     }
