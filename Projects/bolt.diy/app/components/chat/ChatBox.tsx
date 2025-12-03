@@ -67,6 +67,7 @@ interface ChatBoxProps {
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
+  const [registryStatus, setRegistryStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const promptPresets = PROMPT_PRESETS;
   const effectsPresets = EFFECT_PRESETS;
   const sectionPresets = SECTION_PRESETS;
@@ -85,6 +86,21 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     props.handleInputChange?.({
       target: { value: next },
     } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+  };
+
+  const refreshRegistries = async () => {
+    try {
+      setRegistryStatus('loading');
+      const res = await fetch('/api.registry');
+      if (!res.ok) throw new Error('Failed to refresh registries');
+      setRegistryStatus('ok');
+      toast.success('Реестры обновлены');
+    } catch (err) {
+      setRegistryStatus('error');
+      toast.error('Не удалось обновить реестры');
+    } finally {
+      setTimeout(() => setRegistryStatus('idle'), 3000);
+    }
   };
 
   return (
@@ -318,6 +334,47 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             >
               <div className="i-ph:list text-xl"></div>
             </IconButton>
+            <div className="flex items-center gap-1 ml-1">
+              <button
+                type="button"
+                className="text-xs px-2 py-1 rounded-full border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+                onClick={refreshRegistries}
+              >
+                Обновить реестры
+              </button>
+              <span
+                className={classNames(
+                  'inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border',
+                  registryStatus === 'loading'
+                    ? 'border-amber-500 text-amber-500'
+                    : registryStatus === 'ok'
+                      ? 'border-emerald-500 text-emerald-500'
+                      : registryStatus === 'error'
+                        ? 'border-rose-500 text-rose-500'
+                        : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                )}
+              >
+                <span
+                  className={classNames(
+                    'w-2 h-2 rounded-full',
+                    registryStatus === 'loading'
+                      ? 'bg-amber-500 animate-pulse'
+                      : registryStatus === 'ok'
+                        ? 'bg-emerald-500'
+                        : registryStatus === 'error'
+                          ? 'bg-rose-500'
+                          : 'bg-bolt-elements-borderColor',
+                  )}
+                ></span>
+                {registryStatus === 'loading'
+                  ? 'Обновление'
+                  : registryStatus === 'ok'
+                    ? 'Готово'
+                    : registryStatus === 'error'
+                      ? 'Ошибка'
+                      : 'Готово'}
+              </span>
+            </div>
             {props.chatStarted && (
               <IconButton
                 title="Discuss"
