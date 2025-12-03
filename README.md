@@ -25,3 +25,6 @@ Assistent adds:
 - a short list from registries (registryService) with 5s timeout
 
 Note: Ensure project paths/aliases (`@/lib/utils`, Tailwind tokens, framer-motion/lucide deps) stay consistent so inserted components compile without manual fixes.
+
+## Automation
+- Nightly index refresh (03:00 UTC) builds `Projects/bolt.diy/app/lib/services/component-index-cache.json` from MD + registries. If no diff — no commit. Summary is added to the GitHub Action log.

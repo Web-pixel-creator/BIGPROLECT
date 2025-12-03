@@ -28,6 +28,15 @@ jobs:
       - name: Build component index
         run: npm run build:index
 
+      - name: Summarize result
+        run: |
+          if git diff --quiet -- Projects/bolt.diy/app/lib/services/component-index-cache.json; then
+            echo "No changes in component index" >> $GITHUB_STEP_SUMMARY
+          else
+            COUNT=$(jq '.components | length' Projects/bolt.diy/app/lib/services/component-index-cache.json 2>/dev/null || echo "?")
+            echo "Component index updated. Items: $COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Commit changes
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
