@@ -69,6 +69,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const [showPromptPanel, setShowPromptPanel] = useState(false);
   const [registryStatus, setRegistryStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
   const [registryCount, setRegistryCount] = useState<number | null>(null);
+  const [registryPreview, setRegistryPreview] = useState<{ name: string; registry?: string; description?: string }[]>(
+    [],
+  );
   const promptPanelRef = useRef<HTMLDivElement | null>(null);
   const promptToggleRef = useRef<HTMLButtonElement | null>(null);
   const promptPresets = PROMPT_PRESETS;
@@ -101,6 +104,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
       if (data?.count !== undefined) {
         setRegistryCount(data.count);
       }
+      if (data?.components) {
+        setRegistryPreview(data.components.slice(0, 10));
+      }
       setRegistryStatus('ok');
       toast.success('Реестры обновлены');
     } catch (err) {
@@ -126,6 +132,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPromptPanel]);
+
+  useEffect(() => {
+    if (!showPromptPanel) return;
+    if (registryPreview.length === 0 && registryStatus !== 'loading') {
+      refreshRegistries();
+    }
   }, [showPromptPanel]);
 
   return (
@@ -512,6 +525,29 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               >
                 Обновить
               </button>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Реестры (preview)</p>
+              {registryPreview.length === 0 ? (
+                <p className="text-xs text-bolt-elements-textTertiary">Нет данных (обновите)</p>
+              ) : (
+                <ul className="space-y-1">
+                  {registryPreview.slice(0, 5).map((item, idx) => (
+                    <li
+                      key={`reg-${idx}`}
+                      className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
+                    >
+                      <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
+                      {item.registry ? (
+                        <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
+                      ) : null}
+                      {item.description ? (
+                        <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="space-y-2">
               <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Секции (добавить)</p>
