@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const logger = createScopedLogger('component-matcher');
+const MAX_CODE_LENGTH = 3200;
 
 function shuffleArray<T>(arr: T[]): T[] {
   return arr
@@ -665,10 +666,10 @@ export class ComponentMatcher {
 `;
 
     for (const comp of matchedComponents.slice(0, maxComponents)) {
-      // Don't truncate code - show full component
-      const code = comp.code.length > 5000 
-        ? comp.code.substring(0, 5000) + '\n// ... code continues ...'
-        : comp.code;
+      const code =
+        comp.code.length > MAX_CODE_LENGTH
+          ? comp.code.substring(0, MAX_CODE_LENGTH) + '\n// ... code continues ...'
+          : comp.code;
 
       context += `
   ═══════════════════════════════════════════════════════════════
