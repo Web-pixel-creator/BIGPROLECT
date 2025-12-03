@@ -1,0 +1,9 @@
+[submodule "kokonutui"]
+	path = kokonutui
+	url = https://github.com/kokonut-labs/kokonutui
+[submodule "magicui"]
+	path = magicui
+	url = https://github.com/magicuidesign/magicui
+[submodule "react-bits"]
+	path = react-bits
+	url = https://github.com/DavidHDev/react-bits
