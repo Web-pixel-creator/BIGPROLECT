@@ -578,7 +578,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         ))}
       </div>
     </div>
-        )}
+  </div>
+)}
       </div>
     </div>
   );
