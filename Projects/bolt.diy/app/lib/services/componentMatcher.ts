@@ -13,6 +13,10 @@ function shuffleArray<T>(arr: T[]): T[] {
     .map(({ item }) => item);
 }
 
+function randomChoice<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export interface ComponentMatch {
   name: string;
   category: string;
@@ -488,7 +492,7 @@ export class ComponentMatcher {
     // Try prebuilt index first
     if (!this._prebuilt) {
       try {
-        const idx = buildIndex();
+        const idx = buildIndex(process.cwd(), true);
         this._prebuilt = idx.components;
         this._componentsIndex.clear();
         for (const meta of idx.components) {
@@ -674,6 +678,18 @@ export class ComponentMatcher {
       return '';
     }
 
+    const palette = randomChoice([
+      'Light: white/gray with accent #6B4DFF',
+      'Light: beige/stone with accent #FF7F50',
+      'Dark: near-black with neon accent #7C3AED',
+      'Dark: charcoal with accent #00E0FF',
+    ]);
+    const layout = randomChoice([
+      'Grid 3x2 for services/cards',
+      'Bento asymmetric layout',
+      'Wide hero + two-column content',
+    ]);
+
     let context = `
 <matched_ui_components>
   ⚠️ IMPORTANT: Use these components as DIRECT REFERENCE for your implementation!
@@ -682,6 +698,8 @@ export class ComponentMatcher {
   - Theme: ${theme || 'general'}
   - Components needed: ${componentTypes.join(', ')}
   - Found ${matchedComponents.length} matching components
+  - Palette suggestion: ${palette}
+  - Layout suggestion: ${layout}
   
   INSTRUCTIONS:
   1. Study the code patterns below

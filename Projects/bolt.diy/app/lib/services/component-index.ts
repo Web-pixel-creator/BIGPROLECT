@@ -24,7 +24,28 @@ const MD_FILES = [
   'reactbits-components.md',
 ];
 
-export function buildIndex(mdDir: string = process.cwd()): ComponentIndex {
+const CACHE_PATH = 'Projects/bolt.diy/app/lib/services/component-index-cache.json';
+
+export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = true): ComponentIndex {
+  const cacheFullPath = path.resolve(process.cwd(), CACHE_PATH);
+
+  const mdPaths = MD_FILES.map((f) => path.resolve(mdDir, f)).filter((p) => fs.existsSync(p));
+  const newestMd = mdPaths.reduce((ts, p) => Math.max(ts, fs.statSync(p).mtimeMs), 0);
+
+  if (useCache && fs.existsSync(cacheFullPath)) {
+    try {
+      const cacheStat = fs.statSync(cacheFullPath);
+      if (cacheStat.mtimeMs >= newestMd) {
+        const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
+        if (cached?.components?.length) {
+          return cached;
+        }
+      }
+    } catch {
+      // ignore cache errors
+    }
+  }
+
   const components: ComponentMeta[] = [];
 
   for (const file of MD_FILES) {
@@ -90,8 +111,19 @@ export function buildIndex(mdDir: string = process.cwd()): ComponentIndex {
             rawCategory: currentRawCategory,
             tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
           });
-        }
-      }
+    }
+  }
 
-  return { components, total: components.length };
+  const index: ComponentIndex = { components, total: components.length };
+
+  // Write cache
+  try {
+    const dir = path.dirname(cacheFullPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(cacheFullPath, JSON.stringify(index, null, 2), 'utf8');
+  } catch {
+    // ignore cache write errors
+  }
+
+  return index;
 }
