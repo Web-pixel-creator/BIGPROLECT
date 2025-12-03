@@ -1,7 +1,7 @@
-import { createScopedLogger } from '~/utils/logger';
+import { createScopedLogger } from '../../utils/logger.ts';
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildIndex, type ComponentMeta } from './component-index';
+import { buildIndex, type ComponentMeta } from './component-index.ts';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
@@ -708,9 +708,9 @@ export class ComponentMatcher {
       matchedComponents.length === 0 &&
       (
         requestLower.includes('landing') ||
-        requestLower.includes('???????') ||
-        requestLower.includes('???????') ||
-        requestLower.includes('????')
+        requestLower.includes('\u043b\u0435\u043d\u0434\u0438\u043d\u0433') ||
+        requestLower.includes('\u0433\u043b\u0430\u0432\u043d\u0430\u044f') ||
+        requestLower.includes('\u0441\u0430\u0439\u0442')
       )
     ) {
       matchedComponents.push('hero', 'header', 'features', 'footer');

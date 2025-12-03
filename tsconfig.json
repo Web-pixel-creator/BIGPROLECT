@@ -22,6 +22,9 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "~/*": [
+        "Projects/bolt.diy/app/*"
       ]
     },
     "incremental": true,
