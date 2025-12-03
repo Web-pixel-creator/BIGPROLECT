@@ -81,11 +81,12 @@ function buildIndex(mdDir = process.cwd()) {
     }
   }
 
-  const index = { components, total: components.length };
+  const index = { components, total: components.length, generatedAt: Date.now() };
   const cacheFullPath = path.resolve(process.cwd(), CACHE_PATH);
   const dir = path.dirname(cacheFullPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(cacheFullPath, JSON.stringify(index, null, 2), 'utf8');
+  const payload = { ...index, generatedAt: Date.now() };
+  fs.writeFileSync(cacheFullPath, JSON.stringify(payload, null, 2), 'utf8');
   console.log(`Index built: ${index.total} components -> ${CACHE_PATH}`);
 }
 

@@ -14,6 +14,7 @@ export type ComponentMeta = {
 export type ComponentIndex = {
   components: ComponentMeta[];
   total: number;
+  generatedAt?: number;
 };
 
 const MD_FILES = [
@@ -37,6 +38,9 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
       const cacheStat = fs.statSync(cacheFullPath);
       if (cacheStat.mtimeMs >= newestMd) {
         const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
+        if (!cached.generatedAt) {
+          cached.generatedAt = cacheStat.mtimeMs;
+        }
         if (cached?.components?.length) {
           return cached;
         }
@@ -114,7 +118,7 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
     }
   }
 
-  const index: ComponentIndex = { components, total: components.length };
+  const index: ComponentIndex = { components, total: components.length, generatedAt: Date.now() };
 
   // Write cache
   try {

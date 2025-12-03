@@ -540,6 +540,8 @@ export class ComponentMatcher {
   private _componentsIndex: Map<string, ComponentMatch[]> = new Map();
   private _loadedFiles: Set<string> = new Set();
   private _prebuilt: ComponentMeta[] | null = null;
+  private _prebuiltGeneratedAt: number | null = null;
+  private _prebuiltGeneratedAt: number | null = null;
 
   static getInstance(): ComponentMatcher {
     if (!ComponentMatcher._instance) {
@@ -572,6 +574,8 @@ export class ComponentMatcher {
       try {
         const idx = buildIndex(process.cwd(), true);
         this._prebuilt = idx.components;
+        this._prebuiltGeneratedAt = idx.generatedAt || null;
+        this._prebuiltGeneratedAt = idx.generatedAt || null;
         this._componentsIndex.clear();
         for (const meta of idx.components) {
           const cat = meta.category || 'other';
@@ -771,6 +775,13 @@ export class ComponentMatcher {
     const palette = randomChoiceSeeded(choosePalette(requestLower, theme), rng);
     const layout = randomChoiceSeeded(chooseLayout(), rng);
     const presetHint = buildPresetHint(theme);
+    let freshnessHint = "";
+    if (this._prebuiltGeneratedAt) {
+      const ageHours = Math.round((Date.now() - this._prebuiltGeneratedAt) / (1000 * 60 * 60));
+      if (ageHours > 72) {
+        freshnessHint = `Index age: ~${ageHours}h (consider refreshing components).`;
+      }
+    }
 
     let context = `
 <matched_ui_components>
