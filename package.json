@@ -43,5 +43,8 @@
     "shadcn": "^3.5.1",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "build:index": "node scripts/build-component-index.js"
   }
 }

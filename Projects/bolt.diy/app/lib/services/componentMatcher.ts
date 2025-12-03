@@ -718,7 +718,7 @@ export class ComponentMatcher {
       .slice(0, limit * componentTypes.length);
   }
 
-  generateContextForPrompt(request: string, maxComponents: number = 8): string {
+  generateContextForPrompt(request: string, maxComponents: number = 5): string {
     const { components: componentTypes, theme } = this.analyzeUserRequest(request);
     
     if (componentTypes.length === 0) {
