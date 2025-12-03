@@ -88,18 +88,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   ];
 
   const setPrompt = (text: string) => {
-const setPrompt = (text: string) => {
-const setPrompt = (text: string) => {
-const setPrompt = (text: string) => {
-const setPrompt = (text: string) => {
     props.handleInputChange?.({
       target: { value: text },
     } as unknown as React.ChangeEvent<HTMLTextAreaElement>);
     setShowPromptPanel(false);
   };
 
-
-    return (
+  return (
     <div
       className={classNames(
         'relative bg-bolt-elements-background-depth-2 backdrop-blur p-3 rounded-lg border border-bolt-elements-borderColor relative w-full max-w-chat mx-auto z-prompt',
@@ -233,8 +228,8 @@ const setPrompt = (text: string) => {
               if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
 
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
+                reader.onload = (loadEvent) => {
+                  const base64Image = loadEvent.target?.result as string;
                   props.setUploadedFiles?.([...props.uploadedFiles, file]);
                   props.setImageDataList?.([...props.imageDataList, base64Image]);
                 };
@@ -330,7 +325,7 @@ const setPrompt = (text: string) => {
             >
               <div className="i-ph:list text-xl"></div>
             </IconButton>
-                        {props.chatStarted && (
+            {props.chatStarted && (
               <IconButton
                 title="Discuss"
                 className={classNames(
@@ -352,7 +347,7 @@ const setPrompt = (text: string) => {
               onModelChange={(modelId) => {
                 // Map model IDs to their correct providers
                 let providerName = 'Google'; // default
-                
+
                 if (modelId.startsWith('gemini')) {
                   providerName = 'Google';
                 } else if (modelId.includes('deepseek') || modelId.includes('grok')) {
@@ -361,7 +356,7 @@ const setPrompt = (text: string) => {
 
                 // Find and set the provider
                 const providerInfo = props.providerList.find((p) => p.name === providerName);
-                
+
                 if (providerInfo && props.setProvider) {
                   props.setProvider(providerInfo);
                 }
