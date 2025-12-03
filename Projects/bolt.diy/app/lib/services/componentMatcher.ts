@@ -23,15 +23,13 @@ function makeRng(seed: number) {
   };
 }
 
-function shuffleArray<T>(arr: T[]): T[] {
-  return arr
-    .map((item) => ({ item, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ item }) => item);
-}
-
-function randomChoice<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+function shuffleArraySeeded<T>(arr: T[], rng: () => number): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 function randomChoiceSeeded<T>(arr: T[], rng: () => number): T {
@@ -50,8 +48,18 @@ function choosePalette(requestLower: string, theme: string | null): string[] {
     'Dark: graphite with warm accent #F97316',
   ];
 
-  const isLight = requestLower.includes('light') || requestLower.includes('бел') || theme === 'construction';
-  const isDark = requestLower.includes('dark') || requestLower.includes('темн');
+  const isLight =
+    requestLower.includes('light') ||
+    requestLower.includes('white') ||
+    requestLower.includes('bright') ||
+    requestLower.includes('свет') ||
+    requestLower.includes('бел') ||
+    theme === 'construction';
+  const isDark =
+    requestLower.includes('dark') ||
+    requestLower.includes('black') ||
+    requestLower.includes('ноч') ||
+    requestLower.includes('темн');
 
   if (isLight) return lightPalettes;
   if (isDark) return darkPalettes;
@@ -68,6 +76,22 @@ function chooseLayout(): string[] {
     'Masonry-like staggered cards',
     'Split hero (media left, text right) + 3-column services',
   ];
+}
+
+const THEME_PRESETS: Record<string, string[]> = {
+  construction: ['hero', 'features', 'cta', 'projects', 'footer'],
+  auto: ['hero', 'features', 'cta', 'projects', 'footer'],
+  tech: ['hero', 'features', 'stats', 'cta', 'footer'],
+  finance: ['hero', 'features', 'pricing', 'cta', 'footer'],
+  education: ['hero', 'features', 'faq', 'cta', 'footer'],
+  photo: ['hero', 'gallery', 'cta', 'footer'],
+};
+
+function buildPresetHint(theme: string | null): string {
+  if (!theme) return '';
+  const preset = THEME_PRESETS[theme];
+  if (!preset) return '';
+  return `Preset suggestion for ${theme}: ${preset.join(' ? ')}`;
 }
 
 export interface ComponentMatch {
@@ -478,14 +502,15 @@ for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
 
 // Industry/theme keywords
 const THEME_KEYWORDS: Record<string, string[]> = {
-  auto: ['авто', 'auto', 'car', 'машина', 'автомобиль', 'automotive', 'vehicle', 'транспорт'],
-  tech: ['tech', 'технологии', 'it', 'software', 'софт', 'приложение', 'app', 'saas'],
-  food: ['food', 'еда', 'ресторан', 'restaurant', 'cafe', 'кафе', 'доставка', 'delivery'],
-  fashion: ['fashion', 'мода', 'одежда', 'clothes', 'style', 'стиль', 'магазин', 'shop'],
-  health: ['health', 'здоровье', 'медицина', 'medical', 'fitness', 'фитнес', 'спорт', 'sport'],
-  finance: ['finance', 'финансы', 'банк', 'bank', 'crypto', 'крипто', 'деньги', 'money'],
-  education: ['education', 'образование', 'курсы', 'courses', 'обучение', 'learning'],
-  photo: ['photo', 'фото', 'фотосессия', 'photography', 'photographer', 'фотограф', 'портфолио'],
+  auto: ['auto', 'car', 'cars', 'vehicle', 'automotive', '????', '?????', '?????????', '???????'],
+  tech: ['tech', 'it', 'software', 'app', 'saas', 'startup', '???', '????', '????'],
+  food: ['food', 'restaurant', 'cafe', 'delivery', '???', '????????', '????', '????????'],
+  fashion: ['fashion', 'style', 'clothes', 'apparel', '????', '?????', '?????', '?????'],
+  health: ['health', 'medical', 'fitness', 'sport', 'clinic', '??????', '?????', '?????', '??????'],
+  finance: ['finance', 'bank', 'crypto', 'money', '??????', '????', '??????', '?????'],
+  education: ['education', 'courses', 'learning', 'school', '??????', '?????', '????', '????'],
+  photo: ['photo', 'photography', 'gallery', '?????????', '????', '????????', '???????'],
+  construction: ['construction', 'builder', 'development', '?????', '????????', '??????????'],
 };
 
 // Aliases override when external file is present
@@ -679,9 +704,15 @@ export class ComponentMatcher {
     }
 
     // Default components for landing page requests
-    if (matchedComponents.length === 0 && 
-        (requestLower.includes('сайт') || requestLower.includes('лендинг') || 
-         requestLower.includes('landing') || requestLower.includes('страниц'))) {
+    if (
+      matchedComponents.length === 0 &&
+      (
+        requestLower.includes('landing') ||
+        requestLower.includes('???????') ||
+        requestLower.includes('???????') ||
+        requestLower.includes('????')
+      )
+    ) {
       matchedComponents.push('hero', 'header', 'features', 'footer');
     }
 
@@ -727,7 +758,10 @@ export class ComponentMatcher {
 
     const seed = hashString(request.toLowerCase());
     const rng = makeRng(seed);
-    const matchedComponents = shuffleArray(this.findMatchingComponents(componentTypes, maxComponents));
+    const matchedComponents = shuffleArraySeeded(
+      this.findMatchingComponents(componentTypes, maxComponents),
+      rng,
+    );
 
     if (matchedComponents.length === 0) {
       return '';
@@ -736,24 +770,25 @@ export class ComponentMatcher {
     const requestLower = request.toLowerCase();
     const palette = randomChoiceSeeded(choosePalette(requestLower, theme), rng);
     const layout = randomChoiceSeeded(chooseLayout(), rng);
+    const presetHint = buildPresetHint(theme);
 
     let context = `
 <matched_ui_components>
-  ⚠️ IMPORTANT: Use these components as DIRECT REFERENCE for your implementation!
-  
+  IMPORTANT: Use these components as DIRECT REFERENCE for your implementation.
+
   User request analysis:
   - Theme: ${theme || 'general'}
   - Components needed: ${componentTypes.join(', ')}
   - Found ${matchedComponents.length} matching components
   - Palette suggestion: ${palette}
   - Layout suggestion: ${layout}
-  
+  ${presetHint ? `- ${presetHint}` : ''}
+
   INSTRUCTIONS:
   1. Study the code patterns below
   2. Adapt them to user's specific request
   3. Combine multiple components if needed
   4. Keep the animation/styling approach
-  
 `;
 
     for (const comp of matchedComponents.slice(0, maxComponents)) {
@@ -761,16 +796,16 @@ export class ComponentMatcher {
         comp.code.length > MAX_CODE_LENGTH
           ? comp.code.substring(0, MAX_CODE_LENGTH) + '\n// ... code continues ...'
           : comp.code;
-
       context += `
-  ═══════════════════════════════════════════════════════════════
+  ---
   ${comp.description.toUpperCase()} (${comp.name})
   Category: ${comp.category}
-  ═══════════════════════════════════════════════════════════════
-  
+  ---
+
 ${code}
-  
+
 `;
+
     }
 
     context += `</matched_ui_components>`;
