@@ -473,8 +473,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         {promptPresets.map((p, idx) => (
           <button
             key={`prompt-${idx}`}
-            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(p)}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => setPrompt(p)}
           >
             {p}
           </button>
@@ -484,13 +484,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     <div className="space-y-2">
       <p className="text-xs font-semibold text-bolt-elements-textSecondary uppercase">Эффекты</p>
       <div className="flex flex-col gap-1">
-        {effectsPresets.map((p, idx) => (
+        {effectsPresets.map((effect, idx) => (
           <button
             key={`effect-${idx}`}
             className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(p)}
+            onClick={() => appendSnippet(effect.label)}
+            title={effect.hint}
           >
-            {p}
+            {effect.label}
           </button>
         ))}
       </div>
@@ -559,9 +560,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <button
             key={`section-${idx}`}
             className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(p)}
+            onClick={() => appendSnippet(effect.label)}
+            title={effect.hint}
           >
-            {p}
+            {effect.label}
           </button>
         ))}
       </div>
@@ -573,9 +575,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <button
             key={`theme-${idx}`}
             className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(p)}
+            onClick={() => appendSnippet(effect.label)}
+            title={effect.hint}
           >
-            {p}
+            {effect.label}
           </button>
         ))}
       </div>
@@ -586,3 +589,5 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     </div>
   );
 };
+
+

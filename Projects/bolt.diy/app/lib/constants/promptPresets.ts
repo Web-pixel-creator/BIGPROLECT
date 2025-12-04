@@ -1,36 +1,49 @@
-// Centralized prompt/effect presets to avoid encoding issues in components.
+// Centralized prompt/effect presets (clean UTF-8)
+
 export const PROMPT_PRESETS = [
-  'Сделай лендинг автосалона: тёмный, hero + 2 CTA, 6 услуг, отзывы, футер.',
   'IT-стартап (светлый): hero + CTA, преимущества, 3 тарифа, FAQ.',
-  'Доставка еды: тёплый hero с поиском, сетка блюд, отзывы, CTA «Заказать».',
-  'Строительная компания: hero с фото, 6 услуг, 3 проекта, блок «О нас», CTA консультация.',
-  'Портфолио фотографа: hero + галерея, отзывы, прайс, CTA «Связаться».',
-  'Dark auto dealership landing: hero + 2 CTAs, services grid (6), testimonials, footer.',
-  'Modern SaaS (light): hero with CTA, features, pricing (3 tiers), FAQ.',
+  'SaaS (тёмный): hero с CTA, фичи, тарифы, отзывы, футер.',
+  'Лендинг доставки еды: hero с поиском, сетка блюд, отзывы, CTA.',
+  'Автосалон: hero + 2 CTA, услуги (6), отзывы, контакты.',
+  'Портфолио дизайнера: hero, проекты (6), кейс в фокусе, контакты.',
+  'Электронная коммерция: hero, категории, карточки товаров (8), отзывы, CTA.',
+  'Блог/медиа: hero, подборка статей (6), подписка, футер.',
 ] as const;
 
-export const EFFECT_PRESETS = [
-  'Добавь аурору на hero и плавный параллакс при скролле.',
-  'Градиентная обводка на карточках услуг, лёгкий glow на hover.',
-  'Бегущая строка брендов (marquee) + sparkles в фоне.',
-  'Plasma/mesh фон в CTA и shiny кнопки.',
-  'Blob cursor + плавные появления (stagger fade-in) при скролле.',
-  'Gradient border on cards, glow on hover.',
-  'Aurora background + smooth parallax scroll.',
+export type EffectPreset = {
+  label: string;
+  hint: string;
+};
+
+export const EFFECT_PRESETS: EffectPreset[] = [
+  { label: 'Blob cursor', hint: 'Пятно-курсор, плавно следующее за мышью' },
+  { label: 'Stagger fade-in on scroll', hint: 'Поочередное появление блоков при скролле' },
+  { label: 'Gradient border glow', hint: 'Градиентная обводка с подсветкой при hover' },
+  { label: 'Aurora background + parallax', hint: 'Переливы “северное сияние” + плавный параллакс' },
+  { label: 'Plasma / mesh background', hint: 'Пластичный градиентный фон (mesh/plasma)' },
+  { label: 'Glassmorphism cards', hint: 'Полупрозрачные карточки с блюром и свечением' },
+  { label: 'Magnetic buttons', hint: 'Кнопки тянутся к курсору при наведении' },
+  { label: 'Hover spotlight', hint: 'Эффект прожектора при наведении' },
+  { label: 'Tilt-on-hover cards', hint: 'Наклон карточек при hover (3D tilt)' },
+  { label: 'Ripple effect', hint: 'Кольцевая рябь при клике/hover' },
+  { label: 'Shiny button', hint: 'Блик/пробегающий свет по кнопке' },
+  { label: 'Parallax hero layers', hint: 'Слои hero двигаются с разной скоростью' },
+  { label: 'Noise / grain overlay', hint: 'Лёгкий шум поверх фона' },
+  { label: 'Hover gradient beam', hint: 'Лучи/beam вдоль бордера при наведении' },
 ] as const;
 
 export const SECTION_PRESETS = [
-  'Секции: hero + преимущества + CTA + футер.',
-  'Секции: hero + услуги (6 карточек) + отзывы.',
-  'Секции: hero + pricing (3 тарифа) + FAQ.',
-  'Секции: hero + галерея + CTA.',
-  'Секции: hero + проекты (3) + блок О нас.',
+  'Hero + CTA + преимущества',
+  'Hero + услуги (6) + CTA',
+  'Hero + тарифы (3) + FAQ',
+  'Hero + галерея работ + CTA',
+  'Hero + отзывы (3) + CTA',
 ] as const;
 
 export const THEME_PRESETS = [
-  'Тема: авто / автосалон',
+  'Тема: светлая / airy',
+  'Тема: тёмная / neo brutalism',
   'Тема: tech / SaaS',
-  'Тема: food / доставка еды',
-  'Тема: строительство',
-  'Тема: портфолио фотографа',
+  'Тема: food / delivery',
+  'Тема: creative / portfolio',
 ] as const;
