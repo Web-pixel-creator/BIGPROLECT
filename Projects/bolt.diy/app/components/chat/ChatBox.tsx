@@ -473,7 +473,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <button
             key={`prompt-${idx}`}
             className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => setPrompt(p)}
+            onClick={() => appendSnippet(p)}
           >
             {p}
           </button>
@@ -487,7 +487,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <button
             key={`effect-${idx}`}
             className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => setPrompt(p)}
+            onClick={() => appendSnippet(p)}
           >
             {p}
           </button>
