@@ -95,7 +95,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     setShowPromptPanel(false);
   };
 
-  const refreshRegistries = async () => {
+  const refreshRegistries = async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent;
     try {
       setRegistryStatus('loading');
       const res = await fetch('/api.registry?refresh=1&preview=1');
@@ -108,10 +109,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         setRegistryPreview(data.components.slice(0, 10));
       }
       setRegistryStatus('ok');
-      toast.success('Реестры обновлены');
+      if (!silent) toast.success('Реестры обновлены');
     } catch (err) {
       setRegistryStatus('error');
-      toast.error('Не удалось обновить реестры');
+      if (!silent) toast.error('Не удалось обновить реестры');
     } finally {
       setTimeout(() => setRegistryStatus('idle'), 3000);
     }
@@ -137,7 +138,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   useEffect(() => {
     if (!showPromptPanel) return;
     if (registryPreview.length === 0 && registryStatus !== 'loading') {
-      refreshRegistries();
+      refreshRegistries({ silent: true });
     }
   }, [showPromptPanel]);
 
