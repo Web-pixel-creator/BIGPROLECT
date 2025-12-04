@@ -232,7 +232,69 @@ You are Bolt, an expert AI assistant and exceptional senior software developer w
     "embla-carousel-autoplay": "^8.0.0"
   }
   \`\`\`
-  OR use a simple CSS-only carousel without external libraries!
+  
+  ✅ RECOMMENDED: Use this SIMPLE CSS-ONLY CAROUSEL (no external libraries needed!):
+  \`\`\`tsx
+  // SimpleCarousel.tsx - NO EXTERNAL DEPENDENCIES!
+  import { useState } from 'react';
+  import { motion, AnimatePresence } from 'framer-motion';
+  import { ChevronLeft, ChevronRight } from 'lucide-react';
+  
+  interface CarouselProps {
+    images: { src: string; alt: string }[];
+  }
+  
+  export function SimpleCarousel({ images }: CarouselProps) {
+    const [current, setCurrent] = useState(0);
+    
+    const next = () => setCurrent((prev) => (prev + 1) % images.length);
+    const prev = () => setCurrent((prev) => (prev - 1 + images.length) % images.length);
+    
+    return (
+      <div className="relative w-full max-w-4xl mx-auto overflow-hidden rounded-xl">
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={current}
+            src={images[current].src}
+            alt={images[current].alt}
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.3 }}
+            className="w-full h-[400px] object-cover"
+          />
+        </AnimatePresence>
+        
+        {/* Navigation buttons */}
+        <button
+          onClick={prev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition"
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+        <button
+          onClick={next}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition"
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+        
+        {/* Dots */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={\`w-2 h-2 rounded-full transition \${i === current ? 'bg-white' : 'bg-white/50'}\`}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  \`\`\`
+  
+  This carousel only needs framer-motion and lucide-react (which are usually already installed)!
   
   ✅ INSTEAD USE: Simple Tailwind classes directly in className:
   - className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg"
