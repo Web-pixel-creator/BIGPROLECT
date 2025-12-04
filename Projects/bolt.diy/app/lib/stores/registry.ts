@@ -85,7 +85,7 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const response = await fetch('/api/registry');
+      const response = await fetch('/api.registry');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
