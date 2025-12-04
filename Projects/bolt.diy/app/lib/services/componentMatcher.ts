@@ -541,7 +541,6 @@ export class ComponentMatcher {
   private _loadedFiles: Set<string> = new Set();
   private _prebuilt: ComponentMeta[] | null = null;
   private _prebuiltGeneratedAt: number | null = null;
-  private _prebuiltGeneratedAt: number | null = null;
 
   static getInstance(): ComponentMatcher {
     if (!ComponentMatcher._instance) {
