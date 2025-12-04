@@ -99,7 +99,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     const silent = opts?.silent;
     try {
       setRegistryStatus('loading');
-      const res = await fetch('/api.registry?refresh=1&preview=1');
+      // Используем корректный путь API (слишком многие окружения блокируют точку в URL)
+      const res = await fetch('/api/registry?refresh=1&preview=1');
       if (!res.ok) throw new Error('Failed to refresh registries');
       const data = await res.json();
       if (data?.count !== undefined) {
