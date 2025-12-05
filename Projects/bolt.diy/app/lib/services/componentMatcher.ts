@@ -513,6 +513,24 @@ const THEME_KEYWORDS: Record<string, string[]> = {
   construction: ['construction', 'builder', 'development', '?????', '????????', '??????????'],
 };
 
+// Эффекты (из пресетов) → какие типы компонентов / ключевые слова искать
+const EFFECT_KEYWORDS_MAP: Record<string, string[]> = {
+  'blob cursor': ['cursor', 'blob'],
+  'stagger fade-in on scroll': ['animation', 'scroll', 'reveal'],
+  'gradient border glow': ['gradient', 'border', 'glow'],
+  'aurora background + parallax': ['aurora', 'parallax', 'background'],
+  'plasma / mesh background': ['plasma', 'mesh', 'background'],
+  'glassmorphism cards': ['glassmorphism', 'card', 'glass'],
+  'magnetic buttons': ['magnetic', 'button', 'magnet'],
+  'hover spotlight': ['spotlight', 'hover'],
+  'tilt-on-hover cards': ['tilt', 'card', 'hover'],
+  'ripple effect': ['ripple'],
+  'shiny button': ['shiny', 'button'],
+  'parallax hero layers': ['parallax', 'hero'],
+  'noise / grain overlay': ['noise', 'grain'],
+  'hover gradient beam': ['beam', 'gradient', 'hover'],
+};
+
 // Aliases override when external file is present
 let ALIAS_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
 let ALIAS_THEME_KEYWORDS = THEME_KEYWORDS;
@@ -704,6 +722,17 @@ export class ComponentMatcher {
         }
       }
       if (matchedTheme) break;
+    }
+
+    // Эффекты из пресетов → добавляем соответствующие компонентные ключи
+    for (const [effectLabel, types] of Object.entries(EFFECT_KEYWORDS_MAP)) {
+      if (requestLower.includes(effectLabel)) {
+        for (const t of types) {
+          if (!matchedComponents.includes(t)) {
+            matchedComponents.push(t);
+          }
+        }
+      }
     }
 
     // Default components for landing page requests

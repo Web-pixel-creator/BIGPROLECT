@@ -79,6 +79,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const sectionPresets = SECTION_PRESETS;
   const themePresets = THEME_PRESETS;
 
+  // Удаляем нечитаемые символы из превью реестров, чтобы не было "�"
+  const normalizeText = (value?: string) =>
+    typeof value === 'string' ? value.replace(/[^\p{L}\p{N}\s.,:;+\-"'()/&@#%!?]/gu, '').trim() : '';
+
   const setPrompt = (text: string) => {
     props.handleInputChange?.({
       target: { value: text },
@@ -369,7 +373,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             />
             <div className="relative">
               <IconButton
-                title="ÐÑÑÑÑÑÐµ Ð¿ÑÐ¾Ð¼Ð¿ÑÑ"
+                title="Быстрые промпты"
                 className="transition-all"
                 onClick={() => setShowPromptPanel((v) => !v)}
                 ref={promptToggleRef}
@@ -392,7 +396,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                     ? 'Обновляем реестры...'
                     : registryStatus === 'ok'
                       ? registryCount !== null
-                        ? 'Реестры готовы · ${registryCount}'
+                        ? `Реестры готовы · ${registryCount}`
                         : 'Реестры готовы'
                       : registryStatus === 'error'
                         ? 'Ошибка реестров'
@@ -473,7 +477,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         {promptPresets.map((p, idx) => (
           <button
             key={`prompt-${idx}`}
-            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
             onClick={() => setPrompt(p)}
           >
             {p}
@@ -487,11 +491,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         {effectsPresets.map((effect, idx) => (
           <button
             key={`effect-${idx}`}
-            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            className="flex items-start gap-2 text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
             onClick={() => appendSnippet(effect.label)}
-            title={effect.hint}
           >
-            {effect.label}
+            <span
+              className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-bolt-elements-background-depth-1 text-[10px] text-bolt-elements-textSecondary"
+              title={effect.hint}
+            >
+              ?
+            </span>
+            <span>{effect.label}</span>
           </button>
         ))}
       </div>
@@ -541,12 +550,12 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               key={`reg-${idx}`}
               className="text-xs rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-2 py-1"
             >
-              <span className="font-medium text-bolt-elements-textPrimary">{item.name}</span>
+              <span className="font-medium text-bolt-elements-textPrimary">{normalizeText(item.name)}</span>
               {item.registry ? (
-                <span className="ml-1 text-bolt-elements-textTertiary">({item.registry})</span>
+                <span className="ml-1 text-bolt-elements-textTertiary">({normalizeText(item.registry)})</span>
               ) : null}
               {item.description ? (
-                <div className="text-bolt-elements-textSecondary truncate">{item.description}</div>
+                <div className="text-bolt-elements-textSecondary truncate">{normalizeText(item.description)}</div>
               ) : null}
             </li>
           ))}
@@ -559,11 +568,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         {sectionPresets.map((p, idx) => (
           <button
             key={`section-${idx}`}
-            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(effect.label)}
-            title={effect.hint}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => appendSnippet(p)}
           >
-            {effect.label}
+            {p}
           </button>
         ))}
       </div>
@@ -574,11 +582,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         {themePresets.map((p, idx) => (
           <button
             key={`theme-${idx}`}
-            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover-border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-            onClick={() => appendSnippet(effect.label)}
-            title={effect.hint}
+            className="text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+            onClick={() => appendSnippet(p)}
           >
-            {effect.label}
+            {p}
           </button>
         ))}
       </div>
