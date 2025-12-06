@@ -531,6 +531,10 @@ const EFFECT_KEYWORDS_MAP: Record<string, string[]> = {
   'hover gradient beam': ['beam', 'gradient', 'hover'],
 };
 
+// Фразы для "одна картинка в hero" — будем избегать галерей
+const SINGLE_IMAGE_HINTS = ['одна картинка', 'one image', 'single image', 'без галереи', 'no gallery'];
+const GALLERY_TYPES = ['gallery', 'grid', 'list', 'carousel'];
+
 // Aliases override when external file is present
 let ALIAS_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
 let ALIAS_THEME_KEYWORDS = THEME_KEYWORDS;
@@ -701,6 +705,8 @@ export class ComponentMatcher {
     const matchedComponents: string[] = [];
     let matchedTheme: string | null = null;
 
+    const wantsSingleImageHero = SINGLE_IMAGE_HINTS.some((h) => requestLower.includes(h));
+
     // Find matching component types
     for (const [componentType, keywords] of Object.entries(ALIAS_COMPONENT_KEYWORDS)) {
       for (const keyword of keywords) {
@@ -732,6 +738,17 @@ export class ComponentMatcher {
             matchedComponents.push(t);
           }
         }
+      }
+    }
+
+    // Если пользователь просит одну картинку — избегаем галерей, но гарантируем hero
+    if (wantsSingleImageHero) {
+      for (const g of GALLERY_TYPES) {
+        const idx = matchedComponents.indexOf(g);
+        if (idx >= 0) matchedComponents.splice(idx, 1);
+      }
+      if (!matchedComponents.includes('hero')) {
+        matchedComponents.push('hero');
       }
     }
 

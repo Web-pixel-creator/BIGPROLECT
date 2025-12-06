@@ -78,6 +78,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   const effectsPresets = EFFECT_PRESETS;
   const sectionPresets = SECTION_PRESETS;
   const themePresets = THEME_PRESETS;
+  const AUTO_REFRESH_REGISTRIES = false; // не обновляем реестры автоматически при открытии панели
 
   // Удаляем нечитаемые символы из превью реестров, чтобы не было "�"
   const normalizeText = (value?: string) =>
@@ -141,11 +142,11 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
   }, [showPromptPanel]);
 
   useEffect(() => {
-    if (!showPromptPanel) return;
+    if (!showPromptPanel || !AUTO_REFRESH_REGISTRIES) return;
     if (registryPreview.length === 0 && registryStatus !== 'loading') {
       refreshRegistries({ silent: true });
     }
-  }, [showPromptPanel]);
+  }, [showPromptPanel, registryPreview.length, registryStatus, AUTO_REFRESH_REGISTRIES]);
 
   return (
     <div

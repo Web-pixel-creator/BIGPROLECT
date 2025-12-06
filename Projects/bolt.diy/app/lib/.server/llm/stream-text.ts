@@ -12,6 +12,7 @@ import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { registryService } from '~/lib/services/registryService';
 import { componentMatcher } from '~/lib/services/componentMatcher';
+import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
 
 export type Messages = Message[];
 
@@ -177,6 +178,8 @@ export async function streamText(props: {
     const lastUserMessage = processedMessages.filter((m) => m.role === 'user').pop();
 
     if (lastUserMessage && typeof lastUserMessage.content === 'string') {
+      const userLower = lastUserMessage.content.toLowerCase();
+
       // Load all component MD files (cached after first load)
       await componentMatcher.loadAllComponentFiles();
 
@@ -190,6 +193,21 @@ export async function streamText(props: {
         logger.debug(`User message: "${lastUserMessage.content.substring(0, 100)}..."`);
       } else {
         logger.warn('No component context generated for user message');
+      }
+
+      // Дополнительно: если пользователь упомянул эффекты из пресетов, добавляем краткие подсказки
+      const requestedEffects = EFFECT_PRESETS.filter((e) => userLower.includes(e.label.toLowerCase()));
+      if (requestedEffects.length > 0) {
+        const effectHints = requestedEffects
+          .map((e) => `- ${e.label}: ${e.hint}`)
+          .join('\n');
+        const effectBlock = `
+<effect_hints>
+Реализуй следующие эффекты (если уместно — на нужных блоках):
+${effectHints}
+</effect_hints>`;
+        systemPrompt = `${systemPrompt}\n${effectBlock}`;
+        logger.info(`Added effect hints for: ${requestedEffects.map((e) => e.label).join(', ')}`);
       }
     }
   } catch (error) {
