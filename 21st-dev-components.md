@@ -2561,3 +2561,940 @@ export const Meteors = ({ number, className }: { number?: number; className?: st
 **CSS Required:** Add `meteor-effect` animation keyframe
 
 ---
+
+### moving-border (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/moving-border/default
+
+```tsx
+"use client";
+import React, { useRef } from "react";
+import { motion, useAnimationFrame, useMotionTemplate, useMotionValue, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export function Button({
+  borderRadius = "1.75rem",
+  children,
+  as: Component = "button",
+  containerClassName,
+  borderClassName,
+  duration,
+  className,
+  ...otherProps
+}: {
+  borderRadius?: string;
+  children: React.ReactNode;
+  as?: any;
+  containerClassName?: string;
+  borderClassName?: string;
+  duration?: number;
+  className?: string;
+  [key: string]: any;
+}) {
+  return (
+    <Component className={cn("bg-transparent relative text-xl h-16 w-40 p-[1px] overflow-hidden", containerClassName)} style={{ borderRadius }} {...otherProps}>
+      <div className="absolute inset-0" style={{ borderRadius: `calc(${borderRadius} + 2px)` }}>
+        <MovingBorder duration={duration} rx="30%" ry="30%">
+          <div className={cn("h-20 w-20 opacity-[0.8] bg-[radial-gradient(var(--sky-500)_40%,transparent_60%)]", borderClassName)} />
+        </MovingBorder>
+      </div>
+      <div className={cn("relative bg-slate-900/[0.8] border border-slate-800 backdrop-blur-xl text-white flex items-center justify-center w-full h-full text-sm antialiased", className)} style={{ borderRadius }}>
+        {children}
+      </div>
+    </Component>
+  );
+}
+
+export const MovingBorder = ({ children, duration = 2000, rx, ry, ...otherProps }: { children: React.ReactNode; duration?: number; rx?: string; ry?: string; [key: string]: any }) => {
+  const pathRef = useRef<any>();
+  const progress = useMotionValue<number>(0);
+
+  useAnimationFrame((time) => {
+    const length = pathRef.current?.getTotalLength();
+    if (length) {
+      const pxPerMillisecond = length / duration;
+      progress.set((time * pxPerMillisecond) % length);
+    }
+  });
+
+  const x = useTransform(progress, (val) => pathRef.current?.getPointAtLength(val).x);
+  const y = useTransform(progress, (val) => pathRef.current?.getPointAtLength(val).y);
+  const transform = useMotionTemplate`translateX(${x}px) translateY(${y}px) translateX(-50%) translateY(-50%)`;
+
+  return (
+    <>
+      <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="absolute h-full w-full" width="100%" height="100%" {...otherProps}>
+        <rect fill="none" width="100%" height="100%" rx={rx} ry={ry} ref={pathRef} />
+      </svg>
+      <motion.div style={{ position: "absolute", top: 0, left: 0, display: "inline-block", transform }}>{children}</motion.div>
+    </>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### evervault-card (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/evervault-card/default
+
+```tsx
+"use client";
+import { useMotionValue, useMotionTemplate, motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+
+export const EvervaultCard = ({ text, className }: { text?: string; className?: string }) => {
+  let mouseX = useMotionValue(0);
+  let mouseY = useMotionValue(0);
+  const [randomString, setRandomString] = useState("");
+
+  useEffect(() => {
+    setRandomString(generateRandomString(1500));
+  }, []);
+
+  function onMouseMove({ currentTarget, clientX, clientY }: any) {
+    let { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+    setRandomString(generateRandomString(1500));
+  }
+
+  return (
+    <div className={cn("p-0.5 bg-transparent aspect-square flex items-center justify-center w-full h-full relative", className)}>
+      <div onMouseMove={onMouseMove} className="group/card rounded-3xl w-full relative overflow-hidden bg-transparent flex items-center justify-center h-full">
+        <CardPattern mouseX={mouseX} mouseY={mouseY} randomString={randomString} />
+        <div className="relative z-10 flex items-center justify-center">
+          <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+            <div className="absolute w-full h-full bg-white/[0.8] dark:bg-black/[0.8] blur-sm rounded-full" />
+            <span className="dark:text-white text-black z-20">{text}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export function CardPattern({ mouseX, mouseY, randomString }: { mouseX: any; mouseY: any; randomString: string }) {
+  let maskImage = useMotionTemplate`radial-gradient(250px at ${mouseX}px ${mouseY}px, white, transparent)`;
+  let style = { maskImage, WebkitMaskImage: maskImage };
+  
+  return (
+    <div className="pointer-events-none">
+      <div className="absolute inset-0 rounded-2xl [mask-image:linear-gradient(white,transparent)] group-hover/card:opacity-50"></div>
+      <motion.div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500 to-blue-700 opacity-0 group-hover/card:opacity-100 backdrop-blur-xl transition duration-500" style={style} />
+      <motion.div className="absolute inset-0 rounded-2xl opacity-0 mix-blend-overlay group-hover/card:opacity-100" style={style}>
+        <p className="absolute inset-x-0 text-xs h-full break-words whitespace-pre-wrap text-white font-mono font-bold transition duration-500">{randomString}</p>
+      </motion.div>
+    </div>
+  );
+}
+
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+export const generateRandomString = (length: number) => {
+  let result = "";
+  for (let i = 0; i < length; i++) result += characters.charAt(Math.floor(Math.random() * characters.length));
+  return result;
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### globe (magicui)
+**Source:** https://21st.dev/community/components/magicui/globe/default
+
+```tsx
+"use client";
+import createGlobe, { COBEOptions } from "cobe";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800,
+  height: 800,
+  onRender: () => {},
+  devicePixelRatio: 2,
+  phi: 0,
+  theta: 0.3,
+  dark: 0,
+  diffuse: 0.4,
+  mapSamples: 16000,
+  mapBrightness: 1.2,
+  baseColor: [1, 1, 1],
+  markerColor: [251 / 255, 100 / 255, 21 / 255],
+  glowColor: [1, 1, 1],
+  markers: [
+    { location: [14.5995, 120.9842], size: 0.03 },
+    { location: [19.076, 72.8777], size: 0.1 },
+    { location: [23.8103, 90.4125], size: 0.05 },
+    { location: [30.0444, 31.2357], size: 0.07 },
+    { location: [39.9042, 116.4074], size: 0.08 },
+    { location: [-23.5505, -46.6333], size: 0.1 },
+    { location: [19.4326, -99.1332], size: 0.1 },
+    { location: [40.7128, -74.006], size: 0.1 },
+    { location: [34.6937, 135.5022], size: 0.05 },
+    { location: [41.0082, 28.9784], size: 0.06 },
+  ],
+};
+
+export function Globe({ className, config = GLOBE_CONFIG }: { className?: string; config?: COBEOptions }) {
+  let phi = 0;
+  let width = 0;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [r, setR] = useState(0);
+
+  const onResize = useCallback(() => {
+    if (!canvasRef.current) return;
+    width = canvasRef.current.offsetWidth;
+  }, [canvasRef]);
+
+  useEffect(() => {
+    window.addEventListener("resize", onResize);
+    onResize();
+    const globe = createGlobe(canvasRef.current!, {
+      ...config,
+      width: width * 2,
+      height: width * 2,
+      onRender: (state) => {
+        if (!state.isDragging) phi += 0.005;
+        state.phi = phi + r;
+        state.width = width * 2;
+        state.height = width * 2;
+      },
+    });
+    setTimeout(() => (canvasRef.current!.style.opacity = "1"));
+    return () => globe.destroy();
+  }, [canvasRef, config, onResize]);
+
+  return (
+    <div className={cn("absolute inset-x-0 bottom-0 mx-auto aspect-[1/1] w-full max-w-[600px] md:-bottom-20 md:max-w-[800px]", className)}>
+      <canvas
+        className={cn("h-full w-full opacity-0 transition-opacity duration-500 [contain:layout_paint_strict]")}
+        ref={canvasRef}
+        onMouseMove={(e) => { if (e.buttons !== 1) return; setR((r) => r + e.movementX * 0.005); }}
+      />
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`, `cobe`
+
+---
+
+### tabs (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/tabs/default
+
+```tsx
+"use client";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+type Tab = { title: string; value: string; content?: string | React.ReactNode };
+
+export const Tabs = ({
+  tabs: propTabs,
+  containerClassName,
+  activeTabClassName,
+  tabClassName,
+  contentClassName,
+}: {
+  tabs: Tab[];
+  containerClassName?: string;
+  activeTabClassName?: string;
+  tabClassName?: string;
+  contentClassName?: string;
+}) => {
+  const [active, setActive] = useState<Tab>(propTabs[0]);
+  const [tabs, setTabs] = useState<Tab[]>(propTabs);
+  const [hovering, setHovering] = useState(false);
+
+  const moveSelectedTabToTop = (idx: number) => {
+    const newTabs = [...propTabs];
+    const selectedTab = newTabs.splice(idx, 1);
+    newTabs.unshift(selectedTab[0]);
+    setTabs(newTabs);
+    setActive(newTabs[0]);
+  };
+
+  return (
+    <>
+      <div className={cn("flex flex-row items-center justify-start [perspective:1000px] relative overflow-auto sm:overflow-visible no-visible-scrollbar max-w-full w-full", containerClassName)}>
+        {propTabs.map((tab, idx) => (
+          <button
+            key={tab.title}
+            onClick={() => moveSelectedTabToTop(idx)}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            className={cn("relative px-4 py-2 rounded-full", tabClassName)}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            {active.value === tab.value && (
+              <motion.div layoutId="clickedbutton" transition={{ type: "spring", bounce: 0.3, duration: 0.6 }} className={cn("absolute inset-0 bg-gray-200 dark:bg-zinc-800 rounded-full", activeTabClassName)} />
+            )}
+            <span className="relative block text-black dark:text-white">{tab.title}</span>
+          </button>
+        ))}
+      </div>
+      <FadeInDiv tabs={tabs} active={active} hovering={hovering} className={cn("mt-32", contentClassName)} />
+    </>
+  );
+};
+
+export const FadeInDiv = ({ className, tabs, hovering }: { className?: string; tabs: Tab[]; active: Tab; hovering?: boolean }) => {
+  const isActive = (tab: Tab) => tab.value === tabs[0].value;
+  return (
+    <div className="relative w-full h-full">
+      {tabs.map((tab, idx) => (
+        <motion.div
+          key={tab.value}
+          layoutId={tab.value}
+          style={{ scale: 1 - idx * 0.1, top: hovering ? idx * -50 : 0, zIndex: -idx, opacity: idx < 3 ? 1 - idx * 0.1 : 0 }}
+          animate={{ y: isActive(tab) ? [0, 40, 0] : 0 }}
+          className={cn("w-full h-full absolute top-0 left-0", className)}
+        >
+          {tab.content}
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### hero-highlight (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/hero-highlight/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { useMotionValue, motion, useMotionTemplate } from "framer-motion";
+import React from "react";
+
+export const HeroHighlight = ({ children, className, containerClassName }: { children: React.ReactNode; className?: string; containerClassName?: string }) => {
+  let mouseX = useMotionValue(0);
+  let mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent<HTMLDivElement>) {
+    if (!currentTarget) return;
+    let { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
+  return (
+    <div className={cn("relative h-[40rem] flex items-center bg-white dark:bg-black justify-center w-full group", containerClassName)} onMouseMove={handleMouseMove}>
+      <div className="absolute inset-0 bg-dot-thick-neutral-300 dark:bg-dot-thick-neutral-800 pointer-events-none" />
+      <motion.div
+        className="pointer-events-none bg-dot-thick-indigo-500 dark:bg-dot-thick-indigo-500 absolute inset-0 opacity-0 transition duration-300 group-hover:opacity-100"
+        style={{
+          WebkitMaskImage: useMotionTemplate`radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black 0%, transparent 100%)`,
+          maskImage: useMotionTemplate`radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black 0%, transparent 100%)`,
+        }}
+      />
+      <div className={cn("relative z-20", className)}>{children}</div>
+    </div>
+  );
+};
+
+export const Highlight = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <motion.span
+    initial={{ backgroundSize: "0% 100%" }}
+    animate={{ backgroundSize: "100% 100%" }}
+    transition={{ duration: 2, ease: "linear", delay: 0.5 }}
+    style={{ backgroundRepeat: "no-repeat", backgroundPosition: "left center", display: "inline" }}
+    className={cn("relative inline-block pb-1 px-1 rounded-lg bg-gradient-to-r from-indigo-300 to-purple-300 dark:from-indigo-500 dark:to-purple-500", className)}
+  >
+    {children}
+  </motion.span>
+);
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+**CSS Required:** Add `bg-dot-thick-neutral-300/800` and `bg-dot-thick-indigo-500` backgrounds
+
+---
+
+### focus-cards (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/focus-cards/default
+
+```tsx
+"use client";
+import Image from "next/image";
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+
+export const Card = React.memo(({ card, index, hovered, setHovered }: { card: any; index: number; hovered: number | null; setHovered: React.Dispatch<React.SetStateAction<number | null>> }) => (
+  <div
+    onMouseEnter={() => setHovered(index)}
+    onMouseLeave={() => setHovered(null)}
+    className={cn("rounded-lg relative bg-gray-100 dark:bg-neutral-900 overflow-hidden h-60 md:h-96 w-full transition-all duration-300 ease-out", hovered !== null && hovered !== index && "blur-sm scale-[0.98]")}
+  >
+    <Image src={card.src} alt={card.title} fill className="object-cover absolute inset-0" />
+    <div className={cn("absolute inset-0 bg-black/50 flex items-end py-8 px-4 transition-opacity duration-300", hovered === index ? "opacity-100" : "opacity-0")}>
+      <div className="text-xl md:text-2xl font-medium bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-200">{card.title}</div>
+    </div>
+  </div>
+));
+
+export const FocusCards = ({ cards }: { cards: any[] }) => {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      {cards.map((card, index) => <Card card={card} index={index} key={card.title} hovered={hovered} setHovered={setHovered} />)}
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `next/image`
+
+---
+
+### card-spotlight (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/card-spotlight/default
+
+```tsx
+"use client";
+import { useMotionValue, motion, useMotionTemplate } from "framer-motion";
+import React, { MouseEvent as ReactMouseEvent, useState } from "react";
+import { cn } from "@/lib/utils";
+
+export const CardSpotlight = ({
+  children,
+  radius = 350,
+  color = "#262626",
+  className,
+  ...props
+}: {
+  radius?: number;
+  color?: string;
+  children: React.ReactNode;
+} & React.HTMLAttributes<HTMLDivElement>) => {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  
+  function handleMouseMove({ currentTarget, clientX, clientY }: ReactMouseEvent<HTMLDivElement>) {
+    let { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
+  return (
+    <div
+      className={cn("group/spotlight p-10 rounded-md relative border border-neutral-800 bg-black dark:border-neutral-800", className)}
+      onMouseMove={handleMouseMove}
+      {...props}
+    >
+      <motion.div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover/spotlight:opacity-100"
+        style={{
+          background: useMotionTemplate`radial-gradient(${radius}px circle at ${mouseX}px ${mouseY}px, ${color}, transparent 80%)`,
+        }}
+      />
+      <div>{children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### parallax-scroll (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/parallax-scroll/default
+
+```tsx
+"use client";
+import { useScroll, useTransform, motion } from "framer-motion";
+import { useRef } from "react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+
+export const ParallaxScrollSecond = ({ images, className }: { images: string[]; className?: string }) => {
+  const gridRef = useRef<any>(null);
+  const { scrollYProgress } = useScroll({ container: gridRef, offset: ["start start", "end start"] });
+
+  const translateYFirst = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const translateXFirst = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const rotateXFirst = useTransform(scrollYProgress, [0, 1], [0, -20]);
+  const translateYThird = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const translateXThird = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const rotateXThird = useTransform(scrollYProgress, [0, 1], [0, 20]);
+
+  const third = Math.ceil(images.length / 3);
+  const firstPart = images.slice(0, third);
+  const secondPart = images.slice(third, 2 * third);
+  const thirdPart = images.slice(2 * third);
+
+  return (
+    <div className={cn("h-[40rem] items-start overflow-y-auto w-full", className)} ref={gridRef}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-start max-w-5xl mx-auto gap-10 py-40 px-10">
+        <div className="grid gap-10">
+          {firstPart.map((el, idx) => (
+            <motion.div style={{ y: translateYFirst, x: translateXFirst, rotateX: rotateXFirst }} key={"grid-1" + idx}>
+              <Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" />
+            </motion.div>
+          ))}
+        </div>
+        <div className="grid gap-10">
+          {secondPart.map((el, idx) => (
+            <motion.div key={"grid-2" + idx}>
+              <Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" />
+            </motion.div>
+          ))}
+        </div>
+        <div className="grid gap-10">
+          {thirdPart.map((el, idx) => (
+            <motion.div style={{ y: translateYThird, x: translateXThird, rotateZ: rotateXThird }} key={"grid-3" + idx}>
+              <Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `next/image`
+
+---
+
+### animated-gradient-text (magicui)
+**Source:** https://21st.dev/community/components/magicui/animated-gradient-text/default
+
+```tsx
+import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+export function AnimatedGradientText({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("group relative mx-auto flex max-w-fit flex-row items-center justify-center rounded-2xl bg-white/40 px-4 py-1.5 text-sm font-medium shadow-[inset_0_-8px_10px_#8fdfff1f] backdrop-blur-sm transition-shadow duration-500 ease-out [--bg-size:300%] hover:shadow-[inset_0_-5px_10px_#8fdfff3f] dark:bg-black/40", className)}>
+      <div className="absolute inset-0 block h-full w-full animate-gradient bg-gradient-to-r from-[#ffaa40]/50 via-[#9c40ff]/50 to-[#ffaa40]/50 bg-[length:var(--bg-size)_100%] p-[1px] ![mask-composite:subtract] [border-radius:inherit] [mask:linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)]" />
+      {children}
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS Required:** Add `animate-gradient` animation keyframe
+
+---
+
+### text-hover-effect (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/text-hover-effect/default
+
+```tsx
+"use client";
+import React, { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+
+export const TextHoverEffect = ({ text, duration }: { text: string; duration?: number }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+  const [maskPosition, setMaskPosition] = useState({ cx: "50%", cy: "50%" });
+
+  useEffect(() => {
+    if (svgRef.current && cursor.x !== null && cursor.y !== null) {
+      const svgRect = svgRef.current.getBoundingClientRect();
+      const cxPercentage = ((cursor.x - svgRect.left) / svgRect.width) * 100;
+      const cyPercentage = ((cursor.y - svgRect.top) / svgRect.height) * 100;
+      setMaskPosition({ cx: `${cxPercentage}%`, cy: `${cyPercentage}%` });
+    }
+  }, [cursor]);
+
+  return (
+    <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })} className="select-none">
+      <defs>
+        <motion.mask id="circleMask">
+          <motion.circle cx={maskPosition.cx} cy={maskPosition.cy} r={hovered ? 50 : 0} fill="white" animate={{ r: hovered ? 50 : 0 }} transition={{ duration: duration || 0.3, ease: "easeOut" }} />
+        </motion.mask>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style={{ stopColor: "rgb(59,130,246)", stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: "rgb(168,85,247)", stopOpacity: 1 }} />
+        </linearGradient>
+      </defs>
+      <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="54" fontWeight="bold" fill="rgba(156, 163, 175, 0.4)">{text}</text>
+      <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="54" fontWeight="bold" fill="url(#gradient)" mask="url(#circleMask)">{text}</text>
+    </svg>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### timeline (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/timeline/default
+
+```tsx
+"use client";
+import { useMotionValueEvent, useScroll, useTransform, motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+
+interface TimelineEntry { title: string; content: React.ReactNode }
+
+export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (ref.current) setHeight(ref.current.getBoundingClientRect().height);
+  }, [ref]);
+
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start 10%", "end 50%"] });
+  const heightTransform = useTransform(scrollYProgress, [0, 1], [0, height]);
+  const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
+
+  return (
+    <div className="w-full bg-white dark:bg-neutral-950 font-sans md:px-10" ref={containerRef}>
+      <div className="max-w-7xl mx-auto py-20 px-4 md:px-8 lg:px-10">
+        <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl">Timeline</h2>
+        <div className="flex">
+          <div className="relative">
+            <motion.div style={{ height: heightTransform, opacity: opacityTransform }} className="absolute top-0 left-0 w-0.5 bg-neutral-300 dark:bg-neutral-800" />
+            <div className="space-y-16" ref={ref}>
+              {data.map((item, index) => (
+                <div key={index} className="flex space-x-4 ml-6">
+                  <div className="flex flex-col">
+                    <h3 className="text-xl font-semibold text-black dark:text-white mb-4">{item.title}</h3>
+                    <div className="text-base text-neutral-800 dark:text-neutral-200">{item.content}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### number-ticker (magicui)
+**Source:** https://21st.dev/community/components/magicui/number-ticker/default
+
+```tsx
+"use client";
+import { useEffect, useRef } from "react";
+import { useInView, useMotionValue, useSpring } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export function NumberTicker({ value, direction = "up", delay = 0, className, decimalPlaces = 0 }: { value: number; direction?: "up" | "down"; className?: string; delay?: number; decimalPlaces?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const motionValue = useMotionValue(direction === "down" ? value : 0);
+  const springValue = useSpring(motionValue, { damping: 60, stiffness: 100 });
+  const isInView = useInView(ref, { once: true, margin: "0px" });
+
+  useEffect(() => {
+    isInView && setTimeout(() => motionValue.set(direction === "down" ? 0 : value), delay * 1000);
+  }, [motionValue, isInView, delay, value, direction]);
+
+  useEffect(() => springValue.on("change", (latest) => {
+    if (ref.current) ref.current.textContent = Intl.NumberFormat("en-US", { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }).format(latest);
+  }), [springValue, decimalPlaces]);
+
+  return <span className={cn("inline-block tabular-nums text-black dark:text-white", className)} ref={ref} />;
+}
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### word-rotate (magicui)
+**Source:** https://21st.dev/community/components/magicui/word-rotate/default
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { AnimatePresence, HTMLMotionProps, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface WordRotateProps { words: string[]; duration?: number; framerProps?: HTMLMotionProps<"h1">; className?: string }
+
+export function WordRotate({ words, duration = 2500, framerProps = { initial: { opacity: 0, y: -50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 50 }, transition: { duration: 0.25, ease: "easeOut" } }, className }: WordRotateProps) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setIndex((prev) => (prev + 1) % words.length), duration);
+    return () => clearInterval(interval);
+  }, [words, duration]);
+
+  return (
+    <div className="overflow-hidden py-2">
+      <AnimatePresence mode="wait">
+        <motion.h1 key={words[index]} className={cn(className)} {...framerProps}>{words[index]}</motion.h1>
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### typing-animation (magicui)
+**Source:** https://21st.dev/community/components/magicui/typing-animation/default
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface TypingAnimationProps { text: string; duration?: number; className?: string }
+
+export function TypingAnimation({ text, duration = 200, className }: TypingAnimationProps) {
+  const [displayedText, setDisplayedText] = useState<string>("");
+  const [i, setI] = useState<number>(0);
+
+  useEffect(() => {
+    const typingEffect = setInterval(() => {
+      if (i < text.length) { setDisplayedText(text.substring(0, i + 1)); setI(i + 1); }
+      else clearInterval(typingEffect);
+    }, duration);
+    return () => clearInterval(typingEffect);
+  }, [duration, i]);
+
+  return <h1 className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>{displayedText}</h1>;
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### blur-fade (magicui)
+**Source:** https://21st.dev/community/components/magicui/blur-fade/default
+
+```tsx
+"use client";
+import { useRef } from "react";
+import { AnimatePresence, motion, useInView, UseInViewOptions, Variants } from "framer-motion";
+
+type MarginType = UseInViewOptions["margin"];
+interface BlurFadeProps { children: React.ReactNode; className?: string; variant?: { hidden: { y: number }; visible: { y: number } }; duration?: number; delay?: number; yOffset?: number; inView?: boolean; inViewMargin?: MarginType; blur?: string }
+
+export function BlurFade({ children, className, variant, duration = 0.4, delay = 0, yOffset = 6, inView = false, inViewMargin = "-50px", blur = "6px" }: BlurFadeProps) {
+  const ref = useRef(null);
+  const inViewResult = useInView(ref, { once: true, margin: inViewMargin });
+  const FADE_VARIANTS: Variants = variant || { hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` }, visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` } };
+
+  return (
+    <AnimatePresence>
+      <motion.div ref={ref} className={className} initial="hidden" animate={inView || inViewResult ? "visible" : "hidden"} exit="hidden" variants={FADE_VARIANTS} transition={{ duration, delay }}>
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### ripple (magicui)
+**Source:** https://21st.dev/community/components/magicui/ripple/default
+
+```tsx
+import React, { CSSProperties } from "react";
+import { cn } from "@/lib/utils";
+
+interface RippleProps { mainCircleSize?: number; mainCircleOpacity?: number; numCircles?: number; className?: string }
+
+const Ripple = React.memo(function Ripple({ mainCircleSize = 210, mainCircleOpacity = 0.24, numCircles = 8, className }: RippleProps) {
+  return (
+    <div className={cn("pointer-events-none select-none absolute inset-0 [mask-image:linear-gradient(to_bottom,white,transparent)]", className)}>
+      {Array.from({ length: numCircles }, (_, i) => {
+        const size = mainCircleSize + i * 70;
+        const opacity = mainCircleOpacity - i * 0.03;
+        const animationDelay = `${i * 0.06}s`;
+        const borderStyle = i === numCircles - 1 ? "dashed" : "solid";
+        const borderOpacity = 5 + i * 5;
+        return <div key={i} className={`absolute animate-ripple rounded-full bg-foreground/25 shadow-xl border [--i:${i}]`} style={{ width: `${size}px`, height: `${size}px`, opacity, animationDelay, borderStyle, borderColor: `rgba(var(--foreground-rgb), ${borderOpacity / 100})` } as CSSProperties} />;
+      })}
+    </div>
+  );
+});
+
+Ripple.displayName = "Ripple";
+export { Ripple };
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS Required:** Add `animate-ripple` animation keyframe
+
+---
+
+### dock (magicui)
+**Source:** https://21st.dev/community/components/magicui/dock/default
+
+```tsx
+"use client";
+import React, { PropsWithChildren, useRef } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export interface DockProps extends VariantProps<typeof dockVariants> { className?: string; magnification?: number; distance?: number; direction?: "top" | "middle" | "bottom"; children: React.ReactNode }
+const DEFAULT_MAGNIFICATION = 60;
+const DEFAULT_DISTANCE = 140;
+const dockVariants = cva("supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 mx-auto mt-8 flex h-[58px] w-max gap-2 rounded-2xl border p-2 backdrop-blur-md");
+
+const Dock = React.forwardRef<HTMLDivElement, DockProps>(({ className, children, magnification = DEFAULT_MAGNIFICATION, distance = DEFAULT_DISTANCE, direction = "bottom", ...props }, ref) => {
+  const mouseX = useMotionValue(Infinity);
+  const renderChildren = () => React.Children.map(children, (child) => {
+    if (React.isValidElement(child) && child.type === DockIcon) return React.cloneElement(child, { mouseX, magnification, distance } as DockIconProps);
+    return child;
+  });
+  return <motion.div ref={ref} onMouseMove={(e) => mouseX.set(e.pageX)} onMouseLeave={() => mouseX.set(Infinity)} {...props} className={cn(dockVariants(), className)}>{renderChildren()}</motion.div>;
+});
+Dock.displayName = "Dock";
+
+export interface DockIconProps { size?: number; magnification?: number; distance?: number; mouseX?: any; className?: string; children?: React.ReactNode; props?: PropsWithChildren }
+
+const DockIcon = ({ size, magnification = DEFAULT_MAGNIFICATION, distance = DEFAULT_DISTANCE, mouseX, className, children, ...props }: DockIconProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const { width } = useSpring(useTransform(mouseX, (newMouseX) => { const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }; return newMouseX - bounds.x - bounds.width / 2; }), { damping: 15, stiffness: 250, mass: 0.5 });
+  return <motion.div ref={ref} style={{ width }} className={cn("flex aspect-square cursor-pointer items-center justify-center rounded-full bg-neutral-400/40", className)} {...props}>{children}</motion.div>;
+};
+DockIcon.displayName = "DockIcon";
+
+export { Dock, DockIcon, dockVariants };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `class-variance-authority`
+
+---
+
+### retro-grid (magicui)
+**Source:** https://21st.dev/community/components/magicui/retro-grid/default
+
+```tsx
+import { cn } from "@/lib/utils";
+
+export function RetroGrid({ className, angle = 65 }: { className?: string; angle?: number }) {
+  return (
+    <div className={cn("pointer-events-none absolute size-full overflow-hidden opacity-50 [perspective:200px]", className)} style={{ "--grid-angle": `${angle}deg` } as React.CSSProperties}>
+      <div className="absolute inset-0 [transform:rotateX(var(--grid-angle))]">
+        <div className={cn("animate-grid", "[background-repeat:repeat] [background-size:60px_60px] [height:300vh] [inset:0%_0px] [margin-left:-50%] [transform-origin:100%_0_0] [width:600vw]", "[background-image:linear-gradient(to_right,rgba(0,0,0,0.3)_1px,transparent_0),linear-gradient(to_bottom,rgba(0,0,0,0.3)_1px,transparent_0)]", "dark:[background-image:linear-gradient(to_right,rgba(255,255,255,0.2)_1px,transparent_0),linear-gradient(to_bottom,rgba(255,255,255,0.2)_1px,transparent_0)]")} />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent to-90% dark:from-black" />
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS Required:** Add `animate-grid` animation keyframe
+
+---
+
+### particles (magicui)
+**Source:** https://21st.dev/community/components/magicui/particles/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useEffect, useRef, useState } from "react";
+
+interface MousePosition { x: number; y: number }
+
+function useMousePosition(): MousePosition {
+  const [mousePosition, setMousePosition] = useState<MousePosition>({ x: 0, y: 0 });
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => setMousePosition({ x: event.clientX, y: event.clientY });
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+  return mousePosition;
+}
+
+interface ParticlesProps { className?: string; quantity?: number; staticity?: number; ease?: number; size?: number; refresh?: boolean; color?: string; vx?: number; vy?: number }
+
+export function Particles({ className, quantity = 30, staticity = 50, ease = 50, size = 0.4, refresh = false, color = "#ffffff", vx = 0, vy = 0 }: ParticlesProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const context = useRef<CanvasRenderingContext2D | null>(null);
+  const circles = useRef<any[]>([]);
+  const mousePosition = useMousePosition();
+  const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1;
+
+  useEffect(() => { if (canvasRef.current) context.current = canvasRef.current.getContext("2d"); initCanvas(); animate(); window.addEventListener("resize", initCanvas); return () => window.removeEventListener("resize", initCanvas); }, []);
+  useEffect(() => { onMouseMove(); }, [mousePosition.x, mousePosition.y]);
+  useEffect(() => { initCanvas(); }, [refresh]);
+
+  const initCanvas = () => { resizeCanvas(); drawParticles(); };
+  const onMouseMove = () => { if (canvasRef.current) { const rect = canvasRef.current.getBoundingClientRect(); const { w, h } = canvasSize.current; const x = mousePosition.x - rect.left - w / 2; const y = mousePosition.y - rect.top - h / 2; const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2; if (inside) { mouse.current.x = x; mouse.current.y = y; } } };
+
+  type Circle = { x: number; y: number; translateX: number; translateY: number; size: number; alpha: number; targetAlpha: number; dx: number; dy: number; magnetism: number };
+  const resizeCanvas = () => { if (canvasContainerRef.current && canvasRef.current && context.current) { circles.current.length = 0; canvasSize.current.w = canvasContainerRef.current.offsetWidth; canvasSize.current.h = canvasContainerRef.current.offsetHeight; canvasRef.current.width = canvasSize.current.w * dpr; canvasRef.current.height = canvasSize.current.h * dpr; canvasRef.current.style.width = `${canvasSize.current.w}px`; canvasRef.current.style.height = `${canvasSize.current.h}px`; context.current.scale(dpr, dpr); } };
+  const circleParams = (): Circle => ({ x: Math.floor(Math.random() * canvasSize.current.w), y: Math.floor(Math.random() * canvasSize.current.h), translateX: 0, translateY: 0, size: Math.floor(Math.random() * 2) + size, alpha: 0, targetAlpha: parseFloat((Math.random() * 0.6 + 0.1).toFixed(1)), dx: (Math.random() - 0.5) * 0.1, dy: (Math.random() - 0.5) * 0.1, magnetism: 0.1 + Math.random() * 4 });
+  const drawCircle = (circle: Circle, update = false) => { if (context.current) { const { x, y, translateX, translateY, size, alpha } = circle; context.current.translate(translateX, translateY); context.current.beginPath(); context.current.arc(x, y, size, 0, 2 * Math.PI); context.current.fillStyle = `rgba(${color}, ${alpha})`; context.current.fill(); context.current.setTransform(dpr, 0, 0, dpr, 0, 0); if (!update) circles.current.push(circle); } };
+  const clearContext = () => { if (context.current) context.current.clearRect(0, 0, canvasSize.current.w, canvasSize.current.h); };
+  const drawParticles = () => { clearContext(); for (let i = 0; i < quantity; i++) drawCircle(circleParams()); };
+  const remapValue = (value: number, start1: number, end1: number, start2: number, end2: number): number => { const remapped = ((value - start1) * (end2 - start2)) / (end1 - start1) + start2; return remapped > 0 ? remapped : 0; };
+  const animate = () => { clearContext(); circles.current.forEach((circle: Circle, i: number) => { const edge = [circle.x + circle.translateX - circle.size, canvasSize.current.w - circle.x - circle.translateX - circle.size, circle.y + circle.translateY - circle.size, canvasSize.current.h - circle.y - circle.translateY - circle.size]; const closestEdge = edge.reduce((a, b) => Math.min(a, b)); const remapClosestEdge = parseFloat(remapValue(closestEdge, 0, 20, 0, 1).toFixed(2)); if (remapClosestEdge > 1) { circle.alpha += 0.02; if (circle.alpha > circle.targetAlpha) circle.alpha = circle.targetAlpha; } else circle.alpha = circle.targetAlpha * remapClosestEdge; circle.x += circle.dx + vx; circle.y += circle.dy + vy; circle.translateX += (mouse.current.x / (staticity / circle.magnetism) - circle.translateX) / ease; circle.translateY += (mouse.current.y / (staticity / circle.magnetism) - circle.translateY) / ease; if (circle.x < -circle.size || circle.x > canvasSize.current.w + circle.size || circle.y < -circle.size || circle.y > canvasSize.current.h + circle.size) { circles.current.splice(i, 1); drawCircle(circleParams()); } else drawCircle({ ...circle }, true); }); window.requestAnimationFrame(animate); };
+
+  return <div className={className} ref={canvasContainerRef} aria-hidden="true"><canvas ref={canvasRef} /></div>;
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### grid-pattern (magicui)
+**Source:** https://21st.dev/community/components/magicui/grid-pattern/default
+
+```tsx
+import { useId } from "react";
+import { cn } from "@/lib/utils";
+
+interface GridPatternProps { width?: number; height?: number; x?: number; y?: number; squares?: Array<[x: number, y: number]>; strokeDasharray?: string; className?: string; [key: string]: unknown }
+
+function GridPattern({ width = 40, height = 40, x = -1, y = -1, strokeDasharray = "0", squares, className, ...props }: GridPatternProps) {
+  const id = useId();
+  return (
+    <svg aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30", className)} {...props}>
+      <defs>
+        <pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" x={x} y={y}>
+          <path d={`M.5 ${height}V.5H${width}`} fill="none" strokeDasharray={strokeDasharray} />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${id})`} />
+      {squares && (
+        <svg x={x} y={y} className="overflow-visible">
+          {squares.map(([x, y]) => <rect strokeWidth="0" key={`${x}-${y}`} width={width - 1} height={height - 1} x={x * width + 1} y={y * height + 1} />)}
+        </svg>
+      )}
+    </svg>
+  );
+}
+
+export { GridPattern };
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
