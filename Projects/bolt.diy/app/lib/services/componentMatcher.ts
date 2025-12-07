@@ -493,6 +493,21 @@ const EXTRA_KEYWORDS: Record<string, string[]> = {
   stepper: ['stepper', 'шаги', 'мастер'],
   warp: ['warp', 'warp-background', 'варп', 'деформация', 'warp effect', 'warp speed', 'warp distortion'],
   pointer: ['pointer', 'custom-cursor', 'указатель', 'cursor effect', 'mouse follower', 'following pointer'],
+  beam: ['beam', 'gradient beam', 'hover beam', 'border beam', 'луч', 'лучи', 'градиентный луч'],
+  spotlight: ['spotlight', 'focus light', 'hover light', 'луч света', 'спотлайт'],
+  following: ['following', 'follow', 'follow effect', 'следующий за курсором', 'следовать за курсором'],
+  wobble: ['wobble', 'wobble card', 'дрожащая карточка', 'покачивание'],
+  flip: ['flip', 'flip card', 'flip words', 'переворот', 'переключение слов'],
+  focus: ['focus', 'focus cards', 'фокус', 'фокусировка'],
+  glow: ['glow', 'glowing', 'свечение', 'подсветка'],
+  shine: ['shine', 'shiny', 'сияние', 'блик'],
+  typewriter: ['typewriter', 'typing', 'печатающая машинка', 'анимация печати'],
+  carousel: ['carousel', 'slider', 'slideshow', 'карусель', 'слайдер'],
+  sidebar: ['sidebar', 'side menu', 'side panel', 'боковое меню', 'панель слева'],
+  navbar: ['navbar', 'navigation bar', 'nav menu', 'топ меню', 'навигация'],
+  modal: ['modal', 'dialog', 'popup', 'модалка', 'диалог'],
+  form: ['form', 'input form', 'форма', 'contact form', 'signup form'],
+  hero: ['hero', 'hero section', 'hero banner', 'главный экран', 'первый экран'],
 };
 
 for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
