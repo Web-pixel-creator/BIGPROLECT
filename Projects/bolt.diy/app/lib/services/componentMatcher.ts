@@ -491,6 +491,8 @@ const EXTRA_KEYWORDS: Record<string, string[]> = {
   fluid: ['fluid', 'жидкий', 'поток'],
   lanyard: ['lanyard', 'бейдж', 'карточка'],
   stepper: ['stepper', 'шаги', 'мастер'],
+  warp: ['warp', 'warp-background', 'варп', 'деформация', 'warp effect', 'warp speed', 'warp distortion'],
+  pointer: ['pointer', 'custom-cursor', 'указатель', 'cursor effect', 'mouse follower', 'following pointer'],
 };
 
 for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
@@ -623,6 +625,7 @@ export class ComponentMatcher {
       'kokonutui-components.md',
       'magicui-components.md',
       'reactbits-components.md',
+      '21st-dev-components.md',
     ];
 
     for (const file of mdFiles) {

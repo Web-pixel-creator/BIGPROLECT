@@ -23,6 +23,7 @@ const MD_FILES = [
   'kokonutui-components.md',
   'magicui-components.md',
   'reactbits-components.md',
+  '21st-dev-components.md',
 ];
 
 const CACHE_PATH = 'Projects/bolt.diy/app/lib/services/component-index-cache.json';
@@ -106,19 +107,29 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
     }
 
     if (currentComponent?.name) {
-          components.push({
-            name: currentComponent.name,
-            description: currentComponent.description || '',
-            category: currentCategory,
-            source: file,
-            code: (currentComponent.code || '').trim(),
-            rawCategory: currentRawCategory,
-            tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
-          });
+      components.push({
+        name: currentComponent.name,
+        description: currentComponent.description || '',
+        category: currentCategory,
+        source: file,
+        code: (currentComponent.code || '').trim(),
+        rawCategory: currentRawCategory,
+        tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
+      });
     }
   }
 
-  const index: ComponentIndex = { components, total: components.length, generatedAt: Date.now() };
+  // Дедупликация по имени компонента (оставляем первый встретившийся)
+  const seenNames = new Set<string>();
+  const deduped: ComponentMeta[] = [];
+  for (const comp of components) {
+    const key = (comp.name || '').toLowerCase();
+    if (seenNames.has(key)) continue;
+    seenNames.add(key);
+    deduped.push(comp);
+  }
+
+  const index: ComponentIndex = { components: deduped, total: deduped.length, generatedAt: Date.now() };
 
   // Write cache
   try {
