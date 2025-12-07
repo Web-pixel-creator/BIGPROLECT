@@ -4,6 +4,12 @@ node_modules/
 dist/
 build/
 coverage/
+.cache/
+.eslintcache
+.DS_Store
+/Projects/bolt.diy/app/lib/services/component-index-cache.json
+/Projects/bolt.diy/component-registry.json
+/Projects/bolt.diy/Projects/
 .env
 .env.*
 npm-debug.log*

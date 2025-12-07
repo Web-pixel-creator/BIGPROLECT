@@ -638,22 +638,18 @@ export class ComponentMatcher {
     }
 
     // Load all component MD files
-    const mdFiles = [
-      'shadcnui-blocks.md',
-      'aceternity-components.md',
-      'kokonutui-components.md',
-      'magicui-components.md',
-      'reactbits-components.md',
-      '21st-dev-components.md',
-      '21st-dev-components-part2.md',
-    ];
-
-    for (const file of mdFiles) {
-      await this.loadComponentsFromMD(file);
-    }
+    // load from registry/index instead of raw MD (already deduped and cached)
+    const index = buildIndex(process.cwd(), true);
+    this.components = index.components.map((c) => ({
+      name: c.name,
+      category: c.category,
+      description: c.description,
+      code: c.code,
+      source: c.source,
+    }));
 
     const stats = this.getStats();
-    logger.info(`Total loaded: ${stats.totalComponents} components in ${stats.categories} categories`);
+    logger.info(`Total loaded: ${stats.totalComponents} components in ${stats.categories} categories (registry)`);
   }
 
   private _parseComponents(content: string, source: string): void {

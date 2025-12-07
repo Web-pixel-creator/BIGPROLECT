@@ -24,30 +24,49 @@ const MD_FILES = [
   'magicui-components.md',
   'reactbits-components.md',
   '21st-dev-components.md',
+  '21st-dev-components-part2.md',
+  'tailark-components.md',
 ];
 
+const REGISTRY_JSON = 'Projects/bolt.diy/component-registry.json';
 const CACHE_PATH = 'Projects/bolt.diy/app/lib/services/component-index-cache.json';
 
 export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = true): ComponentIndex {
   const cacheFullPath = path.resolve(process.cwd(), CACHE_PATH);
+  const registryPath = path.resolve(process.cwd(), REGISTRY_JSON);
 
   const mdPaths = MD_FILES.map((f) => path.resolve(mdDir, f)).filter((p) => fs.existsSync(p));
   const newestMd = mdPaths.reduce((ts, p) => Math.max(ts, fs.statSync(p).mtimeMs), 0);
+  const registryMtime = fs.existsSync(registryPath) ? fs.statSync(registryPath).mtimeMs : 0;
+  const newestSource = Math.max(newestMd, registryMtime);
 
   if (useCache && fs.existsSync(cacheFullPath)) {
     try {
       const cacheStat = fs.statSync(cacheFullPath);
-      if (cacheStat.mtimeMs >= newestMd) {
+      if (cacheStat.mtimeMs >= newestSource) {
         const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
-        if (!cached.generatedAt) {
-          cached.generatedAt = cacheStat.mtimeMs;
-        }
-        if (cached?.components?.length) {
-          return cached;
-        }
+        if (!cached.generatedAt) cached.generatedAt = cacheStat.mtimeMs;
+        if (cached?.components?.length) return cached;
       }
     } catch {
       // ignore cache errors
+    }
+  }
+
+  // Prefer JSON registry if present
+  if (fs.existsSync(registryPath)) {
+    try {
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as ComponentIndex;
+      const deduped = dedupeByName(registry.components || []);
+      const indexFromRegistry: ComponentIndex = {
+        components: deduped,
+        total: deduped.length,
+        generatedAt: Date.now(),
+      };
+      writeCache(cacheFullPath, indexFromRegistry);
+      return indexFromRegistry;
+    } catch {
+      // fall back to MD parsing
     }
   }
 
@@ -79,7 +98,12 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
             source: file,
             code: (currentComponent.code || '').trim(),
             rawCategory: currentRawCategory,
-            tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
+            tags: [
+              ...new Set([
+                currentCategory,
+                ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : []),
+              ]),
+            ],
           });
         }
         const match = line.match(/### (.+?) \((.+?)\)/);
@@ -114,12 +138,23 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
         source: file,
         code: (currentComponent.code || '').trim(),
         rawCategory: currentRawCategory,
-        tags: [...new Set([currentCategory, ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : [])])],
+        tags: [
+          ...new Set([
+            currentCategory,
+            ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : []),
+          ]),
+        ],
       });
     }
   }
 
-  // Дедупликация по имени компонента (оставляем первый встретившийся)
+  const deduped = dedupeByName(components);
+  const index: ComponentIndex = { components: deduped, total: deduped.length, generatedAt: Date.now() };
+  writeCache(cacheFullPath, index);
+  return index;
+}
+
+function dedupeByName(components: ComponentMeta[]): ComponentMeta[] {
   const seenNames = new Set<string>();
   const deduped: ComponentMeta[] = [];
   for (const comp of components) {
@@ -128,10 +163,10 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
     seenNames.add(key);
     deduped.push(comp);
   }
+  return deduped;
+}
 
-  const index: ComponentIndex = { components: deduped, total: deduped.length, generatedAt: Date.now() };
-
-  // Write cache
+function writeCache(cacheFullPath: string, index: ComponentIndex) {
   try {
     const dir = path.dirname(cacheFullPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -139,6 +174,4 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
   } catch {
     // ignore cache write errors
   }
-
-  return index;
 }

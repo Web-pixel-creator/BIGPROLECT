@@ -1,0 +1,161 @@
+import { buildIndex, type ComponentIndex, type ComponentMeta } from './component-index.ts';
+
+export type UserIntent = {
+  type?: 'landing' | 'dashboard' | 'ecommerce' | 'portfolio' | 'blog' | 'web3' | string;
+  theme?: 'saas' | 'construction' | 'auto' | 'food' | 'finance' | 'education' | 'web3' | 'fashion' | 'health' | 'photo' | string;
+  sections?: string[];
+  effects?: string[];
+  style?: string;
+  tokens?: number;
+};
+
+export type SelectedComponent = ComponentMeta & { score: number };
+
+export type SelectionResult = {
+  components: SelectedComponent[];
+  effects: SelectedComponent[];
+  dependencies: string[];
+  total: number;
+};
+
+// Presets of sections/effects/colors per theme/type
+const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }> = {
+  saas: { sections: ['hero', 'features', 'pricing', 'testimonials', 'cta'], effects: ['sparkles', 'border-beam'] },
+  construction: { sections: ['hero', 'features', 'projects', 'stats', 'cta', 'contact'], effects: ['fade', 'slide'] },
+  auto: { sections: ['hero', 'features', 'gallery', 'pricing', 'cta'], effects: ['spotlight', 'glow'] },
+  ecommerce: { sections: ['hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  portfolio: { sections: ['hero', 'projects', 'about', 'contact'], effects: ['parallax', 'tilt'] },
+  web3: { sections: ['hero', 'cases', 'cta', 'contact'], effects: ['aurora', 'grid', 'sparkles'] },
+  finance: { sections: ['hero', 'features', 'stats', 'testimonials', 'cta'], effects: ['fade', 'hover'] },
+  education: { sections: ['hero', 'features', 'faq', 'cta'], effects: ['slide', 'fade'] },
+};
+
+// Lightweight keyword map to help ranking
+const KEYWORDS: Record<string, string[]> = {
+  hero: ['hero', 'header', 'landing', 'splash', 'above fold'],
+  features: ['feature', 'features', 'services', 'benefits'],
+  pricing: ['pricing', 'price', 'plans'],
+  testimonials: ['testimonial', 'testimonials', 'reviews', 'quotes'],
+  stats: ['stats', 'statistics', 'numbers', 'metrics'],
+  faq: ['faq', 'questions'],
+  cta: ['cta', 'call to action'],
+  contact: ['contact', 'form'],
+  gallery: ['gallery', 'grid', 'cards'],
+  products: ['product', 'shop', 'ecommerce'],
+  projects: ['project', 'case', 'portfolio'],
+  cases: ['case', 'case study', 'results'],
+  effects: ['sparkles', 'aurora', 'border', 'glow', 'parallax', 'hover', 'tilt', 'spotlight', 'beam'],
+};
+
+// Priority by source (higher = preferred)
+const SOURCE_PRIORITY: Record<string, number> = {
+  'shadcnui-blocks.md': 90,
+  'magicui-components.md': 85,
+  'aceternity-components.md': 80,
+  'kokonutui-components.md': 70,
+  'reactbits-components.md': 65,
+  '21st-dev-components.md': 60,
+  '21st-dev-components-part2.md': 50,
+  'tailark-components.md': 40,
+};
+
+export class SmartComponentSelector {
+  private index: ComponentIndex;
+
+  constructor(index?: ComponentIndex) {
+    this.index = index || buildIndex(process.cwd(), true);
+  }
+
+  public refresh() {
+    this.index = buildIndex(process.cwd(), false);
+  }
+
+  select(intent: UserIntent): SelectionResult {
+    const preset = this.getPreset(intent);
+    const needSections = preset.sections;
+    const effectsWanted = intent.effects?.length ? intent.effects : preset.effects;
+
+    const components: SelectedComponent[] = [];
+    for (const section of needSections) {
+      const best = this.pickForSection(section, intent);
+      if (best) components.push(best);
+    }
+
+    const effects: SelectedComponent[] = [];
+    for (const eff of effectsWanted) {
+      const best = this.pickForEffect(eff, intent);
+      if (best) effects.push(best);
+    }
+
+    const deps = this.collectDeps([...components, ...effects]);
+
+    return {
+      components,
+      effects,
+      dependencies: deps,
+      total: components.length + effects.length,
+    };
+  }
+
+  private getPreset(intent: UserIntent): { sections: string[]; effects: string[] } {
+    const theme = (intent.theme || intent.type || '').toLowerCase();
+    return INDUSTRY_PRESETS[theme] || { sections: intent.sections || ['hero', 'features', 'cta'], effects: intent.effects || [] };
+  }
+
+  private pickForSection(section: string, intent: UserIntent): SelectedComponent | null {
+    const candidates = this.index.components.filter((c) => this.matches(c, section));
+    if (!candidates.length) return null;
+    return this.rankAndPick(candidates, intent, section);
+  }
+
+  private pickForEffect(effect: string, intent: UserIntent): SelectedComponent | null {
+    const candidates = this.index.components.filter((c) => this.matchesEffect(c, effect));
+    if (!candidates.length) return null;
+    return this.rankAndPick(candidates, intent, effect);
+  }
+
+  private matches(comp: ComponentMeta, section: string): boolean {
+    const low = (comp.rawCategory || comp.category || '').toLowerCase();
+    if (low.includes(section)) return true;
+    const kw = KEYWORDS[section];
+    if (kw) {
+      const text = `${comp.name} ${comp.description} ${comp.rawCategory || ''}`.toLowerCase();
+      return kw.some((k) => text.includes(k));
+    }
+    return false;
+  }
+
+  private matchesEffect(comp: ComponentMeta, effect: string): boolean {
+    const text = `${comp.name} ${comp.description} ${comp.rawCategory || ''}`.toLowerCase();
+    const eff = effect.toLowerCase();
+    return text.includes(eff) || (KEYWORDS.effects || []).some((k) => eff.includes(k) && text.includes(k));
+  }
+
+  private rankAndPick(candidates: ComponentMeta[], intent: UserIntent, section: string): SelectedComponent {
+    const requestText = `${intent.type || ''} ${intent.theme || ''} ${section} ${intent.style || ''}`.toLowerCase();
+    const ranked = candidates
+      .map((c) => {
+        let score = 0;
+        const text = `${c.name} ${c.description} ${c.rawCategory || ''}`.toLowerCase();
+        if (text.includes(section)) score += 5;
+        const kw = KEYWORDS[section];
+        if (kw) score += kw.filter((k) => text.includes(k)).length * 2;
+        score += (SOURCE_PRIORITY[c.source] || 10) / 10;
+        if (requestText && text.includes(intent.theme || '')) score += 1;
+        return { ...c, score };
+      })
+      .sort((a, b) => b.score - a.score);
+    return { ...ranked[0] };
+  }
+
+  private collectDeps(components: SelectedComponent[]): string[] {
+    const deps = new Set<string>();
+    components.forEach((c) => {
+      const text = `${c.code}`.toLowerCase();
+      if (text.includes('framer-motion')) deps.add('framer-motion');
+      if (text.includes('lucide-react')) deps.add('lucide-react');
+      if (text.includes('@/components/ui/')) deps.add('shadcn-ui-base'); // placeholder marker
+    });
+    return Array.from(deps);
+  }
+}
