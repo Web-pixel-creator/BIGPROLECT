@@ -11,8 +11,9 @@ import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { registryService } from '~/lib/services/registryService';
-import { componentMatcher } from '~/lib/services/componentMatcher';
 import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
+import { SmartComponentSelector } from '~/lib/services/smartComponentSelector';
+import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
 
 export type Messages = Message[];
 
@@ -172,7 +173,7 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
-  // Component matching - analyze user request and add relevant components
+  // Component selection - analyze user request and add relevant components
   try {
     // Get the last user message to analyze
     const lastUserMessage = processedMessages.filter((m) => m.role === 'user').pop();
@@ -180,34 +181,27 @@ export async function streamText(props: {
     if (lastUserMessage && typeof lastUserMessage.content === 'string') {
       const userLower = lastUserMessage.content.toLowerCase();
 
-      // Load all component MD files (cached after first load)
-      await componentMatcher.loadAllComponentFiles();
+      const requestedEffects = EFFECT_PRESETS.filter((e) => userLower.includes(e.label.toLowerCase())).map((e) =>
+        e.label.toLowerCase(),
+      );
 
-      // Generate context with matching components (increased to 8 for better coverage)
-      const componentContext = componentMatcher.generateContextForPrompt(lastUserMessage.content, 8);
+      const selector = new SmartComponentSelector();
+      const builder = new StructuredPromptBuilder();
 
-      if (componentContext) {
+      const selection = selector.select({
+        theme: inferTheme(userLower),
+        sections: inferSections(userLower),
+        effects: requestedEffects,
+      });
+
+      if (selection.components.length > 0 || selection.effects.length > 0) {
+        const componentContext = builder.build(selection, lastUserMessage.content);
         systemPrompt = `${systemPrompt}\n${componentContext}`;
-        logger.info('Added matching UI components to prompt context');
-        logger.debug(`Component context length: ${componentContext.length} chars`);
-        logger.debug(`User message: "${lastUserMessage.content.substring(0, 100)}..."`);
+        logger.info(
+          `Added structured component context: comps=${selection.components.length}, effects=${selection.effects.length}`,
+        );
       } else {
-        logger.warn('No component context generated for user message');
-      }
-
-      // Дополнительно: если пользователь упомянул эффекты из пресетов, добавляем краткие подсказки
-      const requestedEffects = EFFECT_PRESETS.filter((e) => userLower.includes(e.label.toLowerCase()));
-      if (requestedEffects.length > 0) {
-        const effectHints = requestedEffects
-          .map((e) => `- ${e.label}: ${e.hint}`)
-          .join('\n');
-        const effectBlock = `
-<effect_hints>
-Реализуй следующие эффекты (если уместно — на нужных блоках):
-${effectHints}
-</effect_hints>`;
-        systemPrompt = `${systemPrompt}\n${effectBlock}`;
-        logger.info(`Added effect hints for: ${requestedEffects.map((e) => e.label).join(', ')}`);
+        logger.warn('No components selected for user message');
       }
     }
   } catch (error) {
@@ -371,4 +365,33 @@ ${effectHints}
   );
 
   return await _streamText(streamParams);
+}
+
+function inferTheme(text: string): string | undefined {
+  if (!text) return undefined;
+  const t = text.toLowerCase();
+  if (t.includes('web3') || t.includes('crypto')) return 'web3';
+  if (t.includes('saas') || t.includes('startup')) return 'saas';
+  if (t.includes('auto') || t.includes('car')) return 'auto';
+  if (t.includes('food') || t.includes('restaurant') || t.includes('delivery')) return 'food';
+  if (t.includes('construction') || t.includes('builder')) return 'construction';
+  if (t.includes('finance') || t.includes('bank')) return 'finance';
+  if (t.includes('education') || t.includes('school') || t.includes('course')) return 'education';
+  if (t.includes('ecommerce') || t.includes('shop') || t.includes('store')) return 'ecommerce';
+  if (t.includes('portfolio')) return 'portfolio';
+  return undefined;
+}
+
+function inferSections(text: string): string[] | undefined {
+  if (!text) return undefined;
+  const t = text.toLowerCase();
+  const sections: string[] = [];
+  if (t.includes('hero')) sections.push('hero');
+  if (t.includes('pricing') || t.includes('plan')) sections.push('pricing');
+  if (t.includes('faq')) sections.push('faq');
+  if (t.includes('testimonials') || t.includes('reviews')) sections.push('testimonials');
+  if (t.includes('features') || t.includes('services')) sections.push('features');
+  if (t.includes('contact') || t.includes('form')) sections.push('contact');
+  if (t.includes('gallery') || t.includes('cases') || t.includes('case')) sections.push('gallery', 'cases');
+  return sections.length ? sections : undefined;
 }
