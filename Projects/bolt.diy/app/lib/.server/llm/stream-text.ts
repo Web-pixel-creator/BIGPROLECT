@@ -208,6 +208,24 @@ export async function streamText(props: {
     logger.warn('Failed to match components for prompt:', error);
   }
 
+
+  // DEBUG selection summary
+  const selectionDebug = selection?.debug || {};
+  logger.info(
+    'DEBUG COMPONENT SELECTION',
+    {
+      theme: selectionDebug.theme,
+      sections: selectionDebug.sections,
+      effects: selectionDebug.effects,
+      components: selection?.components?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/?
+/).length || 0 })) || [],
+      effectsSelected: selection?.effects?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/?
+/).length || 0 })) || [],
+      totalLines: selection?.totalCodeLines,
+      deps: selection?.dependencies,
+    },
+  );
+
   // Registry components (shadcn-compatible registries)
   try {
     const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
