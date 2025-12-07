@@ -494,6 +494,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             key={`effect-${idx}`}
             className="flex items-start gap-2 text-left text-sm rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
             onClick={() => appendSnippet(effect.label)}
+            title={effect.hint}
           >
             <span
               className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-bolt-elements-background-depth-1 text-[10px] text-bolt-elements-textSecondary"
@@ -501,7 +502,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             >
               ?
             </span>
-            <span>{effect.label}</span>
+            <span className="flex flex-col gap-0.5">
+              <span>{effect.label}</span>
+              <span className="text-xs text-bolt-elements-textSecondary leading-snug">{effect.hint}</span>
+            </span>
           </button>
         ))}
       </div>
