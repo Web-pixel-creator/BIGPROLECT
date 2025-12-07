@@ -508,6 +508,10 @@ const EXTRA_KEYWORDS: Record<string, string[]> = {
   modal: ['modal', 'dialog', 'popup', 'модалка', 'диалог'],
   form: ['form', 'input form', 'форма', 'contact form', 'signup form'],
   hero: ['hero', 'hero section', 'hero banner', 'главный экран', 'первый экран'],
+  dynamicframe: ['dynamic frame layout', 'dynamic frame', 'frame grid', 'frame layout', 'video grid', 'ooneco', 'dynamic-frame-layout'],
+  caseresults: ['case results', 'case studies', 'use cases', 'результаты', 'кейсы', 'руйксен', 'ruixeniu', 'ruixen'],
+  web3hero: ['web3 hero', 'web3 landing', 'web3 animated hero', 'tron hero', 'animated web3 landing', 'web3', 'minhxthanh'],
+  contactform: ['contact form', 'feedback form', 'форма обратной связи', 'форма контактов', 'animated form'],
 };
 
 for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
