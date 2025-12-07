@@ -210,6 +210,33 @@ export async function streamText(props: {
 
 
   // DEBUG selection summary
+  // TOKEN GUARD for component context length
+  const maxContextChars = 20000;
+  if (selection && selection.components && selection.effects) {
+    const dbgParts = (selection.components || []).concat(selection.effects || []);
+    const approxContext = dbgParts.map((c) => c.code || '').join('
+');
+    if (approxContext.length > maxContextChars) {
+      // Sort by score desc, keep until under cap
+      const sorted = dbgParts.sort((a, b) => (b.score || 0) - (a.score || 0));
+      let acc = '';
+      const keep: typeof sorted = [];
+      for (const c of sorted) {
+        const next = acc.length + (c.code || '').length;
+        if (next > maxContextChars) continue;
+        acc += c.code || '';
+        keep.push(c);
+      }
+      // Split back into comps/effects by name/source membership
+      const keepSet = new Set(keep.map((c) => `${c.name}__${c.source}`));
+      selection.components = selection.components?.filter((c) => keepSet.has(`${c.name}__${c.source}`)) || [];
+      selection.effects = selection.effects?.filter((c) => keepSet.has(`${c.name}__${c.source}`)) || [];
+      selection.totalCodeLines = keep.reduce((s, c) => s + ((c.code || '').split(/?
+/).length), 0);
+      logger.warn(`Component context trimmed to ${keep.length} items (chars=${acc.length}) due to token guard`);
+    }
+  }
+
   const selectionDebug = selection?.debug || {};
   logger.info(
     'DEBUG COMPONENT SELECTION',
@@ -217,9 +244,11 @@ export async function streamText(props: {
       theme: selectionDebug.theme,
       sections: selectionDebug.sections,
       effects: selectionDebug.effects,
-      components: selection?.components?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/?
+      components: selection?.components?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/
+?
 /).length || 0 })) || [],
-      effectsSelected: selection?.effects?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/?
+      effectsSelected: selection?.effects?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/
+?
 /).length || 0 })) || [],
       totalLines: selection?.totalCodeLines,
       deps: selection?.dependencies,
