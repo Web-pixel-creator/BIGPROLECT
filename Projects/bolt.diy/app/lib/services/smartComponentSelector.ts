@@ -29,6 +29,12 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   web3: { sections: ['hero', 'cases', 'cta', 'contact'], effects: ['aurora', 'grid', 'sparkles'] },
   finance: { sections: ['hero', 'features', 'stats', 'testimonials', 'cta'], effects: ['fade', 'hover'] },
   education: { sections: ['hero', 'features', 'faq', 'cta'], effects: ['slide', 'fade'] },
+  fashion: { sections: ['hero', 'gallery', 'features', 'cta'], effects: ['spotlight', 'glow'] },
+  health: { sections: ['hero', 'features', 'stats', 'faq', 'cta'], effects: ['fade', 'slide'] },
+  photo: { sections: ['hero', 'gallery', 'projects', 'contact'], effects: ['parallax', 'tilt'] },
+  agency: { sections: ['hero', 'services', 'cases', 'team', 'cta'], effects: ['sparkles', 'border-beam'] },
+  realestate: { sections: ['hero', 'features', 'gallery', 'stats', 'cta'], effects: ['parallax', 'glow'] },
+  travel: { sections: ['hero', 'gallery', 'features', 'cta'], effects: ['parallax', 'slide'] },
 };
 
 // Lightweight keyword map to help ranking
@@ -45,6 +51,10 @@ const KEYWORDS: Record<string, string[]> = {
   products: ['product', 'shop', 'ecommerce'],
   projects: ['project', 'case', 'portfolio'],
   cases: ['case', 'case study', 'results'],
+  blog: ['blog', 'article', 'post', 'news'],
+  services: ['service', 'services'],
+  team: ['team', 'people', 'staff', 'founders'],
+  about: ['about', 'who we are'],
   effects: ['sparkles', 'aurora', 'border', 'glow', 'parallax', 'hover', 'tilt', 'spotlight', 'beam'],
 };
 
@@ -89,7 +99,14 @@ export class SmartComponentSelector {
     }
 
     const deps = this.collectDeps([...components, ...effects]);
-    const totalCodeLines = [...components, ...effects].reduce((sum, c) => sum + this.countLines(c.code), 0);
+    let totalCodeLines = [...components, ...effects].reduce((sum, c) => sum + this.countLines(c.code), 0);
+
+    // Trim if too large (keep highest score)
+    ({ components: components as any, effects: effects as any, totalLines: totalCodeLines } = this.trimBySize(
+      components,
+      effects,
+      1200,
+    ));
 
     return {
       components,
@@ -164,6 +181,7 @@ export class SmartComponentSelector {
       if (text.includes('lucide-react')) deps.add('lucide-react');
       if (text.includes('@/components/ui/')) deps.add('shadcn-ui-base'); // placeholder marker
       if (text.includes('three') || text.includes('webgl')) deps.add('three');
+      if (text.includes('gsap')) deps.add('gsap');
     });
     return Array.from(deps);
   }
@@ -171,5 +189,26 @@ export class SmartComponentSelector {
   private countLines(code?: string): number {
     if (!code) return 0;
     return code.split(/\r?\n/).length;
+  }
+
+  private trimBySize(
+    components: SelectedComponent[],
+    effects: SelectedComponent[],
+    maxLines: number,
+  ): { components: SelectedComponent[]; effects: SelectedComponent[]; totalLines: number } {
+    let pool: SelectedComponent[] = [...components, ...effects];
+    let total = pool.reduce((sum, c) => sum + this.countLines(c.code), 0);
+    if (total <= maxLines) return { components, effects, totalLines: total };
+
+    // Sort ascending by score (drop worst first)
+    pool = pool.sort((a, b) => a.score - b.score);
+    while (total > maxLines && pool.length > 0) {
+      const dropped = pool.shift();
+      if (!dropped) break;
+      total -= this.countLines(dropped.code);
+      components = components.filter((c) => c.name !== dropped.name || c.source !== dropped.source);
+      effects = effects.filter((c) => c.name !== dropped.name || c.source !== dropped.source);
+    }
+    return { components, effects, totalLines: total };
   }
 }
