@@ -10,6 +10,7 @@ coverage/
 /Projects/bolt.diy/app/lib/services/component-index-cache.json
 /Projects/bolt.diy/component-registry.json
 /Projects/bolt.diy/Projects/
+/Projects/bolt.diy/.logs/
 .env
 .env.*
 npm-debug.log*

@@ -1,4 +1,6 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
+import * as fs from 'fs';
+import * as path from 'path';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
@@ -201,6 +203,7 @@ export async function streamText(props: {
         logger.info(
           `Added structured component context: comps=${selection.components.length}, effects=${selection.effects.length}`,
         );
+        writeSelectionLog(selection, lastUserMessage.content);
       } else {
         logger.warn('No components selected for user message');
       }
@@ -450,4 +453,36 @@ function inferSections(text: string): string[] | undefined {
 function allow3d(text: string): boolean {
   const t = text.toLowerCase();
   return t.includes('3d') || t.includes('webgl') || t.includes('three');
+}
+
+function writeSelectionLog(selection: any, userRequest: string) {
+  // Log only in dev or when explicitly enabled
+  if (process.env.SELECTION_DEBUG_LOG !== '1' && process.env.NODE_ENV === 'production') return;
+  try {
+    const dir = path.resolve(process.cwd(), 'Projects/bolt.diy/.logs');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const record = {
+      ts: new Date().toISOString(),
+      userRequest,
+      theme: selection?.debug?.theme,
+      sections: selection?.debug?.sections,
+      effects: selection?.debug?.effects,
+      components: selection?.components?.map((c: any) => ({
+        name: c.name,
+        source: c.source,
+        lines: (c.code || '').split(/\r?\n/).length,
+      })),
+      effectsSelected: selection?.effects?.map((c: any) => ({
+        name: c.name,
+        source: c.source,
+        lines: (c.code || '').split(/\r?\n/).length,
+      })),
+      totalLines: selection?.totalCodeLines,
+      deps: selection?.dependencies,
+    };
+    const file = path.join(dir, 'selection-debug.jsonl');
+    fs.appendFileSync(file, JSON.stringify(record) + '\n', 'utf8');
+  } catch (err) {
+    logger.warn('Failed to write selection debug log', err);
+  }
 }
