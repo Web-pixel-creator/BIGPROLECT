@@ -17,6 +17,11 @@ export type SelectionResult = {
   dependencies: string[];
   total: number;
   totalCodeLines: number;
+  debug: {
+    theme?: string;
+    sections?: string[];
+    effects?: string[];
+  };
 };
 
 // Presets of sections/effects/colors per theme/type
@@ -35,6 +40,10 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   agency: { sections: ['hero', 'services', 'cases', 'team', 'cta'], effects: ['sparkles', 'border-beam'] },
   realestate: { sections: ['hero', 'features', 'gallery', 'stats', 'cta'], effects: ['parallax', 'glow'] },
   travel: { sections: ['hero', 'gallery', 'features', 'cta'], effects: ['parallax', 'slide'] },
+  medical: { sections: ['hero', 'features', 'stats', 'testimonials', 'cta', 'contact'], effects: ['fade', 'slide'] },
+  legal: { sections: ['hero', 'features', 'cases', 'team', 'cta'], effects: ['fade', 'spotlight'] },
+  hospitality: { sections: ['hero', 'gallery', 'features', 'pricing', 'cta'], effects: ['parallax', 'spotlight'] },
+  events: { sections: ['hero', 'schedule', 'speakers', 'pricing', 'faq', 'cta'], effects: ['sparkles', 'slide'] },
 };
 
 // Lightweight keyword map to help ranking
@@ -55,6 +64,8 @@ const KEYWORDS: Record<string, string[]> = {
   services: ['service', 'services'],
   team: ['team', 'people', 'staff', 'founders'],
   about: ['about', 'who we are'],
+  schedule: ['schedule', 'agenda'],
+  speakers: ['speaker', 'speakers', 'talk', 'session'],
   effects: ['sparkles', 'aurora', 'border', 'glow', 'parallax', 'hover', 'tilt', 'spotlight', 'beam'],
 };
 
@@ -114,6 +125,11 @@ export class SmartComponentSelector {
       dependencies: deps,
       total: components.length + effects.length,
       totalCodeLines,
+      debug: {
+        theme: intent.theme || intent.type,
+        sections: needSections,
+        effects: effectsWanted,
+      },
     };
   }
 
