@@ -192,6 +192,7 @@ export async function streamText(props: {
         theme: inferTheme(userLower),
         sections: inferSections(userLower),
         effects: requestedEffects,
+        allow3d: allow3d(userLower),
       });
 
       if (selection.components.length > 0 || selection.effects.length > 0) {
@@ -440,5 +441,13 @@ function inferSections(text: string): string[] | undefined {
   if (t.includes('features') || t.includes('services')) sections.push('features');
   if (t.includes('contact') || t.includes('form')) sections.push('contact');
   if (t.includes('gallery') || t.includes('cases') || t.includes('case')) sections.push('gallery', 'cases');
+   if (t.includes('blog') || t.includes('article')) sections.push('blog');
+   if (t.includes('team') || t.includes('about')) sections.push('team', 'about');
+   if (t.includes('roadmap') || t.includes('timeline')) sections.push('roadmap');
   return sections.length ? sections : undefined;
+}
+
+function allow3d(text: string): boolean {
+  const t = text.toLowerCase();
+  return t.includes('3d') || t.includes('webgl') || t.includes('three');
 }

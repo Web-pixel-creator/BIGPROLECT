@@ -7,6 +7,7 @@ export type UserIntent = {
   effects?: string[];
   style?: string;
   tokens?: number;
+  allow3d?: boolean;
 };
 
 export type SelectedComponent = ComponentMeta & { score: number };
@@ -44,6 +45,11 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   legal: { sections: ['hero', 'features', 'cases', 'team', 'cta'], effects: ['fade', 'spotlight'] },
   hospitality: { sections: ['hero', 'gallery', 'features', 'pricing', 'cta'], effects: ['parallax', 'spotlight'] },
   events: { sections: ['hero', 'schedule', 'speakers', 'pricing', 'faq', 'cta'], effects: ['sparkles', 'slide'] },
+  nonprofit: { sections: ['hero', 'mission', 'projects', 'stats', 'cta', 'contact'], effects: ['fade', 'slide'] },
+  ai: { sections: ['hero', 'features', 'cases', 'cta'], effects: ['sparkles', 'glow'] },
+  gaming: { sections: ['hero', 'features', 'gallery', 'cta'], effects: ['glow', 'spotlight'] },
+  fitness: { sections: ['hero', 'features', 'pricing', 'cta'], effects: ['slide', 'spotlight'] },
+  beauty: { sections: ['hero', 'features', 'gallery', 'cta'], effects: ['glow', 'sparkles'] },
 };
 
 // Lightweight keyword map to help ranking
@@ -66,6 +72,9 @@ const KEYWORDS: Record<string, string[]> = {
   about: ['about', 'who we are'],
   schedule: ['schedule', 'agenda'],
   speakers: ['speaker', 'speakers', 'talk', 'session'],
+  mission: ['mission', 'vision'],
+  roadmap: ['roadmap', 'timeline', 'milestone'],
+  downloads: ['download', 'resources', 'assets'],
   effects: ['sparkles', 'aurora', 'border', 'glow', 'parallax', 'hover', 'tilt', 'spotlight', 'beam'],
 };
 
@@ -182,7 +191,7 @@ export class SmartComponentSelector {
         const lines = this.countLines(c.code);
         if (lines > 300) score -= 2;
         if (lines > 600) score -= 4;
-        if (text.includes('three') || text.includes('webgl')) score -= 1; // avoid heavy 3D by default
+        if (!intent.allow3d && (text.includes('three') || text.includes('webgl'))) score -= 3; // avoid heavy 3D unless allowed
         return { ...c, score };
       })
       .sort((a, b) => b.score - a.score);
