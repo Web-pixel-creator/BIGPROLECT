@@ -10295,3 +10295,5621 @@ export { Checkbox }
 **Dependencies:** `@radix-ui/react-checkbox`, `lucide-react`, `@/lib/utils`
 
 ---
+
+### tooltip (shadcn)
+**Source:** https://21st.dev/r/shadcn/tooltip
+
+Radix-based tooltip.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { cn } from "@/lib/utils"
+
+const TooltipProvider = TooltipPrimitive.Provider
+const Tooltip = TooltipPrimitive.Root
+const TooltipTrigger = TooltipPrimitive.Trigger
+
+const TooltipContent = React.forwardRef<React.ElementRef<typeof TooltipPrimitive.Content>, React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Content ref={ref} sideOffset={sideOffset} className={cn("z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2", className)} {...props} />
+))
+TooltipContent.displayName = TooltipPrimitive.Content.displayName
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+```
+
+**Dependencies:** `@radix-ui/react-tooltip`, `@/lib/utils`
+
+---
+
+### tabs (shadcn)
+**Source:** https://21st.dev/r/shadcn/tabs
+
+Radix-based tabs.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+import { cn } from "@/lib/utils"
+
+const Tabs = TabsPrimitive.Root
+
+const TabsList = React.forwardRef<React.ElementRef<typeof TabsPrimitive.List>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List ref={ref} className={cn("inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground", className)} {...props} />
+))
+TabsList.displayName = TabsPrimitive.List.displayName
+
+const TabsTrigger = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Trigger ref={ref} className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm", className)} {...props} />
+))
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+
+const TabsContent = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Content>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content ref={ref} className={cn("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)} {...props} />
+))
+TabsContent.displayName = TabsPrimitive.Content.displayName
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }
+```
+
+**Dependencies:** `@radix-ui/react-tabs`, `@/lib/utils`
+
+---
+
+### slider (shadcn)
+**Source:** https://21st.dev/r/shadcn/slider
+
+Range slider.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as SliderPrimitive from "@radix-ui/react-slider"
+import { cn } from "@/lib/utils"
+
+const Slider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Root>, React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>>(({ className, ...props }, ref) => (
+  <SliderPrimitive.Root ref={ref} className={cn("relative flex w-full touch-none select-none items-center", className)} {...props}>
+    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-secondary">
+      <SliderPrimitive.Range className="absolute h-full bg-primary" />
+    </SliderPrimitive.Track>
+    <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+  </SliderPrimitive.Root>
+))
+Slider.displayName = SliderPrimitive.Root.displayName
+
+export { Slider }
+```
+
+**Dependencies:** `@radix-ui/react-slider`, `@/lib/utils`
+
+---
+
+### progress (shadcn)
+**Source:** https://21st.dev/r/shadcn/progress
+
+Progress bar.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+import { cn } from "@/lib/utils"
+
+const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(({ className, value, ...props }, ref) => (
+  <ProgressPrimitive.Root ref={ref} className={cn("relative h-4 w-full overflow-hidden rounded-full bg-secondary", className)} {...props}>
+    <ProgressPrimitive.Indicator className="h-full w-full flex-1 bg-primary transition-all" style={{ transform: `translateX(-${100 - (value || 0)}%)` }} />
+  </ProgressPrimitive.Root>
+))
+Progress.displayName = ProgressPrimitive.Root.displayName
+
+export { Progress }
+```
+
+**Dependencies:** `@radix-ui/react-progress`, `@/lib/utils`
+
+---
+
+### separator (shadcn)
+**Source:** https://21st.dev/r/shadcn/separator
+
+Horizontal/vertical separator.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as SeparatorPrimitive from "@radix-ui/react-separator"
+import { cn } from "@/lib/utils"
+
+const Separator = React.forwardRef<React.ElementRef<typeof SeparatorPrimitive.Root>, React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>>(({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
+  <SeparatorPrimitive.Root ref={ref} decorative={decorative} orientation={orientation} className={cn("shrink-0 bg-border", orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]", className)} {...props} />
+))
+Separator.displayName = SeparatorPrimitive.Root.displayName
+
+export { Separator }
+```
+
+**Dependencies:** `@radix-ui/react-separator`, `@/lib/utils`
+
+---
+
+### skeleton (shadcn)
+**Source:** https://21st.dev/r/shadcn/skeleton
+
+Loading skeleton placeholder.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("animate-pulse rounded-md bg-muted", className)} {...props} />
+}
+
+export { Skeleton }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### scroll-area (shadcn)
+**Source:** https://21st.dev/r/shadcn/scroll-area
+
+Custom scroll area with styled scrollbar.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import { cn } from "@/lib/utils"
+
+const ScrollArea = React.forwardRef<React.ElementRef<typeof ScrollAreaPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>>(({ className, children, ...props }, ref) => (
+  <ScrollAreaPrimitive.Root ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">{children}</ScrollAreaPrimitive.Viewport>
+    <ScrollBar />
+    <ScrollAreaPrimitive.Corner />
+  </ScrollAreaPrimitive.Root>
+))
+ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
+
+const ScrollBar = React.forwardRef<React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>, React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>(({ className, orientation = "vertical", ...props }, ref) => (
+  <ScrollAreaPrimitive.ScrollAreaScrollbar ref={ref} orientation={orientation} className={cn("flex touch-none select-none transition-colors", orientation === "vertical" && "h-full w-2.5 border-l border-l-transparent p-[1px]", orientation === "horizontal" && "h-2.5 flex-col border-t border-t-transparent p-[1px]", className)} {...props}>
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+  </ScrollAreaPrimitive.ScrollAreaScrollbar>
+))
+ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
+
+export { ScrollArea, ScrollBar }
+```
+
+**Dependencies:** `@radix-ui/react-scroll-area`, `@/lib/utils`
+
+---
+
+### dropdown-menu (shadcn)
+**Source:** https://21st.dev/r/shadcn/dropdown-menu
+
+Radix-based dropdown menu with submenus.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const DropdownMenu = DropdownMenuPrimitive.Root
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+const DropdownMenuSubTrigger = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & { inset?: boolean }>(({ className, inset, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubTrigger ref={ref} className={cn("flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent", inset && "pl-8", className)} {...props}>{children}<ChevronRight className="ml-auto h-4 w-4" /></DropdownMenuPrimitive.SubTrigger>
+))
+
+const DropdownMenuSubContent = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.SubContent>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubContent ref={ref} className={cn("z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out", className)} {...props} />
+))
+
+const DropdownMenuContent = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal><DropdownMenuPrimitive.Content ref={ref} sideOffset={sideOffset} className={cn("z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out", className)} {...props} /></DropdownMenuPrimitive.Portal>
+))
+
+const DropdownMenuItem = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Item>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", inset && "pl-8", className)} {...props} />
+))
+
+const DropdownMenuCheckboxItem = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>>(({ className, children, checked, ...props }, ref) => (
+  <DropdownMenuPrimitive.CheckboxItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} checked={checked} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="h-4 w-4" /></DropdownMenuPrimitive.ItemIndicator></span>{children}
+  </DropdownMenuPrimitive.CheckboxItem>
+))
+
+const DropdownMenuRadioItem = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>>(({ className, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.RadioItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Circle className="h-2 w-2 fill-current" /></DropdownMenuPrimitive.ItemIndicator></span>{children}
+  </DropdownMenuPrimitive.RadioItem>
+))
+
+const DropdownMenuLabel = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Label>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Label ref={ref} className={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)} {...props} />
+))
+
+const DropdownMenuSeparator = React.forwardRef<React.ElementRef<typeof DropdownMenuPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+))
+
+const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => <span className={cn("ml-auto text-xs tracking-widest opacity-60", className)} {...props} />
+
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuRadioItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuGroup, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuRadioGroup }
+```
+
+**Dependencies:** `@radix-ui/react-dropdown-menu`, `lucide-react`, `@/lib/utils`
+
+---
+
+### accordion (shadcn)
+**Source:** https://21st.dev/r/shadcn/accordion
+
+Radix-based accordion with animations.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as AccordionPrimitive from "@radix-ui/react-accordion"
+import { ChevronDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Accordion = AccordionPrimitive.Root
+
+const AccordionItem = React.forwardRef<React.ElementRef<typeof AccordionPrimitive.Item>, React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>>(({ className, ...props }, ref) => (
+  <AccordionPrimitive.Item ref={ref} className={cn("border-b", className)} {...props} />
+))
+AccordionItem.displayName = "AccordionItem"
+
+const AccordionTrigger = React.forwardRef<React.ElementRef<typeof AccordionPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Header className="flex">
+    <AccordionPrimitive.Trigger ref={ref} className={cn("flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180", className)} {...props}>
+      {children}<ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+    </AccordionPrimitive.Trigger>
+  </AccordionPrimitive.Header>
+))
+AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
+
+const AccordionContent = React.forwardRef<React.ElementRef<typeof AccordionPrimitive.Content>, React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Content ref={ref} className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down" {...props}>
+    <div className={cn("pb-4 pt-0", className)}>{children}</div>
+  </AccordionPrimitive.Content>
+))
+AccordionContent.displayName = AccordionPrimitive.Content.displayName
+
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent }
+```
+
+**Dependencies:** `@radix-ui/react-accordion`, `lucide-react`, `@/lib/utils`
+**Tailwind config required:** Add keyframes `accordion-down` and `accordion-up`
+
+---
+
+### alert (shadcn)
+**Source:** https://21st.dev/r/shadcn/alert
+
+Alert component with variants.
+
+```tsx
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const alertVariants = cva(
+  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  {
+    variants: {
+      variant: {
+        default: "bg-background text-foreground",
+        destructive: "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+const Alert = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>>(({ className, variant, ...props }, ref) => (
+  <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+))
+Alert.displayName = "Alert"
+
+const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(({ className, ...props }, ref) => (
+  <h5 ref={ref} className={cn("mb-1 font-medium leading-none tracking-tight", className)} {...props} />
+))
+AlertTitle.displayName = "AlertTitle"
+
+const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
+))
+AlertDescription.displayName = "AlertDescription"
+
+export { Alert, AlertTitle, AlertDescription }
+```
+
+**Dependencies:** `class-variance-authority`, `@/lib/utils`
+**Variants:** `default`, `destructive`
+
+---
+
+### popover (shadcn)
+**Source:** https://21st.dev/r/shadcn/popover
+
+Radix-based popover.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+import { cn } from "@/lib/utils"
+
+const Popover = PopoverPrimitive.Root
+const PopoverTrigger = PopoverPrimitive.Trigger
+
+const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2", className)} {...props} />
+  </PopoverPrimitive.Portal>
+))
+PopoverContent.displayName = PopoverPrimitive.Content.displayName
+
+export { Popover, PopoverTrigger, PopoverContent }
+```
+
+**Dependencies:** `@radix-ui/react-popover`, `@/lib/utils`
+
+---
+
+### sheet (shadcn)
+**Source:** https://21st.dev/r/shadcn/sheet
+
+Side panel/drawer with slide animation.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as SheetPrimitive from "@radix-ui/react-dialog"
+import { cva, type VariantProps } from "class-variance-authority"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Sheet = SheetPrimitive.Root
+const SheetTrigger = SheetPrimitive.Trigger
+const SheetClose = SheetPrimitive.Close
+const SheetPortal = SheetPrimitive.Portal
+
+const SheetOverlay = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>>(({ className, ...props }, ref) => (
+  <SheetPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} ref={ref} />
+))
+
+const sheetVariants = cva("fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500", {
+  variants: {
+    side: {
+      top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+      bottom: "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+      left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+      right: "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+    },
+  },
+  defaultVariants: { side: "right" },
+})
+
+interface SheetContentProps extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>, VariantProps<typeof sheetVariants> {}
+
+const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(({ side = "right", className, children, ...props }, ref) => (
+  <SheetPortal><SheetOverlay />
+    <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
+      {children}
+      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"><X className="h-4 w-4" /><span className="sr-only">Close</span></SheetPrimitive.Close>
+    </SheetPrimitive.Content>
+  </SheetPortal>
+))
+
+const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+const SheetFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
+
+const SheetTitle = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Title>, React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>>(({ className, ...props }, ref) => (
+  <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold text-foreground", className)} {...props} />
+))
+
+const SheetDescription = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Description>, React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>>(({ className, ...props }, ref) => (
+  <SheetPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+))
+
+export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription }
+```
+
+**Dependencies:** `@radix-ui/react-dialog`, `class-variance-authority`, `lucide-react`, `@/lib/utils`
+**Sides:** `top`, `bottom`, `left`, `right`
+
+---
+
+### table (shadcn)
+**Source:** https://21st.dev/r/shadcn/table
+
+Table component set.
+
+```tsx
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => (
+  <div className="relative w-full overflow-auto"><table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} /></div>
+))
+Table.displayName = "Table"
+
+const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(({ className, ...props }, ref) => (
+  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+))
+TableHeader.displayName = "TableHeader"
+
+const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(({ className, ...props }, ref) => (
+  <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+))
+TableBody.displayName = "TableBody"
+
+const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(({ className, ...props }, ref) => (
+  <tfoot ref={ref} className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)} {...props} />
+))
+TableFooter.displayName = "TableFooter"
+
+const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(({ className, ...props }, ref) => (
+  <tr ref={ref} className={cn("border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted", className)} {...props} />
+))
+TableRow.displayName = "TableRow"
+
+const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(({ className, ...props }, ref) => (
+  <th ref={ref} className={cn("h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0", className)} {...props} />
+))
+TableHead.displayName = "TableHead"
+
+const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(({ className, ...props }, ref) => (
+  <td ref={ref} className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)} {...props} />
+))
+TableCell.displayName = "TableCell"
+
+const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttributes<HTMLTableCaptionElement>>(({ className, ...props }, ref) => (
+  <caption ref={ref} className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />
+))
+TableCaption.displayName = "TableCaption"
+
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### radio-group (shadcn)
+**Source:** https://21st.dev/r/shadcn/radio-group
+
+Radio button group.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
+import { Circle } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const RadioGroup = React.forwardRef<React.ElementRef<typeof RadioGroupPrimitive.Root>, React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>>(({ className, ...props }, ref) => (
+  <RadioGroupPrimitive.Root className={cn("grid gap-2", className)} {...props} ref={ref} />
+))
+RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
+
+const RadioGroupItem = React.forwardRef<React.ElementRef<typeof RadioGroupPrimitive.Item>, React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>>(({ className, ...props }, ref) => (
+  <RadioGroupPrimitive.Item ref={ref} className={cn("aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)} {...props}>
+    <RadioGroupPrimitive.Indicator className="flex items-center justify-center"><Circle className="h-2.5 w-2.5 fill-current text-current" /></RadioGroupPrimitive.Indicator>
+  </RadioGroupPrimitive.Item>
+))
+RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName
+
+export { RadioGroup, RadioGroupItem }
+```
+
+**Dependencies:** `@radix-ui/react-radio-group`, `lucide-react`, `@/lib/utils`
+
+---
+
+### calendar (shadcn)
+**Source:** https://21st.dev/r/shadcn/calendar
+
+Date picker calendar based on react-day-picker.
+
+```tsx
+"use client"
+import * as React from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { DayPicker } from "react-day-picker"
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
+
+export type CalendarProps = React.ComponentProps<typeof DayPicker>
+
+function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+  return (
+    <DayPicker showOutsideDays={showOutsideDays} className={cn("p-3", className)} classNames={{
+      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+      month: "space-y-4", caption: "flex justify-center pt-1 relative items-center",
+      caption_label: "text-sm font-medium", nav: "space-x-1 flex items-center",
+      nav_button: cn(buttonVariants({ variant: "outline" }), "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"),
+      nav_button_previous: "absolute left-1", nav_button_next: "absolute right-1",
+      table: "w-full border-collapse space-y-1", head_row: "flex",
+      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+      row: "flex w-full mt-2",
+      cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+      day: cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal aria-selected:opacity-100"),
+      day_range_end: "day-range-end",
+      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+      day_today: "bg-accent text-accent-foreground",
+      day_outside: "day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
+      day_disabled: "text-muted-foreground opacity-50",
+      day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+      day_hidden: "invisible", ...classNames,
+    }} components={{
+      IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
+      IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+    }} {...props} />
+  )
+}
+Calendar.displayName = "Calendar"
+
+export { Calendar }
+```
+
+**Dependencies:** `react-day-picker`, `date-fns`, `lucide-react`, `@/lib/utils`, `buttonVariants`
+
+---
+
+### context-menu (shadcn)
+**Source:** https://21st.dev/r/shadcn/context-menu
+
+Right-click context menu.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const ContextMenu = ContextMenuPrimitive.Root
+const ContextMenuTrigger = ContextMenuPrimitive.Trigger
+const ContextMenuGroup = ContextMenuPrimitive.Group
+const ContextMenuPortal = ContextMenuPrimitive.Portal
+const ContextMenuSub = ContextMenuPrimitive.Sub
+const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup
+
+const ContextMenuSubTrigger = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & { inset?: boolean }>(({ className, inset, children, ...props }, ref) => (
+  <ContextMenuPrimitive.SubTrigger ref={ref} className={cn("flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground", inset && "pl-8", className)} {...props}>{children}<ChevronRight className="ml-auto h-4 w-4" /></ContextMenuPrimitive.SubTrigger>
+))
+
+const ContextMenuSubContent = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.SubContent>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>>(({ className, ...props }, ref) => (
+  <ContextMenuPrimitive.SubContent ref={ref} className={cn("z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out", className)} {...props} />
+))
+
+const ContextMenuContent = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.Content>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>>(({ className, ...props }, ref) => (
+  <ContextMenuPrimitive.Portal><ContextMenuPrimitive.Content ref={ref} className={cn("z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md animate-in fade-in-80 data-[state=open]:animate-in data-[state=closed]:animate-out", className)} {...props} /></ContextMenuPrimitive.Portal>
+))
+
+const ContextMenuItem = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.Item>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Item> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <ContextMenuPrimitive.Item ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", inset && "pl-8", className)} {...props} />
+))
+
+const ContextMenuCheckboxItem = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>>(({ className, children, checked, ...props }, ref) => (
+  <ContextMenuPrimitive.CheckboxItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} checked={checked} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><ContextMenuPrimitive.ItemIndicator><Check className="h-4 w-4" /></ContextMenuPrimitive.ItemIndicator></span>{children}
+  </ContextMenuPrimitive.CheckboxItem>
+))
+
+const ContextMenuRadioItem = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.RadioItem>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>>(({ className, children, ...props }, ref) => (
+  <ContextMenuPrimitive.RadioItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><ContextMenuPrimitive.ItemIndicator><Circle className="h-2 w-2 fill-current" /></ContextMenuPrimitive.ItemIndicator></span>{children}
+  </ContextMenuPrimitive.RadioItem>
+))
+
+const ContextMenuLabel = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.Label>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Label> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <ContextMenuPrimitive.Label ref={ref} className={cn("px-2 py-1.5 text-sm font-semibold text-foreground", inset && "pl-8", className)} {...props} />
+))
+
+const ContextMenuSeparator = React.forwardRef<React.ElementRef<typeof ContextMenuPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Separator>>(({ className, ...props }, ref) => (
+  <ContextMenuPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-border", className)} {...props} />
+))
+
+const ContextMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />
+
+export { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuCheckboxItem, ContextMenuRadioItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuShortcut, ContextMenuGroup, ContextMenuPortal, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuRadioGroup }
+```
+
+**Dependencies:** `@radix-ui/react-context-menu`, `lucide-react`, `@/lib/utils`
+
+---
+
+### command (shadcn)
+**Source:** https://21st.dev/r/shadcn/command
+
+Command palette (cmdk-based).
+
+```tsx
+"use client"
+import * as React from "react"
+import { type DialogProps } from "@radix-ui/react-dialog"
+import { Command as CommandPrimitive } from "cmdk"
+import { Search } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+
+const Command = React.forwardRef<React.ElementRef<typeof CommandPrimitive>, React.ComponentPropsWithoutRef<typeof CommandPrimitive>>(({ className, ...props }, ref) => (
+  <CommandPrimitive ref={ref} className={cn("flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground", className)} {...props} />
+))
+Command.displayName = CommandPrimitive.displayName
+
+const CommandDialog = ({ children, ...props }: DialogProps) => (
+  <Dialog {...props}><DialogContent className="overflow-hidden p-0 shadow-lg">
+    <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">{children}</Command>
+  </DialogContent></Dialog>
+)
+
+const CommandInput = React.forwardRef<React.ElementRef<typeof CommandPrimitive.Input>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>>(({ className, ...props }, ref) => (
+  <div className="flex items-center border-b px-3" cmdk-input-wrapper=""><Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+    <CommandPrimitive.Input ref={ref} className={cn("flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50", className)} {...props} />
+  </div>
+))
+
+const CommandList = React.forwardRef<React.ElementRef<typeof CommandPrimitive.List>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>>(({ className, ...props }, ref) => (
+  <CommandPrimitive.List ref={ref} className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)} {...props} />
+))
+
+const CommandEmpty = React.forwardRef<React.ElementRef<typeof CommandPrimitive.Empty>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>>((props, ref) => (
+  <CommandPrimitive.Empty ref={ref} className="py-6 text-center text-sm" {...props} />
+))
+
+const CommandGroup = React.forwardRef<React.ElementRef<typeof CommandPrimitive.Group>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Group ref={ref} className={cn("overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground", className)} {...props} />
+))
+
+const CommandSeparator = React.forwardRef<React.ElementRef<typeof CommandPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Separator ref={ref} className={cn("-mx-1 h-px bg-border", className)} {...props} />
+))
+
+const CommandItem = React.forwardRef<React.ElementRef<typeof CommandPrimitive.Item>, React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Item ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50", className)} {...props} />
+))
+
+const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />
+
+export { Command, CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandShortcut, CommandSeparator }
+```
+
+**Dependencies:** `cmdk`, `lucide-react`, `@radix-ui/react-dialog`, `@/lib/utils`, `dialog`
+
+---
+
+### menubar (shadcn)
+**Source:** https://21st.dev/r/shadcn/menubar
+
+Application menubar (File, Edit, View...).
+
+```tsx
+"use client"
+import * as React from "react"
+import * as MenubarPrimitive from "@radix-ui/react-menubar"
+import { Check, ChevronRight, Circle } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const MenubarMenu = MenubarPrimitive.Menu
+const MenubarGroup = MenubarPrimitive.Group
+const MenubarPortal = MenubarPrimitive.Portal
+const MenubarSub = MenubarPrimitive.Sub
+const MenubarRadioGroup = MenubarPrimitive.RadioGroup
+
+const Menubar = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Root>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>>(({ className, ...props }, ref) => (
+  <MenubarPrimitive.Root ref={ref} className={cn("flex h-10 items-center space-x-1 rounded-md border bg-background p-1", className)} {...props} />
+))
+Menubar.displayName = MenubarPrimitive.Root.displayName
+
+const MenubarTrigger = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>>(({ className, ...props }, ref) => (
+  <MenubarPrimitive.Trigger ref={ref} className={cn("flex cursor-default select-none items-center rounded-sm px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground", className)} {...props} />
+))
+
+const MenubarSubTrigger = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.SubTrigger>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & { inset?: boolean }>(({ className, inset, children, ...props }, ref) => (
+  <MenubarPrimitive.SubTrigger ref={ref} className={cn("flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground", inset && "pl-8", className)} {...props}>{children}<ChevronRight className="ml-auto h-4 w-4" /></MenubarPrimitive.SubTrigger>
+))
+
+const MenubarSubContent = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.SubContent>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>>(({ className, ...props }, ref) => (
+  <MenubarPrimitive.SubContent ref={ref} className={cn("z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out", className)} {...props} />
+))
+
+const MenubarContent = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Content>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>>(({ className, align = "start", alignOffset = -4, sideOffset = 8, ...props }, ref) => (
+  <MenubarPrimitive.Portal><MenubarPrimitive.Content ref={ref} align={align} alignOffset={alignOffset} sideOffset={sideOffset} className={cn("z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} /></MenubarPrimitive.Portal>
+))
+
+const MenubarItem = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Item>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <MenubarPrimitive.Item ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", inset && "pl-8", className)} {...props} />
+))
+
+const MenubarCheckboxItem = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.CheckboxItem>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>>(({ className, children, checked, ...props }, ref) => (
+  <MenubarPrimitive.CheckboxItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} checked={checked} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><MenubarPrimitive.ItemIndicator><Check className="h-4 w-4" /></MenubarPrimitive.ItemIndicator></span>{children}
+  </MenubarPrimitive.CheckboxItem>
+))
+
+const MenubarRadioItem = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.RadioItem>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>>(({ className, children, ...props }, ref) => (
+  <MenubarPrimitive.RadioItem ref={ref} className={cn("relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground", className)} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><MenubarPrimitive.ItemIndicator><Circle className="h-2 w-2 fill-current" /></MenubarPrimitive.ItemIndicator></span>{children}
+  </MenubarPrimitive.RadioItem>
+))
+
+const MenubarLabel = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Label>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & { inset?: boolean }>(({ className, inset, ...props }, ref) => (
+  <MenubarPrimitive.Label ref={ref} className={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)} {...props} />
+))
+
+const MenubarSeparator = React.forwardRef<React.ElementRef<typeof MenubarPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator>>(({ className, ...props }, ref) => (
+  <MenubarPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+))
+
+const MenubarShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />
+
+export { Menubar, MenubarMenu, MenubarTrigger, MenubarContent, MenubarItem, MenubarSeparator, MenubarLabel, MenubarCheckboxItem, MenubarRadioGroup, MenubarRadioItem, MenubarPortal, MenubarSubContent, MenubarSubTrigger, MenubarGroup, MenubarSub, MenubarShortcut }
+```
+
+**Dependencies:** `@radix-ui/react-menubar`, `lucide-react`, `@/lib/utils`
+
+---
+
+### resizable (shadcn)
+**Source:** https://21st.dev/r/shadcn/resizable
+
+Resizable panel layout.
+
+```tsx
+"use client"
+import { GripVertical } from "lucide-react"
+import * as ResizablePrimitive from "react-resizable-panels"
+import { cn } from "@/lib/utils"
+
+const ResizablePanelGroup = ({ className, ...props }: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) => (
+  <ResizablePrimitive.PanelGroup className={cn("flex h-full w-full data-[panel-group-direction=vertical]:flex-col", className)} {...props} />
+)
+
+const ResizablePanel = ResizablePrimitive.Panel
+
+const ResizableHandle = ({ withHandle, className, ...props }: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & { withHandle?: boolean }) => (
+  <ResizablePrimitive.PanelResizeHandle className={cn("relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:w-full data-[panel-group-direction=vertical]:after:-translate-y-1/2 data-[panel-group-direction=vertical]:after:translate-x-0 [&[data-panel-group-direction=vertical]>div]:rotate-90", className)} {...props}>
+    {withHandle && <div className="z-10 flex h-4 w-3 items-center justify-center rounded-sm border bg-border"><GripVertical className="h-2.5 w-2.5" /></div>}
+  </ResizablePrimitive.PanelResizeHandle>
+)
+
+export { ResizablePanelGroup, ResizablePanel, ResizableHandle }
+```
+
+**Dependencies:** `react-resizable-panels`, `lucide-react`, `@/lib/utils`
+
+---
+
+### breadcrumb (shadcn)
+**Source:** https://21st.dev/r/shadcn/breadcrumb
+
+Navigation breadcrumb.
+
+```tsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { ChevronRight, MoreHorizontal } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Breadcrumb = React.forwardRef<HTMLElement, React.ComponentPropsWithoutRef<"nav"> & { separator?: React.ReactNode }>(({ ...props }, ref) => <nav ref={ref} aria-label="breadcrumb" {...props} />)
+Breadcrumb.displayName = "Breadcrumb"
+
+const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(({ className, ...props }, ref) => (
+  <ol ref={ref} className={cn("flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5", className)} {...props} />
+))
+
+const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(({ className, ...props }, ref) => (
+  <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
+))
+
+const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, React.ComponentPropsWithoutRef<"a"> & { asChild?: boolean }>(({ asChild, className, ...props }, ref) => {
+  const Comp = asChild ? Slot : "a"
+  return <Comp ref={ref} className={cn("transition-colors hover:text-foreground", className)} {...props} />
+})
+
+const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWithoutRef<"span">>(({ className, ...props }, ref) => (
+  <span ref={ref} role="link" aria-disabled="true" aria-current="page" className={cn("font-normal text-foreground", className)} {...props} />
+))
+
+const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentProps<"li">) => (
+  <li role="presentation" aria-hidden="true" className={cn("[&>svg]:size-3.5", className)} {...props}>{children ?? <ChevronRight />}</li>
+)
+
+const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span">) => (
+  <span role="presentation" aria-hidden="true" className={cn("flex h-9 w-9 items-center justify-center", className)} {...props}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">More</span></span>
+)
+
+export { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator, BreadcrumbEllipsis }
+```
+
+**Dependencies:** `@radix-ui/react-slot`, `lucide-react`, `@/lib/utils`
+
+---
+
+### toggle (shadcn)
+**Source:** https://21st.dev/r/shadcn/toggle
+
+Toggle button with variants.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as TogglePrimitive from "@radix-ui/react-toggle"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const toggleVariants = cva(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
+  {
+    variants: {
+      variant: { default: "bg-transparent", outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground" },
+      size: { default: "h-10 px-3", sm: "h-9 px-2.5", lg: "h-11 px-5" },
+    },
+    defaultVariants: { variant: "default", size: "default" },
+  }
+)
+
+const Toggle = React.forwardRef<React.ElementRef<typeof TogglePrimitive.Root>, React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>>(({ className, variant, size, ...props }, ref) => (
+  <TogglePrimitive.Root ref={ref} className={cn(toggleVariants({ variant, size, className }))} {...props} />
+))
+Toggle.displayName = TogglePrimitive.Root.displayName
+
+export { Toggle, toggleVariants }
+```
+
+**Dependencies:** `@radix-ui/react-toggle`, `class-variance-authority`, `@/lib/utils`
+**Variants:** `default`, `outline`. **Sizes:** `default`, `sm`, `lg`
+
+---
+
+### toggle-group (shadcn)
+**Source:** https://21st.dev/r/shadcn/toggle-group
+
+Group of toggles with shared state.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+import { type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+import { toggleVariants } from "@/components/ui/toggle"
+
+const ToggleGroupContext = React.createContext<VariantProps<typeof toggleVariants>>({ size: "default", variant: "default" })
+
+const ToggleGroup = React.forwardRef<React.ElementRef<typeof ToggleGroupPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> & VariantProps<typeof toggleVariants>>(({ className, variant, size, children, ...props }, ref) => (
+  <ToggleGroupPrimitive.Root ref={ref} className={cn("flex items-center justify-center gap-1", className)} {...props}>
+    <ToggleGroupContext.Provider value={{ variant, size }}>{children}</ToggleGroupContext.Provider>
+  </ToggleGroupPrimitive.Root>
+))
+ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
+
+const ToggleGroupItem = React.forwardRef<React.ElementRef<typeof ToggleGroupPrimitive.Item>, React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> & VariantProps<typeof toggleVariants>>(({ className, children, variant, size, ...props }, ref) => {
+  const context = React.useContext(ToggleGroupContext)
+  return <ToggleGroupPrimitive.Item ref={ref} className={cn(toggleVariants({ variant: context.variant || variant, size: context.size || size }), className)} {...props}>{children}</ToggleGroupPrimitive.Item>
+})
+ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
+
+export { ToggleGroup, ToggleGroupItem }
+```
+
+**Dependencies:** `@radix-ui/react-toggle-group`, `toggleVariants` from toggle, `@/lib/utils`
+
+---
+
+### collapsible (shadcn)
+**Source:** https://21st.dev/r/shadcn/collapsible
+
+Collapsible content wrapper.
+
+```tsx
+"use client"
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
+
+const Collapsible = CollapsiblePrimitive.Root
+const CollapsibleTrigger = CollapsiblePrimitive.CollapsibleTrigger
+const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent
+
+export { Collapsible, CollapsibleTrigger, CollapsibleContent }
+```
+
+**Dependencies:** `@radix-ui/react-collapsible`
+
+---
+
+### hover-card (shadcn)
+**Source:** https://21st.dev/r/shadcn/hover-card
+
+Card shown on hover.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
+import { cn } from "@/lib/utils"
+
+const HoverCard = HoverCardPrimitive.Root
+const HoverCardTrigger = HoverCardPrimitive.Trigger
+
+const HoverCardContent = React.forwardRef<React.ElementRef<typeof HoverCardPrimitive.Content>, React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <HoverCardPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2", className)} {...props} />
+))
+HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
+
+export { HoverCard, HoverCardTrigger, HoverCardContent }
+```
+
+**Dependencies:** `@radix-ui/react-hover-card`, `@/lib/utils`
+
+---
+
+### alert-dialog (shadcn)
+**Source:** https://21st.dev/r/shadcn/alert-dialog
+
+Confirmation dialog with action/cancel buttons.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
+
+const AlertDialog = AlertDialogPrimitive.Root
+const AlertDialogTrigger = AlertDialogPrimitive.Trigger
+const AlertDialogPortal = AlertDialogPrimitive.Portal
+
+const AlertDialogOverlay = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>>(({ className, ...props }, ref) => (
+  <AlertDialogPrimitive.Overlay className={cn("fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} ref={ref} />
+))
+
+const AlertDialogContent = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>>(({ className, ...props }, ref) => (
+  <AlertDialogPortal><AlertDialogOverlay />
+    <AlertDialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg", className)} {...props} />
+  </AlertDialogPortal>
+))
+
+const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
+
+const AlertDialogTitle = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>>(({ className, ...props }, ref) => (
+  <AlertDialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold", className)} {...props} />
+))
+
+const AlertDialogDescription = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Description>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>>(({ className, ...props }, ref) => (
+  <AlertDialogPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+))
+
+const AlertDialogAction = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Action>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>>(({ className, ...props }, ref) => (
+  <AlertDialogPrimitive.Action ref={ref} className={cn(buttonVariants(), className)} {...props} />
+))
+
+const AlertDialogCancel = React.forwardRef<React.ElementRef<typeof AlertDialogPrimitive.Cancel>, React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>>(({ className, ...props }, ref) => (
+  <AlertDialogPrimitive.Cancel ref={ref} className={cn(buttonVariants({ variant: "outline" }), "mt-2 sm:mt-0", className)} {...props} />
+))
+
+export { AlertDialog, AlertDialogPortal, AlertDialogOverlay, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel }
+```
+
+**Dependencies:** `@radix-ui/react-alert-dialog`, `buttonVariants`, `@/lib/utils`
+
+---
+
+### sonner (shadcn)
+**Source:** https://21st.dev/r/shadcn/sonner
+
+Toast notifications (sonner-based).
+
+```tsx
+"use client"
+import { useTheme } from "next-themes"
+import { Toaster as Sonner } from "sonner"
+
+type ToasterProps = React.ComponentProps<typeof Sonner>
+
+const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme = "system" } = useTheme()
+  return (
+    <Sonner theme={theme as ToasterProps["theme"]} className="toaster group" toastOptions={{
+      classNames: {
+        toast: "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+        description: "group-[.toast]:text-muted-foreground",
+        actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+        cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+      },
+    }} {...props} />
+  )
+}
+
+export { Toaster }
+```
+
+**Dependencies:** `sonner`, `next-themes`
+
+---
+
+### pagination (shadcn)
+**Source:** https://21st.dev/r/shadcn/pagination
+
+Pagination navigation component.
+
+```tsx
+import * as React from "react"
+import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button, buttonVariants } from "@/components/ui/button"
+
+function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+  return <nav role="navigation" aria-label="pagination" className={cn("mx-auto flex w-full justify-center", className)} {...props} />
+}
+
+function PaginationContent({ className, ...props }: React.ComponentProps<"ul">) {
+  return <ul className={cn("flex flex-row items-center gap-1", className)} {...props} />
+}
+
+function PaginationItem({ ...props }: React.ComponentProps<"li">) {
+  return <li {...props} />
+}
+
+type PaginationLinkProps = { isActive?: boolean } & Pick<React.ComponentProps<typeof Button>, "size"> & React.ComponentProps<"a">
+
+function PaginationLink({ className, isActive, size = "icon", ...props }: PaginationLinkProps) {
+  return <a aria-current={isActive ? "page" : undefined} className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size }), className)} {...props} />
+}
+
+function PaginationPrevious({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
+  return <PaginationLink aria-label="Go to previous page" size="default" className={cn("gap-1 px-2.5 sm:pl-2.5", className)} {...props}><ChevronLeftIcon /><span className="hidden sm:block">Previous</span></PaginationLink>
+}
+
+function PaginationNext({ className, ...props }: React.ComponentProps<typeof PaginationLink>) {
+  return <PaginationLink aria-label="Go to next page" size="default" className={cn("gap-1 px-2.5 sm:pr-2.5", className)} {...props}><span className="hidden sm:block">Next</span><ChevronRightIcon /></PaginationLink>
+}
+
+function PaginationEllipsis({ className, ...props }: React.ComponentProps<"span">) {
+  return <span aria-hidden className={cn("flex size-9 items-center justify-center", className)} {...props}><MoreHorizontalIcon className="size-4" /><span className="sr-only">More pages</span></span>
+}
+
+export { Pagination, PaginationContent, PaginationLink, PaginationItem, PaginationPrevious, PaginationNext, PaginationEllipsis }
+```
+
+**Dependencies:** `lucide-react`, `buttonVariants`, `@/lib/utils`
+
+---
+
+### form (shadcn)
+**Source:** https://21st.dev/r/shadcn/form
+
+Form components with react-hook-form integration.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { Slot } from "@radix-ui/react-slot"
+import { Controller, ControllerProps, FieldPath, FieldValues, FormProvider, useFormContext } from "react-hook-form"
+import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+
+const Form = FormProvider
+
+type FormFieldContextValue<TFieldValues extends FieldValues = FieldValues, TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>> = { name: TName }
+const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue)
+
+const FormField = <TFieldValues extends FieldValues = FieldValues, TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>>({ ...props }: ControllerProps<TFieldValues, TName>) => (
+  <FormFieldContext.Provider value={{ name: props.name }}><Controller {...props} /></FormFieldContext.Provider>
+)
+
+const useFormField = () => {
+  const fieldContext = React.useContext(FormFieldContext)
+  const itemContext = React.useContext(FormItemContext)
+  const { getFieldState, formState } = useFormContext()
+  const fieldState = getFieldState(fieldContext.name, formState)
+  const { id } = itemContext
+  return { id, name: fieldContext.name, formItemId: `${id}-form-item`, formDescriptionId: `${id}-form-item-description`, formMessageId: `${id}-form-item-message`, ...fieldState }
+}
+
+type FormItemContextValue = { id: string }
+const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue)
+
+const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
+  const id = React.useId()
+  return <FormItemContext.Provider value={{ id }}><div ref={ref} className={cn("space-y-2", className)} {...props} /></FormItemContext.Provider>
+})
+FormItem.displayName = "FormItem"
+
+const FormLabel = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>>(({ className, ...props }, ref) => {
+  const { error, formItemId } = useFormField()
+  return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />
+})
+
+const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(({ ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  return <Slot ref={ref} id={formItemId} aria-describedby={!error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`} aria-invalid={!!error} {...props} />
+})
+
+const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, ...props }, ref) => {
+  const { formDescriptionId } = useFormField()
+  return <p ref={ref} id={formDescriptionId} className={cn("text-sm text-muted-foreground", className)} {...props} />
+})
+
+const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, children, ...props }, ref) => {
+  const { error, formMessageId } = useFormField()
+  const body = error ? String(error?.message) : children
+  if (!body) return null
+  return <p ref={ref} id={formMessageId} className={cn("text-sm font-medium text-destructive", className)} {...props}>{body}</p>
+})
+
+export { useFormField, Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField }
+```
+
+**Dependencies:** `react-hook-form`, `@radix-ui/react-slot`, `@radix-ui/react-label`, `Label`, `@/lib/utils`
+
+---
+
+### carousel (shadcn)
+**Source:** https://21st.dev/r/shadcn/carousel
+
+Embla-based carousel/slider.
+
+```tsx
+"use client"
+import * as React from "react"
+import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+
+type CarouselApi = UseEmblaCarouselType[1]
+type CarouselOptions = Parameters<typeof useEmblaCarousel>[0]
+type CarouselPlugin = Parameters<typeof useEmblaCarousel>[1]
+
+type CarouselProps = { opts?: CarouselOptions; plugins?: CarouselPlugin; orientation?: "horizontal" | "vertical"; setApi?: (api: CarouselApi) => void }
+type CarouselContextProps = { carouselRef: ReturnType<typeof useEmblaCarousel>[0]; api: ReturnType<typeof useEmblaCarousel>[1]; scrollPrev: () => void; scrollNext: () => void; canScrollPrev: boolean; canScrollNext: boolean } & CarouselProps
+
+const CarouselContext = React.createContext<CarouselContextProps | null>(null)
+function useCarousel() { const context = React.useContext(CarouselContext); if (!context) throw new Error("useCarousel must be used within <Carousel />"); return context }
+
+const Carousel = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & CarouselProps>(({ orientation = "horizontal", opts, setApi, plugins, className, children, ...props }, ref) => {
+  const [carouselRef, api] = useEmblaCarousel({ ...opts, axis: orientation === "horizontal" ? "x" : "y" }, plugins)
+  const [canScrollPrev, setCanScrollPrev] = React.useState(false)
+  const [canScrollNext, setCanScrollNext] = React.useState(false)
+  const onSelect = React.useCallback((api: CarouselApi) => { if (!api) return; setCanScrollPrev(api.canScrollPrev()); setCanScrollNext(api.canScrollNext()) }, [])
+  const scrollPrev = React.useCallback(() => api?.scrollPrev(), [api])
+  const scrollNext = React.useCallback(() => api?.scrollNext(), [api])
+  React.useEffect(() => { if (api && setApi) setApi(api) }, [api, setApi])
+  React.useEffect(() => { if (!api) return; onSelect(api); api.on("reInit", onSelect); api.on("select", onSelect); return () => { api?.off("select", onSelect) } }, [api, onSelect])
+  return (
+    <CarouselContext.Provider value={{ carouselRef, api, opts, orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"), scrollPrev, scrollNext, canScrollPrev, canScrollNext }}>
+      <div ref={ref} onKeyDownCapture={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); scrollPrev() } else if (e.key === "ArrowRight") { e.preventDefault(); scrollNext() } }} className={cn("relative", className)} role="region" aria-roledescription="carousel" {...props}>{children}</div>
+    </CarouselContext.Provider>
+  )
+})
+Carousel.displayName = "Carousel"
+
+const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
+  const { carouselRef, orientation } = useCarousel()
+  return <div ref={carouselRef} className="overflow-hidden"><div ref={ref} className={cn("flex", orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col", className)} {...props} /></div>
+})
+
+const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => {
+  const { orientation } = useCarousel()
+  return <div ref={ref} role="group" aria-roledescription="slide" className={cn("min-w-0 shrink-0 grow-0 basis-full", orientation === "horizontal" ? "pl-4" : "pt-4", className)} {...props} />
+})
+
+const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+  const { orientation, scrollPrev, canScrollPrev } = useCarousel()
+  return <Button ref={ref} variant={variant} size={size} className={cn("absolute h-8 w-8 rounded-full", orientation === "horizontal" ? "-left-12 top-1/2 -translate-y-1/2" : "-top-12 left-1/2 -translate-x-1/2 rotate-90", className)} disabled={!canScrollPrev} onClick={scrollPrev} {...props}><ArrowLeft className="h-4 w-4" /><span className="sr-only">Previous slide</span></Button>
+})
+
+const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+  const { orientation, scrollNext, canScrollNext } = useCarousel()
+  return <Button ref={ref} variant={variant} size={size} className={cn("absolute h-8 w-8 rounded-full", orientation === "horizontal" ? "-right-12 top-1/2 -translate-y-1/2" : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90", className)} disabled={!canScrollNext} onClick={scrollNext} {...props}><ArrowRight className="h-4 w-4" /><span className="sr-only">Next slide</span></Button>
+})
+
+export { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext }
+```
+
+**Dependencies:** `embla-carousel-react`, `lucide-react`, `Button`, `@/lib/utils`
+
+---
+
+### drawer (shadcn)
+**Source:** https://21st.dev/r/shadcn/drawer
+
+Bottom drawer (vaul-based).
+
+```tsx
+"use client"
+import * as React from "react"
+import { Drawer as DrawerPrimitive } from "vaul"
+import { cn } from "@/lib/utils"
+
+const Drawer = ({ shouldScaleBackground = true, ...props }: React.ComponentProps<typeof DrawerPrimitive.Root>) => <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
+Drawer.displayName = "Drawer"
+
+const DrawerTrigger = DrawerPrimitive.Trigger
+const DrawerPortal = DrawerPrimitive.Portal
+const DrawerClose = DrawerPrimitive.Close
+
+const DrawerOverlay = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/80", className)} {...props} />
+))
+
+const DrawerContent = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>>(({ className, children, ...props }, ref) => (
+  <DrawerPortal><DrawerOverlay />
+    <DrawerPrimitive.Content ref={ref} className={cn("fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background", className)} {...props}>
+      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />{children}
+    </DrawerPrimitive.Content>
+  </DrawerPortal>
+))
+
+const DrawerHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)} {...props} />
+const DrawerFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn("mt-auto flex flex-col gap-2 p-4", className)} {...props} />
+
+const DrawerTitle = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Title ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />
+))
+
+const DrawerDescription = React.forwardRef<React.ElementRef<typeof DrawerPrimitive.Description>, React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+))
+
+export { Drawer, DrawerPortal, DrawerOverlay, DrawerTrigger, DrawerClose, DrawerContent, DrawerHeader, DrawerFooter, DrawerTitle, DrawerDescription }
+```
+
+**Dependencies:** `vaul`, `@/lib/utils`
+
+---
+
+### input-otp (shadcn)
+**Source:** https://21st.dev/r/shadcn/input-otp
+
+OTP/PIN input field.
+
+```tsx
+"use client"
+import * as React from "react"
+import { OTPInput, OTPInputContext } from "input-otp"
+import { Dot } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(({ className, containerClassName, ...props }, ref) => (
+  <OTPInput ref={ref} containerClassName={cn("flex items-center gap-2 has-[:disabled]:opacity-50", containerClassName)} className={cn("disabled:cursor-not-allowed", className)} {...props} />
+))
+InputOTP.displayName = "InputOTP"
+
+const InputOTPGroup = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex items-center", className)} {...props} />
+))
+
+const InputOTPSlot = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div"> & { index: number }>(({ index, className, ...props }, ref) => {
+  const inputOTPContext = React.useContext(OTPInputContext)
+  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
+  return (
+    <div ref={ref} className={cn("relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md", isActive && "z-10 ring-2 ring-ring ring-offset-background", className)} {...props}>
+      {char}{hasFakeCaret && <div className="pointer-events-none absolute inset-0 flex items-center justify-center"><div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" /></div>}
+    </div>
+  )
+})
+
+const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(({ ...props }, ref) => (
+  <div ref={ref} role="separator" {...props}><Dot /></div>
+))
+
+export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator }
+```
+
+**Dependencies:** `input-otp`, `lucide-react`, `@/lib/utils`
+**Tailwind config required:** Add `caret-blink` animation
+
+---
+
+### aspect-ratio (shadcn)
+**Source:** https://21st.dev/r/shadcn/aspect-ratio
+
+Maintains aspect ratio for content.
+
+```tsx
+"use client"
+import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"
+
+const AspectRatio = AspectRatioPrimitive.Root
+
+export { AspectRatio }
+```
+
+**Dependencies:** `@radix-ui/react-aspect-ratio`
+
+---
+
+### navigation-menu (shadcn)
+**Source:** https://21st.dev/r/shadcn/navigation-menu
+
+Main navigation with dropdowns.
+
+```tsx
+import * as React from "react"
+import { ChevronDownIcon } from "@radix-ui/react-icons"
+import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
+import { cva } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const NavigationMenu = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Root>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>>(({ className, children, ...props }, ref) => (
+  <NavigationMenuPrimitive.Root ref={ref} className={cn("relative z-10 flex max-w-max flex-1 items-center justify-center", className)} {...props}>{children}<NavigationMenuViewport /></NavigationMenuPrimitive.Root>
+))
+NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName
+
+const NavigationMenuList = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.List>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.List>>(({ className, ...props }, ref) => (
+  <NavigationMenuPrimitive.List ref={ref} className={cn("group flex flex-1 list-none items-center justify-center space-x-1", className)} {...props} />
+))
+
+const NavigationMenuItem = NavigationMenuPrimitive.Item
+
+const navigationMenuTriggerStyle = cva("group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50")
+
+const NavigationMenuTrigger = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>>(({ className, children, ...props }, ref) => (
+  <NavigationMenuPrimitive.Trigger ref={ref} className={cn(navigationMenuTriggerStyle(), "group", className)} {...props}>{children} <ChevronDownIcon className="relative top-[1px] ml-1 h-3 w-3 transition duration-300 group-data-[state=open]:rotate-180" aria-hidden="true" /></NavigationMenuPrimitive.Trigger>
+))
+
+const NavigationMenuContent = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Content>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Content>>(({ className, ...props }, ref) => (
+  <NavigationMenuPrimitive.Content ref={ref} className={cn("left-0 top-0 w-full data-[motion^=from-]:animate-in data-[motion^=to-]:animate-out data-[motion^=from-]:fade-in data-[motion^=to-]:fade-out data-[motion=from-end]:slide-in-from-right-52 data-[motion=from-start]:slide-in-from-left-52 data-[motion=to-end]:slide-out-to-right-52 data-[motion=to-start]:slide-out-to-left-52 md:absolute md:w-auto", className)} {...props} />
+))
+
+const NavigationMenuLink = NavigationMenuPrimitive.Link
+
+const NavigationMenuViewport = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Viewport>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>>(({ className, ...props }, ref) => (
+  <div className={cn("absolute left-0 top-full flex justify-center")}><NavigationMenuPrimitive.Viewport className={cn("origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90 md:w-[var(--radix-navigation-menu-viewport-width)]", className)} ref={ref} {...props} /></div>
+))
+
+const NavigationMenuIndicator = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Indicator>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Indicator>>(({ className, ...props }, ref) => (
+  <NavigationMenuPrimitive.Indicator ref={ref} className={cn("top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in", className)} {...props}><div className="relative top-[60%] h-2 w-2 rotate-45 rounded-tl-sm bg-border shadow-md" /></NavigationMenuPrimitive.Indicator>
+))
+
+export { navigationMenuTriggerStyle, NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuContent, NavigationMenuTrigger, NavigationMenuLink, NavigationMenuIndicator, NavigationMenuViewport }
+```
+
+**Dependencies:** `@radix-ui/react-navigation-menu`, `@radix-ui/react-icons`, `class-variance-authority`, `@/lib/utils`
+
+---
+
+### animated-background (ibelick)
+**Source:** https://21st.dev/r/ibelick/animated-background
+
+Background highlight animation for tabs/buttons.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { AnimatePresence, Transition, motion } from 'framer-motion'
+import { Children, cloneElement, ReactElement, useEffect, useState, useId } from 'react'
+
+type AnimatedBackgroundProps = {
+  children: ReactElement<{ 'data-id': string }>[] | ReactElement<{ 'data-id': string }>
+  defaultValue?: string
+  onValueChange?: (newActiveId: string | null) => void
+  className?: string
+  transition?: Transition
+  enableHover?: boolean
+}
+
+export default function AnimatedBackground({ children, defaultValue, onValueChange, className, transition, enableHover = false }: AnimatedBackgroundProps) {
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const uniqueId = useId()
+
+  const handleSetActiveId = (id: string | null) => {
+    setActiveId(id)
+    if (onValueChange) onValueChange(id)
+  }
+
+  useEffect(() => {
+    if (defaultValue !== undefined) setActiveId(defaultValue)
+  }, [defaultValue])
+
+  return Children.map(children, (child: any, index) => {
+    const id = child.props['data-id']
+    const interactionProps = enableHover
+      ? { onMouseEnter: () => handleSetActiveId(id), onMouseLeave: () => handleSetActiveId(null) }
+      : { onClick: () => handleSetActiveId(id) }
+
+    return cloneElement(child, {
+      key: index,
+      className: cn('relative inline-flex', child.props.className),
+      'aria-selected': activeId === id,
+      'data-checked': activeId === id ? 'true' : 'false',
+      ...interactionProps,
+    }, <>
+      <AnimatePresence initial={false}>
+        {activeId === id && (
+          <motion.div layoutId={`background-${uniqueId}`} className={cn('absolute inset-0', className)} transition={transition} initial={{ opacity: defaultValue ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+        )}
+      </AnimatePresence>
+      <span className='z-10'>{child.props.children}</span>
+    </>)
+  })
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### orbiting-circles (magicui)
+**Source:** https://21st.dev/r/magicui/orbiting-circles
+
+Animated circles orbiting around a center point.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+export interface OrbitingCirclesProps {
+  className?: string
+  children?: React.ReactNode
+  reverse?: boolean
+  duration?: number
+  delay?: number
+  radius?: number
+  path?: boolean
+}
+
+export function OrbitingCircles({
+  className,
+  children,
+  reverse,
+  duration = 20,
+  delay = 10,
+  radius = 50,
+  path = true,
+}: OrbitingCirclesProps) {
+  return (
+    <>
+      {path && (
+        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" className="pointer-events-none absolute inset-0 size-full">
+          <circle className="stroke-black/10 stroke-1 dark:stroke-white/10" cx="50%" cy="50%" r={radius} fill="none" />
+        </svg>
+      )}
+      <div
+        style={{ "--duration": duration, "--radius": radius, "--delay": -delay } as React.CSSProperties}
+        className={cn(
+          "absolute flex transform-gpu animate-orbit items-center justify-center rounded-full border bg-black/10 [animation-delay:calc(var(--delay)*1000ms)] dark:bg-white/10",
+          { "[animation-direction:reverse]": reverse },
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `orbit` animation keyframes
+
+---
+
+### rainbow-button (magicui)
+**Source:** https://21st.dev/r/magicui/rainbow-button
+
+Button with animated rainbow gradient border.
+
+```tsx
+import React from "react";
+import { cn } from "@/lib/utils";
+
+interface RainbowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+
+export function RainbowButton({ children, className, ...props }: RainbowButtonProps) {
+  return (
+    <button
+      className={cn(
+        "group relative inline-flex h-11 animate-rainbow cursor-pointer items-center justify-center rounded-xl border-0 bg-[length:200%] px-8 py-2 font-medium text-primary-foreground transition-colors [background-clip:padding-box,border-box,border-box] [background-origin:border-box] [border:calc(0.08*1rem)_solid_transparent] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+        "before:absolute before:bottom-[-20%] before:left-1/2 before:z-0 before:h-1/5 before:w-3/5 before:-translate-x-1/2 before:animate-rainbow before:bg-[linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))] before:bg-[length:200%] before:[filter:blur(calc(0.8*1rem))]",
+        "bg-[linear-gradient(#121213,#121213),linear-gradient(#121213_50%,rgba(18,18,19,0.6)_80%,rgba(18,18,19,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
+        "dark:bg-[linear-gradient(#fff,#fff),linear-gradient(#fff_50%,rgba(255,255,255,0.6)_80%,rgba(0,0,0,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS variables required:** `--color-1` to `--color-5` (HSL values)
+**Tailwind config required:** Add `rainbow` animation
+
+---
+
+### confetti (magicui)
+**Source:** https://21st.dev/r/magicui/confetti
+
+Confetti explosion effect with canvas.
+
+```tsx
+import type { ReactNode } from "react"
+import React, { createContext, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react"
+import type { GlobalOptions as ConfettiGlobalOptions, CreateTypes as ConfettiInstance, Options as ConfettiOptions } from "canvas-confetti"
+import confetti from "canvas-confetti"
+import { Button, ButtonProps } from "@/components/ui/button"
+
+type Api = { fire: (options?: ConfettiOptions) => void }
+type Props = React.ComponentPropsWithRef<"canvas"> & { options?: ConfettiOptions; globalOptions?: ConfettiGlobalOptions; manualstart?: boolean; children?: ReactNode }
+export type ConfettiRef = Api | null
+
+const ConfettiContext = createContext<Api>({} as Api)
+
+const Confetti = forwardRef<ConfettiRef, Props>((props, ref) => {
+  const { options, globalOptions = { resize: true, useWorker: true }, manualstart = false, children, ...rest } = props
+  const instanceRef = useRef<ConfettiInstance | null>(null)
+
+  const canvasRef = useCallback((node: HTMLCanvasElement) => {
+    if (node !== null) {
+      if (instanceRef.current) return
+      instanceRef.current = confetti.create(node, { ...globalOptions, resize: true })
+    } else {
+      if (instanceRef.current) { instanceRef.current.reset(); instanceRef.current = null }
+    }
+  }, [globalOptions])
+
+  const fire = useCallback((opts = {}) => instanceRef.current?.({ ...options, ...opts }), [options])
+  const api = useMemo(() => ({ fire }), [fire])
+  useImperativeHandle(ref, () => api, [api])
+  useEffect(() => { if (!manualstart) fire() }, [manualstart, fire])
+
+  return (
+    <ConfettiContext.Provider value={api}>
+      <canvas ref={canvasRef} {...rest} />
+      {children}
+    </ConfettiContext.Provider>
+  )
+})
+
+interface ConfettiButtonProps extends ButtonProps {
+  options?: ConfettiOptions & ConfettiGlobalOptions & { canvas?: HTMLCanvasElement }
+  children?: React.ReactNode
+}
+
+function ConfettiButton({ options, children, ...props }: ConfettiButtonProps) {
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    confetti({ ...options, origin: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight } })
+  }
+  return <Button onClick={handleClick} {...props}>{children}</Button>
+}
+
+Confetti.displayName = "Confetti"
+export { Confetti, ConfettiButton }
+```
+
+**Dependencies:** `canvas-confetti`, `@radix-ui/react-slot`, `class-variance-authority`, `button`
+
+---
+
+### cool-mode (magicui)
+**Source:** https://21st.dev/r/magicui/cool-mode
+
+Particle effect on click/drag.
+
+```tsx
+import React, { ReactNode, RefObject, useEffect, useRef } from "react"
+
+export interface CoolParticleOptions {
+  particle?: string
+  size?: number
+  particleCount?: number
+  speedHorz?: number
+  speedUp?: number
+}
+
+interface CoolModeProps {
+  children: ReactNode
+  options?: CoolParticleOptions
+}
+
+export const CoolMode: React.FC<CoolModeProps> = ({ children, options }) => {
+  const ref = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (ref.current) {
+      return applyParticleEffect(ref.current, options)
+    }
+  }, [options])
+
+  return React.cloneElement(children as React.ReactElement, { ref })
+}
+
+// Note: Full implementation includes applyParticleEffect function with particle animation logic
+// See source for complete code
+```
+
+**Dependencies:** `@radix-ui/react-slot`, `class-variance-authority`, `button`
+
+---
+
+### blur-fade (magicui)
+**Source:** https://21st.dev/r/magicui/blur-fade
+
+Fade in with blur animation.
+
+```tsx
+"use client"
+import { useRef } from "react"
+import { AnimatePresence, motion, useInView, UseInViewOptions, Variants } from "framer-motion"
+
+type MarginType = UseInViewOptions["margin"]
+
+interface BlurFadeProps {
+  children: React.ReactNode
+  className?: string
+  variant?: { hidden: { y: number }; visible: { y: number } }
+  duration?: number
+  delay?: number
+  yOffset?: number
+  inView?: boolean
+  inViewMargin?: MarginType
+  blur?: string
+}
+
+export function BlurFade({ children, className, variant, duration = 0.4, delay = 0, yOffset = 6, inView = false, inViewMargin = "-50px", blur = "6px" }: BlurFadeProps) {
+  const ref = useRef(null)
+  const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
+  const isInView = !inView || inViewResult
+  const defaultVariants: Variants = {
+    hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` },
+    visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` },
+  }
+  const combinedVariants = variant || defaultVariants
+  return (
+    <AnimatePresence>
+      <motion.div ref={ref} initial="hidden" animate={isInView ? "visible" : "hidden"} exit="hidden" variants={combinedVariants} transition={{ delay: 0.04 + delay, duration, ease: "easeOut" }} className={className}>
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### number-ticker (magicui)
+**Source:** https://21st.dev/r/magicui/number-ticker
+
+Animated number counter.
+
+```tsx
+"use client"
+import { useEffect, useRef } from "react"
+import { useInView, useMotionValue, useSpring } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export function NumberTicker({ value, direction = "up", delay = 0, className, decimalPlaces = 0 }: { value: number; direction?: "up" | "down"; className?: string; delay?: number; decimalPlaces?: number }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const motionValue = useMotionValue(direction === "down" ? value : 0)
+  const springValue = useSpring(motionValue, { damping: 60, stiffness: 100 })
+  const isInView = useInView(ref, { once: true, margin: "0px" })
+
+  useEffect(() => {
+    isInView && setTimeout(() => { motionValue.set(direction === "down" ? 0 : value) }, delay * 1000)
+  }, [motionValue, isInView, delay, value, direction])
+
+  useEffect(() =>
+    springValue.on("change", (latest) => {
+      if (ref.current) {
+        ref.current.textContent = Intl.NumberFormat("en-US", { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }).format(Number(latest.toFixed(decimalPlaces)))
+      }
+    }), [springValue, decimalPlaces])
+
+  return <span className={cn("inline-block tabular-nums text-black dark:text-white tracking-wider", className)} ref={ref} />
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### word-rotate (magicui)
+**Source:** https://21st.dev/r/magicui/word-rotate
+
+Rotating words animation.
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { AnimatePresence, HTMLMotionProps, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface WordRotateProps {
+  words: string[];
+  duration?: number;
+  framerProps?: HTMLMotionProps<"h1">;
+  className?: string;
+}
+
+export function WordRotate({ words, duration = 2500, framerProps = { initial: { opacity: 0, y: -50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 50 }, transition: { duration: 0.25, ease: "easeOut" } }, className }: WordRotateProps) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => { setIndex((prevIndex) => (prevIndex + 1) % words.length) }, duration);
+    return () => clearInterval(interval);
+  }, [words, duration]);
+
+  return (
+    <div className="overflow-hidden py-2">
+      <AnimatePresence mode="wait">
+        <motion.h1 key={words[index]} className={cn(className)} {...framerProps}>{words[index]}</motion.h1>
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### word-pull-up (magicui)
+**Source:** https://21st.dev/r/magicui/word-pull-up
+
+Words animate up one by one.
+
+```tsx
+"use client";
+import { motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface WordPullUpProps {
+  words: string;
+  delayMultiple?: number;
+  wrapperFramerProps?: Variants;
+  framerProps?: Variants;
+  className?: string;
+}
+
+function WordPullUp({ words, wrapperFramerProps = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } }, framerProps = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }, className }: WordPullUpProps) {
+  return (
+    <motion.h1 variants={wrapperFramerProps} initial="hidden" animate="show" className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>
+      {words.split(" ").map((word, i) => (
+        <motion.span key={i} variants={framerProps} style={{ display: "inline-block", paddingRight: "8px" }}>
+          {word === "" ? <span>&nbsp;</span> : word}
+        </motion.span>
+      ))}
+    </motion.h1>
+  );
+}
+
+export { WordPullUp };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### hyper-text (magicui)
+**Source:** https://21st.dev/r/magicui/hyper-text
+
+Text scramble/decode animation on hover.
+
+```tsx
+"use client";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface HyperTextProps {
+  text: string;
+  duration?: number;
+  framerProps?: Variants;
+  className?: string;
+  animateOnLoad?: boolean;
+}
+
+const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const getRandomInt = (max: number) => Math.floor(Math.random() * max);
+
+export function HyperText({ text, duration = 800, framerProps = { initial: { opacity: 0, y: -10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 3 } }, className, animateOnLoad = true }: HyperTextProps) {
+  const [displayText, setDisplayText] = useState(text.split(""));
+  const [trigger, setTrigger] = useState(false);
+  const interations = useRef(0);
+  const isFirstRender = useRef(true);
+
+  const triggerAnimation = () => { interations.current = 0; setTrigger(true); };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!animateOnLoad && isFirstRender.current) { clearInterval(interval); isFirstRender.current = false; return; }
+      if (interations.current < text.length) {
+        setDisplayText((t) => t.map((l, i) => (l === " " ? l : i <= interations.current ? text[i] : alphabets[getRandomInt(26)])));
+        interations.current = interations.current + 0.1;
+      } else { setTrigger(false); clearInterval(interval); }
+    }, duration / (text.length * 10));
+    return () => clearInterval(interval);
+  }, [text, duration, trigger, animateOnLoad]);
+
+  return (
+    <div className="flex scale-100 cursor-default overflow-hidden py-2" onMouseEnter={triggerAnimation}>
+      <AnimatePresence mode="wait">
+        {displayText.map((letter, i) => (
+          <motion.span key={i} className={cn("font-mono", letter === " " ? "w-3" : "", className)} {...framerProps}>{letter.toUpperCase()}</motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### flip-text (magicui)
+**Source:** https://21st.dev/r/magicui/flip-text
+
+3D flip text animation.
+
+```tsx
+"use client";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface FlipTextProps {
+  word: string;
+  duration?: number;
+  delayMultiple?: number;
+  framerProps?: Variants;
+  className?: string;
+}
+
+function FlipText({ word, duration = 0.5, delayMultiple = 0.08, framerProps = { hidden: { rotateX: -90, opacity: 0 }, visible: { rotateX: 0, opacity: 1 } }, className }: FlipTextProps) {
+  return (
+    <div className="flex justify-center space-x-2">
+      <AnimatePresence mode="wait">
+        {word.split("").map((char, i) => (
+          <motion.span key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("origin-center drop-shadow-sm", className)}>
+            {char}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export { FlipText };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### typing-animation (magicui)
+**Source:** https://21st.dev/r/magicui/typing-animation
+
+Typewriter effect.
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface TypingAnimationProps {
+  text: string;
+  duration?: number;
+  className?: string;
+}
+
+export function TypingAnimation({ text, duration = 200, className }: TypingAnimationProps) {
+  const [displayedText, setDisplayedText] = useState<string>("");
+  const [i, setI] = useState<number>(0);
+
+  useEffect(() => {
+    const typingEffect = setInterval(() => {
+      if (i < text.length) { setDisplayedText(text.substring(0, i + 1)); setI(i + 1); } 
+      else { clearInterval(typingEffect); }
+    }, duration);
+    return () => clearInterval(typingEffect);
+  }, [duration, i]);
+
+  return (
+    <h1 className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>
+      {displayedText ? displayedText : text}
+    </h1>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### scroll-based-velocity (magicui)
+**Source:** https://21st.dev/r/magicui/scroll-based-velocity
+
+Text marquee that speeds up on scroll.
+
+```tsx
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, useAnimationFrame, useMotionValue, useScroll, useSpring, useTransform, useVelocity } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface VelocityScrollProps {
+  text: string;
+  default_velocity?: number;
+  className?: string;
+}
+
+export const wrap = (min: number, max: number, v: number) => {
+  const rangeSize = max - min;
+  return ((((v - min) % rangeSize) + rangeSize) % rangeSize) + min;
+};
+
+export function VelocityScroll({ text, default_velocity = 5, className }: VelocityScrollProps) {
+  function ParallaxText({ children, baseVelocity = 100, className }: { children: string; baseVelocity: number; className?: string }) {
+    const baseX = useMotionValue(0);
+    const { scrollY } = useScroll();
+    const scrollVelocity = useVelocity(scrollY);
+    const smoothVelocity = useSpring(scrollVelocity, { damping: 50, stiffness: 400 });
+    const velocityFactor = useTransform(smoothVelocity, [0, 1000], [0, 5], { clamp: false });
+    const [repetitions, setRepetitions] = useState(1);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+      const calculateRepetitions = () => {
+        if (containerRef.current && textRef.current) {
+          const containerWidth = containerRef.current.offsetWidth;
+          const textWidth = textRef.current.offsetWidth;
+          setRepetitions(Math.ceil(containerWidth / textWidth) + 2);
+        }
+      };
+      calculateRepetitions();
+      window.addEventListener("resize", calculateRepetitions);
+      return () => window.removeEventListener("resize", calculateRepetitions);
+    }, [children]);
+
+    const x = useTransform(baseX, (v) => `${wrap(-100 / repetitions, 0, v)}%`);
+    const directionFactor = React.useRef<number>(1);
+    
+    useAnimationFrame((t, delta) => {
+      let moveBy = directionFactor.current * baseVelocity * (delta / 1000);
+      if (velocityFactor.get() < 0) directionFactor.current = -1;
+      else if (velocityFactor.get() > 0) directionFactor.current = 1;
+      moveBy += directionFactor.current * moveBy * velocityFactor.get();
+      baseX.set(baseX.get() + moveBy);
+    });
+
+    return (
+      <div className="w-full overflow-hidden whitespace-nowrap" ref={containerRef}>
+        <motion.div className={cn("inline-block", className)} style={{ x }}>
+          {Array.from({ length: repetitions }).map((_, i) => (
+            <span key={i} ref={i === 0 ? textRef : null}>{children} </span>
+          ))}
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <section className="relative w-full">
+      <ParallaxText baseVelocity={default_velocity} className={className}>{text}</ParallaxText>
+      <ParallaxText baseVelocity={-default_velocity} className={className}>{text}</ParallaxText>
+    </section>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### accordion (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/accordion
+
+Framer Motion based accordion.
+
+```tsx
+'use client';
+import { motion, AnimatePresence, Transition, Variants, Variant, MotionConfig } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+type AccordionContextType = { expandedValue: React.Key | null; toggleItem: (value: React.Key) => void; variants?: { expanded: Variant; collapsed: Variant } };
+const AccordionContext = createContext<AccordionContextType | undefined>(undefined);
+function useAccordion() { const context = useContext(AccordionContext); if (!context) throw new Error('useAccordion must be used within an AccordionProvider'); return context; }
+
+type AccordionProps = { children: ReactNode; className?: string; transition?: Transition; variants?: { expanded: Variant; collapsed: Variant }; expandedValue?: React.Key | null; onValueChange?: (value: React.Key | null) => void };
+
+function Accordion({ children, className, transition, variants, expandedValue, onValueChange }: AccordionProps) {
+  const [internalExpandedValue, setInternalExpandedValue] = useState<React.Key | null>(null);
+  const currentExpandedValue = expandedValue !== undefined ? expandedValue : internalExpandedValue;
+  const toggleItem = (value: React.Key) => {
+    const newValue = currentExpandedValue === value ? null : value;
+    if (onValueChange) onValueChange(newValue);
+    else setInternalExpandedValue(newValue);
+  };
+
+  return (
+    <MotionConfig transition={transition}>
+      <div className={cn('relative', className)} aria-orientation='vertical'>
+        <AccordionContext.Provider value={{ expandedValue: currentExpandedValue, toggleItem, variants }}>
+          {children}
+        </AccordionContext.Provider>
+      </div>
+    </MotionConfig>
+  );
+}
+
+function AccordionItem({ value, children, className }: { value: React.Key; children: ReactNode; className?: string }) {
+  const { expandedValue } = useAccordion();
+  const isExpanded = value === expandedValue;
+  return (
+    <div className={cn('overflow-hidden', className)} {...(isExpanded ? { 'data-expanded': '' } : {})}>
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) return React.cloneElement(child, { ...child.props, value, expanded: isExpanded });
+        return child;
+      })}
+    </div>
+  );
+}
+
+function AccordionTrigger({ children, className, ...props }: { children: ReactNode; className?: string }) {
+  const { toggleItem, expandedValue } = useAccordion();
+  const value = (props as { value?: React.Key }).value;
+  const isExpanded = value === expandedValue;
+  return (
+    <button onClick={() => value !== undefined && toggleItem(value)} aria-expanded={isExpanded} type='button' className={cn('group', className)} {...(isExpanded ? { 'data-expanded': '' } : {})}>
+      {children}
+    </button>
+  );
+}
+
+function AccordionContent({ children, className, ...props }: { children: ReactNode; className?: string }) {
+  const { expandedValue, variants } = useAccordion();
+  const value = (props as { value?: React.Key }).value;
+  const isExpanded = value === expandedValue;
+  const BASE_VARIANTS: Variants = { expanded: { height: 'auto', opacity: 1 }, collapsed: { height: 0, opacity: 0 } };
+  const combinedVariants = { expanded: { ...BASE_VARIANTS.expanded, ...variants?.expanded }, collapsed: { ...BASE_VARIANTS.collapsed, ...variants?.collapsed } };
+
+  return (
+    <AnimatePresence initial={false}>
+      {isExpanded && (
+        <motion.div initial='collapsed' animate='expanded' exit='collapsed' variants={combinedVariants} className={className}>
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### animated-subscribe-button (magicui)
+**Source:** https://21st.dev/r/magicui/animated-subscribe-button
+
+Animated subscribe/unsubscribe button with state transition.
+
+```tsx
+"use client";
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+interface AnimatedSubscribeButtonProps {
+  buttonColor: string;
+  buttonTextColor?: string;
+  subscribeStatus: boolean;
+  initialText: React.ReactElement | string;
+  changeText: React.ReactElement | string;
+}
+
+export const AnimatedSubscribeButton: React.FC<AnimatedSubscribeButtonProps> = ({
+  buttonColor,
+  subscribeStatus,
+  buttonTextColor,
+  changeText,
+  initialText,
+}) => {
+  const [isSubscribed, setIsSubscribed] = useState<boolean>(subscribeStatus);
+
+  return (
+    <AnimatePresence mode="wait">
+      {isSubscribed ? (
+        <motion.button className="relative flex w-[200px] items-center justify-center overflow-hidden rounded-md bg-white p-[10px] outline outline-1 outline-black" onClick={() => setIsSubscribed(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.span key="action" className="relative block h-full w-full font-semibold" initial={{ y: -50 }} animate={{ y: 0 }} style={{ color: buttonColor }}>{changeText}</motion.span>
+        </motion.button>
+      ) : (
+        <motion.button className="relative flex w-[200px] cursor-pointer items-center justify-center rounded-md border-none p-[10px]" style={{ backgroundColor: buttonColor, color: buttonTextColor }} onClick={() => setIsSubscribed(true)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.span key="reaction" className="relative block font-semibold" initial={{ x: 0 }} exit={{ x: 50, transition: { duration: 0.1 } }}>{initialText}</motion.span>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### safari (magicui)
+**Source:** https://21st.dev/r/magicui/safari
+
+Safari browser mockup SVG component.
+
+```tsx
+import { SVGProps } from "react"
+
+export interface SafariProps extends SVGProps<SVGSVGElement> {
+  url?: string
+  src?: string
+  width?: number
+  height?: number
+}
+
+export function Safari({ src, url, width = 1203, height = 753, ...props }: SafariProps) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <g clipPath="url(#path0)">
+        <path d="M0 52H1202V741C1202 747.627 1196.63 753 1190 753H12C5.37258 753 0 747.627 0 741V52Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M0 12C0 5.37258 5.37258 0 12 0H1190C1196.63 0 1202 5.37258 1202 12V52H0L0 12Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        {/* Browser chrome with URL bar, navigation buttons */}
+        <circle cx="27" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <circle cx="47" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <circle cx="67" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <path d="M286 17C286 13.6863 288.686 11 292 11H946C949.314 11 952 13.6863 952 17V35C952 38.3137 949.314 41 946 41H292C288.686 41 286 38.3137 286 35V17Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <text x="580" y="30" fill="#A3A3A3" fontSize="12" fontFamily="Arial, sans-serif">{url}</text>
+        <image href={src} width="1200" height="700" x="1" y="52" preserveAspectRatio="xMidYMid slice" clipPath="url(#roundedBottom)" />
+      </g>
+      <defs>
+        <clipPath id="path0"><rect width={width} height={height} fill="white" /></clipPath>
+        <clipPath id="roundedBottom"><path d="M1 52H1201V741C1201 747.075 1196.08 752 1190 752H12C5.92486 752 1 747.075 1 741V52Z" fill="white" /></clipPath>
+      </defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** None (pure SVG)
+
+---
+
+### iphone-15-pro (magicui)
+**Source:** https://21st.dev/r/magicui/iphone-15-pro
+
+iPhone 15 Pro mockup SVG component.
+
+```tsx
+import { SVGProps } from "react"
+
+export interface Iphone15ProProps extends SVGProps<SVGSVGElement> {
+  width?: number
+  height?: number
+  src?: string
+}
+
+export function Iphone15Pro({ width = 433, height = 882, src, ...props }: Iphone15ProProps) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M2 73C2 32.6832 34.6832 0 75 0H357C397.317 0 430 32.6832 430 73V809C430 849.317 397.317 882 357 882H75C34.6832 882 2 849.317 2 809V73Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      {/* Side buttons */}
+      <path d="M0 171C0 170.448 0.447715 170 1 170H3V204H1C0.447715 204 0 203.552 0 203V171Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      <path d="M1 234C1 233.448 1.44772 233 2 233H3.5V300H2C1.44772 300 1 299.552 1 299V234Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      <path d="M1 319C1 318.448 1.44772 318 2 318H3.5V385H2C1.44772 385 1 384.552 1 384V319Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      <path d="M430 279H432C432.552 279 433 279.448 433 280V384C433 384.552 432.552 385 432 385H430V279Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      {/* Screen area */}
+      <path d="M6 74C6 35.3401 37.3401 4 76 4H356C394.66 4 426 35.3401 426 74V808C426 846.66 394.66 878 356 878H76C37.3401 878 6 846.66 6 808V74Z" className="dark:fill-[#262626] fill-white" />
+      {/* Dynamic Island */}
+      <path d="M154 48.5C154 38.2827 162.283 30 172.5 30H259.5C269.717 30 278 38.2827 278 48.5C278 58.7173 269.717 67 259.5 67H172.5C162.283 67 154 58.7173 154 48.5Z" className="dark:fill-[#262626] fill-[#F5F5F5]" />
+      {src && (
+        <image href={src} x="21.25" y="19.25" width="389.5" height="843.5" preserveAspectRatio="xMidYMid slice" clipPath="url(#roundedCorners)" />
+      )}
+      <defs>
+        <clipPath id="roundedCorners"><rect x="21.25" y="19.25" width="389.5" height="843.5" rx="55.75" ry="55.75" /></clipPath>
+      </defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** None (pure SVG)
+
+---
+
+### file-tree (magicui)
+**Source:** https://21st.dev/r/magicui/file-tree
+
+Interactive file tree component with expand/collapse.
+
+```tsx
+"use client"
+import React, { createContext, forwardRef, useCallback, useContext, useEffect, useState } from "react"
+import * as AccordionPrimitive from "@radix-ui/react-accordion"
+import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+type TreeViewElement = { id: string; name: string; isSelectable?: boolean; children?: TreeViewElement[] }
+type TreeContextProps = { selectedId: string | undefined; expandedItems: string[] | undefined; indicator: boolean; handleExpand: (id: string) => void; selectItem: (id: string) => void; openIcon?: React.ReactNode; closeIcon?: React.ReactNode; direction: "rtl" | "ltr" }
+
+const TreeContext = createContext<TreeContextProps | null>(null)
+const useTree = () => { const context = useContext(TreeContext); if (!context) throw new Error("useTree must be used within a TreeProvider"); return context }
+
+type TreeViewProps = { initialSelectedId?: string; indicator?: boolean; elements?: TreeViewElement[]; initialExpandedItems?: string[]; openIcon?: React.ReactNode; closeIcon?: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>
+
+const Tree = forwardRef<HTMLDivElement, TreeViewProps>(({ className, elements, initialSelectedId, initialExpandedItems, children, indicator = true, openIcon, closeIcon, dir, ...props }, ref) => {
+  const [selectedId, setSelectedId] = useState<string | undefined>(initialSelectedId)
+  const [expandedItems, setExpandedItems] = useState<string[] | undefined>(initialExpandedItems)
+  const selectItem = useCallback((id: string) => setSelectedId(id), [])
+  const handleExpand = useCallback((id: string) => setExpandedItems((prev) => prev?.includes(id) ? prev.filter((item) => item !== id) : [...(prev ?? []), id]), [])
+  const direction = dir === "rtl" ? "rtl" : "ltr"
+
+  return (
+    <TreeContext.Provider value={{ selectedId, expandedItems, handleExpand, selectItem, indicator, openIcon, closeIcon, direction }}>
+      <div className={cn("size-full", className)}>
+        <ScrollArea ref={ref} className="h-full relative px-2" dir={dir}>
+          <AccordionPrimitive.Root {...props} type="multiple" defaultValue={expandedItems} value={expandedItems} className="flex flex-col gap-1" dir={dir}>
+            {children}
+          </AccordionPrimitive.Root>
+        </ScrollArea>
+      </div>
+    </TreeContext.Provider>
+  )
+})
+
+const Folder = forwardRef<HTMLDivElement, { element: string; value: string; isSelectable?: boolean; isSelect?: boolean } & React.HTMLAttributes<HTMLDivElement>>(({ element, value, isSelectable = true, isSelect, children, className, ...props }, ref) => {
+  const { handleExpand, expandedItems, indicator, openIcon, closeIcon } = useTree()
+  return (
+    <AccordionPrimitive.Item {...props} value={value} className="relative overflow-hidden h-full">
+      <AccordionPrimitive.Trigger className={cn("flex items-center gap-1 text-sm rounded-md", { "bg-muted rounded-md": isSelect && isSelectable, "cursor-pointer": isSelectable }, className)} onClick={() => handleExpand(value)}>
+        {expandedItems?.includes(value) ? openIcon ?? <FolderOpenIcon className="size-4" /> : closeIcon ?? <FolderIcon className="size-4" />}
+        <span>{element}</span>
+      </AccordionPrimitive.Trigger>
+      <AccordionPrimitive.Content className="text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down relative overflow-hidden h-full">
+        <AccordionPrimitive.Root type="multiple" className="flex flex-col gap-1 py-1 ml-5" defaultValue={expandedItems} value={expandedItems}>
+          {children}
+        </AccordionPrimitive.Root>
+      </AccordionPrimitive.Content>
+    </AccordionPrimitive.Item>
+  )
+})
+
+const File = forwardRef<HTMLButtonElement, { value: string; isSelectable?: boolean; isSelect?: boolean; fileIcon?: React.ReactNode } & React.HTMLAttributes<HTMLButtonElement>>(({ value, className, isSelectable = true, isSelect, fileIcon, children, ...props }, ref) => {
+  const { selectedId, selectItem } = useTree()
+  const isSelected = isSelect ?? selectedId === value
+  return (
+    <AccordionPrimitive.Item value={value} className="relative">
+      <AccordionPrimitive.Trigger ref={ref} {...props} className={cn("flex items-center gap-1 cursor-pointer text-sm pr-1 rounded-md duration-200 ease-in-out", { "bg-muted": isSelected && isSelectable }, className)} onClick={() => selectItem(value)}>
+        {fileIcon ?? <FileIcon className="size-4" />}
+        {children}
+      </AccordionPrimitive.Trigger>
+    </AccordionPrimitive.Item>
+  )
+})
+
+Tree.displayName = "Tree"; Folder.displayName = "Folder"; File.displayName = "File"
+export { File, Folder, Tree, type TreeViewElement }
+```
+
+**Dependencies:** `lucide-react`, `@radix-ui/react-accordion`, `button`, `scroll-area`, `@/lib/utils`
+
+---
+
+### globe (magicui)
+**Source:** https://21st.dev/r/magicui/globe
+
+Interactive 3D globe with markers using COBE.
+
+```tsx
+"use client"
+import createGlobe, { COBEOptions } from "cobe"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
+
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800, height: 800, onRender: () => {}, devicePixelRatio: 2,
+  phi: 0, theta: 0.3, dark: 0, diffuse: 0.4, mapSamples: 16000, mapBrightness: 1.2,
+  baseColor: [1, 1, 1], markerColor: [251 / 255, 100 / 255, 21 / 255], glowColor: [1, 1, 1],
+  markers: [
+    { location: [14.5995, 120.9842], size: 0.03 }, { location: [19.076, 72.8777], size: 0.1 },
+    { location: [23.8103, 90.4125], size: 0.05 }, { location: [30.0444, 31.2357], size: 0.07 },
+    { location: [39.9042, 116.4074], size: 0.08 }, { location: [-23.5505, -46.6333], size: 0.1 },
+    { location: [19.4326, -99.1332], size: 0.1 }, { location: [40.7128, -74.006], size: 0.1 },
+    { location: [34.6937, 135.5022], size: 0.05 }, { location: [41.0082, 28.9784], size: 0.06 },
+  ],
+}
+
+export function Globe({ className, config = GLOBE_CONFIG }: { className?: string; config?: COBEOptions }) {
+  let phi = 0, width = 0
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const pointerInteracting = useRef(null)
+  const pointerInteractionMovement = useRef(0)
+  const [r, setR] = useState(0)
+
+  const updatePointerInteraction = (value: any) => { pointerInteracting.current = value; if (canvasRef.current) canvasRef.current.style.cursor = value ? "grabbing" : "grab" }
+  const updateMovement = (clientX: any) => { if (pointerInteracting.current !== null) { const delta = clientX - pointerInteracting.current; pointerInteractionMovement.current = delta; setR(delta / 200) } }
+
+  const onRender = useCallback((state: Record<string, any>) => { if (!pointerInteracting.current) phi += 0.005; state.phi = phi + r; state.width = width * 2; state.height = width * 2 }, [r])
+  const onResize = () => { if (canvasRef.current) width = canvasRef.current.offsetWidth }
+
+  useEffect(() => {
+    window.addEventListener("resize", onResize); onResize()
+    const globe = createGlobe(canvasRef.current!, { ...config, width: width * 2, height: width * 2, onRender })
+    setTimeout(() => (canvasRef.current!.style.opacity = "1"))
+    return () => globe.destroy()
+  }, [])
+
+  return (
+    <div className={cn("absolute inset-0 mx-auto aspect-[1/1] w-full max-w-[600px]", className)}>
+      <canvas className={cn("size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]")} ref={canvasRef}
+        onPointerDown={(e) => updatePointerInteraction(e.clientX - pointerInteractionMovement.current)}
+        onPointerUp={() => updatePointerInteraction(null)} onPointerOut={() => updatePointerInteraction(null)}
+        onMouseMove={(e) => updateMovement(e.clientX)} onTouchMove={(e) => e.touches[0] && updateMovement(e.touches[0].clientX)} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `cobe`, `@/lib/utils`
+
+---
+
+### animated-beam (magicui)
+**Source:** https://21st.dev/r/magicui/animated-beam
+
+Animated SVG beam connecting two elements.
+
+```tsx
+"use client";
+import { RefObject, useEffect, useId, useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export interface AnimatedBeamProps {
+  className?: string;
+  containerRef: RefObject<HTMLElement>;
+  fromRef: RefObject<HTMLElement>;
+  toRef: RefObject<HTMLElement>;
+  curvature?: number;
+  reverse?: boolean;
+  pathColor?: string;
+  pathWidth?: number;
+  pathOpacity?: number;
+  gradientStartColor?: string;
+  gradientStopColor?: string;
+  delay?: number;
+  duration?: number;
+  startXOffset?: number;
+  startYOffset?: number;
+  endXOffset?: number;
+  endYOffset?: number;
+}
+
+export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
+  className, containerRef, fromRef, toRef, curvature = 0, reverse = false, duration = Math.random() * 3 + 4, delay = 0,
+  pathColor = "gray", pathWidth = 2, pathOpacity = 0.2, gradientStartColor = "#ffaa40", gradientStopColor = "#9c40ff",
+  startXOffset = 0, startYOffset = 0, endXOffset = 0, endYOffset = 0,
+}) => {
+  const id = useId();
+  const [pathD, setPathD] = useState("");
+  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
+
+  const gradientCoordinates = reverse
+    ? { x1: ["90%", "-10%"], x2: ["100%", "0%"], y1: ["0%", "0%"], y2: ["0%", "0%"] }
+    : { x1: ["10%", "110%"], x2: ["0%", "100%"], y1: ["0%", "0%"], y2: ["0%", "0%"] };
+
+  useEffect(() => {
+    const updatePath = () => {
+      if (containerRef.current && fromRef.current && toRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const rectA = fromRef.current.getBoundingClientRect();
+        const rectB = toRef.current.getBoundingClientRect();
+
+        const svgWidth = containerRect.width, svgHeight = containerRect.height;
+        setSvgDimensions({ width: svgWidth, height: svgHeight });
+
+        const startX = rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
+        const startY = rectA.top - containerRect.top + rectA.height / 2 + startYOffset;
+        const endX = rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
+        const endY = rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
+        const controlY = startY - curvature;
+
+        setPathD(`M ${startX},${startY} Q ${(startX + endX) / 2},${controlY} ${endX},${endY}`);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(() => updatePath());
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
+    updatePath();
+    return () => resizeObserver.disconnect();
+  }, [containerRef, fromRef, toRef, curvature, startXOffset, startYOffset, endXOffset, endYOffset]);
+
+  return (
+    <svg fill="none" width={svgDimensions.width} height={svgDimensions.height} xmlns="http://www.w3.org/2000/svg" className={cn("pointer-events-none absolute left-0 top-0 transform-gpu stroke-2", className)} viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}>
+      <path d={pathD} stroke={pathColor} strokeWidth={pathWidth} strokeOpacity={pathOpacity} strokeLinecap="round" />
+      <path d={pathD} strokeWidth={pathWidth} stroke={`url(#${id})`} strokeOpacity="1" strokeLinecap="round" />
+      <defs>
+        <motion.linearGradient className="transform-gpu" id={id} gradientUnits="userSpaceOnUse" initial={{ x1: "0%", x2: "0%", y1: "0%", y2: "0%" }}
+          animate={{ x1: gradientCoordinates.x1, x2: gradientCoordinates.x2, y1: gradientCoordinates.y1, y2: gradientCoordinates.y2 }}
+          transition={{ delay, duration, ease: [0.16, 1, 0.3, 1], repeat: Infinity, repeatDelay: 0 }}>
+          <stop stopColor={gradientStartColor} stopOpacity="0" /><stop stopColor={gradientStartColor} />
+          <stop offset="32.5%" stopColor={gradientStopColor} /><stop offset="100%" stopColor={gradientStopColor} stopOpacity="0" />
+        </motion.linearGradient>
+      </defs>
+    </svg>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### shine-border (magicui)
+**Source:** https://21st.dev/r/magicui/shine-border
+
+Animated shining border effect.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+
+type TColorProp = string | string[]
+
+interface ShineBorderProps {
+  borderRadius?: number
+  borderWidth?: number
+  duration?: number
+  color?: TColorProp
+  className?: string
+  children: React.ReactNode
+}
+
+export function ShineBorder({ borderRadius = 8, borderWidth = 1, duration = 14, color = "#000000", className, children }: ShineBorderProps) {
+  return (
+    <div style={{ "--border-radius": `${borderRadius}px` } as React.CSSProperties}
+      className={cn("min-h-[60px] w-fit min-w-[300px] place-items-center rounded-[--border-radius] bg-white p-3 text-black dark:bg-black dark:text-white", className)}>
+      <div style={{
+        "--border-width": `${borderWidth}px`, "--border-radius": `${borderRadius}px`, "--duration": `${duration}s`,
+        "--mask-linear-gradient": `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+        "--background-radial-gradient": `radial-gradient(transparent,transparent, ${color instanceof Array ? color.join(",") : color},transparent,transparent)`,
+      } as React.CSSProperties}
+        className="before:bg-shine-size before:absolute before:inset-0 before:aspect-square before:size-full before:rounded-[--border-radius] before:p-[--border-width] before:will-change-[background-position] before:content-[''] before:![-webkit-mask-composite:xor] before:![mask-composite:exclude] before:[background-image:--background-radial-gradient] before:[background-size:300%_300%] before:[mask:--mask-linear-gradient] motion-safe:before:animate-shine" />
+      {children}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `shine` animation keyframes
+
+---
+
+### border-beam (magicui)
+**Source:** https://21st.dev/r/magicui/border-beam
+
+Animated border beam effect.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+interface BorderBeamProps {
+  className?: string
+  size?: number
+  duration?: number
+  borderWidth?: number
+  anchor?: number
+  colorFrom?: string
+  colorTo?: string
+  delay?: number
+}
+
+export const BorderBeam = ({ className, size = 200, duration = 15, anchor = 90, borderWidth = 1.5, colorFrom = "#ffaa40", colorTo = "#9c40ff", delay = 0 }: BorderBeamProps) => {
+  return (
+    <div
+      style={{ "--size": size, "--duration": duration, "--anchor": anchor, "--border-width": borderWidth, "--color-from": colorFrom, "--color-to": colorTo, "--delay": `-${delay}s` } as React.CSSProperties}
+      className={cn(
+        "pointer-events-none absolute inset-0 rounded-[inherit] [border:calc(var(--border-width)*1px)_solid_transparent]",
+        "![mask-clip:padding-box,border-box] ![mask-composite:intersect] [mask:linear-gradient(transparent,transparent),linear-gradient(white,white)]",
+        "after:absolute after:aspect-square after:w-[calc(var(--size)*1px)] after:animate-border-beam after:[animation-delay:var(--delay)] after:[background:linear-gradient(to_left,var(--color-from),var(--color-to),transparent)] after:[offset-anchor:calc(var(--anchor)*1%)_50%] after:[offset-path:rect(0_auto_auto_0_round_calc(var(--size)*1px))]",
+        className
+      )}
+    />
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `border-beam` animation keyframes
+
+---
+
+### neon-gradient-card (magicui)
+**Source:** https://21st.dev/r/magicui/neon-gradient-card
+
+Card with neon glow gradient border.
+
+```tsx
+"use client"
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
+
+interface NeonGradientCardProps {
+  className?: string
+  children?: ReactNode
+  borderSize?: number
+  borderRadius?: number
+  neonColors?: { firstColor: string; secondColor: string }
+}
+
+const NeonGradientCard: React.FC<NeonGradientCardProps> = ({ className, children, borderSize = 2, borderRadius = 20, neonColors = { firstColor: "#ff00aa", secondColor: "#00FFF1" }, ...props }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    const updateDimensions = () => { if (containerRef.current) setDimensions({ width: containerRef.current.offsetWidth, height: containerRef.current.offsetHeight }) }
+    updateDimensions(); window.addEventListener("resize", updateDimensions)
+    return () => window.removeEventListener("resize", updateDimensions)
+  }, [])
+
+  return (
+    <div ref={containerRef}
+      style={{
+        "--border-size": `${borderSize}px`, "--border-radius": `${borderRadius}px`,
+        "--neon-first-color": neonColors.firstColor, "--neon-second-color": neonColors.secondColor,
+        "--card-width": `${dimensions.width}px`, "--card-height": `${dimensions.height}px`,
+        "--card-content-radius": `${borderRadius - borderSize}px`,
+        "--pseudo-element-width": `${dimensions.width + borderSize * 2}px`, "--pseudo-element-height": `${dimensions.height + borderSize * 2}px`,
+        "--after-blur": `${dimensions.width / 3}px`,
+      } as CSSProperties}
+      className={cn("relative z-10 size-full rounded-[var(--border-radius)]", className)} {...props}>
+      <div className={cn(
+        "relative size-full min-h-[inherit] rounded-[var(--card-content-radius)] bg-gray-100 p-6",
+        "before:absolute before:-left-[var(--border-size)] before:-top-[var(--border-size)] before:-z-10 before:block",
+        "before:h-[var(--pseudo-element-height)] before:w-[var(--pseudo-element-width)] before:rounded-[var(--border-radius)]",
+        "before:bg-[linear-gradient(0deg,var(--neon-first-color),var(--neon-second-color))] before:bg-[length:100%_200%] before:animate-background-position-spin",
+        "after:absolute after:-left-[var(--border-size)] after:-top-[var(--border-size)] after:-z-10 after:block",
+        "after:h-[var(--pseudo-element-height)] after:w-[var(--pseudo-element-width)] after:rounded-[var(--border-radius)] after:blur-[var(--after-blur)]",
+        "after:bg-[linear-gradient(0deg,var(--neon-first-color),var(--neon-second-color))] after:bg-[length:100%_200%] after:opacity-80 after:animate-background-position-spin",
+        "dark:bg-neutral-900"
+      )}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export { NeonGradientCard }
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `background-position-spin` animation
+
+---
+
+### animated-grid-pattern (magicui)
+**Source:** https://21st.dev/r/magicui/animated-grid-pattern
+
+Animated grid pattern background with appearing squares.
+
+```tsx
+"use client";
+import { useEffect, useId, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface AnimatedGridPatternProps {
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  strokeDasharray?: any;
+  numSquares?: number;
+  className?: string;
+  maxOpacity?: number;
+  duration?: number;
+  repeatDelay?: number;
+}
+
+export function AnimatedGridPattern({ width = 40, height = 40, x = -1, y = -1, strokeDasharray = 0, numSquares = 50, className, maxOpacity = 0.5, duration = 4, repeatDelay = 0.5, ...props }: AnimatedGridPatternProps) {
+  const id = useId();
+  const containerRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [squares, setSquares] = useState(() => generateSquares(numSquares));
+
+  function getPos() { return [Math.floor((Math.random() * dimensions.width) / width), Math.floor((Math.random() * dimensions.height) / height)] }
+  function generateSquares(count: number) { return Array.from({ length: count }, (_, i) => ({ id: i, pos: getPos() })) }
+  const updateSquarePosition = (id: number) => setSquares((curr) => curr.map((sq) => sq.id === id ? { ...sq, pos: getPos() } : sq));
+
+  useEffect(() => { if (dimensions.width && dimensions.height) setSquares(generateSquares(numSquares)) }, [dimensions, numSquares])
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => { for (let entry of entries) setDimensions({ width: entry.contentRect.width, height: entry.contentRect.height }) })
+    if (containerRef.current) resizeObserver.observe(containerRef.current)
+    return () => { if (containerRef.current) resizeObserver.unobserve(containerRef.current) }
+  }, [containerRef])
+
+  return (
+    <svg ref={containerRef} aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30", className)} {...props}>
+      <defs><pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" x={x} y={y}><path d={`M.5 ${height}V.5H${width}`} fill="none" strokeDasharray={strokeDasharray} /></pattern></defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
+      <svg x={x} y={y} className="overflow-visible">
+        {squares.map(({ pos: [px, py], id: sqId }, index) => (
+          <motion.rect key={`${px}-${py}-${index}`} initial={{ opacity: 0 }} animate={{ opacity: maxOpacity }} transition={{ duration, repeat: 1, delay: index * 0.1, repeatType: "reverse" }}
+            onAnimationComplete={() => updateSquarePosition(sqId)} width={width - 1} height={height - 1} x={px * width + 1} y={py * height + 1} fill="currentColor" strokeWidth="0" />
+        ))}
+      </svg>
+    </svg>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### dot-pattern (magicui)
+**Source:** https://21st.dev/r/magicui/dot-pattern
+
+Dot pattern background.
+
+```tsx
+import { useId } from "react";
+import { cn } from "@/lib/utils";
+
+interface DotPatternProps {
+  width?: any; height?: any; x?: any; y?: any;
+  cx?: any; cy?: any; cr?: any;
+  className?: string;
+  [key: string]: any;
+}
+
+function DotPattern({ width = 16, height = 16, x = 0, y = 0, cx = 1, cy = 1, cr = 1, className, ...props }: DotPatternProps) {
+  const id = useId();
+  return (
+    <svg aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-neutral-400/80", className)} {...props}>
+      <defs>
+        <pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse" x={x} y={y}>
+          <circle id="pattern-circle" cx={cx} cy={cy} r={cr} />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${id})`} />
+    </svg>
+  );
+}
+
+export { DotPattern };
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### grid-pattern (magicui)
+**Source:** https://21st.dev/r/magicui/grid-pattern
+
+Grid pattern background with optional highlighted squares.
+
+```tsx
+import { useId } from "react";
+import { cn } from "@/lib/utils";
+
+interface GridPatternProps {
+  width?: number; height?: number; x?: number; y?: number;
+  squares?: Array<[x: number, y: number]>;
+  strokeDasharray?: string;
+  className?: string;
+  [key: string]: unknown;
+}
+
+function GridPattern({ width = 40, height = 40, x = -1, y = -1, strokeDasharray = "0", squares, className, ...props }: GridPatternProps) {
+  const id = useId();
+  return (
+    <svg aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30", className)} {...props}>
+      <defs>
+        <pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" x={x} y={y}>
+          <path d={`M.5 ${height}V.5H${width}`} fill="none" strokeDasharray={strokeDasharray} />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${id})`} />
+      {squares && (
+        <svg x={x} y={y} className="overflow-visible">
+          {squares.map(([px, py]) => (
+            <rect key={`${px}-${py}`} strokeWidth="0" width={width - 1} height={height - 1} x={px * width + 1} y={py * height + 1} />
+          ))}
+        </svg>
+      )}
+    </svg>
+  );
+}
+
+export { GridPattern };
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### retro-grid (magicui)
+**Source:** https://21st.dev/r/magicui/retro-grid
+
+Retro perspective grid background.
+
+```tsx
+import { cn } from "@/lib/utils";
+
+export function RetroGrid({ className, angle = 65 }: { className?: string; angle?: number }) {
+  return (
+    <div className={cn("pointer-events-none absolute size-full overflow-hidden opacity-50 [perspective:200px]", className)} style={{ "--grid-angle": `${angle}deg` } as React.CSSProperties}>
+      {/* Grid */}
+      <div className="absolute inset-0 [transform:rotateX(var(--grid-angle))]">
+        <div className={cn(
+          "animate-grid",
+          "[background-repeat:repeat] [background-size:60px_60px] [height:300vh] [inset:0%_0px] [margin-left:-50%] [transform-origin:100%_0_0] [width:600vw]",
+          "[background-image:linear-gradient(to_right,rgba(0,0,0,0.3)_1px,transparent_0),linear-gradient(to_bottom,rgba(0,0,0,0.3)_1px,transparent_0)]",
+          "dark:[background-image:linear-gradient(to_right,rgba(255,255,255,0.2)_1px,transparent_0),linear-gradient(to_bottom,rgba(255,255,255,0.2)_1px,transparent_0)]"
+        )} />
+      </div>
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent to-90% dark:from-black" />
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `grid` animation keyframes
+
+---
+
+### ripple (magicui)
+**Source:** https://21st.dev/r/magicui/ripple
+
+Ripple effect background.
+
+```tsx
+import React, { CSSProperties } from "react";
+import { cn } from "@/lib/utils";
+
+interface RippleProps {
+  mainCircleSize?: number;
+  mainCircleOpacity?: number;
+  numCircles?: number;
+  className?: string;
+}
+
+const Ripple = React.memo(function Ripple({ mainCircleSize = 210, mainCircleOpacity = 0.24, numCircles = 8, className }: RippleProps) {
+  return (
+    <div className={cn("pointer-events-none select-none absolute inset-0 [mask-image:linear-gradient(to_bottom,white,transparent)]", className)}>
+      {Array.from({ length: numCircles }, (_, i) => {
+        const size = mainCircleSize + i * 70;
+        const opacity = mainCircleOpacity - i * 0.03;
+        const animationDelay = `${i * 0.06}s`;
+        const borderStyle = i === numCircles - 1 ? "dashed" : "solid";
+        const borderOpacity = 5 + i * 5;
+
+        return (
+          <div key={i} className={`absolute animate-ripple rounded-full bg-foreground/25 shadow-xl border [--i:${i}]`}
+            style={{ width: `${size}px`, height: `${size}px`, opacity, animationDelay, borderStyle, borderWidth: "1px",
+              borderColor: `hsl(var(--foreground), ${borderOpacity / 100})`, top: "50%", left: "50%", transform: "translate(-50%, -50%) scale(1)" } as CSSProperties} />
+        );
+      })}
+    </div>
+  );
+});
+
+Ripple.displayName = "Ripple";
+export { Ripple };
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `ripple` animation keyframes
+
+---
+
+### particles (magicui)
+**Source:** https://21st.dev/r/magicui/particles
+
+Interactive particle system with mouse interaction.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { useEffect, useRef, useState } from "react"
+
+interface ParticlesProps {
+  className?: string; quantity?: number; staticity?: number; ease?: number;
+  size?: number; refresh?: boolean; color?: string; vx?: number; vy?: number;
+}
+
+const Particles: React.FC<ParticlesProps> = ({ className = "", quantity = 100, staticity = 50, ease = 50, size = 0.4, refresh = false, color = "#ffffff", vx = 0, vy = 0 }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+  // Full implementation includes mouse tracking, particle animation, and canvas rendering
+  // See source for complete code with circleParams, drawCircle, animate functions
+  return (
+    <div className={cn("pointer-events-none", className)} ref={canvasContainerRef} aria-hidden="true">
+      <canvas ref={canvasRef} className="size-full" />
+    </div>
+  )
+}
+
+export { Particles }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### meteors (magicui)
+**Source:** https://21st.dev/r/magicui/meteors
+
+Meteor shower animation effect.
+
+```tsx
+import { cn } from "@/lib/utils";
+import React from "react";
+
+export const Meteors = ({ number, className }: { number?: number; className?: string }) => {
+  const meteors = new Array(number || 20).fill(true);
+  return (
+    <>
+      {meteors.map((el, idx) => (
+        <span key={"meteor" + idx}
+          className={cn(
+            "animate-meteor-effect absolute top-1/2 left-1/2 h-0.5 w-0.5 rounded-[9999px] bg-slate-500 shadow-[0_0_0_1px_#ffffff10] rotate-[215deg]",
+            "before:content-[''] before:absolute before:top-1/2 before:transform before:-translate-y-[50%] before:w-[50px] before:h-[1px] before:bg-gradient-to-r before:from-[#64748b] before:to-transparent",
+            className
+          )}
+          style={{ top: 0, left: Math.floor(Math.random() * (400 - -400) + -400) + "px", animationDelay: Math.random() * (0.8 - 0.2) + 0.2 + "s", animationDuration: Math.floor(Math.random() * (10 - 2) + 2) + "s" }}
+        />
+      ))}
+    </>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `meteor` animation keyframes
+
+---
+
+### gradual-spacing (magicui)
+**Source:** https://21st.dev/r/magicui/gradual-spacing
+
+Text animation with gradually spacing letters.
+
+```tsx
+"use client";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface GradualSpacingProps { text: string; duration?: number; delayMultiple?: number; framerProps?: Variants; className?: string; }
+
+function GradualSpacing({ text, duration = 0.5, delayMultiple = 0.04, framerProps = { hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }, className }: GradualSpacingProps) {
+  return (
+    <div className="flex justify-center space-x-1">
+      <AnimatePresence>
+        {text.split("").map((char, i) => (
+          <motion.h1 key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("drop-shadow-sm ", className)}>
+            {char === " " ? <span>&nbsp;</span> : char}
+          </motion.h1>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export { GradualSpacing };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### fade-text (magicui)
+**Source:** https://21st.dev/r/magicui/fade-text
+
+Directional fade animation for text.
+
+```tsx
+"use client";
+import { useMemo } from "react";
+import { motion, Variants } from "framer-motion";
+
+type FadeTextProps = { className?: string; direction?: "up" | "down" | "left" | "right"; framerProps?: Variants; text: string; };
+
+function FadeText({ direction = "up", className, framerProps = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { type: "spring" } } }, text }: FadeTextProps) {
+  const directionOffset = useMemo(() => ({ up: 10, down: -10, left: -10, right: 10 }[direction]), [direction]);
+  const axis = direction === "up" || direction === "down" ? "y" : "x";
+
+  const FADE_ANIMATION_VARIANTS = useMemo(() => {
+    const { hidden, show, ...rest } = framerProps as any;
+    return { ...rest, hidden: { ...(hidden ?? {}), opacity: hidden?.opacity ?? 0, [axis]: hidden?.[axis] ?? directionOffset },
+      show: { ...(show ?? {}), opacity: show?.opacity ?? 1, [axis]: show?.[axis] ?? 0 } };
+  }, [directionOffset, axis, framerProps]);
+
+  return (
+    <motion.div initial="hidden" animate="show" viewport={{ once: true }} variants={FADE_ANIMATION_VARIANTS}>
+      <motion.span className={className}>{text}</motion.span>
+    </motion.div>
+  );
+}
+
+export { FadeText };
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### blur-in (magicui)
+**Source:** https://21st.dev/r/magicui/blur-in
+
+Text blur-in animation.
+
+```tsx
+"use client";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface BlurIntProps { word: string; className?: string; variant?: { hidden: { filter: string; opacity: number }; visible: { filter: string; opacity: number } }; duration?: number; }
+
+const BlurIn = ({ word, className, variant, duration = 1 }: BlurIntProps) => {
+  const defaultVariants = { hidden: { filter: "blur(10px)", opacity: 0 }, visible: { filter: "blur(0px)", opacity: 1 } };
+  const combinedVariants = variant || defaultVariants;
+
+  return (
+    <motion.h1 initial="hidden" animate="visible" transition={{ duration }} variants={combinedVariants}
+      className={cn("font-display text-center text-4xl font-bold tracking-[-0.02em] drop-shadow-sm md:text-7xl md:leading-[5rem]", className)}>
+      {word}
+    </motion.h1>
+  );
+};
+
+export { BlurIn };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### marquee (magicui)
+**Source:** https://21st.dev/r/magicui/marquee
+
+Infinite scrolling marquee.
+
+```tsx
+import { cn } from "@/lib/utils";
+
+interface MarqueeProps { className?: string; reverse?: boolean; pauseOnHover?: boolean; children?: React.ReactNode; vertical?: boolean; repeat?: number; [key: string]: any; }
+
+export function Marquee({ className, reverse, pauseOnHover = false, children, vertical = false, repeat = 4, ...props }: MarqueeProps) {
+  return (
+    <div {...props} className={cn("group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]", { "flex-row": !vertical, "flex-col": vertical }, className)}>
+      {Array(repeat).fill(0).map((_, i) => (
+        <div key={i} className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+          "animate-marquee flex-row": !vertical, "animate-marquee-vertical flex-col": vertical,
+          "group-hover:[animation-play-state:paused]": pauseOnHover, "[animation-direction:reverse]": reverse
+        })}>
+          {children}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**Tailwind config required:** Add `marquee` and `marquee-vertical` animations
+
+---
+
+### dock (magicui)
+**Source:** https://21st.dev/r/magicui/dock
+
+macOS-style dock with magnification.
+
+```tsx
+"use client";
+import React, { PropsWithChildren, useRef } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export interface DockProps extends VariantProps<typeof dockVariants> { className?: string; magnification?: number; distance?: number; direction?: "top" | "middle" | "bottom"; children: React.ReactNode; }
+
+const dockVariants = cva("supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 mx-auto mt-8 flex h-[58px] w-max gap-2 rounded-2xl border p-2 backdrop-blur-md");
+
+const Dock = React.forwardRef<HTMLDivElement, DockProps>(({ className, children, magnification = 60, distance = 140, direction = "bottom", ...props }, ref) => {
+  const mouseX = useMotionValue(Infinity);
+  const renderChildren = () => React.Children.map(children, (child) => React.isValidElement(child) && child.type === DockIcon ? React.cloneElement(child, { ...child.props, mouseX, magnification, distance }) : child);
+  return (
+    <motion.div ref={ref} onMouseMove={(e) => mouseX.set(e.pageX)} onMouseLeave={() => mouseX.set(Infinity)} {...props}
+      className={cn(dockVariants({ className }), { "items-start": direction === "top", "items-center": direction === "middle", "items-end": direction === "bottom" })}>
+      {renderChildren()}
+    </motion.div>
+  );
+});
+
+const DockIcon = ({ magnification = 60, distance = 140, mouseX, className, children, ...props }: any) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const distanceCalc = useTransform(mouseX, (val: number) => { const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }; return val - bounds.x - bounds.width / 2; });
+  const widthSync = useTransform(distanceCalc, [-distance, 0, distance], [40, magnification, 40]);
+  const width = useSpring(widthSync, { mass: 0.1, stiffness: 150, damping: 12 });
+  return <motion.div ref={ref} style={{ width }} className={cn("flex aspect-square cursor-pointer items-center justify-center rounded-full", className)} {...props}>{children}</motion.div>;
+};
+
+Dock.displayName = "Dock"; DockIcon.displayName = "DockIcon";
+export { Dock, DockIcon, dockVariants };
+```
+
+**Dependencies:** `framer-motion`, `class-variance-authority`, `@/lib/utils`
+
+---
+
+### avatar-circles (magicui)
+**Source:** https://21st.dev/r/magicui/avatar-circles
+
+Stacked avatar circles with count.
+
+```tsx
+"use client"
+import React from "react"
+import { cn } from "@/lib/utils"
+
+interface AvatarCirclesProps { className?: string; numPeople?: number; avatarUrls: string[]; }
+
+const AvatarCircles = ({ numPeople, className, avatarUrls }: AvatarCirclesProps) => {
+  return (
+    <div className={cn("z-10 flex -space-x-4 rtl:space-x-reverse", className)}>
+      {avatarUrls.map((url, index) => (
+        <img key={index} className="h-10 w-10 rounded-full border-2 border-white dark:border-gray-800" src={url} width={40} height={40} alt={`Avatar ${index + 1}`} />
+      ))}
+      <a className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-black text-center text-xs font-medium text-white hover:bg-gray-600 dark:border-gray-800 dark:bg-white dark:text-black" href="">
+        +{numPeople}
+      </a>
+    </div>
+  )
+}
+
+export { AvatarCircles }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### animated-list (magicui)
+**Source:** https://21st.dev/r/magicui/animated-list
+
+Animated list with staggered item appearance.
+
+```tsx
+"use client";
+import React, { ReactElement, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+export interface AnimatedListProps { className?: string; children: React.ReactNode; delay?: number; }
+
+export const AnimatedList = React.memo(({ className, children, delay = 1000 }: AnimatedListProps) => {
+  const [index, setIndex] = useState(0);
+  const childrenArray = React.Children.toArray(children);
+
+  useEffect(() => { const interval = setInterval(() => setIndex((prevIndex) => (prevIndex + 1) % childrenArray.length), delay); return () => clearInterval(interval); }, [childrenArray.length, delay]);
+
+  const itemsToShow = useMemo(() => childrenArray.slice(0, index + 1).reverse(), [index, childrenArray]);
+
+  return (
+    <div className={`flex flex-col items-center gap-4 ${className}`}>
+      <AnimatePresence>
+        {itemsToShow.map((item) => <AnimatedListItem key={(item as ReactElement).key}>{item}</AnimatedListItem>)}
+      </AnimatePresence>
+    </div>
+  );
+});
+
+export function AnimatedListItem({ children }: { children: React.ReactNode }) {
+  return <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1, originY: 0 }} exit={{ scale: 0, opacity: 0 }} transition={{ type: "spring", stiffness: 350, damping: 40 }} layout className="mx-auto w-full">{children}</motion.div>;
+}
+
+AnimatedList.displayName = "AnimatedList";
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### text-effect (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-effect
+
+Text animation with preset effects (blur, shake, scale, fade, slide).
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, motion, TargetAndTransition, Variants } from 'framer-motion';
+import React from 'react';
+
+type PresetType = 'blur' | 'shake' | 'scale' | 'fade' | 'slide';
+
+type TextEffectProps = { children: string; per?: 'word' | 'char' | 'line'; as?: keyof React.JSX.IntrinsicElements; variants?: { container?: Variants; item?: Variants }; className?: string; preset?: PresetType; delay?: number; trigger?: boolean; onAnimationComplete?: () => void; segmentWrapperClassName?: string; };
+
+const presetVariants = {
+  blur: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } }, item: { hidden: { opacity: 0, filter: 'blur(12px)' }, visible: { opacity: 1, filter: 'blur(0px)' } } },
+  scale: { container: {}, item: { hidden: { opacity: 0, scale: 0 }, visible: { opacity: 1, scale: 1 } } },
+  fade: { container: {}, item: { hidden: { opacity: 0 }, visible: { opacity: 1 } } },
+  slide: { container: {}, item: { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } } },
+  shake: { container: {}, item: { hidden: { x: 0 }, visible: { x: [-5, 5, -5, 5, 0], transition: { duration: 0.5 } } } },
+};
+
+export function TextEffect({ children, per = 'word', as = 'p', variants, className, preset, delay = 0, trigger = true, ...props }: TextEffectProps) {
+  let segments: string[] = per === 'line' ? children.split('\n') : per === 'word' ? children.split(/(\s+)/) : children.split('');
+  const MotionTag = motion[as as keyof typeof motion] as typeof motion.div;
+  const selected = preset ? presetVariants[preset] : {};
+  // Full implementation includes AnimatePresence, AnimationComponent, staggered delays
+  return trigger ? <MotionTag initial="hidden" animate="visible" className={cn('whitespace-pre-wrap', className)} {...props}>{children}</MotionTag> : null;
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### transition-panel (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/transition-panel
+
+Animated panel transitions.
+
+```tsx
+'use client';
+import { AnimatePresence, Transition, Variant, motion, MotionProps } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+type TransitionPanelProps = { children: React.ReactNode[]; className?: string; transition?: Transition; activeIndex: number; variants?: { enter: Variant; center: Variant; exit: Variant }; } & MotionProps;
+
+export function TransitionPanel({ children, className, transition, variants, activeIndex, ...motionProps }: TransitionPanelProps) {
+  return (
+    <div className={cn('relative', className)}>
+      <AnimatePresence initial={false} mode='popLayout' custom={motionProps.custom}>
+        <motion.div key={activeIndex} variants={variants} transition={transition} initial='enter' animate='center' exit='exit' {...motionProps}>
+          {children[activeIndex]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### animated-number (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/animated-number
+
+Animated number with spring physics.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { motion, SpringOptions, useSpring, useTransform } from 'framer-motion';
+import { useEffect } from 'react';
+
+type AnimatedNumber = { value: number; className?: string; springOptions?: SpringOptions; };
+
+export function AnimatedNumber({ value, className, springOptions }: AnimatedNumber) {
+  const spring = useSpring(value, springOptions);
+  const display = useTransform(spring, (current) => Math.round(current).toLocaleString());
+
+  useEffect(() => { spring.set(value); }, [spring, value]);
+
+  return <motion.span className={cn('tabular-nums', className)}>{display}</motion.span>;
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### cursor (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/cursor
+
+Custom animated cursor.
+
+```tsx
+'use client';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, SpringOptions, useMotionValue, useSpring, AnimatePresence, Transition, Variant } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+type CursorProps = { children: React.ReactNode; className?: string; springConfig?: SpringOptions; attachToParent?: boolean; transition?: Transition; variants?: { initial: Variant; animate: Variant; exit: Variant }; onPositionChange?: (x: number, y: number) => void; };
+
+export function Cursor({ children, className, springConfig, attachToParent, variants, transition, onPositionChange }: CursorProps) {
+  const cursorX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
+  const cursorY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(!attachToParent);
+
+  useEffect(() => {
+    if (!attachToParent) document.body.style.cursor = 'none';
+    else document.body.style.cursor = 'auto';
+    const updatePosition = (e: MouseEvent) => { cursorX.set(e.clientX); cursorY.set(e.clientY); onPositionChange?.(e.clientX, e.clientY); };
+    document.addEventListener('mousemove', updatePosition);
+    return () => document.removeEventListener('mousemove', updatePosition);
+  }, [cursorX, cursorY, onPositionChange]);
+
+  const cursorXSpring = useSpring(cursorX, springConfig || { duration: 0 });
+  const cursorYSpring = useSpring(cursorY, springConfig || { duration: 0 });
+
+  return (
+    <motion.div ref={cursorRef} className={cn('pointer-events-none fixed left-0 top-0 z-50', className)} style={{ x: cursorXSpring, y: cursorYSpring, translateX: '-50%', translateY: '-50%' }}>
+      <AnimatePresence>{isVisible && <motion.div initial='initial' animate='animate' exit='exit' variants={variants} transition={transition}>{children}</motion.div>}</AnimatePresence>
+    </motion.div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### disclosure (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/disclosure
+
+Animated disclosure/collapse component.
+
+```tsx
+'use client';
+import * as React from 'react';
+import { AnimatePresence, motion, MotionConfig, Transition, Variant, Variants } from 'framer-motion';
+import { createContext, useContext, useState, useId, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+
+type DisclosureContextType = { open: boolean; toggle: () => void; variants?: { expanded: Variant; collapsed: Variant }; };
+const DisclosureContext = createContext<DisclosureContextType | undefined>(undefined);
+function useDisclosure() { const context = useContext(DisclosureContext); if (!context) throw new Error('useDisclosure must be used within a DisclosureProvider'); return context; }
+
+export function Disclosure({ open: openProp = false, onOpenChange, children, className, transition, variants }: any) {
+  const [internalOpenValue, setInternalOpenValue] = useState<boolean>(openProp);
+  useEffect(() => { setInternalOpenValue(openProp); }, [openProp]);
+  const toggle = () => { const newOpen = !internalOpenValue; setInternalOpenValue(newOpen); if (onOpenChange) onOpenChange(newOpen); };
+
+  return (
+    <MotionConfig transition={transition}>
+      <div className={className}>
+        <DisclosureContext.Provider value={{ open: internalOpenValue, toggle, variants }}>
+          {React.Children.toArray(children)[0]}
+          {React.Children.toArray(children)[1]}
+        </DisclosureContext.Provider>
+      </div>
+    </MotionConfig>
+  );
+}
+
+export function DisclosureTrigger({ children, className }: any) {
+  const { toggle, open } = useDisclosure();
+  return React.Children.map(children, (child) => React.isValidElement(child) ? React.cloneElement(child as any, { onClick: toggle, role: 'button', 'aria-expanded': open, tabIndex: 0, className: cn(className, (child as any).props.className) }) : child);
+}
+
+export function DisclosureContent({ children, className }: any) {
+  const { open, variants } = useDisclosure();
+  const uniqueId = useId();
+  const combinedVariants: Variants = { expanded: { height: 'auto', opacity: 1, ...variants?.expanded }, collapsed: { height: 0, opacity: 0, ...variants?.collapsed } };
+
+  return (
+    <div className={cn('overflow-hidden', className)}>
+      <AnimatePresence initial={false}>
+        {open && <motion.div id={uniqueId} initial='collapsed' animate='expanded' exit='collapsed' variants={combinedVariants}>{children}</motion.div>}
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### in-view (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/in-view
+
+Animate when element enters viewport.
+
+```tsx
+'use client';
+import { ReactNode, useRef } from 'react';
+import { motion, useInView, Variant, Transition, UseInViewOptions } from 'framer-motion';
+
+interface InViewProps { children: ReactNode; variants?: { hidden: Variant; visible: Variant }; transition?: Transition; viewOptions?: UseInViewOptions; }
+
+const defaultVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+
+export function InView({ children, variants = defaultVariants, transition, viewOptions }: InViewProps) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, viewOptions);
+
+  return (
+    <motion.div ref={ref} initial='hidden' animate={isInView ? 'visible' : 'hidden'} variants={variants} transition={transition}>
+      {children}
+    </motion.div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### morphing-dialog (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/morphing-dialog
+
+Animated dialog with morphing transitions between trigger and content.
+
+```tsx
+'use client';
+
+import React, { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence, MotionConfig, Transition, Variant } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
+import useClickOutside from '@/hooks/use-click-outside';
+import { XIcon } from 'lucide-react';
+
+interface MorphingDialogContextType {
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  uniqueId: string;
+  triggerRef: React.RefObject<HTMLDivElement>;
+}
+
+const MorphingDialogContext = React.createContext<MorphingDialogContextType | null>(null);
+
+function useMorphingDialog() {
+  const context = useContext(MorphingDialogContext);
+  if (!context) throw new Error('useMorphingDialog must be used within a MorphingDialogProvider');
+  return context;
+}
+
+function MorphingDialogProvider({ children, transition }: { children: React.ReactNode; transition?: Transition }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const uniqueId = useId();
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const contextValue = useMemo(() => ({ isOpen, setIsOpen, uniqueId, triggerRef }), [isOpen, uniqueId]);
+
+  return (
+    <MorphingDialogContext.Provider value={contextValue}>
+      <MotionConfig transition={transition}>{children}</MotionConfig>
+    </MorphingDialogContext.Provider>
+  );
+}
+
+function MorphingDialog({ children, transition }: { children: React.ReactNode; transition?: Transition }) {
+  return (
+    <MorphingDialogProvider>
+      <MotionConfig transition={transition}>{children}</MotionConfig>
+    </MorphingDialogProvider>
+  );
+}
+
+function MorphingDialogTrigger({ children, className, style, triggerRef }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; triggerRef?: React.RefObject<HTMLDivElement> }) {
+  const { setIsOpen, isOpen, uniqueId } = useMorphingDialog();
+  const handleClick = useCallback(() => setIsOpen(!isOpen), [isOpen, setIsOpen]);
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setIsOpen(!isOpen); }
+  }, [isOpen, setIsOpen]);
+
+  return (
+    <motion.div ref={triggerRef} layoutId={`dialog-${uniqueId}`} className={cn('relative cursor-pointer', className)} onClick={handleClick} onKeyDown={handleKeyDown} style={style} role='button' aria-haspopup='dialog' aria-expanded={isOpen}>
+      {children}
+    </motion.div>
+  );
+}
+
+function MorphingDialogContent({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { setIsOpen, isOpen, uniqueId, triggerRef } = useMorphingDialog();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [setIsOpen]);
+
+  useEffect(() => {
+    if (isOpen) document.body.classList.add('overflow-hidden');
+    else { document.body.classList.remove('overflow-hidden'); triggerRef.current?.focus(); }
+  }, [isOpen, triggerRef]);
+
+  return (
+    <motion.div ref={containerRef} layoutId={`dialog-${uniqueId}`} className={cn('overflow-hidden', className)} style={style} role='dialog' aria-modal='true'>
+      {children}
+    </motion.div>
+  );
+}
+
+function MorphingDialogContainer({ children }: { children: React.ReactNode }) {
+  const { isOpen, uniqueId } = useMorphingDialog();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <AnimatePresence initial={false} mode='sync'>
+      {isOpen && (
+        <>
+          <motion.div key={`backdrop-${uniqueId}`} className='fixed inset-0 h-full w-full bg-white/40 backdrop-blur-sm dark:bg-black/40' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+          <div className='fixed inset-0 z-50 flex items-center justify-center'>{children}</div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function MorphingDialogTitle({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog();
+  return <motion.div layoutId={`dialog-title-container-${uniqueId}`} className={className} style={style} layout>{children}</motion.div>;
+}
+
+function MorphingDialogSubtitle({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog();
+  return <motion.div layoutId={`dialog-subtitle-container-${uniqueId}`} className={className} style={style}>{children}</motion.div>;
+}
+
+function MorphingDialogDescription({ children, className, variants, disableLayoutAnimation }: { children: React.ReactNode; className?: string; disableLayoutAnimation?: boolean; variants?: { initial: Variant; animate: Variant; exit: Variant } }) {
+  const { uniqueId } = useMorphingDialog();
+  return <motion.div key={`dialog-description-${uniqueId}`} layoutId={disableLayoutAnimation ? undefined : `dialog-description-content-${uniqueId}`} variants={variants} className={className} initial='initial' animate='animate' exit='exit'>{children}</motion.div>;
+}
+
+function MorphingDialogImage({ src, alt, className, style }: { src: string; alt: string; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog();
+  return <motion.img src={src} alt={alt} className={cn(className)} layoutId={`dialog-img-${uniqueId}`} style={style} />;
+}
+
+function MorphingDialogClose({ children, className, variants }: { children?: React.ReactNode; className?: string; variants?: { initial: Variant; animate: Variant; exit: Variant } }) {
+  const { setIsOpen, uniqueId } = useMorphingDialog();
+  const handleClose = useCallback(() => setIsOpen(false), [setIsOpen]);
+  return <motion.button onClick={handleClose} type='button' aria-label='Close dialog' key={`dialog-close-${uniqueId}`} className={cn('absolute right-6 top-6', className)} initial='initial' animate='animate' exit='exit' variants={variants}>{children || <XIcon size={24} />}</motion.button>;
+}
+
+export { MorphingDialog, MorphingDialogTrigger, MorphingDialogContainer, MorphingDialogContent, MorphingDialogClose, MorphingDialogTitle, MorphingDialogSubtitle, MorphingDialogDescription, MorphingDialogImage };
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`, `@/lib/utils`, `@/hooks/use-click-outside`
+
+---
+
+### sliding-number (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/sliding-number
+
+Animated sliding number display with spring physics.
+
+```tsx
+'use client';
+import { useEffect, useId } from 'react';
+import { MotionValue, motion, useSpring, useTransform, motionValue } from 'motion/react';
+import useMeasure from 'react-use-measure';
+
+const TRANSITION = { type: 'spring', stiffness: 280, damping: 18, mass: 0.3 };
+
+function Digit({ value, place }: { value: number; place: number }) {
+  const valueRoundedToPlace = Math.floor(value / place) % 10;
+  const initial = motionValue(valueRoundedToPlace);
+  const animatedValue = useSpring(initial, TRANSITION);
+
+  useEffect(() => { animatedValue.set(valueRoundedToPlace); }, [animatedValue, valueRoundedToPlace]);
+
+  return (
+    <div className='relative inline-block w-[1ch] overflow-x-visible overflow-y-clip leading-none tabular-nums'>
+      <div className='invisible'>0</div>
+      {Array.from({ length: 10 }, (_, i) => <Number key={i} mv={animatedValue} number={i} />)}
+    </div>
+  );
+}
+
+function Number({ mv, number }: { mv: MotionValue<number>; number: number }) {
+  const uniqueId = useId();
+  const [ref, bounds] = useMeasure();
+
+  const y = useTransform(mv, (latest) => {
+    if (!bounds.height) return 0;
+    const placeValue = latest % 10;
+    const offset = (10 + number - placeValue) % 10;
+    let memo = offset * bounds.height;
+    if (offset > 5) memo -= 10 * bounds.height;
+    return memo;
+  });
+
+  if (!bounds.height) return <span ref={ref} className='invisible absolute'>{number}</span>;
+
+  return <motion.span style={{ y }} layoutId={`${uniqueId}-${number}`} className='absolute inset-0 flex items-center justify-center' transition={TRANSITION} ref={ref}>{number}</motion.span>;
+}
+
+type SlidingNumberProps = { value: number; padStart?: boolean; decimalSeparator?: string };
+
+export function SlidingNumber({ value, padStart = false, decimalSeparator = '.' }: SlidingNumberProps) {
+  const absValue = Math.abs(value);
+  const [integerPart, decimalPart] = absValue.toString().split('.');
+  const integerValue = parseInt(integerPart, 10);
+  const paddedInteger = padStart && integerValue < 10 ? `0${integerPart}` : integerPart;
+  const integerDigits = paddedInteger.split('');
+  const integerPlaces = integerDigits.map((_, i) => Math.pow(10, integerDigits.length - i - 1));
+
+  return (
+    <div className='flex items-center'>
+      {value < 0 && '-'}
+      {integerDigits.map((_, index) => <Digit key={`pos-${integerPlaces[index]}`} value={integerValue} place={integerPlaces[index]} />)}
+      {decimalPart && (
+        <>
+          <span>{decimalSeparator}</span>
+          {decimalPart.split('').map((_, index) => <Digit key={`decimal-${index}`} value={parseInt(decimalPart, 10)} place={Math.pow(10, decimalPart.length - index - 1)} />)}
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+**Dependencies:** `motion`, `react-use-measure`
+
+---
+
+### scroll-progress (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/scroll-progress
+
+Scroll progress indicator with spring physics.
+
+```tsx
+'use client';
+
+import { motion, SpringOptions, useScroll, useSpring } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { RefObject } from 'react';
+
+interface ScrollProgressProps {
+  className?: string;
+  springOptions?: SpringOptions;
+  containerRef?: RefObject<HTMLDivElement>;
+}
+
+const DEFAULT_SPRING_OPTIONS: SpringOptions = { stiffness: 200, damping: 50, restDelta: 0.001 };
+
+export function ScrollProgress({ className, springOptions, containerRef }: ScrollProgressProps) {
+  const { scrollYProgress } = useScroll({ container: containerRef, layoutEffect: containerRef?.current !== null });
+  const scaleX = useSpring(scrollYProgress, { ...(springOptions ?? DEFAULT_SPRING_OPTIONS) });
+
+  return <motion.div className={cn('inset-x-0 top-0 h-1 origin-left', className)} style={{ scaleX }} />;
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### magnetic (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/magnetic
+
+Magnetic hover effect that follows the cursor.
+
+```tsx
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useMotionValue, useSpring, type SpringOptions } from 'motion/react';
+
+const SPRING_CONFIG = { stiffness: 26.7, damping: 4.1, mass: 0.2 };
+
+export type MagneticProps = {
+  children: React.ReactNode;
+  intensity?: number;
+  range?: number;
+  actionArea?: 'self' | 'parent' | 'global';
+  springOptions?: SpringOptions;
+};
+
+export function Magnetic({ children, intensity = 0.6, range = 100, actionArea = 'self', springOptions = SPRING_CONFIG }: MagneticProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const springX = useSpring(x, springOptions);
+  const springY = useSpring(y, springOptions);
+
+  useEffect(() => {
+    const calculateDistance = (e: MouseEvent) => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const distanceX = e.clientX - centerX;
+        const distanceY = e.clientY - centerY;
+        const absoluteDistance = Math.sqrt(distanceX ** 2 + distanceY ** 2);
+
+        if (isHovered && absoluteDistance <= range) {
+          const scale = 1 - absoluteDistance / range;
+          x.set(distanceX * intensity * scale);
+          y.set(distanceY * intensity * scale);
+        } else { x.set(0); y.set(0); }
+      }
+    };
+    document.addEventListener('mousemove', calculateDistance);
+    return () => document.removeEventListener('mousemove', calculateDistance);
+  }, [ref, isHovered, intensity, range]);
+
+  useEffect(() => {
+    if (actionArea === 'parent' && ref.current?.parentElement) {
+      const parent = ref.current.parentElement;
+      const handleParentEnter = () => setIsHovered(true);
+      const handleParentLeave = () => setIsHovered(false);
+      parent.addEventListener('mouseenter', handleParentEnter);
+      parent.addEventListener('mouseleave', handleParentLeave);
+      return () => { parent.removeEventListener('mouseenter', handleParentEnter); parent.removeEventListener('mouseleave', handleParentLeave); };
+    } else if (actionArea === 'global') setIsHovered(true);
+  }, [actionArea]);
+
+  const handleMouseEnter = () => { if (actionArea === 'self') setIsHovered(true); };
+  const handleMouseLeave = () => { if (actionArea === 'self') { setIsHovered(false); x.set(0); y.set(0); } };
+
+  return (
+    <motion.div ref={ref} onMouseEnter={actionArea === 'self' ? handleMouseEnter : undefined} onMouseLeave={actionArea === 'self' ? handleMouseLeave : undefined} style={{ x: springX, y: springY }}>
+      {children}
+    </motion.div>
+  );
+}
+```
+
+**Dependencies:** `motion`
+
+---
+
+### tilt (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/tilt
+
+3D tilt effect on hover.
+
+```tsx
+'use client';
+
+import React, { useRef } from 'react';
+import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform, MotionStyle, SpringOptions } from 'framer-motion';
+
+type TiltProps = {
+  children: React.ReactNode;
+  className?: string;
+  style?: MotionStyle;
+  rotationFactor?: number;
+  isRevese?: boolean;
+  springOptions?: SpringOptions;
+};
+
+export function Tilt({ children, className, style, rotationFactor = 15, isRevese = false, springOptions }: TiltProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const xSpring = useSpring(x, springOptions);
+  const ySpring = useSpring(y, springOptions);
+
+  const rotateX = useTransform(ySpring, [-0.5, 0.5], isRevese ? [rotationFactor, -rotationFactor] : [-rotationFactor, rotationFactor]);
+  const rotateY = useTransform(xSpring, [-0.5, 0.5], isRevese ? [-rotationFactor, rotationFactor] : [rotationFactor, -rotationFactor]);
+
+  const transform = useMotionTemplate`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const xPos = e.clientX - rect.left;
+    const yPos = e.clientY - rect.top;
+    x.set(xPos / rect.width - 0.5);
+    y.set(yPos / rect.height - 0.5);
+  };
+
+  const handleMouseLeave = () => { x.set(0); y.set(0); };
+
+  return (
+    <motion.div ref={ref} className={className} style={{ transformStyle: 'preserve-3d', ...style, transform }} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+      {children}
+    </motion.div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### typewriter-effect (Aceternity UI)
+**Source:** https://21st.dev/r/aceternity/typewriter-effect
+
+Typewriter text animation with blinking cursor.
+
+```tsx
+"use client";
+
+import { cn } from "@/lib/utils";
+import { motion, stagger, useAnimate, useInView } from "framer-motion";
+import { useEffect } from "react";
+
+export const TypewriterEffect = ({
+  words,
+  className,
+  cursorClassName,
+}: {
+  words: { text: string; className?: string }[];
+  className?: string;
+  cursorClassName?: string;
+}) => {
+  const wordsArray = words.map((word) => ({ ...word, text: word.text.split("") }));
+  const [scope, animate] = useAnimate();
+  const isInView = useInView(scope);
+
+  useEffect(() => {
+    if (isInView) animate("span", { display: "inline-block", opacity: 1, width: "fit-content" }, { duration: 0.3, delay: stagger(0.1), ease: "easeInOut" });
+  }, [isInView]);
+
+  const renderWords = () => (
+    <motion.div ref={scope} className="inline">
+      {wordsArray.map((word, idx) => (
+        <div key={`word-${idx}`} className="inline-block">
+          {word.text.map((char, index) => (<motion.span key={`char-${index}`} className={cn("dark:text-white text-black opacity-0 hidden", word.className)}>{char}</motion.span>))}
+          &nbsp;
+        </div>
+      ))}
+    </motion.div>
+  );
+
+  return (
+    <div className={cn("text-base sm:text-xl md:text-3xl lg:text-5xl font-bold text-center", className)}>
+      {renderWords()}
+      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }} className={cn("inline-block rounded-sm w-[4px] h-4 md:h-6 lg:h-10 bg-blue-500", cursorClassName)}></motion.span>
+    </div>
+  );
+};
+
+export const TypewriterEffectSmooth = ({ words, className, cursorClassName }: { words: { text: string; className?: string }[]; className?: string; cursorClassName?: string }) => {
+  const wordsArray = words.map((word) => ({ ...word, text: word.text.split("") }));
+  const renderWords = () => (
+    <div>{wordsArray.map((word, idx) => (<div key={`word-${idx}`} className="inline-block">{word.text.map((char, index) => (<span key={`char-${index}`} className={cn("dark:text-white text-black", word.className)}>{char}</span>))}&nbsp;</div>))}</div>
+  );
+
+  return (
+    <div className={cn("flex space-x-1 my-6", className)}>
+      <motion.div className="overflow-hidden pb-2" initial={{ width: "0%" }} whileInView={{ width: "fit-content" }} transition={{ duration: 2, ease: "linear", delay: 1 }}>
+        <div className="text-xs sm:text-base md:text-xl lg:text:3xl xl:text-5xl font-bold" style={{ whiteSpace: "nowrap" }}>{renderWords()}</div>
+      </motion.div>
+      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }} className={cn("block rounded-sm w-[4px] h-4 sm:h-6 xl:h-12 bg-blue-500", cursorClassName)}></motion.span>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### wavy-background (Aceternity UI)
+**Source:** https://21st.dev/r/aceternity/wavy-background
+
+Animated wavy background using simplex noise.
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useEffect, useRef, useState } from "react";
+import { createNoise3D } from "simplex-noise";
+
+export const WavyBackground = ({ children, className, containerClassName, colors, waveWidth, backgroundFill, blur = 10, speed = "fast", waveOpacity = 0.5, ...props }: { children?: any; className?: string; containerClassName?: string; colors?: string[]; waveWidth?: number; backgroundFill?: string; blur?: number; speed?: "slow" | "fast"; waveOpacity?: number; [key: string]: any }) => {
+  const noise = createNoise3D();
+  let w: number, h: number, nt: number, i: number, x: number, ctx: any, canvas: any;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const getSpeed = () => (speed === "slow" ? 0.001 : 0.002);
+
+  const init = () => {
+    canvas = canvasRef.current; ctx = canvas.getContext("2d");
+    w = ctx.canvas.width = window.innerWidth; h = ctx.canvas.height = window.innerHeight;
+    ctx.filter = `blur(${blur}px)`; nt = 0;
+    window.onresize = function () { w = ctx.canvas.width = window.innerWidth; h = ctx.canvas.height = window.innerHeight; ctx.filter = `blur(${blur}px)`; };
+    render();
+  };
+
+  const waveColors = colors ?? ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+  const drawWave = (n: number) => {
+    nt += getSpeed();
+    for (i = 0; i < n; i++) { ctx.beginPath(); ctx.lineWidth = waveWidth || 50; ctx.strokeStyle = waveColors[i % waveColors.length];
+      for (x = 0; x < w; x += 5) { var y = noise(x / 800, 0.3 * i, nt) * 100; ctx.lineTo(x, y + h * 0.5); }
+      ctx.stroke(); ctx.closePath();
+    }
+  };
+
+  let animationId: number;
+  const render = () => { ctx.fillStyle = backgroundFill || "black"; ctx.globalAlpha = waveOpacity || 0.5; ctx.fillRect(0, 0, w, h); drawWave(5); animationId = requestAnimationFrame(render); };
+
+  useEffect(() => { init(); return () => cancelAnimationFrame(animationId); }, []);
+
+  const [isSafari, setIsSafari] = useState(false);
+  useEffect(() => { setIsSafari(typeof window !== "undefined" && navigator.userAgent.includes("Safari") && !navigator.userAgent.includes("Chrome")); }, []);
+
+  return (
+    <div className={cn("h-screen flex flex-col items-center justify-center", containerClassName)}>
+      <canvas className="absolute inset-0 z-0" ref={canvasRef} id="canvas" style={{ ...(isSafari ? { filter: `blur(${blur}px)` } : {}) }}></canvas>
+      <div className={cn("relative z-10", className)} {...props}>{children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `simplex-noise`, `@/lib/utils`
+
+---
+
+### sidebar (Aceternity UI)
+**Source:** https://21st.dev/r/aceternity/sidebar
+
+Responsive sidebar with hover expansion and mobile support.
+
+```tsx
+"use client";
+
+import { cn } from "@/lib/utils";
+import Link, { LinkProps } from "next/link";
+import React, { useState, createContext, useContext } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, X } from "lucide-react";
+
+interface Links { label: string; href: string; icon: React.JSX.Element | React.ReactNode; }
+interface SidebarContextProps { open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>>; animate: boolean; }
+const SidebarContext = createContext<SidebarContextProps | undefined>(undefined);
+
+export const useSidebar = () => { const context = useContext(SidebarContext); if (!context) throw new Error("useSidebar must be used within a SidebarProvider"); return context; };
+
+export const SidebarProvider = ({ children, open: openProp, setOpen: setOpenProp, animate = true }: { children: React.ReactNode; open?: boolean; setOpen?: React.Dispatch<React.SetStateAction<boolean>>; animate?: boolean }) => {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp !== undefined ? openProp : openState;
+  const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
+  return <SidebarContext.Provider value={{ open, setOpen, animate }}>{children}</SidebarContext.Provider>;
+};
+
+export const Sidebar = ({ children, open, setOpen, animate }: { children: React.ReactNode; open?: boolean; setOpen?: React.Dispatch<React.SetStateAction<boolean>>; animate?: boolean }) => <SidebarProvider open={open} setOpen={setOpen} animate={animate}>{children}</SidebarProvider>;
+
+export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => (<><DesktopSidebar {...props} /><MobileSidebar {...(props as React.ComponentProps<"div">)} /></>);
+
+export const DesktopSidebar = ({ className, children, ...props }: React.ComponentProps<typeof motion.div>) => {
+  const { open, setOpen, animate } = useSidebar();
+  return <motion.div className={cn("h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0", className)} animate={{ width: animate ? (open ? "300px" : "60px") : "300px" }} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} {...props}>{children}</motion.div>;
+};
+
+export const MobileSidebar = ({ className, children, ...props }: React.ComponentProps<"div">) => {
+  const { open, setOpen } = useSidebar();
+  return (<><div className={cn("h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full")} {...props}>
+    <div className="flex justify-end z-20 w-full"><Menu className="text-neutral-800 dark:text-neutral-200 cursor-pointer" onClick={() => setOpen(!open)} /></div>
+    <AnimatePresence>{open && (<motion.div initial={{ x: "-100%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "-100%", opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className={cn("fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between", className)}>
+      <div className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer" onClick={() => setOpen(!open)}><X /></div>{children}</motion.div>)}</AnimatePresence>
+  </div></>);
+};
+
+export const SidebarLink = ({ link, className, ...props }: { link: Links; className?: string; props?: LinkProps }) => {
+  const { open, animate } = useSidebar();
+  return (<Link href={link.href} className={cn("flex items-center justify-start gap-2 group/sidebar py-2", className)} {...props}>{link.icon}
+    <motion.span animate={{ display: animate ? (open ? "inline-block" : "none") : "inline-block", opacity: animate ? (open ? 1 : 0) : 1 }} className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0">{link.label}</motion.span>
+  </Link>);
+};
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`, `next/link`, `@/lib/utils`
+
+---
+
+### shimmer-button (MagicUI)
+**Source:** https://21st.dev/r/magicui/shimmer-button
+
+Button with animated shimmer effect.
+
+```tsx
+import React, { CSSProperties } from "react";
+import { cn } from "@/lib/utils";
+
+export interface ShimmerButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  shimmerColor?: string;
+  shimmerSize?: string;
+  borderRadius?: string;
+  shimmerDuration?: string;
+  background?: string;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+const ShimmerButton = React.forwardRef<HTMLButtonElement, ShimmerButtonProps>(
+  ({ shimmerColor = "#ffffff", shimmerSize = "0.05em", shimmerDuration = "3s", borderRadius = "100px", background = "rgba(0, 0, 0, 1)", className, children, ...props }, ref) => {
+    return (
+      <button style={{ "--spread": "90deg", "--shimmer-color": shimmerColor, "--radius": borderRadius, "--speed": shimmerDuration, "--cut": shimmerSize, "--bg": background } as CSSProperties}
+        className={cn("group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-white/10 px-6 py-3 text-white [background:var(--bg)] [border-radius:var(--radius)] dark:text-black", "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px", className)} ref={ref} {...props}>
+        <div className={cn("-z-30 blur-[2px]", "absolute inset-0 overflow-visible [container-type:size]")}>
+          <div className="absolute inset-0 h-[100cqh] animate-shimmer-slide [aspect-ratio:1] [border-radius:0] [mask:none]">
+            <div className="animate-spin-around absolute -inset-full w-auto rotate-0 [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))] [translate:0_0]" />
+          </div>
+        </div>
+        {children}
+        <div className={cn("insert-0 absolute size-full", "rounded-2xl px-4 py-1.5 text-sm font-medium shadow-[inset_0_-8px_10px_#ffffff1f]", "transform-gpu transition-all duration-300 ease-in-out", "group-hover:shadow-[inset_0_-6px_10px_#ffffff3f]", "group-active:shadow-[inset_0_-10px_10px_#ffffff3f]")} />
+        <div className={cn("absolute -z-20 [background:var(--bg)] [border-radius:var(--radius)] [inset:var(--cut)]")} />
+      </button>
+    );
+  }
+);
+
+ShimmerButton.displayName = "ShimmerButton";
+export { ShimmerButton };
+```
+
+**Dependencies:** `@/lib/utils`
+
+**Tailwind Config:**
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      animation: {
+        "shimmer-slide": "shimmer-slide var(--speed) ease-in-out infinite alternate",
+        "spin-around": "spin-around calc(var(--speed) * 2) infinite linear",
+      },
+      keyframes: {
+        "spin-around": {
+          "0%": { transform: "translateZ(0) rotate(0)" },
+          "15%, 35%": { transform: "translateZ(0) rotate(90deg)" },
+          "65%, 85%": { transform: "translateZ(0) rotate(270deg)" },
+          "100%": { transform: "translateZ(0) rotate(360deg)" },
+        },
+        "shimmer-slide": { to: { transform: "translate(calc(100cqw - 100%), 0)" } },
+      },
+    },
+  },
+};
+```
+
+---
+
+### hero-video-dialog (MagicUI)
+**Source:** https://21st.dev/r/magicui/hero-video-dialog
+
+Video thumbnail with animated play button and modal dialog.
+
+```tsx
+"use client"
+
+import { useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { Play, XIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+type AnimationStyle = "from-bottom" | "from-center" | "from-top" | "from-left" | "from-right" | "fade" | "top-in-bottom-out" | "left-in-right-out"
+
+interface HeroVideoProps {
+  animationStyle?: AnimationStyle;
+  videoSrc: string;
+  thumbnailSrc: string;
+  thumbnailAlt?: string;
+  className?: string;
+}
+
+const animationVariants = {
+  "from-bottom": { initial: { y: "100%", opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: "100%", opacity: 0 } },
+  "from-center": { initial: { scale: 0.5, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.5, opacity: 0 } },
+  "from-top": { initial: { y: "-100%", opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: "-100%", opacity: 0 } },
+  "from-left": { initial: { x: "-100%", opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: "-100%", opacity: 0 } },
+  "from-right": { initial: { x: "100%", opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: "100%", opacity: 0 } },
+  fade: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
+  "top-in-bottom-out": { initial: { y: "-100%", opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: "100%", opacity: 0 } },
+  "left-in-right-out": { initial: { x: "-100%", opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: "100%", opacity: 0 } },
+}
+
+export function HeroVideoDialog({ animationStyle = "from-center", videoSrc, thumbnailSrc, thumbnailAlt = "Video thumbnail", className }: HeroVideoProps) {
+  const [isVideoOpen, setIsVideoOpen] = useState(false)
+  const selectedAnimation = animationVariants[animationStyle]
+
+  return (
+    <div className={cn("relative", className)}>
+      <div className="relative cursor-pointer group" onClick={() => setIsVideoOpen(true)}>
+        <img src={thumbnailSrc} alt={thumbnailAlt} width={1920} height={1080} className="w-full transition-all duration-200 group-hover:brightness-[0.8] ease-out rounded-md shadow-lg border" />
+        <div className="absolute inset-0 flex items-center justify-center group-hover:scale-100 scale-[0.9] transition-all duration-200 ease-out rounded-2xl">
+          <div className="bg-primary/10 flex items-center justify-center rounded-full backdrop-blur-md size-28">
+            <div className="flex items-center justify-center bg-gradient-to-b from-primary/30 to-primary shadow-md rounded-full size-20 transition-all ease-out duration-200 relative group-hover:scale-[1.2] scale-100">
+              <Play className="size-8 text-white fill-white group-hover:scale-105 scale-100 transition-transform duration-200 ease-out" style={{ filter: "drop-shadow(0 4px 3px rgb(0 0 0 / 0.07)) drop-shadow(0 2px 2px rgb(0 0 0 / 0.06))" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <AnimatePresence>
+        {isVideoOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setIsVideoOpen(false)} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md">
+            <motion.div {...selectedAnimation} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="relative w-full max-w-4xl aspect-video mx-4 md:mx-0">
+              <motion.button className="absolute -top-16 right-0 text-white text-xl bg-neutral-900/50 ring-1 backdrop-blur-md rounded-full p-2 dark:bg-neutral-100/50 dark:text-black"><XIcon className="size-5" /></motion.button>
+              <div className="size-full border-2 border-white rounded-2xl overflow-hidden isolate z-[1] relative">
+                <iframe src={videoSrc} className="size-full rounded-2xl" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`, `@/lib/utils`
+
+---
+
+### warp-background (MagicUI)
+**Source:** https://21st.dev/r/magicui/warp-background
+
+3D perspective grid background with animated beams.
+
+```tsx
+import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
+import React, { HTMLAttributes, useCallback, useMemo } from "react";
+
+interface WarpBackgroundProps extends HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+  perspective?: number;
+  beamsPerSide?: number;
+  beamSize?: number;
+  beamDelayMax?: number;
+  beamDelayMin?: number;
+  beamDuration?: number;
+  gridColor?: string;
+}
+
+const Beam = ({ width, x, delay, duration }: { width: string | number; x: string | number; delay: number; duration: number }) => {
+  const hue = Math.floor(Math.random() * 360);
+  const ar = Math.floor(Math.random() * 10) + 1;
+
+  return (
+    <motion.div style={{ "--x": `${x}`, "--width": `${width}`, "--aspect-ratio": `${ar}`, "--background": `linear-gradient(hsl(${hue} 80% 60%), transparent)` } as React.CSSProperties}
+      className={`absolute left-[var(--x)] top-0 [aspect-ratio:1/var(--aspect-ratio)] [background:var(--background)] [width:var(--width)]`}
+      initial={{ y: "100cqmax", x: "-50%" }} animate={{ y: "-100%", x: "-50%" }}
+      transition={{ duration, delay, repeat: Infinity, ease: "linear" }} />
+  );
+};
+
+export const WarpBackground: React.FC<WarpBackgroundProps> = ({ children, perspective = 100, className, beamsPerSide = 3, beamSize = 5, beamDelayMax = 3, beamDelayMin = 0, beamDuration = 3, gridColor = "hsl(var(--border))", ...props }) => {
+  const generateBeams = useCallback(() => {
+    const beams = [];
+    const cellsPerSide = Math.floor(100 / beamSize);
+    const step = cellsPerSide / beamsPerSide;
+    for (let i = 0; i < beamsPerSide; i++) { const x = Math.floor(i * step); const delay = Math.random() * (beamDelayMax - beamDelayMin) + beamDelayMin; beams.push({ x, delay }); }
+    return beams;
+  }, [beamsPerSide, beamSize, beamDelayMax, beamDelayMin]);
+
+  const topBeams = useMemo(() => generateBeams(), [generateBeams]);
+  const rightBeams = useMemo(() => generateBeams(), [generateBeams]);
+  const bottomBeams = useMemo(() => generateBeams(), [generateBeams]);
+  const leftBeams = useMemo(() => generateBeams(), [generateBeams]);
+
+  return (
+    <div className={cn("relative rounded border p-20", className)} {...props}>
+      <div style={{ "--perspective": `${perspective}px`, "--grid-color": gridColor, "--beam-size": `${beamSize}%` } as React.CSSProperties}
+        className={"pointer-events-none absolute left-0 top-0 size-full overflow-hidden [clip-path:inset(0)] [container-type:size] [perspective:var(--perspective)] [transform-style:preserve-3d]"}>
+        <div className="absolute [transform-style:preserve-3d] [background-size:var(--beam-size)_var(--beam-size)] [background:linear-gradient(var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_-0.5px_/var(--beam-size)_var(--beam-size),linear-gradient(90deg,_var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_50%_/var(--beam-size)_var(--beam-size)] [container-type:inline-size] [height:100cqmax] [transform-origin:50%_0%] [transform:rotateX(-90deg)] [width:100cqi]">
+          {topBeams.map((beam, index) => <Beam key={`top-${index}`} width={`${beamSize}%`} x={`${beam.x * beamSize}%`} delay={beam.delay} duration={beamDuration} />)}
+        </div>
+        <div className="absolute top-full [transform-style:preserve-3d] [background-size:var(--beam-size)_var(--beam-size)] [background:linear-gradient(var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_-0.5px_/var(--beam-size)_var(--beam-size),linear-gradient(90deg,_var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_50%_/var(--beam-size)_var(--beam-size)] [container-type:inline-size] [height:100cqmax] [transform-origin:50%_0%] [transform:rotateX(-90deg)] [width:100cqi]">
+          {bottomBeams.map((beam, index) => <Beam key={`bottom-${index}`} width={`${beamSize}%`} x={`${beam.x * beamSize}%`} delay={beam.delay} duration={beamDuration} />)}
+        </div>
+        <div className="absolute left-0 top-0 [transform-style:preserve-3d] [background-size:var(--beam-size)_var(--beam-size)] [background:linear-gradient(var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_-0.5px_/var(--beam-size)_var(--beam-size),linear-gradient(90deg,_var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_50%_/var(--beam-size)_var(--beam-size)] [container-type:inline-size] [height:100cqmax] [transform-origin:0%_0%] [transform:rotate(90deg)_rotateX(-90deg)] [width:100cqh]">
+          {leftBeams.map((beam, index) => <Beam key={`left-${index}`} width={`${beamSize}%`} x={`${beam.x * beamSize}%`} delay={beam.delay} duration={beamDuration} />)}
+        </div>
+        <div className="absolute right-0 top-0 [transform-style:preserve-3d] [background-size:var(--beam-size)_var(--beam-size)] [background:linear-gradient(var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_-0.5px_/var(--beam-size)_var(--beam-size),linear-gradient(90deg,_var(--grid-color)_0_1px,_transparent_1px_var(--beam-size))_50%_50%_/var(--beam-size)_var(--beam-size)] [container-type:inline-size] [height:100cqmax] [width:100cqh] [transform-origin:100%_0%] [transform:rotate(-90deg)_rotateX(-90deg)]">
+          {rightBeams.map((beam, index) => <Beam key={`right-${index}`} width={`${beamSize}%`} x={`${beam.x * beamSize}%`} delay={beam.delay} duration={beamDuration} />)}
+        </div>
+      </div>
+      <div className="relative">{children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `motion`, `@/lib/utils`
+
+---
+
+### interactive-icon-cloud (MagicUI)
+**Source:** https://21st.dev/r/magicui/interactive-icon-cloud
+
+Interactive 3D icon cloud with theme support.
+
+```tsx
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import { useTheme } from "next-themes"
+import { Cloud, fetchSimpleIcons, ICloud, renderSimpleIcon, SimpleIcon } from "react-icon-cloud"
+
+export const cloudProps: Omit<ICloud, "children"> = {
+  containerProps: { style: { display: "flex", justifyContent: "center", alignItems: "center", width: "100%", paddingTop: 40 } },
+  options: { reverse: true, depth: 1, wheelZoom: false, imageScale: 2, activeCursor: "default", tooltip: "native", initial: [0.1, -0.1], clickToFront: 500, tooltipDelay: 0, outlineColour: "#0000", maxSpeed: 0.04, minSpeed: 0.02 },
+}
+
+export const renderCustomIcon = (icon: SimpleIcon, theme: string) => {
+  const bgHex = theme === "light" ? "#f3f2ef" : "#080510"
+  const fallbackHex = theme === "light" ? "#6e6e73" : "#ffffff"
+  const minContrastRatio = theme === "dark" ? 2 : 1.2
+
+  return renderSimpleIcon({ icon, bgHex, fallbackHex, minContrastRatio, size: 42, aProps: { href: undefined, target: undefined, rel: undefined, onClick: (e: any) => e.preventDefault() } })
+}
+
+export type DynamicCloudProps = { iconSlugs: string[] }
+
+type IconData = Awaited<ReturnType<typeof fetchSimpleIcons>>
+
+export function IconCloud({ iconSlugs }: DynamicCloudProps) {
+  const [data, setData] = useState<IconData | null>(null)
+  const { theme } = useTheme()
+
+  useEffect(() => { fetchSimpleIcons({ slugs: iconSlugs }).then(setData) }, [iconSlugs])
+
+  const renderedIcons = useMemo(() => {
+    if (!data) return null
+    return Object.values(data.simpleIcons).map((icon) => renderCustomIcon(icon, theme || "light"))
+  }, [data, theme])
+
+  return (
+    // @ts-ignore
+    <Cloud {...cloudProps}><>{renderedIcons}</></Cloud>
+  )
+}
+```
+
+**Dependencies:** `next-themes`, `react-icon-cloud`
+
+---
+
+### image-comparison (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/image-comparison
+
+Before/after image comparison slider.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { useState, createContext, useContext } from 'react';
+import { motion, MotionValue, SpringOptions, useMotionValue, useSpring, useTransform } from 'framer-motion';
+
+const ImageComparisonContext = createContext<{ sliderPosition: number; setSliderPosition: (pos: number) => void; motionSliderPosition: MotionValue<number> } | undefined>(undefined);
+
+const DEFAULT_SPRING_OPTIONS = { bounce: 0, duration: 0 };
+
+function ImageComparison({ children, className, enableHover, springOptions }: { children: React.ReactNode; className?: string; enableHover?: boolean; springOptions?: SpringOptions }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const motionValue = useMotionValue(50);
+  const motionSliderPosition = useSpring(motionValue, springOptions ?? DEFAULT_SPRING_OPTIONS);
+  const [sliderPosition, setSliderPosition] = useState(50);
+
+  const handleDrag = (event: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging && !enableHover) return;
+    const containerRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = 'touches' in event ? event.touches[0].clientX - containerRect.left : (event as React.MouseEvent).clientX - containerRect.left;
+    const percentage = Math.min(Math.max((x / containerRect.width) * 100, 0), 100);
+    motionValue.set(percentage);
+    setSliderPosition(percentage);
+  };
+
+  return (
+    <ImageComparisonContext.Provider value={{ sliderPosition, setSliderPosition, motionSliderPosition }}>
+      <div className={cn('relative select-none overflow-hidden', enableHover && 'cursor-ew-resize', className)}
+        onMouseMove={handleDrag} onMouseDown={() => !enableHover && setIsDragging(true)} onMouseUp={() => !enableHover && setIsDragging(false)}
+        onMouseLeave={() => !enableHover && setIsDragging(false)} onTouchMove={handleDrag} onTouchStart={() => !enableHover && setIsDragging(true)} onTouchEnd={() => !enableHover && setIsDragging(false)}>
+        {children}
+      </div>
+    </ImageComparisonContext.Provider>
+  );
+}
+
+const ImageComparisonImage = ({ className, alt, src, position }: { className?: string; alt: string; src: string; position: 'left' | 'right' }) => {
+  const { motionSliderPosition } = useContext(ImageComparisonContext)!;
+  const leftClipPath = useTransform(motionSliderPosition, (value) => `inset(0 0 0 ${value}%)`);
+  const rightClipPath = useTransform(motionSliderPosition, (value) => `inset(0 ${100 - value}% 0 0)`);
+  return <motion.img src={src} alt={alt} className={cn('absolute inset-0 h-full w-full object-cover', className)} style={{ clipPath: position === 'left' ? leftClipPath : rightClipPath }} />;
+};
+
+const ImageComparisonSlider = ({ className, children }: { className: string; children?: React.ReactNode }) => {
+  const { motionSliderPosition } = useContext(ImageComparisonContext)!;
+  const left = useTransform(motionSliderPosition, (value) => `${value}%`);
+  return <motion.div className={cn('absolute bottom-0 top-0 w-1 cursor-ew-resize', className)} style={{ left }}>{children}</motion.div>;
+};
+
+export { ImageComparison, ImageComparisonImage, ImageComparisonSlider };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### border-trail (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/border-trail
+
+Animated border trail effect.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { motion, Transition } from 'framer-motion';
+
+type BorderTrailProps = { className?: string; size?: number; transition?: Transition; delay?: number; onAnimationComplete?: () => void; style?: React.CSSProperties };
+
+export function BorderTrail({ className, size = 60, transition, delay, onAnimationComplete, style }: BorderTrailProps) {
+  const BASE_TRANSITION = { repeat: Infinity, duration: 5, ease: 'linear' };
+
+  return (
+    <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
+      <motion.div className={cn('absolute aspect-square bg-zinc-500', className)}
+        style={{ width: size, offsetPath: `rect(0 auto auto 0 round ${size}px)`, ...style }}
+        animate={{ offsetDistance: ['0%', '100%'] }} transition={{ ...(transition ?? BASE_TRANSITION), delay: delay }} onAnimationComplete={onAnimationComplete} />
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### dock (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/dock
+
+macOS-style dock with magnification effect.
+
+```tsx
+'use client';
+
+import { motion, MotionValue, useMotionValue, useSpring, useTransform, type SpringOptions, AnimatePresence } from 'framer-motion';
+import { Children, cloneElement, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+
+const DOCK_HEIGHT = 128;
+const DEFAULT_MAGNIFICATION = 80;
+const DEFAULT_DISTANCE = 150;
+const DEFAULT_PANEL_HEIGHT = 64;
+
+type DocContextType = { mouseX: MotionValue; spring: SpringOptions; magnification: number; distance: number };
+const DockContext = createContext<DocContextType | undefined>(undefined);
+
+function useDock() { const context = useContext(DockContext); if (!context) throw new Error('useDock must be used within an DockProvider'); return context; }
+
+function Dock({ children, className, spring = { mass: 0.1, stiffness: 150, damping: 12 }, magnification = DEFAULT_MAGNIFICATION, distance = DEFAULT_DISTANCE, panelHeight = DEFAULT_PANEL_HEIGHT }: { children: React.ReactNode; className?: string; distance?: number; panelHeight?: number; magnification?: number; spring?: SpringOptions }) {
+  const mouseX = useMotionValue(Infinity);
+  const isHovered = useMotionValue(0);
+  const maxHeight = useMemo(() => Math.max(DOCK_HEIGHT, magnification + magnification / 2 + 4), [magnification]);
+  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
+  const height = useSpring(heightRow, spring);
+
+  return (
+    <motion.div style={{ height, scrollbarWidth: 'none' }} className='mx-2 flex max-w-full items-end overflow-x-auto'>
+      <motion.div onMouseMove={({ pageX }) => { isHovered.set(1); mouseX.set(pageX); }} onMouseLeave={() => { isHovered.set(0); mouseX.set(Infinity); }}
+        className={cn('mx-auto flex w-fit gap-4 rounded-2xl bg-gray-50 px-4 dark:bg-neutral-900', className)} style={{ height: panelHeight }} role='toolbar'>
+        <DockContext.Provider value={{ mouseX, spring, distance, magnification }}>{children}</DockContext.Provider>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function DockItem({ children, className }: { className?: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { distance, magnification, mouseX, spring } = useDock();
+  const isHovered = useMotionValue(0);
+  const mouseDistance = useTransform(mouseX, (val) => { const domRect = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }; return val - domRect.x - domRect.width / 2; });
+  const widthTransform = useTransform(mouseDistance, [-distance, 0, distance], [40, magnification, 40]);
+  const width = useSpring(widthTransform, spring);
+
+  return (
+    <motion.div ref={ref} style={{ width }} onHoverStart={() => isHovered.set(1)} onHoverEnd={() => isHovered.set(0)} onFocus={() => isHovered.set(1)} onBlur={() => isHovered.set(0)}
+      className={cn('relative inline-flex items-center justify-center', className)} tabIndex={0} role='button'>
+      {Children.map(children, (child) => cloneElement(child as React.ReactElement, { width, isHovered }))}
+    </motion.div>
+  );
+}
+
+function DockLabel({ children, className, ...rest }: { className?: string; children: React.ReactNode }) {
+  const restProps = rest as Record<string, unknown>; const isHovered = restProps['isHovered'] as MotionValue<number>;
+  const [isVisible, setIsVisible] = useState(false);
+  useEffect(() => { const unsubscribe = isHovered.on('change', (latest) => setIsVisible(latest === 1)); return () => unsubscribe(); }, [isHovered]);
+
+  return (<AnimatePresence>{isVisible && (
+    <motion.div initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: -10 }} exit={{ opacity: 0, y: 0 }} transition={{ duration: 0.2 }}
+      className={cn('absolute -top-6 left-1/2 w-fit whitespace-pre rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white', className)} role='tooltip' style={{ x: '-50%' }}>
+      {children}
+    </motion.div>
+  )}</AnimatePresence>);
+}
+
+function DockIcon({ children, className, ...rest }: { className?: string; children: React.ReactNode }) {
+  const restProps = rest as Record<string, unknown>; const width = restProps['width'] as MotionValue<number>;
+  const widthTransform = useTransform(width, (val) => val / 2);
+  return <motion.div style={{ width: widthTransform }} className={cn('flex items-center justify-center', className)}>{children}</motion.div>;
+}
+
+export { Dock, DockIcon, DockItem, DockLabel };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### animated-background (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/animated-background
+
+Animated background that follows active element.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, Transition, motion } from 'framer-motion';
+import { Children, cloneElement, ReactElement, useEffect, useState, useId } from 'react';
+
+type AnimatedBackgroundProps = { children: ReactElement<{ 'data-id': string }>[] | ReactElement<{ 'data-id': string }>; defaultValue?: string; onValueChange?: (newActiveId: string | null) => void; className?: string; transition?: Transition; enableHover?: boolean };
+
+export default function AnimatedBackground({ children, defaultValue, onValueChange, className, transition, enableHover = false }: AnimatedBackgroundProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const uniqueId = useId();
+
+  const handleSetActiveId = (id: string | null) => { setActiveId(id); if (onValueChange) onValueChange(id); };
+  useEffect(() => { if (defaultValue !== undefined) setActiveId(defaultValue); }, [defaultValue]);
+
+  return Children.map(children, (child: any, index) => {
+    const id = child.props['data-id'];
+    const interactionProps = enableHover ? { onMouseEnter: () => handleSetActiveId(id), onMouseLeave: () => handleSetActiveId(null) } : { onClick: () => handleSetActiveId(id) };
+
+    return cloneElement(child, { key: index, className: cn('relative inline-flex', child.props.className), 'aria-selected': activeId === id, 'data-checked': activeId === id ? 'true' : 'false', ...interactionProps },
+      <>
+        <AnimatePresence initial={false}>
+          {activeId === id && <motion.div layoutId={`background-${uniqueId}`} className={cn('absolute inset-0', className)} transition={transition} initial={{ opacity: defaultValue ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
+        </AnimatePresence>
+        <span className='z-10'>{child.props.children}</span>
+      </>
+    );
+  });
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### progressive-blur (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/progressive-blur
+
+Directional progressive blur effect overlay.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { HTMLMotionProps, motion } from 'motion/react';
+
+export const GRADIENT_ANGLES = { top: 0, right: 90, bottom: 180, left: 270 };
+
+export type ProgressiveBlurProps = { direction?: keyof typeof GRADIENT_ANGLES; blurLayers?: number; className?: string; blurIntensity?: number } & HTMLMotionProps<'div'>;
+
+export function ProgressiveBlur({ direction = 'bottom', blurLayers = 8, className, blurIntensity = 0.25, ...props }: ProgressiveBlurProps) {
+  const layers = Math.max(blurLayers, 2);
+  const segmentSize = 1 / (blurLayers + 1);
+
+  return (
+    <div className={cn('relative', className)}>
+      {Array.from({ length: layers }).map((_, index) => {
+        const angle = GRADIENT_ANGLES[direction];
+        const gradientStops = [index * segmentSize, (index + 1) * segmentSize, (index + 2) * segmentSize, (index + 3) * segmentSize].map((pos, posIndex) => `rgba(255, 255, 255, ${posIndex === 1 || posIndex === 2 ? 1 : 0}) ${pos * 100}%`);
+        const gradient = `linear-gradient(${angle}deg, ${gradientStops.join(', ')})`;
+        return <motion.div key={index} className='pointer-events-none absolute inset-0 rounded-[inherit]' style={{ maskImage: gradient, WebkitMaskImage: gradient, backdropFilter: `blur(${index * blurIntensity}px)` }} {...props} />;
+      })}
+    </div>
+  );
+}
+```
+
+**Dependencies:** `motion`, `@/lib/utils`
+
+---
+
+### spinning-text (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/spinning-text
+
+Text arranged in a circle that rotates continuously.
+
+```tsx
+'use client';
+
+import { cn } from '@/lib/utils';
+import { motion, Transition, Variants } from 'framer-motion';
+import React, { CSSProperties } from 'react';
+
+type SpinningTextProps = { children: string; style?: CSSProperties; duration?: number; className?: string; reverse?: boolean; fontSize?: number; radius?: number; transition?: Transition; variants?: { container?: Variants; item?: Variants } };
+
+const BASE_TRANSITION = { repeat: Infinity, ease: 'linear' };
+const BASE_ITEM_VARIANTS = { hidden: { opacity: 1 }, visible: { opacity: 1 } };
+
+export function SpinningText({ children, duration = 10, style, className, reverse = false, fontSize = 1, radius = 5, transition, variants }: SpinningTextProps) {
+  const letters = children.split('');
+  const totalLetters = letters.length;
+
+  const finalTransition = { ...BASE_TRANSITION, ...transition, duration: (transition as { duration?: number })?.duration ?? duration };
+  const containerVariants = { visible: { rotate: reverse ? -360 : 360 }, ...variants?.container };
+  const itemVariants = { ...BASE_ITEM_VARIANTS, ...variants?.item };
+
+  return (
+    <motion.div className={cn('relative', className)} style={{ ...style }} initial='hidden' animate='visible' variants={containerVariants} transition={finalTransition}>
+      {letters.map((letter, index) => (
+        <motion.span aria-hidden='true' key={`${index}-${letter}`} variants={itemVariants} className='absolute left-1/2 top-1/2 inline-block'
+          style={{ '--index': index, '--total': totalLetters, '--font-size': fontSize, '--radius': radius, fontSize: `calc(var(--font-size, 2) * 1rem)`,
+            transform: `translate(-50%, -50%) rotate(calc(360deg / var(--total) * var(--index))) translateY(calc(var(--radius, 5) * -1ch))`, transformOrigin: 'center' } as React.CSSProperties}>
+          {letter}
+        </motion.span>
+      ))}
+      <span className='sr-only'>{children}</span>
+    </motion.div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### text-shimmer (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-shimmer
+
+Animated shimmer effect for text.
+
+```tsx
+'use client';
+import React, { useMemo, type JSX } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+interface TextShimmerProps { children: string; as?: React.ElementType; className?: string; duration?: number; spread?: number }
+
+export function TextShimmer({ children, as: Component = 'p', className, duration = 2, spread = 2 }: TextShimmerProps) {
+  const MotionComponent = motion(Component as keyof JSX.IntrinsicElements);
+  const dynamicSpread = useMemo(() => children.length * spread, [children, spread]);
+
+  return (
+    <MotionComponent
+      className={cn(
+        'relative inline-block bg-[length:250%_100%,auto] bg-clip-text',
+        'text-transparent [--base-color:#a1a1aa] [--base-gradient-color:#000]',
+        '[--bg:linear-gradient(90deg,#0000_calc(50%-var(--spread)),var(--base-gradient-color),#0000_calc(50%+var(--spread)))] [background-repeat:no-repeat,padding-box]',
+        'dark:[--base-color:#71717a] dark:[--base-gradient-color:#ffffff]',
+        className
+      )}
+      initial={{ backgroundPosition: '100% center' }} animate={{ backgroundPosition: '0% center' }}
+      transition={{ repeat: Infinity, duration, ease: 'linear' }}
+      style={{ '--spread': `${dynamicSpread}px`, backgroundImage: `var(--bg), linear-gradient(var(--base-color), var(--base-color))` } as React.CSSProperties}>
+      {children}
+    </MotionComponent>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### infinite-slider (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/infinite-slider
+
+Infinite scrolling slider with hover speed control.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { useMotionValue, animate, motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import useMeasure from 'react-use-measure';
+
+type InfiniteSliderProps = { children: React.ReactNode; gap?: number; duration?: number; durationOnHover?: number; direction?: 'horizontal' | 'vertical'; reverse?: boolean; className?: string };
+
+export function InfiniteSlider({ children, gap = 16, duration = 25, durationOnHover, direction = 'horizontal', reverse = false, className }: InfiniteSliderProps) {
+  const [currentDuration, setCurrentDuration] = useState(duration);
+  const [ref, { width, height }] = useMeasure();
+  const translation = useMotionValue(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [key, setKey] = useState(0);
+
+  useEffect(() => {
+    let controls;
+    const size = direction === 'horizontal' ? width : height;
+    const contentSize = size + gap;
+    const from = reverse ? -contentSize / 2 : 0;
+    const to = reverse ? 0 : -contentSize / 2;
+
+    if (isTransitioning) {
+      controls = animate(translation, [translation.get(), to], {
+        ease: 'linear', duration: currentDuration * Math.abs((translation.get() - to) / contentSize),
+        onComplete: () => { setIsTransitioning(false); setKey((prevKey) => prevKey + 1); }
+      });
+    } else {
+      controls = animate(translation, [from, to], {
+        ease: 'linear', duration: currentDuration, repeat: Infinity, repeatType: 'loop', repeatDelay: 0,
+        onRepeat: () => translation.set(from)
+      });
+    }
+    return controls?.stop;
+  }, [key, translation, currentDuration, width, height, gap, isTransitioning, direction, reverse]);
+
+  const hoverProps = durationOnHover ? {
+    onHoverStart: () => { setIsTransitioning(true); setCurrentDuration(durationOnHover); },
+    onHoverEnd: () => { setIsTransitioning(true); setCurrentDuration(duration); }
+  } : {};
+
+  return (
+    <div className={cn('overflow-hidden', className)}>
+      <motion.div className='flex w-max' style={{ ...(direction === 'horizontal' ? { x: translation } : { y: translation }), gap: `${gap}px`, flexDirection: direction === 'horizontal' ? 'row' : 'column' }} ref={ref} {...hoverProps}>
+        {children}
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `react-use-measure`, `@/lib/utils`
+
+---
+
+### text-morph (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-morph
+
+Smooth morphing animation between text values.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useMemo, useId } from 'react';
+
+type TextMorphProps = { children: string; as?: React.ElementType; className?: string; style?: React.CSSProperties };
+
+export function TextMorph({ children, as: Component = 'p', className, style }: TextMorphProps) {
+  const uniqueId = useId();
+
+  const characters = useMemo(() => {
+    const charCounts: Record<string, number> = {};
+    return children.split('').map((char, index) => {
+      const lowerChar = char.toLowerCase();
+      charCounts[lowerChar] = (charCounts[lowerChar] || 0) + 1;
+      return { id: `${uniqueId}-${lowerChar}${charCounts[lowerChar]}`, label: index === 0 ? char.toUpperCase() : lowerChar };
+    });
+  }, [children, uniqueId]);
+
+  return (
+    <Component className={cn(className)} aria-label={children} style={style}>
+      <AnimatePresence mode='popLayout' initial={false}>
+        {characters.map((character) => (
+          <motion.span key={character.id} layoutId={character.id} className='inline-block' aria-hidden='true'
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 18, mass: 0.3 }}>
+            {character.label}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </Component>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### text-loop (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-loop
+
+Cycling text loop with configurable interval.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence, Transition, Variants } from 'framer-motion';
+import { useState, useEffect, Children } from 'react';
+
+type TextLoopProps = { children: React.ReactNode[]; className?: string; interval?: number; transition?: Transition; variants?: Variants; onIndexChange?: (index: number) => void };
+
+export function TextLoop({ children, className, interval = 2, transition = { duration: 0.3 }, variants, onIndexChange }: TextLoopProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const items = Children.toArray(children);
+
+  useEffect(() => {
+    const intervalMs = interval * 1000;
+    const timer = setInterval(() => {
+      setCurrentIndex((current) => { const next = (current + 1) % items.length; onIndexChange?.(next); return next; });
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [items.length, interval, onIndexChange]);
+
+  const motionVariants: Variants = { initial: { y: 20, opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: -20, opacity: 0 } };
+
+  return (
+    <div className={cn('relative inline-block whitespace-nowrap', className)}>
+      <AnimatePresence mode='popLayout' initial={false}>
+        <motion.div key={currentIndex} initial='initial' animate='animate' exit='exit' transition={transition} variants={variants || motionVariants}>
+          {items[currentIndex]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### text-roll (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-roll
+
+3D rolling text animation.
+
+```tsx
+'use client';
+import { motion, VariantLabels, Target, TargetAndTransition, Transition } from 'motion/react';
+
+export type TextRollProps = { children: string; duration?: number; getEnterDelay?: (index: number) => number; getExitDelay?: (index: number) => number; className?: string; transition?: Transition; variants?: { enter: { initial: Target | VariantLabels | boolean; animate: TargetAndTransition | VariantLabels }; exit: { initial: Target | VariantLabels | boolean; animate: TargetAndTransition | VariantLabels } }; onAnimationComplete?: () => void };
+
+export function TextRoll({ children, duration = 0.5, getEnterDelay = (i) => i * 0.1, getExitDelay = (i) => i * 0.1 + 0.2, className, transition = { ease: 'easeIn' }, variants, onAnimationComplete }: TextRollProps) {
+  const defaultVariants = { enter: { initial: { rotateX: 0 }, animate: { rotateX: 90 } }, exit: { initial: { rotateX: 90 }, animate: { rotateX: 0 } } } as const;
+  const letters = children.split('');
+
+  return (
+    <span className={className}>
+      {letters.map((letter, i) => (
+        <span key={i} className='relative inline-block [perspective:10000px] [transform-style:preserve-3d] [width:auto]' aria-hidden='true'>
+          <motion.span className='absolute inline-block [backface-visibility:hidden] [transform-origin:50%_25%]'
+            initial={variants?.enter?.initial ?? defaultVariants.enter.initial} animate={variants?.enter?.animate ?? defaultVariants.enter.animate}
+            transition={{ ...transition, duration, delay: getEnterDelay(i) }}>
+            {letter === ' ' ? '\u00A0' : letter}
+          </motion.span>
+          <motion.span className='absolute inline-block [backface-visibility:hidden] [transform-origin:50%_100%]'
+            initial={variants?.exit?.initial ?? defaultVariants.exit.initial} animate={variants?.exit?.animate ?? defaultVariants.exit.animate}
+            transition={{ ...transition, duration, delay: getExitDelay(i) }} onAnimationComplete={letters.length === i + 1 ? onAnimationComplete : undefined}>
+            {letter === ' ' ? '\u00A0' : letter}
+          </motion.span>
+          <span className='invisible'>{letter === ' ' ? '\u00A0' : letter}</span>
+        </span>
+      ))}
+      <span className='sr-only'>{children}</span>
+    </span>
+  );
+}
+```
+
+**Dependencies:** `motion`
+
+---
+
+### text-scramble (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-scramble
+
+Text scramble/decode animation effect.
+
+```tsx
+'use client';
+import { type JSX, useEffect, useState } from 'react';
+import { motion, MotionProps } from 'framer-motion';
+
+type TextScrambleProps = { children: string; duration?: number; speed?: number; characterSet?: string; as?: React.ElementType; className?: string; trigger?: boolean; onScrambleComplete?: () => void } & MotionProps;
+
+const defaultChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+export function TextScramble({ children, duration = 0.8, speed = 0.04, characterSet = defaultChars, className, as: Component = 'p', trigger = true, onScrambleComplete, ...props }: TextScrambleProps) {
+  const MotionComponent = motion.create(Component as keyof JSX.IntrinsicElements);
+  const [displayText, setDisplayText] = useState(children);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const text = children;
+
+  const scramble = async () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    const steps = duration / speed;
+    let step = 0;
+
+    const interval = setInterval(() => {
+      let scrambled = '';
+      const progress = step / steps;
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === ' ') { scrambled += ' '; continue; }
+        if (progress * text.length > i) scrambled += text[i];
+        else scrambled += characterSet[Math.floor(Math.random() * characterSet.length)];
+      }
+      setDisplayText(scrambled);
+      step++;
+      if (step > steps) { clearInterval(interval); setDisplayText(text); setIsAnimating(false); onScrambleComplete?.(); }
+    }, speed * 1000);
+  };
+
+  useEffect(() => { if (!trigger) return; scramble(); }, [trigger]);
+
+  return <MotionComponent className={className} {...props}>{displayText}</MotionComponent>;
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### carousel (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/carousel
+
+Draggable carousel with navigation and indicators.
+
+```tsx
+'use client';
+import { Children, ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
+import { motion, Transition, useMotionValue } from 'motion/react';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+export type CarouselContextType = { index: number; setIndex: (newIndex: number) => void; itemsCount: number; setItemsCount: (newItemsCount: number) => void; disableDrag: boolean };
+const CarouselContext = createContext<CarouselContextType | undefined>(undefined);
+function useCarousel() { const context = useContext(CarouselContext); if (!context) throw new Error('useCarousel must be used within an CarouselProvider'); return context; }
+
+function CarouselProvider({ children, initialIndex = 0, onIndexChange, disableDrag = false }: { children: ReactNode; initialIndex?: number; onIndexChange?: (newIndex: number) => void; disableDrag?: boolean }) {
+  const [index, setIndex] = useState<number>(initialIndex);
+  const [itemsCount, setItemsCount] = useState<number>(0);
+  const handleSetIndex = (newIndex: number) => { setIndex(newIndex); onIndexChange?.(newIndex); };
+  useEffect(() => { setIndex(initialIndex); }, [initialIndex]);
+  return <CarouselContext.Provider value={{ index, setIndex: handleSetIndex, itemsCount, setItemsCount, disableDrag }}>{children}</CarouselContext.Provider>;
+}
+
+function Carousel({ children, className, initialIndex = 0, index: externalIndex, onIndexChange, disableDrag = false }: { children: ReactNode; className?: string; initialIndex?: number; index?: number; onIndexChange?: (newIndex: number) => void; disableDrag?: boolean }) {
+  const [internalIndex, setInternalIndex] = useState<number>(initialIndex);
+  const isControlled = externalIndex !== undefined;
+  const currentIndex = isControlled ? externalIndex : internalIndex;
+  const handleIndexChange = (newIndex: number) => { if (!isControlled) setInternalIndex(newIndex); onIndexChange?.(newIndex); };
+  return <CarouselProvider initialIndex={currentIndex} onIndexChange={handleIndexChange} disableDrag={disableDrag}><div className={cn('group/hover relative', className)}><div className='overflow-hidden'>{children}</div></div></CarouselProvider>;
+}
+
+function CarouselNavigation({ className, classNameButton, alwaysShow }: { className?: string; classNameButton?: string; alwaysShow?: boolean }) {
+  const { index, setIndex, itemsCount } = useCarousel();
+  return (
+    <div className={cn('pointer-events-none absolute left-[-12.5%] top-1/2 flex w-[125%] -translate-y-1/2 justify-between px-2', className)}>
+      <button type='button' aria-label='Previous slide' className={cn('pointer-events-auto h-fit w-fit rounded-full bg-zinc-50 p-2 transition-opacity duration-300 dark:bg-zinc-950', alwaysShow ? 'opacity-100' : 'opacity-0 group-hover/hover:opacity-100', alwaysShow ? 'disabled:opacity-40' : 'group-hover/hover:disabled:opacity-40', classNameButton)} disabled={index === 0} onClick={() => { if (index > 0) setIndex(index - 1); }}><ChevronLeft className='stroke-zinc-600 dark:stroke-zinc-50' size={16} /></button>
+      <button type='button' className={cn('pointer-events-auto h-fit w-fit rounded-full bg-zinc-50 p-2 transition-opacity duration-300 dark:bg-zinc-950', alwaysShow ? 'opacity-100' : 'opacity-0 group-hover/hover:opacity-100', alwaysShow ? 'disabled:opacity-40' : 'group-hover/hover:disabled:opacity-40', classNameButton)} aria-label='Next slide' disabled={index + 1 === itemsCount} onClick={() => { if (index < itemsCount - 1) setIndex(index + 1); }}><ChevronRight className='stroke-zinc-600 dark:stroke-zinc-50' size={16} /></button>
+    </div>
+  );
+}
+
+function CarouselIndicator({ className, classNameButton }: { className?: string; classNameButton?: string }) {
+  const { index, itemsCount, setIndex } = useCarousel();
+  return (
+    <div className={cn('absolute bottom-0 z-10 flex w-full items-center justify-center', className)}>
+      <div className='flex space-x-2'>
+        {Array.from({ length: itemsCount }, (_, i) => (
+          <button key={i} type='button' aria-label={`Go to slide ${i + 1}`} onClick={() => setIndex(i)}
+            className={cn('h-2 w-2 rounded-full transition-opacity duration-300', index === i ? 'bg-zinc-950 dark:bg-zinc-50' : 'bg-zinc-900/50 dark:bg-zinc-100/50', classNameButton)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselContent({ children, className, transition }: { children: ReactNode; className?: string; transition?: Transition }) {
+  const { index, setIndex, setItemsCount, disableDrag } = useCarousel();
+  const [visibleItemsCount, setVisibleItemsCount] = useState(1);
+  const dragX = useMotionValue(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemsLength = Children.count(children);
+
+  useEffect(() => { if (!itemsLength) return; setItemsCount(itemsLength); }, [itemsLength, setItemsCount]);
+
+  const onDragEnd = () => { const x = dragX.get(); if (x <= -10 && index < itemsLength - 1) setIndex(index + 1); else if (x >= 10 && index > 0) setIndex(index - 1); };
+
+  return (
+    <motion.div drag={disableDrag ? false : 'x'} dragConstraints={disableDrag ? undefined : { left: 0, right: 0 }} dragMomentum={disableDrag ? undefined : false}
+      style={{ x: disableDrag ? undefined : dragX }} animate={{ translateX: `-${index * (100 / visibleItemsCount)}%` }} onDragEnd={disableDrag ? undefined : onDragEnd}
+      transition={transition || { damping: 18, stiffness: 90, type: 'spring', duration: 0.2 }}
+      className={cn('flex items-center', !disableDrag && 'cursor-grab active:cursor-grabbing', className)} ref={containerRef}>
+      {children}
+    </motion.div>
+  );
+}
+
+function CarouselItem({ children, className }: { children: ReactNode; className?: string }) {
+  return <motion.div className={cn('w-full min-w-0 shrink-0 grow-0 overflow-hidden', className)}>{children}</motion.div>;
+}
+
+export { Carousel, CarouselContent, CarouselNavigation, CarouselIndicator, CarouselItem, useCarousel };
+```
+
+**Dependencies:** `motion`, `lucide-react`, `@/lib/utils`
+
+---
+
+### popover (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/popover
+
+Animated popover with form support.
+
+```tsx
+'use client';
+import useClickOutside from '@/hooks/use-click-outside';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { ArrowLeftIcon } from 'lucide-react';
+import { useRef, useState, useEffect, useId } from 'react';
+
+const TRANSITION = { type: 'spring', bounce: 0.05, duration: 0.3 };
+
+function Popover() {
+  const uniqueId = useId();
+  const formContainerRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [note, setNote] = useState<null | string>(null);
+
+  const openMenu = () => setIsOpen(true);
+  const closeMenu = () => { setIsOpen(false); setNote(null); };
+
+  useClickOutside(formContainerRef, () => closeMenu());
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeMenu(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return (
+    <MotionConfig transition={TRANSITION}>
+      <div className='relative flex items-center justify-center'>
+        <motion.button key='button' layoutId={`popover-${uniqueId}`} className='flex h-9 items-center border border-zinc-950/10 bg-white px-3 text-zinc-950 dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50' style={{ borderRadius: 8 }} onClick={openMenu}>
+          <motion.span layoutId={`popover-label-${uniqueId}`} className='text-sm'>Add Note</motion.span>
+        </motion.button>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div ref={formContainerRef} layoutId={`popover-${uniqueId}`} className='absolute h-[200px] w-[364px] overflow-hidden border border-zinc-950/10 bg-white outline-none dark:bg-zinc-700' style={{ borderRadius: 12 }}>
+              <form className='flex h-full flex-col' onSubmit={(e) => e.preventDefault()}>
+                <motion.span layoutId={`popover-label-${uniqueId}`} aria-hidden='true' style={{ opacity: note ? 0 : 1 }} className='absolute left-4 top-3 select-none text-sm text-zinc-500 dark:text-zinc-400'>Add Note</motion.span>
+                <textarea className='h-full w-full resize-none rounded-md bg-transparent px-4 py-3 text-sm outline-none' autoFocus onChange={(e) => setNote(e.target.value)} />
+                <div key='close' className='flex justify-between px-4 py-3'>
+                  <button type='button' className='flex items-center' onClick={closeMenu} aria-label='Close popover'><ArrowLeftIcon size={16} className='text-zinc-900 dark:text-zinc-100' /></button>
+                  <button className='relative ml-1 flex h-8 shrink-0 scale-100 select-none appearance-none items-center justify-center rounded-lg border border-zinc-950/10 bg-transparent px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 focus-visible:ring-2 active:scale-[0.98] dark:border-zinc-50/10 dark:text-zinc-50 dark:hover:bg-zinc-800' type='submit' aria-label='Submit note' onClick={() => closeMenu()}>Submit Note</button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </MotionConfig>
+  );
+}
+
+export { Popover };
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`, `@/hooks/use-click-outside`
+
+---
+
+### sparkles (Aceternity)
+**Source:** https://21st.dev/r/aceternity/sparkles
+
+Particle-based sparkles background effect.
+
+```tsx
+"use client";
+import React, { useId, useEffect, useState } from "react";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import type { Container } from "@tsparticles/engine";
+import { loadSlim } from "@tsparticles/slim";
+import { cn } from "@/lib/utils";
+import { motion, useAnimation } from "framer-motion";
+
+type ParticlesProps = { id?: string; className?: string; background?: string; particleSize?: number; minSize?: number; maxSize?: number; speed?: number; particleColor?: string; particleDensity?: number };
+
+export const SparklesCore = (props: ParticlesProps) => {
+  const { id, className, background, minSize, maxSize, speed, particleColor, particleDensity } = props;
+  const [init, setInit] = useState(false);
+  useEffect(() => { initParticlesEngine(async (engine) => { await loadSlim(engine); }).then(() => setInit(true)); }, []);
+  const controls = useAnimation();
+  const particlesLoaded = async (container?: Container) => { if (container) controls.start({ opacity: 1, transition: { duration: 1 } }); };
+  const generatedId = useId();
+
+  return (
+    <motion.div animate={controls} className={cn("opacity-0", className)}>
+      {init && <Particles id={id || generatedId} className={cn("h-full w-full")} particlesLoaded={particlesLoaded}
+        options={{
+          background: { color: { value: background || "#0d47a1" } },
+          fullScreen: { enable: false, zIndex: 1 }, fpsLimit: 120,
+          interactivity: { events: { onClick: { enable: true, mode: "push" }, onHover: { enable: false, mode: "repulse" }, resize: true as any }, modes: { push: { quantity: 4 }, repulse: { distance: 200, duration: 0.4 } } },
+          particles: {
+            color: { value: particleColor || "#ffffff" },
+            move: { enable: true, direction: "none", outModes: { default: "out" }, random: false, speed: { min: 0.1, max: 1 }, straight: false },
+            number: { density: { enable: true, width: 400, height: 400 }, value: particleDensity || 120 },
+            opacity: { value: { min: 0.1, max: 1 }, animation: { enable: true, speed: speed || 4, sync: false, startValue: "random" } },
+            shape: { type: "circle" },
+            size: { value: { min: minSize || 1, max: maxSize || 3 } }
+          },
+          detectRetina: true
+        }} />}
+    </motion.div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `@tsparticles/slim`, `@tsparticles/react`, `@tsparticles/engine`, `@/lib/utils`
+
+---
+
+### text-generate-effect (Aceternity)
+**Source:** https://21st.dev/r/aceternity/text-generate-effect
+
+Word-by-word text appearing animation.
+
+```tsx
+"use client";
+import { useEffect } from "react";
+import { motion, stagger, useAnimate } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const TextGenerateEffect = ({ words, className, filter = true, duration = 0.5 }: { words: string; className?: string; filter?: boolean; duration?: number }) => {
+  const [scope, animate] = useAnimate();
+  let wordsArray = words.split(" ");
+
+  useEffect(() => {
+    animate("span", { opacity: 1, filter: filter ? "blur(0px)" : "none" }, { duration: duration ? duration : 1, delay: stagger(0.2) });
+  }, [scope.current]);
+
+  const renderWords = () => (
+    <motion.div ref={scope}>
+      {wordsArray.map((word, idx) => (
+        <motion.span key={word + idx} className="dark:text-white text-black opacity-0" style={{ filter: filter ? "blur(10px)" : "none" }}>
+          {word}{" "}
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+
+  return (
+    <div className={cn("font-bold", className)}>
+      <div className="mt-4"><div className="dark:text-white text-black text-2xl leading-snug tracking-wide">{renderWords()}</div></div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### vortex (Aceternity)
+**Source:** https://21st.dev/r/aceternity/vortex
+
+Animated particle vortex background with canvas.
+
+```tsx
+import { cn } from "@/lib/utils";
+import React, { useEffect, useRef } from "react";
+import { createNoise3D } from "simplex-noise";
+import { motion } from "framer-motion";
+
+interface VortexProps { children?: any; className?: string; containerClassName?: string; particleCount?: number; rangeY?: number; baseHue?: number; baseSpeed?: number; rangeSpeed?: number; baseRadius?: number; rangeRadius?: number; backgroundColor?: string }
+
+export const Vortex = (props: VortexProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef(null);
+  const particleCount = props.particleCount || 700;
+  const particlePropCount = 9;
+  const particlePropsLength = particleCount * particlePropCount;
+  const rangeY = props.rangeY || 100;
+  const baseTTL = 50, rangeTTL = 150;
+  const baseSpeed = props.baseSpeed || 0.0, rangeSpeed = props.rangeSpeed || 1.5;
+  const baseRadius = props.baseRadius || 1, rangeRadius = props.rangeRadius || 2;
+  const baseHue = props.baseHue || 220, rangeHue = 100;
+  const noiseSteps = 3, xOff = 0.00125, yOff = 0.00125, zOff = 0.0005;
+  const backgroundColor = props.backgroundColor || "#000000";
+  let tick = 0;
+  const noise3D = createNoise3D();
+  let particleProps = new Float32Array(particlePropsLength);
+  let center: [number, number] = [0, 0];
+
+  const TAU: number = 2 * Math.PI;
+  const rand = (n: number): number => n * Math.random();
+  const randRange = (n: number): number => n - rand(2 * n);
+  const fadeInOut = (t: number, m: number): number => { let hm = 0.5 * m; return Math.abs(((t + hm) % m) - hm) / hm; };
+  const lerp = (n1: number, n2: number, speed: number): number => (1 - speed) * n1 + speed * n2;
+
+  // ... simplified for brevity, full implementation adds particle physics and canvas rendering
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; center = [0.5 * canvas.width, 0.5 * canvas.height]; }
+    }
+  }, []);
+
+  return (
+    <div className={cn("relative h-full w-full", props.containerClassName)}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} ref={containerRef} className="absolute h-full w-full inset-0 z-0 bg-transparent flex items-center justify-center">
+        <canvas ref={canvasRef}></canvas>
+      </motion.div>
+      <div className={cn("relative z-10", props.className)}>{props.children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `simplex-noise`, `@/lib/utils`
+
+---
+
+### link-preview (Aceternity)
+**Source:** https://21st.dev/r/aceternity/link-preview
+
+Hover card with website preview image.
+
+```tsx
+"use client";
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
+import Image from "next/image";
+import { encode } from "qss";
+import React from "react";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+type LinkPreviewProps = { children: React.ReactNode; url: string; className?: string; width?: number; height?: number; quality?: number; layout?: string } & ({ isStatic: true; imageSrc: string } | { isStatic?: false; imageSrc?: never });
+
+export const LinkPreview = ({ children, url, className, width = 200, height = 125, quality = 50, layout = "fixed", isStatic = false, imageSrc = "" }: LinkPreviewProps) => {
+  let src;
+  if (!isStatic) {
+    const params = encode({ url, screenshot: true, meta: false, embed: "screenshot.url", colorScheme: "dark", "viewport.isMobile": true, "viewport.deviceScaleFactor": 1, "viewport.width": width * 3, "viewport.height": height * 3 });
+    src = `https://api.microlink.io/?${params}`;
+  } else { src = imageSrc; }
+
+  const [isOpen, setOpen] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
+  React.useEffect(() => { setIsMounted(true); }, []);
+
+  const springConfig = { stiffness: 100, damping: 15 };
+  const x = useMotionValue(0);
+  const translateX = useSpring(x, springConfig);
+  const handleMouseMove = (event: any) => { const targetRect = event.target.getBoundingClientRect(); const eventOffsetX = event.clientX - targetRect.left; const offsetFromCenter = (eventOffsetX - targetRect.width / 2) / 2; x.set(offsetFromCenter); };
+
+  return (
+    <>
+      {isMounted && <div className="hidden"><Image src={src} width={width} height={height} quality={quality} priority={true} alt="hidden image" /></div>}
+      <HoverCardPrimitive.Root openDelay={50} closeDelay={100} onOpenChange={(open) => setOpen(open)}>
+        <HoverCardPrimitive.Trigger onMouseMove={handleMouseMove} className={cn("text-black dark:text-white", className)} href={url}>{children}</HoverCardPrimitive.Trigger>
+        <HoverCardPrimitive.Content className="[transform-origin:var(--radix-hover-card-content-transform-origin)]" side="top" align="center" sideOffset={10}>
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div initial={{ opacity: 0, y: 20, scale: 0.6 }} animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 260, damping: 20 } }} exit={{ opacity: 0, y: 20, scale: 0.6 }} className="shadow-xl rounded-xl" style={{ x: translateX }}>
+                <Link href={url} className="block p-1 bg-white border-2 border-transparent shadow rounded-xl hover:border-neutral-200 dark:hover:border-neutral-800" style={{ fontSize: 0 }}>
+                  <Image src={isStatic ? imageSrc : src} width={width} height={height} quality={quality} priority={true} className="rounded-lg" alt="preview image" />
+                </Link>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </HoverCardPrimitive.Content>
+      </HoverCardPrimitive.Root>
+    </>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `qss`, `@radix-ui/react-hover-card`, `next/image`, `next/link`, `@/lib/utils`
+
+---
+
+### images-slider (Aceternity)
+**Source:** https://21st.dev/r/aceternity/images-slider
+
+Fullscreen images slider with 3D transition.
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+
+export const ImagesSlider = ({ images, children, overlay = true, overlayClassName, className, autoplay = true, direction = "up" }: { images: string[]; children: React.ReactNode; overlay?: React.ReactNode; overlayClassName?: string; className?: string; autoplay?: boolean; direction?: "up" | "down" }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<string[]>([]);
+
+  const handleNext = () => setCurrentIndex((prevIndex) => prevIndex + 1 === images.length ? 0 : prevIndex + 1);
+  const handlePrevious = () => setCurrentIndex((prevIndex) => prevIndex - 1 < 0 ? images.length - 1 : prevIndex - 1);
+
+  useEffect(() => {
+    const loadPromises = images.map((image) => new Promise((resolve, reject) => { const img = new Image(); img.src = image; img.onload = () => resolve(image); img.onerror = reject; }));
+    Promise.all(loadPromises).then((loaded) => setLoadedImages(loaded as string[])).catch((error) => console.error("Failed to load images", error));
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === "ArrowRight") handleNext(); else if (event.key === "ArrowLeft") handlePrevious(); };
+    window.addEventListener("keydown", handleKeyDown);
+    let interval: any;
+    if (autoplay) interval = setInterval(() => handleNext(), 5000);
+    return () => { window.removeEventListener("keydown", handleKeyDown); clearInterval(interval); };
+  }, []);
+
+  const slideVariants = {
+    initial: { scale: 0, opacity: 0, rotateX: 45 },
+    visible: { scale: 1, rotateX: 0, opacity: 1, transition: { duration: 0.5, ease: [0.645, 0.045, 0.355, 1.0] } },
+    upExit: { opacity: 1, y: "-150%", transition: { duration: 1 } },
+    downExit: { opacity: 1, y: "150%", transition: { duration: 1 } }
+  };
+
+  const areImagesLoaded = loadedImages.length > 0;
+
+  return (
+    <div className={cn("overflow-hidden h-full w-full relative flex items-center justify-center", className)} style={{ perspective: "1000px" }}>
+      {areImagesLoaded && children}
+      {areImagesLoaded && overlay && <div className={cn("absolute inset-0 bg-black/60 z-40", overlayClassName)} />}
+      {areImagesLoaded && (
+        <AnimatePresence>
+          <motion.img key={currentIndex} src={loadedImages[currentIndex]} initial="initial" animate="visible" exit={direction === "up" ? "upExit" : "downExit"} variants={slideVariants} className="image h-full w-full absolute inset-0 object-cover object-center" />
+        </AnimatePresence>
+      )}
+    </div>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### animated-circular-progress-bar (MagicUI)
+**Source:** https://21st.dev/r/magicui/animated-circular-progress-bar
+
+Animated SVG circular progress bar.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+interface Props { max: number; value: number; min: number; gaugePrimaryColor: string; gaugeSecondaryColor: string; className?: string }
+
+export function AnimatedCircularProgressBar({ max = 100, min = 0, value = 0, gaugePrimaryColor, gaugeSecondaryColor, className }: Props) {
+  const circumference = 2 * Math.PI * 45;
+  const percentPx = circumference / 100;
+  const currentPercent = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className={cn("relative size-40 text-2xl font-semibold", className)}
+      style={{ "--circle-size": "100px", "--circumference": circumference, "--percent-to-px": `${percentPx}px`, "--gap-percent": "5", "--offset-factor": "0", "--transition-length": "1s", "--transition-step": "200ms", "--delay": "0s", "--percent-to-deg": "3.6deg", transform: "translateZ(0)" } as React.CSSProperties}>
+      <svg fill="none" className="size-full" strokeWidth="2" viewBox="0 0 100 100">
+        {currentPercent <= 90 && currentPercent >= 0 && (
+          <circle cx="50" cy="50" r="45" strokeWidth="10" strokeDashoffset="0" strokeLinecap="round" strokeLinejoin="round" className="opacity-100"
+            style={{ stroke: gaugeSecondaryColor, "--stroke-percent": 90 - currentPercent, "--offset-factor-secondary": "calc(1 - var(--offset-factor))",
+              strokeDasharray: "calc(var(--stroke-percent) * var(--percent-to-px)) var(--circumference)",
+              transform: "rotate(calc(1turn - 90deg - (var(--gap-percent) * var(--percent-to-deg) * var(--offset-factor-secondary)))) scaleY(-1)",
+              transition: "all var(--transition-length) ease var(--delay)", transformOrigin: "calc(var(--circle-size) / 2) calc(var(--circle-size) / 2)" } as React.CSSProperties} />
+        )}
+        <circle cx="50" cy="50" r="45" strokeWidth="10" strokeDashoffset="0" strokeLinecap="round" strokeLinejoin="round" className="opacity-100"
+          style={{ stroke: gaugePrimaryColor, "--stroke-percent": currentPercent, strokeDasharray: "calc(var(--stroke-percent) * var(--percent-to-px)) var(--circumference)",
+            transition: "var(--transition-length) ease var(--delay),stroke var(--transition-length) ease var(--delay)", transitionProperty: "stroke-dasharray,transform",
+            transform: "rotate(calc(-90deg + var(--gap-percent) * var(--offset-factor) * var(--percent-to-deg)))", transformOrigin: "calc(var(--circle-size) / 2) calc(var(--circle-size) / 2)" } as React.CSSProperties} />
+      </svg>
+      <span data-current-value={currentPercent} className="duration-[var(--transition-length)] delay-[var(--delay)] absolute inset-0 m-auto size-fit ease-linear animate-in fade-in">{currentPercent}</span>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### scratch-to-reveal (MagicUI)
+**Source:** https://21st.dev/r/magicui/scratch-to-reveal
+
+Scratch card effect revealing content beneath.
+
+```tsx
+import { cn } from "@/lib/utils";
+import React, { useRef, useEffect, useState } from "react";
+import { motion, useAnimation } from "framer-motion";
+
+interface ScratchToRevealProps { children: React.ReactNode; width: number; height: number; minScratchPercentage?: number; className?: string; onComplete?: () => void; gradientColors?: [string, string, string] }
+
+const ScratchToReveal: React.FC<ScratchToRevealProps> = ({ width, height, minScratchPercentage = 50, onComplete, children, className, gradientColors = ["#A97CF8", "#F38CB8", "#FDCC92"] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isScratching, setIsScratching] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const controls = useAnimation();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) {
+      ctx.fillStyle = "#ccc"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, gradientColors[0]); gradient.addColorStop(0.5, gradientColors[1]); gradient.addColorStop(1, gradientColors[2]);
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }, [gradientColors]);
+
+  const scratch = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current; const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) {
+      const rect = canvas.getBoundingClientRect(); const x = clientX - rect.left + 16; const y = clientY - rect.top + 16;
+      ctx.globalCompositeOperation = "destination-out"; ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI * 2); ctx.fill();
+    }
+  };
+
+  const checkCompletion = () => {
+    if (isComplete) return;
+    const canvas = canvasRef.current; const ctx = canvas?.getContext("2d");
+    if (canvas && ctx) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height); const pixels = imageData.data;
+      const totalPixels = pixels.length / 4; let clearPixels = 0;
+      for (let i = 3; i < pixels.length; i += 4) { if (pixels[i] === 0) clearPixels++; }
+      const percentage = (clearPixels / totalPixels) * 100;
+      if (percentage >= minScratchPercentage) { setIsComplete(true); ctx.clearRect(0, 0, canvas.width, canvas.height); controls.start({ scale: [1, 1.5, 1], rotate: [0, 10, -10, 10, -10, 0], transition: { duration: 0.5 } }); if (onComplete) onComplete(); }
+    }
+  };
+
+  return (
+    <motion.div className={cn("relative select-none", className)} style={{ width, height, cursor: "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNSIgc3R5bGU9ImZpbGw6I2ZmZjtzdHJva2U6IzAwMDtzdHJva2Utd2lkdGg6MXB4OyIgLz48L3N2Zz4='), auto" }} animate={controls}>
+      <canvas ref={canvasRef} width={width} height={height} className="absolute left-0 top-0" onMouseDown={() => setIsScratching(true)} onTouchStart={() => setIsScratching(true)}></canvas>
+      {children}
+    </motion.div>
+  );
+};
+
+export { ScratchToReveal };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### sparkles-text (MagicUI)
+**Source:** https://21st.dev/r/magicui/sparkles-text
+
+Text with animated sparkle decorations.
+
+```tsx
+"use client";
+
+import { CSSProperties, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface Sparkle { id: string; x: string; y: string; color: string; delay: number; scale: number; lifespan: number }
+interface SparklesTextProps { as?: React.ElementType; className?: string; text: string; sparklesCount?: number; colors?: { first: string; second: string } }
+
+const SparklesText: React.FC<SparklesTextProps> = ({ text, colors = { first: "#9E7AFF", second: "#FE8BBB" }, className, sparklesCount = 10, ...props }) => {
+  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
+
+  useEffect(() => {
+    const generateStar = (): Sparkle => ({ id: `${Math.random()}-${Date.now()}`, x: `${Math.random() * 100}%`, y: `${Math.random() * 100}%`, color: Math.random() > 0.5 ? colors.first : colors.second, delay: Math.random() * 2, scale: Math.random() * 1 + 0.3, lifespan: Math.random() * 10 + 5 });
+    const newSparkles = Array.from({ length: sparklesCount }, generateStar);
+    setSparkles(newSparkles);
+    const interval = setInterval(() => { setSparkles(current => current.map(star => star.lifespan <= 0 ? generateStar() : { ...star, lifespan: star.lifespan - 0.1 })); }, 100);
+    return () => clearInterval(interval);
+  }, [colors.first, colors.second]);
+
+  return (
+    <div className={cn("text-6xl font-bold", className)} {...props} style={{ "--sparkles-first-color": colors.first, "--sparkles-second-color": colors.second } as CSSProperties}>
+      <span className="relative inline-block">
+        {sparkles.map((sparkle) => <motion.svg key={sparkle.id} className="pointer-events-none absolute z-20" initial={{ opacity: 0, left: sparkle.x, top: sparkle.y }} animate={{ opacity: [0, 1, 0], scale: [0, sparkle.scale, 0], rotate: [75, 120, 150] }} transition={{ duration: 0.8, repeat: Infinity, delay: sparkle.delay }} width="21" height="21" viewBox="0 0 21 21"><path d="M9.82531 0.843845C10.0553 0.215178 10.9446 0.215178 11.1746 0.843845L11.8618 2.72026C12.4006 4.19229 12.3916 6.39157 13.5 7.5C14.6084 8.60843 16.8077 8.59935 18.2797 9.13822L20.1561 9.82534C20.7858 10.0553 20.7858 10.9447 20.1561 11.1747L18.2797 11.8618C16.8077 12.4007 14.6084 12.3916 13.5 13.5C12.3916 14.6084 12.4006 16.8077 11.8618 18.2798L11.1746 20.1562C10.9446 20.7858 10.0553 20.7858 9.82531 20.1562L9.13819 18.2798C8.59932 16.8077 8.60843 14.6084 7.5 13.5C6.39157 12.3916 4.19225 12.4007 2.72023 11.8618L0.843814 11.1747C0.215148 10.9447 0.215148 10.0553 0.843814 9.82534L2.72023 9.13822C4.19225 8.59935 6.39157 8.60843 7.5 7.5C8.60843 6.39157 8.59932 4.19229 9.13819 2.72026L9.82531 0.843845Z" fill={sparkle.color} /></motion.svg>)}
+        <strong>{text}</strong>
+      </span>
+    </div>
+  );
+};
+
+export { SparklesText };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### text-reveal (MagicUI)
+**Source:** https://21st.dev/r/magicui/text-reveal
+
+Scroll-triggered word reveal animation.
+
+```tsx
+"use client";
+
+import { FC, ReactNode, useRef } from "react";
+import { motion, MotionValue, useScroll, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface TextRevealByWordProps { text: string; className?: string }
+
+const TextRevealByWord: FC<TextRevealByWordProps> = ({ text, className }) => {
+  const targetRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({ target: targetRef });
+  const words = text.split(" ");
+
+  return (
+    <div ref={targetRef} className={cn("relative z-0 h-[200vh]", className)}>
+      <div className={"sticky top-0 mx-auto flex h-[50%] max-w-4xl items-center bg-transparent px-[1rem] py-[5rem]"}>
+        <p ref={targetRef} className={"flex flex-wrap p-5 text-2xl font-bold text-black/20 dark:text-white/20 md:p-8 md:text-3xl lg:p-10 lg:text-4xl xl:text-5xl"}>
+          {words.map((word, i) => { const start = i / words.length; const end = start + 1 / words.length; return <Word key={i} progress={scrollYProgress} range={[start, end]}>{word}</Word>; })}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const Word: FC<{ children: ReactNode; progress: MotionValue<number>; range: [number, number] }> = ({ children, progress, range }) => {
+  const opacity = useTransform(progress, range, [0, 1]);
+  return (
+    <span className="xl:lg-3 relative mx-1 lg:mx-2.5">
+      <span className={"absolute opacity-30"}>{children}</span>
+      <motion.span style={{ opacity: opacity }} className={"text-black dark:text-white"}>{children}</motion.span>
+    </span>
+  );
+};
+
+export { TextRevealByWord };
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### morphing-text (MagicUI)
+**Source:** https://21st.dev/r/magicui/morphing-text
+
+Smooth blur-morphing text animation between words.
+
+```tsx
+"use client";
+
+import { useCallback, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+
+const morphTime = 1.5;
+const cooldownTime = 0.5;
+
+const useMorphingText = (texts: string[]) => {
+  const textIndexRef = useRef(0);
+  const morphRef = useRef(0);
+  const cooldownRef = useRef(0);
+  const timeRef = useRef(new Date());
+  const text1Ref = useRef<HTMLSpanElement>(null);
+  const text2Ref = useRef<HTMLSpanElement>(null);
+
+  const setStyles = useCallback((fraction: number) => {
+    const [current1, current2] = [text1Ref.current, text2Ref.current];
+    if (!current1 || !current2) return;
+    current2.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`;
+    current2.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`;
+    const invertedFraction = 1 - fraction;
+    current1.style.filter = `blur(${Math.min(8 / invertedFraction - 8, 100)}px)`;
+    current1.style.opacity = `${Math.pow(invertedFraction, 0.4) * 100}%`;
+    current1.textContent = texts[textIndexRef.current % texts.length];
+    current2.textContent = texts[(textIndexRef.current + 1) % texts.length];
+  }, [texts]);
+
+  const doMorph = useCallback(() => {
+    morphRef.current -= cooldownRef.current;
+    cooldownRef.current = 0;
+    let fraction = morphRef.current / morphTime;
+    if (fraction > 1) { cooldownRef.current = cooldownTime; fraction = 1; }
+    setStyles(fraction);
+    if (fraction === 1) textIndexRef.current++;
+  }, [setStyles]);
+
+  const doCooldown = useCallback(() => {
+    morphRef.current = 0;
+    const [current1, current2] = [text1Ref.current, text2Ref.current];
+    if (current1 && current2) { current2.style.filter = "none"; current2.style.opacity = "100%"; current1.style.filter = "none"; current1.style.opacity = "0%"; }
+  }, []);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+      const newTime = new Date();
+      const dt = (newTime.getTime() - timeRef.current.getTime()) / 1000;
+      timeRef.current = newTime;
+      cooldownRef.current -= dt;
+      if (cooldownRef.current <= 0) doMorph(); else doCooldown();
+    };
+    animate();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [doMorph, doCooldown]);
+
+  return { text1Ref, text2Ref };
+};
+
+const MorphingText: React.FC<{ texts: string[]; className?: string }> = ({ texts, className }) => {
+  const { text1Ref, text2Ref } = useMorphingText(texts);
+  return (
+    <div className={cn("relative mx-auto h-16 w-full max-w-screen-md text-center font-sans text-[40pt] font-bold leading-none [filter:url(#threshold)_blur(0.6px)] md:h-24 lg:text-[6rem]", className)}>
+      <span className="absolute inset-x-0 top-0 m-auto inline-block w-full" ref={text1Ref} />
+      <span className="absolute inset-x-0 top-0 m-auto inline-block w-full" ref={text2Ref} />
+      <svg id="filters" className="hidden" preserveAspectRatio="xMidYMid slice"><defs><filter id="threshold"><feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 255 -140" /></filter></defs></svg>
+    </div>
+  );
+};
+
+export { MorphingText };
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### animated-shiny-text (MagicUI)
+**Source:** https://21st.dev/r/magicui/animated-shiny-text
+
+Text with animated shiny/shimmer effect.
+
+```tsx
+import { CSSProperties, FC, ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+interface AnimatedShinyTextProps { children: ReactNode; className?: string; shimmerWidth?: number }
+
+const AnimatedShinyText: FC<AnimatedShinyTextProps> = ({ children, className, shimmerWidth = 100 }) => {
+  return (
+    <p style={{ "--shiny-width": `${shimmerWidth}px` } as CSSProperties}
+      className={cn(
+        "mx-auto max-w-md text-neutral-600/70 dark:text-neutral-400/70",
+        "animate-shiny-text bg-clip-text bg-no-repeat [background-position:0_0] [background-size:var(--shiny-width)_100%] [transition:background-position_1s_cubic-bezier(.6,.6,0,1)_infinite]",
+        "bg-gradient-to-r from-transparent via-black/80 via-50% to-transparent dark:via-white/80",
+        className
+      )}>
+      {children}
+    </p>
+  );
+};
+
+export { AnimatedShinyText };
+```
+
+**Dependencies:** `@/lib/utils`
+
+**Tailwind Config:**
+```js
+module.exports = {
+  theme: {
+    extend: {
+      animation: { "shiny-text": "shiny-text 8s infinite" },
+      keyframes: {
+        "shiny-text": {
+          "0%, 90%, 100%": { "background-position": "calc(-100% - var(--shiny-width)) 0" },
+          "30%, 60%": { "background-position": "calc(100% + var(--shiny-width)) 0" }
+        }
+      }
+    }
+  }
+};
+```
+
+---
+
+### magic-card (MagicUI)
+**Source:** https://21st.dev/r/magicui/magic-card
+
+Card with mouse-following gradient spotlight.
+
+```tsx
+"use client"
+
+import React, { useCallback, useEffect } from "react"
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export interface MagicCardProps extends React.HTMLAttributes<HTMLDivElement> { gradientSize?: number; gradientColor?: string; gradientOpacity?: number }
+
+export function MagicCard({ children, className, gradientSize = 200, gradientColor = "#262626", gradientOpacity = 0.8 }: MagicCardProps) {
+  const mouseX = useMotionValue(-gradientSize)
+  const mouseY = useMotionValue(-gradientSize)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top } = e.currentTarget.getBoundingClientRect()
+    mouseX.set(e.clientX - left)
+    mouseY.set(e.clientY - top)
+  }, [mouseX, mouseY])
+
+  const handleMouseLeave = useCallback(() => { mouseX.set(-gradientSize); mouseY.set(-gradientSize) }, [mouseX, mouseY, gradientSize])
+
+  useEffect(() => { mouseX.set(-gradientSize); mouseY.set(-gradientSize) }, [mouseX, mouseY, gradientSize])
+
+  return (
+    <div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}
+      className={cn("group relative flex size-full overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 border text-black dark:text-white", className)}>
+      <div className="relative z-10">{children}</div>
+      <motion.div className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 100%)`, opacity: gradientOpacity }} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### glow-effect (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/glow-effect
+
+Animated glow effect with multiple animation modes.
+
+```tsx
+'use client';
+import { cn } from '@/lib/utils';
+import { motion, Transition } from 'motion/react';
+
+export type GlowEffectProps = { className?: string; style?: React.CSSProperties; colors?: string[]; mode?: 'rotate' | 'pulse' | 'breathe' | 'colorShift' | 'flowHorizontal' | 'static'; blur?: number | 'softest' | 'soft' | 'medium' | 'strong' | 'stronger' | 'strongest' | 'none'; transition?: Transition; scale?: number; duration?: number };
+
+export function GlowEffect({ className, style, colors = ['#FF5733', '#33FF57', '#3357FF', '#F1C40F'], mode = 'rotate', blur = 'medium', transition, scale = 1, duration = 5 }: GlowEffectProps) {
+  const BASE_TRANSITION = { repeat: Infinity, duration: duration, ease: 'linear' };
+
+  const animations = {
+    rotate: {
+      background: [`conic-gradient(from 0deg at 50% 50%, ${colors.join(', ')})`, `conic-gradient(from 360deg at 50% 50%, ${colors.join(', ')})`],
+      transition: { ...(transition ?? BASE_TRANSITION) }
+    },
+    pulse: {
+      background: colors.map((color) => `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 100%)`),
+      scale: [1 * scale, 1.1 * scale, 1 * scale], opacity: [0.5, 0.8, 0.5],
+      transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) }
+    },
+    breathe: {
+      background: colors.map((color) => `radial-gradient(circle at 50% 50%, ${color} 0%, transparent 100%)`),
+      scale: [1 * scale, 1.05 * scale, 1 * scale],
+      transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) }
+    },
+    colorShift: {
+      background: colors.map((color, index) => { const nextColor = colors[(index + 1) % colors.length]; return `conic-gradient(from 0deg at 50% 50%, ${color} 0%, ${nextColor} 50%, ${color} 100%)`; }),
+      transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) }
+    },
+    flowHorizontal: {
+      background: colors.map((color) => { const nextColor = colors[(colors.indexOf(color) + 1) % colors.length]; return `linear-gradient(to right, ${color}, ${nextColor})`; }),
+      transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) }
+    },
+    static: { background: `linear-gradient(to right, ${colors.join(', ')})` }
+  };
+
+  const getBlurClass = (blur: GlowEffectProps['blur']) => {
+    if (typeof blur === 'number') return `blur-[${blur}px]`;
+    const presets = { softest: 'blur-sm', soft: 'blur', medium: 'blur-md', strong: 'blur-lg', stronger: 'blur-xl', strongest: 'blur-xl', none: 'blur-none' };
+    return presets[blur as keyof typeof presets];
+  };
+
+  return (
+    <motion.div style={{ ...style, '--scale': scale, willChange: 'transform', backfaceVisibility: 'hidden' } as React.CSSProperties} animate={animations[mode]}
+      className={cn('pointer-events-none absolute inset-0 h-full w-full', 'scale-[var(--scale)] transform-gpu', getBlurClass(blur), className)} />
+  );
+}
+```
+
+**Dependencies:** `motion`, `@/lib/utils`
+
+---
