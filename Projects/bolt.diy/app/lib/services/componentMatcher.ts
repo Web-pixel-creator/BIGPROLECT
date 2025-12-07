@@ -645,6 +645,7 @@ export class ComponentMatcher {
       'magicui-components.md',
       'reactbits-components.md',
       '21st-dev-components.md',
+      '21st-dev-components-part2.md',
     ];
 
     for (const file of mdFiles) {
