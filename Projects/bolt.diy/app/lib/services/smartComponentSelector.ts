@@ -50,6 +50,23 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   gaming: { sections: ['hero', 'features', 'gallery', 'cta'], effects: ['glow', 'spotlight'] },
   fitness: { sections: ['hero', 'features', 'pricing', 'cta'], effects: ['slide', 'spotlight'] },
   beauty: { sections: ['hero', 'features', 'gallery', 'cta'], effects: ['glow', 'sparkles'] },
+  architecture: { sections: ['hero', 'projects', 'gallery', 'about', 'contact'], effects: ['parallax', 'spotlight'] },
+  arts: { sections: ['hero', 'gallery', 'events', 'contact'], effects: ['glow', 'sparkles'] },
+  blog: { sections: ['hero', 'blog', 'newsletter', 'about', 'cta'], effects: ['fade', 'slide'] },
+  community: { sections: ['hero', 'mission', 'events', 'faq', 'contact'], effects: ['fade', 'slide'] },
+  documentation: { sections: ['hero', 'docs', 'faq', 'changelog', 'contact'], effects: ['fade'] },
+  environment: { sections: ['hero', 'mission', 'stats', 'projects', 'contact'], effects: ['fade', 'parallax'] },
+  government: { sections: ['hero', 'services', 'news', 'contact'], effects: ['fade', 'slide'] },
+  hr: { sections: ['hero', 'jobs', 'benefits', 'faq', 'cta'], effects: ['slide', 'fade'] },
+  home: { sections: ['hero', 'services', 'gallery', 'testimonials', 'contact'], effects: ['spotlight', 'glow'] },
+  launch: { sections: ['hero', 'countdown', 'roadmap', 'newsletter', 'faq', 'cta'], effects: ['glow', 'sparkles'] },
+  music: { sections: ['hero', 'gallery', 'events', 'cta'], effects: ['glow', 'spotlight'] },
+  personal: { sections: ['hero', 'about', 'blog', 'contact'], effects: ['fade'] },
+  professional: { sections: ['hero', 'services', 'cases', 'testimonials', 'cta'], effects: ['spotlight', 'fade'] },
+  retail: { sections: ['hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  technology: { sections: ['hero', 'features', 'cases', 'cta'], effects: ['sparkles', 'border-beam'] },
+  transportation: { sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'], effects: ['slide', 'spotlight'] },
+  weddings: { sections: ['hero', 'gallery', 'schedule', 'pricing', 'faq', 'contact'], effects: ['glow', 'spotlight'] },
 };
 
 // Lightweight keyword map to help ranking
@@ -75,6 +92,13 @@ const KEYWORDS: Record<string, string[]> = {
   mission: ['mission', 'vision'],
   roadmap: ['roadmap', 'timeline', 'milestone'],
   downloads: ['download', 'resources', 'assets'],
+  docs: ['docs', 'documentation', 'api', 'reference'],
+  news: ['news', 'updates'],
+  newsletter: ['newsletter', 'subscribe'],
+  jobs: ['jobs', 'careers', 'hiring'],
+  benefits: ['benefits', 'perks'],
+  changelog: ['changelog', 'releases'],
+  countdown: ['countdown', 'launch'],
   effects: ['sparkles', 'aurora', 'border', 'glow', 'parallax', 'hover', 'tilt', 'spotlight', 'beam'],
 };
 

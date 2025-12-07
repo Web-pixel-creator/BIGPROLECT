@@ -430,6 +430,27 @@ function inferTheme(text: string): string | undefined {
   if (t.includes('education') || t.includes('school') || t.includes('course')) return 'education';
   if (t.includes('ecommerce') || t.includes('shop') || t.includes('store')) return 'ecommerce';
   if (t.includes('portfolio')) return 'portfolio';
+  if (t.includes('architecture') || t.includes('design')) return 'architecture';
+  if (t.includes('art') || t.includes('entertainment')) return 'arts';
+  if (t.includes('blog') || t.includes('editorial')) return 'blog';
+  if (t.includes('community') || t.includes('nonprofit')) return 'community';
+  if (t.includes('doc') || t.includes('documentation')) return 'documentation';
+  if (t.includes('environment')) return 'environment';
+  if (t.includes('government')) return 'government';
+  if (t.includes('hr') || t.includes('hiring') || t.includes('careers')) return 'hr';
+  if (t.includes('hair') || t.includes('beauty')) return 'beauty';
+  if (t.includes('home service') || t.includes('home repair')) return 'home';
+  if (t.includes('launch') || t.includes('coming soon') || t.includes('countdown')) return 'launch';
+  if (t.includes('medical') || t.includes('clinic') || t.includes('health')) return 'medical';
+  if (t.includes('music') || t.includes('audio')) return 'music';
+  if (t.includes('personal')) return 'personal';
+  if (t.includes('agency') || t.includes('services')) return 'agency';
+  if (t.includes('professional services')) return 'professional';
+  if (t.includes('real estate')) return 'realestate';
+  if (t.includes('retail')) return 'retail';
+  if (t.includes('tech') || t.includes('technology')) return 'technology';
+  if (t.includes('transport')) return 'transportation';
+  if (t.includes('wedding') || t.includes('event')) return 'weddings';
   return undefined;
 }
 
@@ -444,9 +465,14 @@ function inferSections(text: string): string[] | undefined {
   if (t.includes('features') || t.includes('services')) sections.push('features');
   if (t.includes('contact') || t.includes('form')) sections.push('contact');
   if (t.includes('gallery') || t.includes('cases') || t.includes('case')) sections.push('gallery', 'cases');
-   if (t.includes('blog') || t.includes('article')) sections.push('blog');
-   if (t.includes('team') || t.includes('about')) sections.push('team', 'about');
-   if (t.includes('roadmap') || t.includes('timeline')) sections.push('roadmap');
+  if (t.includes('blog') || t.includes('article')) sections.push('blog');
+  if (t.includes('team') || t.includes('about')) sections.push('team', 'about');
+  if (t.includes('roadmap') || t.includes('timeline')) sections.push('roadmap');
+  if (t.includes('docs') || t.includes('documentation')) sections.push('docs');
+  if (t.includes('news') || t.includes('press')) sections.push('news');
+  if (t.includes('jobs') || t.includes('careers') || t.includes('hiring')) sections.push('jobs');
+  if (t.includes('newsletter')) sections.push('newsletter');
+  if (t.includes('countdown') || t.includes('launch')) sections.push('countdown');
   return sections.length ? sections : undefined;
 }
 
