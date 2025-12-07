@@ -16,6 +16,7 @@ export type SelectionResult = {
   effects: SelectedComponent[];
   dependencies: string[];
   total: number;
+  totalCodeLines: number;
 };
 
 // Presets of sections/effects/colors per theme/type
@@ -88,12 +89,14 @@ export class SmartComponentSelector {
     }
 
     const deps = this.collectDeps([...components, ...effects]);
+    const totalCodeLines = [...components, ...effects].reduce((sum, c) => sum + this.countLines(c.code), 0);
 
     return {
       components,
       effects,
       dependencies: deps,
       total: components.length + effects.length,
+      totalCodeLines,
     };
   }
 
@@ -142,6 +145,11 @@ export class SmartComponentSelector {
         if (kw) score += kw.filter((k) => text.includes(k)).length * 2;
         score += (SOURCE_PRIORITY[c.source] || 10) / 10;
         if (requestText && text.includes(intent.theme || '')) score += 1;
+        // Penalize very large components (>300 lines) and heavy deps hints
+        const lines = this.countLines(c.code);
+        if (lines > 300) score -= 2;
+        if (lines > 600) score -= 4;
+        if (text.includes('three') || text.includes('webgl')) score -= 1; // avoid heavy 3D by default
         return { ...c, score };
       })
       .sort((a, b) => b.score - a.score);
@@ -155,7 +163,13 @@ export class SmartComponentSelector {
       if (text.includes('framer-motion')) deps.add('framer-motion');
       if (text.includes('lucide-react')) deps.add('lucide-react');
       if (text.includes('@/components/ui/')) deps.add('shadcn-ui-base'); // placeholder marker
+      if (text.includes('three') || text.includes('webgl')) deps.add('three');
     });
     return Array.from(deps);
+  }
+
+  private countLines(code?: string): number {
+    if (!code) return 0;
+    return code.split(/\r?\n/).length;
   }
 }
