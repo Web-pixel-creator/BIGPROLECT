@@ -5718,3 +5718,4580 @@ export const TypewriterEffectSmooth = ({ words, className, cursorClassName }: { 
 **Dependencies:** `@/lib/utils`, `framer-motion`
 
 ---
+
+## Community Components (New Batch)
+
+### text-cursor-proximity (danielpetho)
+**Source:** https://21st.dev/r/danielpetho/text-cursor-proximity
+
+```tsx
+"use client"
+import React, { CSSProperties, forwardRef, useRef } from "react"
+import { motion, useAnimationFrame, useMotionValue, useTransform } from "motion/react"
+import { useMousePositionRef } from "@/hooks/use-mouse-position-ref"
+
+interface TextProps extends React.HTMLAttributes<HTMLSpanElement> {
+  label: string
+  styles: Partial<{ [K in keyof CSSProperties]: { from: any; to: any } }>
+  containerRef: React.RefObject<HTMLDivElement>
+  radius?: number
+  falloff?: "linear" | "exponential" | "gaussian"
+}
+
+const TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(({ label, styles, containerRef, radius = 50, falloff = "linear", className, onClick, ...props }, ref) => {
+  const letterRefs = useRef<(HTMLSpanElement | null)[]>([])
+  const mousePositionRef = useMousePositionRef(containerRef)
+  const letterProximities = useRef(Array(label.replace(/\s/g, "").length).fill(0).map(() => useMotionValue(0)))
+
+  const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+  
+  const calculateFalloff = (distance: number): number => {
+    const norm = Math.min(Math.max(1 - distance / radius, 0), 1)
+    if (falloff === "exponential") return Math.pow(norm, 2)
+    if (falloff === "gaussian") return Math.exp(-Math.pow(distance / (radius / 2), 2) / 2)
+    return norm
+  }
+
+  useAnimationFrame(() => {
+    if (!containerRef.current) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+    letterRefs.current.forEach((letterRef, index) => {
+      if (!letterRef) return
+      const rect = letterRef.getBoundingClientRect()
+      const distance = calculateDistance(mousePositionRef.current.x, mousePositionRef.current.y, rect.left + rect.width / 2 - containerRect.left, rect.top + rect.height / 2 - containerRect.top)
+      letterProximities.current[index].set(calculateFalloff(distance))
+    })
+  })
+
+  const words = label.split(" ")
+  let letterIndex = 0
+
+  return (
+    <span ref={ref} className={`${className} inline`} onClick={onClick} {...props}>
+      {words.map((word, wordIndex) => (
+        <span key={wordIndex} className="inline-block whitespace-nowrap">
+          {word.split("").map((letter) => {
+            const idx = letterIndex++
+            const proximity = letterProximities.current[idx]
+            const transformedStyles = Object.entries(styles).reduce((acc, [key, value]) => { acc[key] = useTransform(proximity, [0, 1], [value.from, value.to]); return acc }, {} as Record<string, any>)
+            return <motion.span key={idx} ref={(el) => { letterRefs.current[idx] = el }} className="inline-block" style={transformedStyles}>{letter}</motion.span>
+          })}
+          {wordIndex < words.length - 1 && <span className="inline-block">&nbsp;</span>}
+        </span>
+      ))}
+      <span className="sr-only">{label}</span>
+    </span>
+  )
+})
+
+TextCursorProximity.displayName = "TextCursorProximity"
+export default TextCursorProximity
+```
+
+**Dependencies:** `motion/react`, `@/hooks/use-mouse-position-ref`
+**Note:** Requires custom hook `useMousePositionRef`
+
+---
+
+### animated-gradient-background (hammamikhairi)
+**Source:** https://21st.dev/r/hammamikhairi/animated-gradient-background
+
+```tsx
+import { motion } from "framer-motion";
+import React, { useEffect, useRef } from "react";
+
+interface AnimatedGradientBackgroundProps {
+  startingGap?: number;
+  Breathing?: boolean;
+  gradientColors?: string[];
+  gradientStops?: number[];
+  animationSpeed?: number;
+  breathingRange?: number;
+  containerStyle?: React.CSSProperties;
+  containerClassName?: string;
+  topOffset?: number;
+}
+
+const AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({
+  startingGap = 125, Breathing = false,
+  gradientColors = ["#0A0A0A", "#2979FF", "#FF80AB", "#FF6D00", "#FFD600", "#00E676", "#3D5AFE"],
+  gradientStops = [35, 50, 60, 70, 80, 90, 100],
+  animationSpeed = 0.02, breathingRange = 5, containerStyle = {}, topOffset = 0, containerClassName = ""
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let animationFrame: number;
+    let width = startingGap;
+    let directionWidth = 1;
+
+    const animateGradient = () => {
+      if (width >= startingGap + breathingRange) directionWidth = -1;
+      if (width <= startingGap - breathingRange) directionWidth = 1;
+      if (!Breathing) directionWidth = 0;
+      width += directionWidth * animationSpeed;
+
+      const gradientStopsString = gradientStops.map((stop, i) => `${gradientColors[i]} ${stop}%`).join(", ");
+      const gradient = `radial-gradient(${width}% ${width + topOffset}% at 50% 20%, ${gradientStopsString})`;
+      if (containerRef.current) containerRef.current.style.background = gradient;
+      animationFrame = requestAnimationFrame(animateGradient);
+    };
+
+    animationFrame = requestAnimationFrame(animateGradient);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [startingGap, Breathing, gradientColors, gradientStops, animationSpeed, breathingRange, topOffset]);
+
+  return (
+    <motion.div key="animated-gradient-background" initial={{ opacity: 0, scale: 1.5 }} animate={{ opacity: 1, scale: 1, transition: { duration: 2, ease: [0.25, 0.1, 0.25, 1] } }} className={`absolute inset-0 overflow-hidden ${containerClassName}`}>
+      <div ref={containerRef} style={containerStyle} className="absolute inset-0 transition-transform" />
+    </motion.div>
+  );
+};
+
+export default AnimatedGradientBackground;
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### graaadeints (aliimam)
+**Source:** https://21st.dev/r/aliimam/graaadeints
+
+Gradient generator component with noise effects, color stops, linear/radial toggle and export.
+
+```tsx
+"use client";
+import * as React from "react";
+import { useEffect, useRef, useState } from "react";
+import { Slider } from "@/components/ui/slider";
+import { DIcons } from "dicons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
+type ColorStop = { color: string; position: number };
+const defaultColorStops: ColorStop[] = [{ color: "#00e1ff", position: 0 }, { color: "#0000ff", position: 100 }];
+
+export function GradientGenerator() {
+  const [colorStops, setColorStops] = useState<ColorStop[]>(defaultColorStops);
+  const [angle, setAngle] = useState(90);
+  const [noiseAmount, setNoiseAmount] = useState(0);
+  const [applyNoise, setApplyNoise] = useState(false);
+  const [isRadialGradient, setIsRadialGradient] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const displayCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const gradientString = colorStops.map((stop) => `${stop.color} ${stop.position}%`).join(", ");
+  const gradientStyle = { background: !isRadialGradient ? `linear-gradient(${angle}deg, ${gradientString})` : `radial-gradient(circle, ${gradientString})` };
+  const gradientCSS = !isRadialGradient ? `background: linear-gradient(${angle}deg, ${gradientString});` : `background: radial-gradient(circle, ${gradientString});`;
+
+  // Full implementation with canvas noise, download, copy functions available in 21st.dev registry
+  return (
+    <div className="mt-10 flex items-center justify-center p-6 xl:p-0">
+      <div className="mx-auto w-full max-w-7xl space-y-2 rounded-2xl border-2 bg-popover/80 p-6">
+        <div className="flex flex-wrap justify-center gap-6">
+          <div className="relative">
+            <div className="aspect-square h-full w-60 rounded-md md:w-80" style={gradientStyle} />
+            <canvas ref={displayCanvasRef} width={1000} height={1000} className="absolute left-0 top-0 aspect-square h-full w-60 rounded-md mix-blend-overlay md:w-80" />
+          </div>
+          {/* Controls for colorStops, angle, noise, radial/linear toggle */}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Dependencies:** `dicons`, `@radix-ui/react-slot`, `class-variance-authority`, `@radix-ui/react-label`, `lucide-react`, `@radix-ui/react-slider`, `@radix-ui/react-switch`
+**Note:** Full implementation with all UI controls available in 21st.dev registry
+
+---
+
+### text-rotate (danielpetho)
+**Source:** https://21st.dev/r/danielpetho/text-rotate
+
+Text rotation component with animated character/word transitions.
+
+```tsx
+"use client"
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react"
+import { AnimatePresence, motion, Transition } from "motion/react"
+import { cn } from "@/lib/utils"
+
+interface TextRotateProps {
+  texts: string[]
+  rotationInterval?: number
+  staggerDuration?: number
+  staggerFrom?: "first" | "last" | "center" | number | "random"
+  transition?: Transition
+  loop?: boolean
+  auto?: boolean
+  splitBy?: "words" | "characters" | "lines" | string
+  onNext?: (index: number) => void
+  mainClassName?: string
+}
+
+export interface TextRotateRef { next: () => void; previous: () => void; jumpTo: (index: number) => void; reset: () => void }
+
+const TextRotate = forwardRef<TextRotateRef, TextRotateProps>(({
+  texts, transition = { type: "spring", damping: 25, stiffness: 300 },
+  initial = { y: "100%", opacity: 0 }, animate = { y: 0, opacity: 1 }, exit = { y: "-120%", opacity: 0 },
+  rotationInterval = 2000, staggerDuration = 0, staggerFrom = "first", loop = true, auto = true, splitBy = "characters", onNext, mainClassName
+}, ref) => {
+  const [currentTextIndex, setCurrentTextIndex] = useState(0)
+
+  const handleIndexChange = useCallback((newIndex: number) => { setCurrentTextIndex(newIndex); onNext?.(newIndex) }, [onNext])
+  const next = useCallback(() => { const nextIndex = currentTextIndex === texts.length - 1 ? (loop ? 0 : currentTextIndex) : currentTextIndex + 1; if (nextIndex !== currentTextIndex) handleIndexChange(nextIndex) }, [currentTextIndex, texts.length, loop, handleIndexChange])
+
+  useImperativeHandle(ref, () => ({ next, previous: () => {}, jumpTo: () => {}, reset: () => {} }), [next])
+  useEffect(() => { if (!auto) return; const intervalId = setInterval(next, rotationInterval); return () => clearInterval(intervalId) }, [next, rotationInterval, auto])
+
+  return (
+    <motion.span className={cn("flex flex-wrap whitespace-pre-wrap", mainClassName)} layout transition={transition}>
+      <span className="sr-only">{texts[currentTextIndex]}</span>
+      <AnimatePresence mode="wait">
+        <motion.div key={currentTextIndex} className="flex flex-wrap" layout aria-hidden="true">
+          {/* Character/word animation logic */}
+        </motion.div>
+      </AnimatePresence>
+    </motion.span>
+  )
+})
+
+TextRotate.displayName = "TextRotate"
+export { TextRotate }
+```
+
+**Dependencies:** `motion/react`, `@/lib/utils`
+
+---
+
+### parallax-floating (danielpetho)
+**Source:** https://21st.dev/r/danielpetho/parallax-floating
+
+Parallax floating effect for elements based on mouse position.
+
+```tsx
+"use client"
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef } from "react"
+import { useAnimationFrame } from "motion/react"
+import { cn } from "@/lib/utils"
+import { useMousePositionRef } from "@/hooks/use-mouse-position-ref"
+
+interface FloatingContextType { registerElement: (id: string, element: HTMLDivElement, depth: number) => void; unregisterElement: (id: string) => void }
+const FloatingContext = createContext<FloatingContextType | null>(null)
+
+const Floating = ({ children, className, sensitivity = 1, easingFactor = 0.05 }: { children: ReactNode; className?: string; sensitivity?: number; easingFactor?: number }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const elementsMap = useRef(new Map<string, { element: HTMLDivElement; depth: number; currentPosition: { x: number; y: number } }>())
+  const mousePositionRef = useMousePositionRef(containerRef)
+
+  const registerElement = useCallback((id: string, element: HTMLDivElement, depth: number) => {
+    elementsMap.current.set(id, { element, depth, currentPosition: { x: 0, y: 0 } })
+  }, [])
+
+  const unregisterElement = useCallback((id: string) => { elementsMap.current.delete(id) }, [])
+
+  useAnimationFrame(() => {
+    if (!containerRef.current) return
+    elementsMap.current.forEach((data) => {
+      const strength = (data.depth * sensitivity) / 20
+      const newTargetX = mousePositionRef.current.x * strength
+      const newTargetY = mousePositionRef.current.y * strength
+      data.currentPosition.x += (newTargetX - data.currentPosition.x) * easingFactor
+      data.currentPosition.y += (newTargetY - data.currentPosition.y) * easingFactor
+      data.element.style.transform = `translate3d(${data.currentPosition.x}px, ${data.currentPosition.y}px, 0)`
+    })
+  })
+
+  return (
+    <FloatingContext.Provider value={{ registerElement, unregisterElement }}>
+      <div ref={containerRef} className={cn("absolute top-0 left-0 w-full h-full", className)}>{children}</div>
+    </FloatingContext.Provider>
+  )
+}
+
+export default Floating
+
+export const FloatingElement = ({ children, className, depth = 1 }: { children: ReactNode; className?: string; depth?: number }) => {
+  const elementRef = useRef<HTMLDivElement>(null)
+  const idRef = useRef(Math.random().toString(36).substring(7))
+  const context = useContext(FloatingContext)
+
+  useEffect(() => {
+    if (!elementRef.current || !context) return
+    context.registerElement(idRef.current, elementRef.current, depth ?? 0.01)
+    return () => context.unregisterElement(idRef.current)
+  }, [depth])
+
+  return <div ref={elementRef} className={cn("absolute will-change-transform", className)}>{children}</div>
+}
+```
+
+**Dependencies:** `motion/react`, `@/lib/utils`, `@/hooks/use-mouse-position-ref`
+
+---
+
+### shine-border (magicui)
+**Source:** https://21st.dev/r/magicui/shine-border
+
+Animated shining border effect.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+
+type TColorProp = string | string[]
+
+interface ShineBorderProps {
+  borderRadius?: number
+  borderWidth?: number
+  duration?: number
+  color?: TColorProp
+  className?: string
+  children: React.ReactNode
+}
+
+export function ShineBorder({ borderRadius = 8, borderWidth = 1, duration = 14, color = "#000000", className, children }: ShineBorderProps) {
+  return (
+    <div style={{ "--border-radius": `${borderRadius}px` } as React.CSSProperties} className={cn("min-h-[60px] w-fit min-w-[300px] place-items-center rounded-[--border-radius] bg-white p-3 text-black dark:bg-black dark:text-white", className)}>
+      <div style={{
+        "--border-width": `${borderWidth}px`, "--border-radius": `${borderRadius}px`, "--duration": `${duration}s`,
+        "--mask-linear-gradient": `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+        "--background-radial-gradient": `radial-gradient(transparent,transparent, ${color instanceof Array ? color.join(",") : color},transparent,transparent)`
+      } as React.CSSProperties} className={`before:bg-shine-size before:absolute before:inset-0 before:aspect-square before:size-full before:rounded-[--border-radius] before:p-[--border-width] before:will-change-[background-position] before:content-[""] before:![-webkit-mask-composite:xor] before:![mask-composite:exclude] before:[background-image:--background-radial-gradient] before:[background-size:300%_300%] before:[mask:--mask-linear-gradient] motion-safe:before:animate-shine`} />
+      {children}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes shine { 0% { background-position: 0% 0% } 50% { background-position: 100% 100% } to { background-position: 0% 0% } }`
+
+---
+
+### text-reveal (magicui)
+**Source:** https://21st.dev/r/magicui/text-reveal
+
+Scroll-based text reveal by word.
+
+```tsx
+"use client"
+import { FC, ReactNode, useRef } from "react"
+import { motion, MotionValue, useScroll, useTransform } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface TextRevealByWordProps { text: string; className?: string }
+
+const TextRevealByWord: FC<TextRevealByWordProps> = ({ text, className }) => {
+  const targetRef = useRef<HTMLDivElement | null>(null)
+  const { scrollYProgress } = useScroll({ target: targetRef })
+  const words = text.split(" ")
+
+  return (
+    <div ref={targetRef} className={cn("relative z-0 h-[200vh]", className)}>
+      <div className="sticky top-0 mx-auto flex h-[50%] max-w-4xl items-center bg-transparent px-[1rem] py-[5rem]">
+        <p ref={targetRef} className="flex flex-wrap p-5 text-2xl font-bold text-black/20 dark:text-white/20 md:p-8 md:text-3xl lg:p-10 lg:text-4xl xl:text-5xl">
+          {words.map((word, i) => {
+            const start = i / words.length
+            const end = start + 1 / words.length
+            return <Word key={i} progress={scrollYProgress} range={[start, end]}>{word}</Word>
+          })}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const Word: FC<{ children: ReactNode; progress: MotionValue<number>; range: [number, number] }> = ({ children, progress, range }) => {
+  const opacity = useTransform(progress, range, [0, 1])
+  return (
+    <span className="xl:lg-3 relative mx-1 lg:mx-2.5">
+      <span className="absolute opacity-30">{children}</span>
+      <motion.span style={{ opacity }} className="text-black dark:text-white">{children}</motion.span>
+    </span>
+  )
+}
+
+export { TextRevealByWord }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### text-effect (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/text-effect
+
+Multi-preset text animations (blur, shake, scale, fade, slide).
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { AnimatePresence, motion, Variants } from 'framer-motion'
+import React from 'react'
+
+type PresetType = 'blur' | 'shake' | 'scale' | 'fade' | 'slide'
+
+type TextEffectProps = {
+  children: string
+  per?: 'word' | 'char' | 'line'
+  as?: keyof React.JSX.IntrinsicElements
+  className?: string
+  preset?: PresetType
+  delay?: number
+  trigger?: boolean
+  onAnimationComplete?: () => void
+}
+
+const presetVariants: Record<PresetType, { container: Variants; item: Variants }> = {
+  blur: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } }, item: { hidden: { opacity: 0, filter: 'blur(12px)' }, visible: { opacity: 1, filter: 'blur(0px)' } } },
+  shake: { container: { hidden: { opacity: 0 }, visible: { opacity: 1 } }, item: { hidden: { x: 0 }, visible: { x: [-5, 5, -5, 5, 0], transition: { duration: 0.5 } } } },
+  scale: { container: { hidden: { opacity: 0 }, visible: { opacity: 1 } }, item: { hidden: { opacity: 0, scale: 0 }, visible: { opacity: 1, scale: 1 } } },
+  fade: { container: { hidden: { opacity: 0 }, visible: { opacity: 1 } }, item: { hidden: { opacity: 0 }, visible: { opacity: 1 } } },
+  slide: { container: { hidden: { opacity: 0 }, visible: { opacity: 1 } }, item: { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } } }
+}
+
+export function TextEffect({ children, per = 'word', as = 'p', className, preset = 'fade', delay = 0, trigger = true, onAnimationComplete }: TextEffectProps) {
+  const segments = per === 'line' ? children.split('\n') : per === 'word' ? children.split(/(\s+)/) : children.split('')
+  const MotionTag = motion[as as keyof typeof motion] as typeof motion.div
+  const { container, item } = presetVariants[preset]
+
+  return (
+    <AnimatePresence mode='popLayout'>
+      {trigger && (
+        <MotionTag initial='hidden' animate='visible' exit='exit' variants={{ ...container, visible: { ...container.visible, transition: { staggerChildren: 0.05, delayChildren: delay } } }} className={cn('whitespace-pre-wrap', className)} onAnimationComplete={onAnimationComplete}>
+          {segments.map((segment, index) => <motion.span key={`${per}-${index}`} variants={item} className="inline-block whitespace-pre">{segment}</motion.span>)}
+        </MotionTag>
+      )}
+    </AnimatePresence>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### spotlight (aceternity)
+**Source:** https://21st.dev/r/aceternity/spotlight
+
+SVG spotlight effect with animated appearance.
+
+```tsx
+import React from "react"
+import { cn } from "@/lib/utils"
+
+type SpotlightProps = { className?: string; fill?: string }
+
+export const Spotlight = ({ className, fill }: SpotlightProps) => (
+  <svg className={cn("animate-spotlight pointer-events-none absolute z-[1] h-[169%] w-[138%] lg:w-[84%] opacity-0", className)} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3787 2842" fill="none">
+    <g filter="url(#filter)">
+      <ellipse cx="1924.71" cy="273.501" rx="1924.71" ry="273.501" transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)" fill={fill || "white"} fillOpacity="0.21" />
+    </g>
+    <defs>
+      <filter id="filter" x="0.860352" y="0.838989" width="3785.16" height="2840.26" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
+        <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+        <feGaussianBlur stdDeviation="151" result="effect1_foregroundBlur_1065_8" />
+      </filter>
+    </defs>
+  </svg>
+)
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** Requires `animate-spotlight` keyframe animation
+
+---
+
+### aurora-background (aceternity)
+**Source:** https://21st.dev/r/aceternity/aurora-background
+
+Aurora borealis inspired animated background.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { ReactNode } from "react"
+
+interface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {
+  children: ReactNode
+  showRadialGradient?: boolean
+}
+
+export const AuroraBackground = ({ className, children, showRadialGradient = true, ...props }: AuroraBackgroundProps) => (
+  <main>
+    <div className={cn("relative flex flex-col h-[100vh] items-center justify-center bg-zinc-50 dark:bg-zinc-900 text-slate-950 transition-bg", className)} {...props}>
+      <div className="absolute inset-0 overflow-hidden">
+        <div className={cn(`
+          [--white-gradient:repeating-linear-gradient(100deg,var(--white)_0%,var(--white)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--white)_16%)]
+          [--dark-gradient:repeating-linear-gradient(100deg,var(--black)_0%,var(--black)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--black)_16%)]
+          [--aurora:repeating-linear-gradient(100deg,var(--blue-500)_10%,var(--indigo-300)_15%,var(--blue-300)_20%,var(--violet-200)_25%,var(--blue-400)_30%)]
+          [background-image:var(--white-gradient),var(--aurora)] dark:[background-image:var(--dark-gradient),var(--aurora)]
+          [background-size:300%,_200%] [background-position:50%_50%,50%_50%]
+          filter blur-[10px] invert dark:invert-0
+          after:content-[""] after:absolute after:inset-0 after:[background-image:var(--white-gradient),var(--aurora)] 
+          after:dark:[background-image:var(--dark-gradient),var(--aurora)]
+          after:[background-size:200%,_100%] after:animate-aurora after:[background-attachment:fixed] after:mix-blend-difference
+          pointer-events-none absolute -inset-[10px] opacity-50 will-change-transform`,
+          showRadialGradient && `[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]`
+        )} />
+      </div>
+      {children}
+    </div>
+  </main>
+)
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** Requires `animate-aurora` keyframe
+
+---
+
+### gooey-text-morphing (victorwelander)
+**Source:** https://21st.dev/r/victorwelander/gooey-text-morphing
+
+Gooey SVG text morphing effect between multiple texts.
+
+```tsx
+"use client"
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+interface GooeyTextProps {
+  texts: string[]
+  morphTime?: number
+  cooldownTime?: number
+  className?: string
+  textClassName?: string
+}
+
+export function GooeyText({ texts, morphTime = 1, cooldownTime = 0.25, className, textClassName }: GooeyTextProps) {
+  const text1Ref = React.useRef<HTMLSpanElement>(null)
+  const text2Ref = React.useRef<HTMLSpanElement>(null)
+
+  React.useEffect(() => {
+    let textIndex = texts.length - 1
+    let time = new Date()
+    let morph = 0
+    let cooldown = cooldownTime
+
+    const setMorph = (fraction: number) => {
+      if (text1Ref.current && text2Ref.current) {
+        text2Ref.current.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`
+        text2Ref.current.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`
+        const f = 1 - fraction
+        text1Ref.current.style.filter = `blur(${Math.min(8 / f - 8, 100)}px)`
+        text1Ref.current.style.opacity = `${Math.pow(f, 0.4) * 100}%`
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate)
+      const newTime = new Date()
+      const shouldIncrementIndex = cooldown > 0
+      const dt = (newTime.getTime() - time.getTime()) / 1000
+      time = newTime
+      cooldown -= dt
+
+      if (cooldown <= 0) {
+        if (shouldIncrementIndex) {
+          textIndex = (textIndex + 1) % texts.length
+          if (text1Ref.current && text2Ref.current) {
+            text1Ref.current.textContent = texts[textIndex % texts.length]
+            text2Ref.current.textContent = texts[(textIndex + 1) % texts.length]
+          }
+        }
+        morph -= cooldown
+        cooldown = 0
+        setMorph(Math.min(morph / morphTime, 1))
+        if (morph / morphTime >= 1) cooldown = cooldownTime
+      }
+    }
+
+    animate()
+  }, [texts, morphTime, cooldownTime])
+
+  return (
+    <div className={cn("relative", className)}>
+      <svg className="absolute h-0 w-0" aria-hidden="true" focusable="false">
+        <defs><filter id="threshold"><feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 255 -140" /></filter></defs>
+      </svg>
+      <div className="flex items-center justify-center" style={{ filter: "url(#threshold)" }}>
+        <span ref={text1Ref} className={cn("absolute inline-block select-none text-center text-6xl md:text-[60pt] text-foreground", textClassName)} />
+        <span ref={text2Ref} className={cn("absolute inline-block select-none text-center text-6xl md:text-[60pt] text-foreground", textClassName)} />
+      </div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### beams-background (kokonutd)
+**Source:** https://21st.dev/r/kokonutd/beams-background
+
+Animated light beams background with canvas.
+
+```tsx
+"use client"
+import { useEffect, useRef } from "react"
+import { motion } from "motion/react"
+import { cn } from "@/lib/utils"
+
+interface Beam { x: number; y: number; width: number; length: number; angle: number; speed: number; opacity: number; hue: number; pulse: number; pulseSpeed: number }
+
+function createBeam(width: number, height: number): Beam {
+  const angle = -35 + Math.random() * 10
+  return { x: Math.random() * width * 1.5 - width * 0.25, y: Math.random() * height * 1.5 - height * 0.25, width: 30 + Math.random() * 60, length: height * 2.5, angle, speed: 0.6 + Math.random() * 1.2, opacity: 0.12 + Math.random() * 0.16, hue: 190 + Math.random() * 70, pulse: Math.random() * Math.PI * 2, pulseSpeed: 0.02 + Math.random() * 0.03 }
+}
+
+export function BeamsBackground({ className, intensity = "strong" }: { className?: string; intensity?: "subtle" | "medium" | "strong" }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const beamsRef = useRef<Beam[]>([])
+  const opacityMap = { subtle: 0.7, medium: 0.85, strong: 1 }
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const updateCanvasSize = () => {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = window.innerWidth * dpr
+      canvas.height = window.innerHeight * dpr
+      canvas.style.width = `${window.innerWidth}px`
+      canvas.style.height = `${window.innerHeight}px`
+      ctx.scale(dpr, dpr)
+      beamsRef.current = Array.from({ length: 30 }, () => createBeam(canvas.width, canvas.height))
+    }
+
+    updateCanvasSize()
+    window.addEventListener("resize", updateCanvasSize)
+
+    function animate() {
+      if (!canvas || !ctx) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.filter = "blur(35px)"
+      beamsRef.current.forEach((beam) => {
+        beam.y -= beam.speed
+        beam.pulse += beam.pulseSpeed
+        if (beam.y + beam.length < -100) Object.assign(beam, createBeam(canvas.width, canvas.height), { y: canvas.height + 100 })
+        ctx.save()
+        ctx.translate(beam.x, beam.y)
+        ctx.rotate((beam.angle * Math.PI) / 180)
+        const pulsingOpacity = beam.opacity * (0.8 + Math.sin(beam.pulse) * 0.2) * opacityMap[intensity]
+        const gradient = ctx.createLinearGradient(0, 0, 0, beam.length)
+        gradient.addColorStop(0, `hsla(${beam.hue}, 85%, 65%, 0)`)
+        gradient.addColorStop(0.4, `hsla(${beam.hue}, 85%, 65%, ${pulsingOpacity})`)
+        gradient.addColorStop(0.6, `hsla(${beam.hue}, 85%, 65%, ${pulsingOpacity})`)
+        gradient.addColorStop(1, `hsla(${beam.hue}, 85%, 65%, 0)`)
+        ctx.fillStyle = gradient
+        ctx.fillRect(-beam.width / 2, 0, beam.width, beam.length)
+        ctx.restore()
+      })
+      requestAnimationFrame(animate)
+    }
+    animate()
+
+    return () => window.removeEventListener("resize", updateCanvasSize)
+  }, [intensity])
+
+  return (
+    <div className={cn("relative min-h-screen w-full overflow-hidden bg-neutral-950", className)}>
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ filter: "blur(15px)" }} />
+      <motion.div className="absolute inset-0 bg-neutral-950/5" animate={{ opacity: [0.05, 0.15, 0.05] }} transition={{ duration: 10, ease: "easeInOut", repeat: Infinity }} style={{ backdropFilter: "blur(50px)" }} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `motion/react`, `@/lib/utils`
+
+---
+
+### image-trail (danielpetho)
+**Source:** https://21st.dev/r/danielpetho/image-trail
+
+Image trail effect following mouse movement with animation sequences.
+
+```tsx
+import { Children, useCallback, useEffect, useMemo, useRef } from "react"
+import { AnimationSequence, motion, useAnimate, useAnimationFrame } from "framer-motion"
+import { v4 as uuidv4 } from "uuid"
+import { useMouseVector } from "@/components/hooks/use-mouse-vector"
+
+interface TrailItem { id: string; x: number; y: number; rotation: number; animationSequence: any[]; scale: number; child: React.ReactNode }
+
+interface ImageTrailProps {
+  children: React.ReactNode
+  containerRef?: React.RefObject<HTMLElement>
+  newOnTop?: boolean
+  rotationRange?: number
+  animationSequence?: any[]
+  interval?: number
+}
+
+const ImageTrail = ({ children, newOnTop = true, rotationRange = 15, containerRef, animationSequence = [[{ scale: 1.2 }, { duration: 0.1, ease: "circOut" }], [{ scale: 0 }, { duration: 0.5, ease: "circIn" }]], interval = 100 }: ImageTrailProps) => {
+  const trailRef = useRef<TrailItem[]>([])
+  const lastAddedTimeRef = useRef<number>(0)
+  const { position: mousePosition } = useMouseVector(containerRef)
+  const lastMousePosRef = useRef(mousePosition)
+  const currentIndexRef = useRef(0)
+  const childrenArray = useMemo(() => Children.toArray(children), [children])
+
+  const addToTrail = useCallback((mousePos: { x: number; y: number }) => {
+    const newItem: TrailItem = { id: uuidv4(), x: mousePos.x, y: mousePos.y, rotation: (Math.random() - 0.5) * rotationRange * 2, animationSequence, scale: 1, child: childrenArray[currentIndexRef.current] }
+    currentIndexRef.current = (currentIndexRef.current + 1) % childrenArray.length
+    newOnTop ? trailRef.current.push(newItem) : trailRef.current.unshift(newItem)
+  }, [childrenArray, rotationRange, animationSequence, newOnTop])
+
+  const removeFromTrail = useCallback((itemId: string) => { const index = trailRef.current.findIndex((item) => item.id === itemId); if (index !== -1) trailRef.current.splice(index, 1) }, [])
+
+  useAnimationFrame((time) => {
+    if (lastMousePosRef.current.x === mousePosition.x && lastMousePosRef.current.y === mousePosition.y) return
+    lastMousePosRef.current = mousePosition
+    if (time - lastAddedTimeRef.current < interval) return
+    lastAddedTimeRef.current = time
+    addToTrail(mousePosition)
+  })
+
+  return <div className="relative w-full h-full pointer-events-none">{trailRef.current.map((item) => <TrailItemComp key={item.id} item={item} onComplete={removeFromTrail} />)}</div>
+}
+
+const TrailItemComp = ({ item, onComplete }: { item: TrailItem; onComplete: (id: string) => void }) => {
+  const [scope, animate] = useAnimate()
+  useEffect(() => { animate(item.animationSequence.map((segment: any) => [scope.current, ...segment]) as AnimationSequence).then(() => onComplete(item.id)) }, [])
+  return <motion.div ref={scope} className="absolute" style={{ left: item.x, top: item.y, rotate: item.rotation }}>{item.child}</motion.div>
+}
+
+export { ImageTrail }
+```
+
+**Dependencies:** `framer-motion`, `uuid`, `@/components/hooks/use-mouse-vector`
+**Note:** Requires `useMouseVector` hook
+
+---
+
+### expandable-tabs (victorwelander)
+**Source:** https://21st.dev/r/victorwelander/expandable-tabs
+
+Animated expandable tabs with icon and label.
+
+```tsx
+"use client"
+import * as React from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { useOnClickOutside } from "usehooks-ts"
+import { cn } from "@/lib/utils"
+import { LucideIcon } from "lucide-react"
+
+interface Tab { title: string; icon: LucideIcon; type?: never }
+interface Separator { type: "separator"; title?: never; icon?: never }
+type TabItem = Tab | Separator
+
+interface ExpandableTabsProps { tabs: TabItem[]; className?: string; activeColor?: string; onChange?: (index: number | null) => void }
+
+const buttonVariants = { initial: { gap: 0, paddingLeft: ".5rem", paddingRight: ".5rem" }, animate: (isSelected: boolean) => ({ gap: isSelected ? ".5rem" : 0, paddingLeft: isSelected ? "1rem" : ".5rem", paddingRight: isSelected ? "1rem" : ".5rem" }) }
+const spanVariants = { initial: { width: 0, opacity: 0 }, animate: { width: "auto", opacity: 1 }, exit: { width: 0, opacity: 0 } }
+const transition = { delay: 0.1, type: "spring", bounce: 0, duration: 0.6 }
+
+export function ExpandableTabs({ tabs, className, activeColor = "text-primary", onChange }: ExpandableTabsProps) {
+  const [selected, setSelected] = React.useState<number | null>(null)
+  const outsideClickRef = React.useRef(null)
+  useOnClickOutside(outsideClickRef, () => { setSelected(null); onChange?.(null) })
+
+  return (
+    <div ref={outsideClickRef} className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-1 shadow-sm", className)}>
+      {tabs.map((tab, index) => {
+        if (tab.type === "separator") return <div key={`separator-${index}`} className="mx-1 h-[24px] w-[1.2px] bg-border" aria-hidden="true" />
+        const Icon = tab.icon
+        return (
+          <motion.button key={tab.title} variants={buttonVariants} initial={false} animate="animate" custom={selected === index} onClick={() => { setSelected(index); onChange?.(index) }} transition={transition} className={cn("relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300", selected === index ? cn("bg-muted", activeColor) : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <Icon size={20} />
+            <AnimatePresence initial={false}>{selected === index && <motion.span variants={spanVariants} initial="initial" animate="animate" exit="exit" transition={transition} className="overflow-hidden">{tab.title}</motion.span>}</AnimatePresence>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `usehooks-ts`, `lucide-react`, `@/lib/utils`
+
+---
+
+### navigation-menu (shadcn)
+**Source:** https://21st.dev/r/shadcn/navigation-menu
+
+Radix-based navigation menu with dropdown support.
+
+```tsx
+import * as React from "react"
+import { ChevronDownIcon } from "@radix-ui/react-icons"
+import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
+import { cva } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const NavigationMenu = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Root>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>>(({ className, children, ...props }, ref) => (
+  <NavigationMenuPrimitive.Root ref={ref} className={cn("relative z-10 flex max-w-max flex-1 items-center justify-center", className)} {...props}>
+    {children}
+    <NavigationMenuViewport />
+  </NavigationMenuPrimitive.Root>
+))
+NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName
+
+const NavigationMenuList = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.List>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.List>>(({ className, ...props }, ref) => (
+  <NavigationMenuPrimitive.List ref={ref} className={cn("group flex flex-1 list-none items-center justify-center space-x-1", className)} {...props} />
+))
+NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName
+
+const NavigationMenuItem = NavigationMenuPrimitive.Item
+const navigationMenuTriggerStyle = cva("group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50")
+
+const NavigationMenuTrigger = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>>(({ className, children, ...props }, ref) => (
+  <NavigationMenuPrimitive.Trigger ref={ref} className={cn(navigationMenuTriggerStyle(), "group", className)} {...props}>
+    {children} <ChevronDownIcon className="relative top-[1px] ml-1 h-3 w-3 transition duration-300 group-data-[state=open]:rotate-180" aria-hidden="true" />
+  </NavigationMenuPrimitive.Trigger>
+))
+NavigationMenuTrigger.displayName = NavigationMenuPrimitive.Trigger.displayName
+
+const NavigationMenuContent = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Content>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Content>>(({ className, ...props }, ref) => (
+  <NavigationMenuPrimitive.Content ref={ref} className={cn("left-0 top-0 w-full data-[motion^=from-]:animate-in data-[motion^=to-]:animate-out data-[motion^=from-]:fade-in data-[motion^=to-]:fade-out md:absolute md:w-auto", className)} {...props} />
+))
+NavigationMenuContent.displayName = NavigationMenuPrimitive.Content.displayName
+
+const NavigationMenuLink = NavigationMenuPrimitive.Link
+const NavigationMenuViewport = React.forwardRef<React.ElementRef<typeof NavigationMenuPrimitive.Viewport>, React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>>(({ className, ...props }, ref) => (
+  <div className={cn("absolute left-0 top-full flex justify-center")}>
+    <NavigationMenuPrimitive.Viewport className={cn("origin-top-center relative mt-1.5 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow md:w-[var(--radix-navigation-menu-viewport-width)]", className)} ref={ref} {...props} />
+  </div>
+))
+NavigationMenuViewport.displayName = NavigationMenuPrimitive.Viewport.displayName
+
+export { navigationMenuTriggerStyle, NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuContent, NavigationMenuTrigger, NavigationMenuLink, NavigationMenuViewport }
+```
+
+**Dependencies:** `@radix-ui/react-navigation-menu`, `@radix-ui/react-icons`, `class-variance-authority`, `@/lib/utils`
+
+---
+
+### pricing-table (kokonutd)
+**Source:** https://21st.dev/r/kokonutd/pricing-table
+
+Interactive pricing table with feature comparison and plan selection.
+
+```tsx
+"use client"
+import * as React from "react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { CheckIcon, ArrowRightIcon } from "@radix-ui/react-icons"
+import NumberFlow from "@number-flow/react"
+
+export interface PricingFeature { name: string; included: "starter" | "pro" | "all" | null }
+export interface PricingPlan { name: string; level: string; price: { monthly: number; yearly: number }; popular?: boolean }
+
+export function PricingTable({ features, plans, onPlanSelect, defaultPlan = "pro", defaultInterval = "monthly" }: { features: PricingFeature[]; plans: PricingPlan[]; onPlanSelect?: (plan: string) => void; defaultPlan?: string; defaultInterval?: "monthly" | "yearly" }) {
+  const [isYearly, setIsYearly] = React.useState(defaultInterval === "yearly")
+  const [selectedPlan, setSelectedPlan] = React.useState(defaultPlan)
+
+  const handlePlanSelect = (plan: string) => { setSelectedPlan(plan); onPlanSelect?.(plan) }
+
+  return (
+    <section className="bg-background text-foreground py-12 sm:py-24 md:py-32 px-4">
+      <div className="w-full max-w-3xl mx-auto px-4">
+        <div className="flex justify-end mb-4 sm:mb-8">
+          <div className="inline-flex items-center gap-2 text-xs sm:text-sm">
+            <button type="button" onClick={() => setIsYearly(false)} className={cn("px-3 py-1 rounded-md transition-colors", !isYearly ? "bg-zinc-100 dark:bg-zinc-800" : "text-zinc-500")}>Monthly</button>
+            <button type="button" onClick={() => setIsYearly(true)} className={cn("px-3 py-1 rounded-md transition-colors", isYearly ? "bg-zinc-100 dark:bg-zinc-800" : "text-zinc-500")}>Yearly</button>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          {plans.map((plan) => (
+            <button key={plan.name} type="button" onClick={() => handlePlanSelect(plan.level)} className={cn("flex-1 p-4 rounded-xl text-left transition-all border border-zinc-200 dark:border-zinc-800", selectedPlan === plan.level && "ring-2 ring-blue-500 dark:ring-blue-400")}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">{plan.name}</span>
+                {plan.popular && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full">Popular</span>}
+              </div>
+              <div className="flex items-baseline gap-1">
+                <NumberFlow format={{ style: "currency", currency: "USD", trailingZeroDisplay: "stripIfInteger" }} value={isYearly ? plan.price.yearly : plan.price.monthly} className="text-2xl font-bold" />
+                <span className="text-sm font-normal text-zinc-500">/{isYearly ? "year" : "month"}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
+          {/* Feature list */}
+        </div>
+        <div className="mt-8 text-center">
+          <Button className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 px-8 py-2 rounded-xl">Get started <ArrowRightIcon className="w-4 h-4 ml-2" /></Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+```
+
+**Dependencies:** `@number-flow/react`, `@radix-ui/react-icons`, `@/components/ui/button`, `@/lib/utils`
+
+---
+
+### aspect-ratio (shadcn)
+**Source:** https://21st.dev/r/shadcn/aspect-ratio
+
+Simple aspect ratio wrapper using Radix primitives.
+
+```tsx
+"use client"
+import * as AspectRatioPrimitive from "@radix-ui/react-aspect-ratio"
+const AspectRatio = AspectRatioPrimitive.Root
+export { AspectRatio }
+```
+
+**Dependencies:** `@radix-ui/react-aspect-ratio`
+
+---
+
+### zoomable-image (fuma-nama)
+**Source:** https://21st.dev/r/fuma-nama/zoomable-image
+
+Image with zoom-on-click functionality.
+
+```tsx
+"use client"
+import Image, { type ImageProps } from "next/image"
+import { type ImgHTMLAttributes } from "react"
+import Zoom, { type UncontrolledProps } from "react-medium-image-zoom"
+import { cn } from "@/lib/utils"
+
+export interface ImageZoomProps extends ImageProps {
+  zoomInProps?: ImgHTMLAttributes<HTMLImageElement>
+  zoomProps?: UncontrolledProps
+  className?: string
+}
+
+function getImageSrc(src: ImageProps["src"]): string {
+  if (typeof src === "string") return src
+  if ("default" in src) return src.default.src
+  return src.src
+}
+
+export function ImageZoom({ zoomInProps, zoomProps, className, children, ...props }: ImageZoomProps) {
+  return (
+    <Zoom classDialog={cn("fixed inset-0 z-50 bg-background/80 backdrop-blur-sm")} classOverlay={cn("absolute inset-0 transition-colors bg-background/80 cursor-zoom-out")} closeText="Close" zoomMargin={20} wrapElement="span" {...zoomProps} zoomImg={{ src: getImageSrc(props.src), sizes: undefined, className: cn("image-rendering-high-quality cursor-zoom-out", zoomInProps?.className), ...zoomInProps }}>
+      {children ?? <Image className={cn("cursor-zoom-in rounded-md transition-all", className)} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 900px" {...props} />}
+    </Zoom>
+  )
+}
+```
+
+**Dependencies:** `react-medium-image-zoom`, `next/image`, `@/lib/utils`
+
+---
+
+### flip-reveal (paceui)
+**Source:** https://21st.dev/r/paceui/flip-reveal
+
+GSAP-powered flip reveal animation for filtered content.
+
+```tsx
+"use client"
+import { ComponentProps, useRef } from "react"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
+import Flip from "gsap/Flip"
+
+gsap.registerPlugin(Flip)
+
+type FlipRevealItemProps = { flipKey: string } & ComponentProps<"div">
+export const FlipRevealItem = ({ flipKey, ...props }: FlipRevealItemProps) => <div data-flip={flipKey} {...props} />
+
+type FlipRevealProps = { keys: string[]; showClass?: string; hideClass?: string } & ComponentProps<"div">
+
+export const FlipReveal = ({ keys, hideClass = "", showClass = "", ...props }: FlipRevealProps) => {
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const isShow = (key: string | null) => !!key && (keys.includes("all") || keys.includes(key))
+
+  useGSAP(() => {
+    if (!wrapperRef.current) return
+    const items = gsap.utils.toArray<HTMLDivElement>(["[data-flip]"])
+    const state = Flip.getState(items)
+    items.forEach((item) => {
+      const key = item.getAttribute("data-flip")
+      if (isShow(key)) { item.classList.add(showClass); item.classList.remove(hideClass) }
+      else { item.classList.remove(showClass); item.classList.add(hideClass) }
+    })
+    Flip.from(state, { duration: 0.6, scale: true, ease: "power1.inOut", stagger: 0.05, absolute: true,
+      onEnter: (el) => gsap.fromTo(el, { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.8 }),
+      onLeave: (el) => gsap.to(el, { opacity: 0, scale: 0, duration: 0.8 })
+    })
+  }, { scope: wrapperRef, dependencies: [keys] })
+
+  return <div {...props} ref={wrapperRef} />
+}
+```
+
+**Dependencies:** `@gsap/react`, `gsap` (with Flip plugin)
+
+---
+
+### fluid-gradient (66hex)
+**Source:** https://21st.dev/r/66hex/fluid-gradient
+
+WebGL fluid simulation with interactive gradient colors.
+
+```tsx
+"use client"
+import React, { useRef, useMemo, useEffect, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { useFBO } from '@react-three/drei'
+
+// Full shader fluid simulation component using WebGL
+// Features: brush interaction, color mixing, decay effects, smooth mouse interpolation
+
+export const FluidGradient = () => {
+  const [simKey, setSimKey] = useState(0)
+  useEffect(() => {
+    const handleResize = () => setSimKey(prev => prev + 1)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+  
+  return (
+    <Canvas className='absolute inset-0' gl={{ antialias: true }}>
+      {/* Orthographic camera and fluid simulation mesh */}
+      {/* Uses custom GLSL shaders for fluid dynamics */}
+    </Canvas>
+  )
+}
+```
+
+**Dependencies:** `@react-three/fiber`, `three`, `@react-three/drei`
+**Note:** Full implementation with GLSL shaders available in 21st.dev registry
+
+---
+
+### zoom-parallax (shabanhr)
+**Source:** https://21st.dev/r/shabanhr/zoom-parallax
+
+Scroll-driven zoom parallax effect for images.
+
+```tsx
+'use client'
+import { useScroll, useTransform, motion } from 'framer-motion'
+import { useRef } from 'react'
+
+interface Image { src: string; alt?: string }
+
+export function ZoomParallax({ images }: { images: Image[] }) {
+  const container = useRef(null)
+  const { scrollYProgress } = useScroll({ target: container, offset: ['start start', 'end end'] })
+
+  const scale4 = useTransform(scrollYProgress, [0, 1], [1, 4])
+  const scale5 = useTransform(scrollYProgress, [0, 1], [1, 5])
+  const scale6 = useTransform(scrollYProgress, [0, 1], [1, 6])
+  const scale8 = useTransform(scrollYProgress, [0, 1], [1, 8])
+  const scale9 = useTransform(scrollYProgress, [0, 1], [1, 9])
+  const scales = [scale4, scale5, scale6, scale5, scale6, scale8, scale9]
+
+  return (
+    <div ref={container} className="relative h-[300vh]">
+      <div className="sticky top-0 h-screen overflow-hidden">
+        {images.map(({ src, alt }, index) => {
+          const scale = scales[index % scales.length]
+          return (
+            <motion.div key={index} style={{ scale }} className={`absolute top-0 flex h-full w-full items-center justify-center`}>
+              <div className="relative h-[25vh] w-[25vw]">
+                <img src={src || '/placeholder.svg'} alt={alt || `Parallax image ${index + 1}`} className="h-full w-full object-cover" />
+              </div>
+            </motion.div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### image-comparison-slider (thanh)
+**Source:** https://21st.dev/r/thanh/image-comparison-slider
+
+Interactive before/after image comparison slider.
+
+```tsx
+import React, { useState, useRef, useCallback, useEffect } from 'react'
+
+export const ImageComparison = ({ beforeImage, afterImage, altBefore = 'Before', altAfter = 'After' }) => {
+  const [sliderPosition, setSliderPosition] = useState(50)
+  const [isDragging, setIsDragging] = useState(false)
+  const containerRef = useRef(null)
+
+  const handleMove = useCallback((clientX) => {
+    if (!isDragging || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    let newPosition = ((clientX - rect.left) / rect.width) * 100
+    newPosition = Math.max(0, Math.min(100, newPosition))
+    setSliderPosition(newPosition)
+  }, [isDragging])
+
+  const handleMouseDown = () => setIsDragging(true)
+  const handleMouseUp = () => setIsDragging(false)
+  const handleMouseMove = (e) => handleMove(e.clientX)
+  const handleTouchStart = () => setIsDragging(true)
+  const handleTouchEnd = () => setIsDragging(false)
+  const handleTouchMove = (e) => handleMove(e.touches[0].clientX)
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => window.removeEventListener('mouseup', handleMouseUp)
+  }, [handleMouseUp])
+
+  return (
+    <div ref={containerRef} className="relative w-full max-w-4xl mx-auto select-none rounded-xl overflow-hidden shadow-2xl" onMouseMove={handleMouseMove} onMouseLeave={handleMouseUp} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+      <div className="absolute top-0 left-0 h-full w-full overflow-hidden" style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}>
+        <img src={afterImage} alt={altAfter} className="h-full w-full object-cover object-left" draggable="false" />
+      </div>
+      <img src={beforeImage} alt={altBefore} className="block h-full w-full object-cover object-left" draggable="false" />
+      <div className="absolute top-0 bottom-0 w-1.5 bg-white/80 cursor-ew-resize flex items-center justify-center" style={{ left: `calc(${sliderPosition}% - 0.375rem)` }} onMouseDown={handleMouseDown} onTouchStart={handleTouchStart}>
+        <div className={`bg-white rounded-full h-12 w-12 flex items-center justify-center shadow-md transition-all duration-200 ease-in-out ${isDragging ? 'scale-110 shadow-xl' : ''}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700"><line x1="15" y1="18" x2="9" y2="12" /><line x1="9" y1="6" x2="15" y2="12" /></svg>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** None (vanilla React)
+
+---
+
+### hero-section (66hex)
+**Source:** https://21st.dev/r/66hex/hero-section
+
+3D animated boxes hero using React Three Fiber with iridescent material.
+
+```tsx
+import React, { useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Shape, ExtrudeGeometry } from 'three'
+
+const Box = ({ position, rotation }) => {
+  const shape = new Shape()
+  const angleStep = Math.PI * 0.5
+  const radius = 1
+
+  shape.absarc(2, 2, radius, angleStep * 0, angleStep * 1)
+  shape.absarc(-2, 2, radius, angleStep * 1, angleStep * 2)
+  shape.absarc(-2, -2, radius, angleStep * 2, angleStep * 3)
+  shape.absarc(2, -2, radius, angleStep * 3, angleStep * 4)
+
+  const extrudeSettings = { depth: 0.3, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 20, curveSegments: 20 }
+  const geometry = new ExtrudeGeometry(shape, extrudeSettings)
+  geometry.center()
+
+  return (
+    <mesh geometry={geometry} position={position} rotation={rotation}>
+      <meshPhysicalMaterial color="#232323" metalness={1} roughness={0.3} reflectivity={0.5} ior={1.5} iridescence={1} iridescenceIOR={1.3} iridescenceThicknessRange={[100, 400]} />
+    </mesh>
+  )
+}
+
+const AnimatedBoxes = () => {
+  const groupRef = useRef()
+  useFrame((state, delta) => { if (groupRef.current) groupRef.current.rotation.x += delta * 0.05 })
+  const boxes = Array.from({ length: 50 }, (_, i) => ({ position: [(i - 25) * 0.75, 0, 0], rotation: [(i - 10) * 0.1, Math.PI / 2, 0], id: i }))
+  return <group ref={groupRef}>{boxes.map((box) => <Box key={box.id} position={box.position} rotation={box.rotation} />)}</group>
+}
+
+export const Scene = () => (
+  <div className="w-full h-full z-0">
+    <Canvas camera={{ position: [5, 5, 20], fov: 40 }}>
+      <ambientLight intensity={15} />
+      <directionalLight position={[10, 10, 5]} intensity={15} />
+      <AnimatedBoxes />
+    </Canvas>
+  </div>
+)
+```
+
+**Dependencies:** `@react-three/fiber`, `three`
+
+---
+
+### infinite-hero (66hex)
+**Source:** https://21st.dev/r/66hex/infinite-hero
+
+WebGL shader hero with infinite road effect and GSAP text animations.
+
+```tsx
+"use client"
+import { useGSAP } from "@gsap/react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { gsap } from "gsap"
+import { SplitText } from "gsap/SplitText"
+import { useMemo, useRef } from "react"
+import * as THREE from "three"
+
+gsap.registerPlugin(SplitText)
+
+function ShaderPlane({ vertexShader, fragmentShader, uniforms }) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const { size } = useThree()
+  useFrame((state) => {
+    if (meshRef.current) {
+      const mat = meshRef.current.material as THREE.ShaderMaterial
+      mat.uniforms.u_time.value = state.clock.elapsedTime * 0.5
+      mat.uniforms.u_resolution.value.set(size.width, size.height, 1.0)
+    }
+  })
+  return <mesh ref={meshRef}><planeGeometry args={[2, 2]} /><shaderMaterial vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} side={THREE.DoubleSide} depthTest={false} depthWrite={false} /></mesh>
+}
+
+function ShaderBackground({ className = "w-full h-full" }) {
+  // Includes complex GLSL fragment shader for infinite road effect
+  const vertexShader = `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`
+  const fragmentShader = `/* ... extensive raymarching shader ... */`
+  const shaderUniforms = useMemo(() => ({ u_time: { value: 0 }, u_resolution: { value: new THREE.Vector3(1, 1, 1) } }), [])
+  return <div className={className}><Canvas className={className}><ShaderPlane vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={shaderUniforms} /></Canvas></div>
+}
+
+export default function InfiniteHero() {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const bgRef = useRef<HTMLDivElement>(null)
+  const h1Ref = useRef<HTMLHeadingElement>(null)
+  const pRef = useRef<HTMLParagraphElement>(null)
+  const ctaRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(() => {
+    const h1Split = new SplitText(h1Ref.current, { type: "lines" })
+    const pSplit = new SplitText(pRef.current, { type: "lines" })
+    gsap.set(bgRef.current, { filter: "blur(28px)" })
+    gsap.set(h1Split.lines, { opacity: 0, y: 24, filter: "blur(8px)" })
+    gsap.set(pSplit.lines, { opacity: 0, y: 16, filter: "blur(6px)" })
+    gsap.timeline({ defaults: { ease: "power2.out" } })
+      .to(bgRef.current, { filter: "blur(0px)", duration: 1.2 }, 0)
+      .to(h1Split.lines, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, stagger: 0.1 }, 0.3)
+      .to(pSplit.lines, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6, stagger: 0.08 }, "-=0.3")
+    return () => { h1Split.revert(); pSplit.revert() }
+  }, { scope: rootRef })
+
+  return (
+    <div ref={rootRef} className="relative h-svh w-full overflow-hidden bg-black text-white">
+      <div className="absolute inset-0" ref={bgRef}><ShaderBackground className="h-full w-full" /></div>
+      <div className="pointer-events-none absolute inset-0 [background:radial-gradient(120%_80%_at_50%_50%,_transparent_40%,_black_100%)]" />
+      <div className="relative z-10 flex h-svh w-full items-center justify-center px-6">
+        <div className="text-center">
+          <h1 ref={h1Ref} className="mx-auto max-w-2xl lg:max-w-4xl text-[clamp(2.25rem,6vw,4rem)] font-extralight leading-[0.95] tracking-tight">The road dissolves in light</h1>
+          <p ref={pRef} className="mx-auto mt-4 max-w-2xl md:text-balance text-sm/6 md:text-base/7 font-light tracking-tight text-white/70">Minimal structures fade into a vast horizon</p>
+          <div ref={ctaRef} className="mt-8 flex flex-row items-center justify-center gap-4">
+            <button type="button" className="border border-white/30 bg-gradient-to-r from-white/20 to-white/10 px-4 py-2 text-sm rounded-lg font-medium text-white backdrop-blur-sm">Learn more</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@gsap/react`, `@react-three/fiber`, `gsap`, `gsap/SplitText`, `three`
+**Note:** Full shader implementation available in 21st.dev registry
+
+---
+
+### 3d-testimonials / Marquee (reui)
+**Source:** https://21st.dev/r/reui/3d-testimonails
+
+Customizable infinite scrolling marquee component.
+
+```tsx
+import React, { ComponentPropsWithoutRef, useRef } from 'react'
+import { cn } from '@/lib/utils'
+
+interface MarqueeProps extends ComponentPropsWithoutRef<'div'> {
+  className?: string
+  reverse?: boolean
+  pauseOnHover?: boolean
+  children: React.ReactNode
+  vertical?: boolean
+  repeat?: number
+  ariaLabel?: string
+}
+
+export function Marquee({ className, reverse = false, pauseOnHover = false, children, vertical = false, repeat = 4, ariaLabel, ...props }: MarqueeProps) {
+  const marqueeRef = useRef<HTMLDivElement>(null)
+
+  return (
+    <div {...props} ref={marqueeRef} data-slot="marquee" className={cn('group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]', { 'flex-row': !vertical, 'flex-col': vertical }, className)} aria-label={ariaLabel} role="marquee" tabIndex={0}>
+      {Array.from({ length: repeat }, (_, i) => (
+        <div key={i} className={cn(!vertical ? 'flex-row [gap:var(--gap)]' : 'flex-col [gap:var(--gap)]', 'flex shrink-0 justify-around', !vertical && 'animate-marquee flex-row', vertical && 'animate-marquee-vertical flex-col', pauseOnHover && 'group-hover:[animation-play-state:paused]', reverse && '[animation-direction:reverse]')}>
+          {children}
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(calc(-100% - var(--gap))) } }`, `@keyframes marquee-vertical { from { transform: translateY(0) } to { transform: translateY(calc(-100% - var(--gap))) } }`
+
+---
+
+### pricing-tab (aymanch-03)
+**Source:** https://21st.dev/r/aymanch-03/pricing-tab
+
+Animated tab component for pricing with spring layout animation.
+
+```tsx
+"use client"
+import * as React from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+
+interface TabProps {
+  text: string
+  selected: boolean
+  setSelected: (text: string) => void
+  discount?: boolean
+}
+
+export function Tab({ text, selected, setSelected, discount = false }: TabProps) {
+  return (
+    <button onClick={() => setSelected(text)} className={cn("relative w-fit px-4 py-2 text-sm font-semibold capitalize", "text-foreground transition-colors", discount && "flex items-center justify-center gap-2.5")}>
+      <span className="relative z-10">{text}</span>
+      {selected && (
+        <motion.span layoutId="tab" transition={{ type: "spring", duration: 0.4 }} className="absolute inset-0 z-0 rounded-full bg-background shadow-sm" />
+      )}
+      {discount && (
+        <Badge variant="secondary" className={cn("relative z-10 whitespace-nowrap shadow-none", selected && "bg-muted")}>Save 35%</Badge>
+      )}
+    </button>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `class-variance-authority`, `@/components/ui/badge`, `@/lib/utils`
+
+---
+
+### animated-beam (magicui)
+**Source:** https://21st.dev/r/magicui/animated-beam
+
+SVG beam animation connecting two elements with animated gradient.
+
+```tsx
+"use client"
+import { RefObject, useEffect, useId, useState } from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export interface AnimatedBeamProps {
+  className?: string
+  containerRef: RefObject<HTMLElement>
+  fromRef: RefObject<HTMLElement>
+  toRef: RefObject<HTMLElement>
+  curvature?: number
+  reverse?: boolean
+  pathColor?: string
+  pathWidth?: number
+  pathOpacity?: number
+  gradientStartColor?: string
+  gradientStopColor?: string
+  delay?: number
+  duration?: number
+  startXOffset?: number
+  startYOffset?: number
+  endXOffset?: number
+  endYOffset?: number
+}
+
+export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({ className, containerRef, fromRef, toRef, curvature = 0, reverse = false, duration = Math.random() * 3 + 4, delay = 0, pathColor = "gray", pathWidth = 2, pathOpacity = 0.2, gradientStartColor = "#ffaa40", gradientStopColor = "#9c40ff", startXOffset = 0, startYOffset = 0, endXOffset = 0, endYOffset = 0 }) => {
+  const id = useId()
+  const [pathD, setPathD] = useState("")
+  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 })
+
+  const gradientCoordinates = reverse ? { x1: ["90%", "-10%"], x2: ["100%", "0%"], y1: ["0%", "0%"], y2: ["0%", "0%"] } : { x1: ["10%", "110%"], x2: ["0%", "100%"], y1: ["0%", "0%"], y2: ["0%", "0%"] }
+
+  useEffect(() => {
+    const updatePath = () => {
+      if (containerRef.current && fromRef.current && toRef.current) {
+        const containerRect = containerRef.current.getBoundingClientRect()
+        const rectA = fromRef.current.getBoundingClientRect()
+        const rectB = toRef.current.getBoundingClientRect()
+        setSvgDimensions({ width: containerRect.width, height: containerRect.height })
+        const startX = rectA.left - containerRect.left + rectA.width / 2 + startXOffset
+        const startY = rectA.top - containerRect.top + rectA.height / 2 + startYOffset
+        const endX = rectB.left - containerRect.left + rectB.width / 2 + endXOffset
+        const endY = rectB.top - containerRect.top + rectB.height / 2 + endYOffset
+        const controlY = startY - curvature
+        setPathD(`M ${startX},${startY} Q ${(startX + endX) / 2},${controlY} ${endX},${endY}`)
+      }
+    }
+    const ro = new ResizeObserver(() => updatePath())
+    if (containerRef.current) ro.observe(containerRef.current)
+    updatePath()
+    return () => ro.disconnect()
+  }, [containerRef, fromRef, toRef, curvature, startXOffset, startYOffset, endXOffset, endYOffset])
+
+  return (
+    <svg fill="none" width={svgDimensions.width} height={svgDimensions.height} xmlns="http://www.w3.org/2000/svg" className={cn("pointer-events-none absolute left-0 top-0 transform-gpu stroke-2", className)} viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}>
+      <path d={pathD} stroke={pathColor} strokeWidth={pathWidth} strokeOpacity={pathOpacity} strokeLinecap="round" />
+      <path d={pathD} strokeWidth={pathWidth} stroke={`url(#${id})`} strokeOpacity="1" strokeLinecap="round" />
+      <defs>
+        <motion.linearGradient className="transform-gpu" id={id} gradientUnits="userSpaceOnUse" initial={{ x1: "0%", x2: "0%", y1: "0%", y2: "0%" }} animate={{ x1: gradientCoordinates.x1, x2: gradientCoordinates.x2, y1: gradientCoordinates.y1, y2: gradientCoordinates.y2 }} transition={{ delay, duration, ease: [0.16, 1, 0.3, 1], repeat: Infinity, repeatDelay: 0 }}>
+          <stop stopColor={gradientStartColor} stopOpacity="0" />
+          <stop stopColor={gradientStartColor} />
+          <stop offset="32.5%" stopColor={gradientStopColor} />
+          <stop offset="100%" stopColor={gradientStopColor} stopOpacity="0" />
+        </motion.linearGradient>
+      </defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### rainbow-button (magicui)
+**Source:** https://21st.dev/r/magicui/rainbow-button
+
+Animated button with rainbow gradient border.
+
+```tsx
+import React from "react"
+import { cn } from "@/lib/utils"
+
+interface RainbowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+
+export function RainbowButton({ children, className, ...props }: RainbowButtonProps) {
+  return (
+    <button className={cn(
+      "group relative inline-flex h-11 animate-rainbow cursor-pointer items-center justify-center rounded-xl border-0 bg-[length:200%] px-8 py-2 font-medium text-primary-foreground transition-colors [background-clip:padding-box,border-box,border-box] [background-origin:border-box] [border:calc(0.08*1rem)_solid_transparent] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+      "before:absolute before:bottom-[-20%] before:left-1/2 before:z-0 before:h-1/5 before:w-3/5 before:-translate-x-1/2 before:animate-rainbow before:bg-[linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))] before:bg-[length:200%] before:[filter:blur(calc(0.8*1rem))]",
+      "bg-[linear-gradient(#121213,#121213),linear-gradient(#121213_50%,rgba(18,18,19,0.6)_80%,rgba(18,18,19,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
+      "dark:bg-[linear-gradient(#fff,#fff),linear-gradient(#fff_50%,rgba(255,255,255,0.6)_80%,rgba(0,0,0,0)),linear-gradient(90deg,hsl(var(--color-1)),hsl(var(--color-5)),hsl(var(--color-3)),hsl(var(--color-4)),hsl(var(--color-2)))]",
+      className
+    )} {...props}>{children}</button>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS Variables:** `--color-1: 0 100% 63%`, `--color-2: 270 100% 63%`, `--color-3: 210 100% 63%`, `--color-4: 195 100% 63%`, `--color-5: 90 100% 63%`
+**Animation:** `@keyframes rainbow { 0% { background-position: 0% } 100% { background-position: 200% } }`
+
+---
+
+### animated-subscribe-button (magicui)
+**Source:** https://21st.dev/r/magicui/animated-subscribe-button
+
+Button with animated state change for subscribe/unsubscribe.
+
+```tsx
+"use client"
+import React, { useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+
+interface AnimatedSubscribeButtonProps {
+  buttonColor: string
+  buttonTextColor?: string
+  subscribeStatus: boolean
+  initialText: React.ReactElement | string
+  changeText: React.ReactElement | string
+}
+
+export const AnimatedSubscribeButton: React.FC<AnimatedSubscribeButtonProps> = ({ buttonColor, subscribeStatus, buttonTextColor, changeText, initialText }) => {
+  const [isSubscribed, setIsSubscribed] = useState<boolean>(subscribeStatus)
+
+  return (
+    <AnimatePresence mode="wait">
+      {isSubscribed ? (
+        <motion.button className="relative flex w-[200px] items-center justify-center overflow-hidden rounded-md bg-white p-[10px] outline outline-1 outline-black" onClick={() => setIsSubscribed(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.span key="action" className="relative block h-full w-full font-semibold" initial={{ y: -50 }} animate={{ y: 0 }} style={{ color: buttonColor }}>{changeText}</motion.span>
+        </motion.button>
+      ) : (
+        <motion.button className="relative flex w-[200px] cursor-pointer items-center justify-center rounded-md border-none p-[10px]" style={{ backgroundColor: buttonColor, color: buttonTextColor }} onClick={() => setIsSubscribed(true)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.span key="reaction" className="relative block font-semibold" initial={{ x: 0 }} exit={{ x: 50, transition: { duration: 0.1 } }}>{initialText}</motion.span>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### globe (magicui)
+**Source:** https://21st.dev/r/magicui/globe
+
+Interactive 3D globe using cobe.js with customizable markers.
+
+```tsx
+"use client"
+import createGlobe, { COBEOptions } from "cobe"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
+
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800, height: 800, onRender: () => {}, devicePixelRatio: 2,
+  phi: 0, theta: 0.3, dark: 0, diffuse: 0.4, mapSamples: 16000, mapBrightness: 1.2,
+  baseColor: [1, 1, 1], markerColor: [251 / 255, 100 / 255, 21 / 255], glowColor: [1, 1, 1],
+  markers: [
+    { location: [14.5995, 120.9842], size: 0.03 }, { location: [19.076, 72.8777], size: 0.1 },
+    { location: [40.7128, -74.006], size: 0.1 }, { location: [34.6937, 135.5022], size: 0.05 }
+  ]
+}
+
+export function Globe({ className, config = GLOBE_CONFIG }: { className?: string; config?: COBEOptions }) {
+  let phi = 0, width = 0
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const pointerInteracting = useRef(null)
+  const pointerInteractionMovement = useRef(0)
+  const [r, setR] = useState(0)
+
+  const updatePointerInteraction = (value: any) => { pointerInteracting.current = value; if (canvasRef.current) canvasRef.current.style.cursor = value ? "grabbing" : "grab" }
+  const updateMovement = (clientX: any) => { if (pointerInteracting.current !== null) { const delta = clientX - pointerInteracting.current; pointerInteractionMovement.current = delta; setR(delta / 200) } }
+  const onRender = useCallback((state: Record<string, any>) => { if (!pointerInteracting.current) phi += 0.005; state.phi = phi + r; state.width = width * 2; state.height = width * 2 }, [r])
+  const onResize = () => { if (canvasRef.current) width = canvasRef.current.offsetWidth }
+
+  useEffect(() => {
+    window.addEventListener("resize", onResize)
+    onResize()
+    const globe = createGlobe(canvasRef.current!, { ...config, width: width * 2, height: width * 2, onRender })
+    setTimeout(() => (canvasRef.current!.style.opacity = "1"))
+    return () => globe.destroy()
+  }, [])
+
+  return (
+    <div className={cn("absolute inset-0 mx-auto aspect-[1/1] w-full max-w-[600px]", className)}>
+      <canvas className={cn("size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]")} ref={canvasRef} onPointerDown={(e) => updatePointerInteraction(e.clientX - pointerInteractionMovement.current)} onPointerUp={() => updatePointerInteraction(null)} onPointerOut={() => updatePointerInteraction(null)} onMouseMove={(e) => updateMovement(e.clientX)} onTouchMove={(e) => e.touches[0] && updateMovement(e.touches[0].clientX)} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `cobe`, `@/lib/utils`
+
+---
+
+### 3d-card-effect (aceternity)
+**Source:** https://21st.dev/r/aceternity/3d-card-effect
+
+3D tilt card effect on mouse hover.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { createContext, useState, useContext, useRef, useEffect } from "react"
+
+const MouseEnterContext = createContext<[boolean, React.Dispatch<React.SetStateAction<boolean>>] | undefined>(undefined)
+
+export const CardContainer = ({ children, className, containerClassName }: { children?: React.ReactNode; className?: string; containerClassName?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isMouseEntered, setIsMouseEntered] = useState(false)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return
+    const { left, top, width, height } = containerRef.current.getBoundingClientRect()
+    const x = (e.clientX - left - width / 2) / 25
+    const y = (e.clientY - top - height / 2) / 25
+    containerRef.current.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`
+  }
+
+  const handleMouseEnter = () => setIsMouseEntered(true)
+  const handleMouseLeave = () => { setIsMouseEntered(false); if (containerRef.current) containerRef.current.style.transform = `rotateY(0deg) rotateX(0deg)` }
+
+  return (
+    <MouseEnterContext.Provider value={[isMouseEntered, setIsMouseEntered]}>
+      <div className={cn("py-20 flex items-center justify-center", containerClassName)} style={{ perspective: "1000px" }}>
+        <div ref={containerRef} onMouseEnter={handleMouseEnter} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} className={cn("flex items-center justify-center relative transition-all duration-200 ease-linear", className)} style={{ transformStyle: "preserve-3d" }}>{children}</div>
+      </div>
+    </MouseEnterContext.Provider>
+  )
+}
+
+export const CardBody = ({ children, className }: { children: React.ReactNode; className?: string }) => <div className={cn("h-96 w-96 [transform-style:preserve-3d] [&>*]:[transform-style:preserve-3d]", className)}>{children}</div>
+
+export const CardItem = ({ as: Tag = "div", children, className, translateX = 0, translateY = 0, translateZ = 0, rotateX = 0, rotateY = 0, rotateZ = 0, ...rest }: { as?: React.ElementType; children: React.ReactNode; className?: string; translateX?: number; translateY?: number; translateZ?: number; rotateX?: number; rotateY?: number; rotateZ?: number; [key: string]: any }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [isMouseEntered] = useMouseEnter()
+  useEffect(() => { if (!ref.current) return; ref.current.style.transform = isMouseEntered ? `translateX(${translateX}px) translateY(${translateY}px) translateZ(${translateZ}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg)` : `translateX(0px) translateY(0px) translateZ(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg)` }, [isMouseEntered])
+  return <Tag ref={ref} className={cn("w-fit transition duration-200 ease-linear", className)} {...rest}>{children}</Tag>
+}
+
+export const useMouseEnter = () => { const context = useContext(MouseEnterContext); if (context === undefined) throw new Error("useMouseEnter must be used within a MouseEnterProvider"); return context }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### lamp (aceternity)
+**Source:** https://21st.dev/r/aceternity/lamp
+
+Animated lamp effect with conic gradient and glow.
+
+```tsx
+"use client"
+import React from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export function LampDemo() {
+  return (
+    <LampContainer>
+      <motion.h1 initial={{ opacity: 0.5, y: 100 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }} className="mt-8 bg-gradient-to-br from-slate-300 to-slate-500 py-4 bg-clip-text text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl">
+        Build lamps <br /> the right way
+      </motion.h1>
+    </LampContainer>
+  )
+}
+
+export const LampContainer = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 w-full rounded-md z-0", className)}>
+    <div className="relative flex w-full flex-1 scale-y-125 items-center justify-center isolate z-0">
+      <motion.div initial={{ opacity: 0.5, width: "15rem" }} whileInView={{ opacity: 1, width: "30rem" }} transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }} style={{ backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))` }} className="absolute inset-auto right-1/2 h-56 overflow-visible w-[30rem] bg-gradient-conic from-cyan-500 via-transparent to-transparent text-white [--conic-position:from_70deg_at_center_top]">
+        <div className="absolute w-[100%] left-0 bg-slate-950 h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]" />
+        <div className="absolute w-40 h-[100%] left-0 bg-slate-950 bottom-0 z-20 [mask-image:linear-gradient(to_right,white,transparent)]" />
+      </motion.div>
+      <motion.div initial={{ opacity: 0.5, width: "15rem" }} whileInView={{ opacity: 1, width: "30rem" }} transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }} style={{ backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))` }} className="absolute inset-auto left-1/2 h-56 w-[30rem] bg-gradient-conic from-transparent via-transparent to-cyan-500 text-white [--conic-position:from_290deg_at_center_top]">
+        <div className="absolute w-40 h-[100%] right-0 bg-slate-950 bottom-0 z-20 [mask-image:linear-gradient(to_left,white,transparent)]" />
+        <div className="absolute w-[100%] right-0 bg-slate-950 h-40 bottom-0 z-20 [mask-image:linear-gradient(to_top,white,transparent)]" />
+      </motion.div>
+      <div className="absolute top-1/2 h-48 w-full translate-y-12 scale-x-150 bg-slate-950 blur-2xl" />
+      <div className="absolute top-1/2 z-50 h-48 w-full bg-transparent opacity-10 backdrop-blur-md" />
+      <div className="absolute inset-auto z-50 h-36 w-[28rem] -translate-y-1/2 rounded-full bg-cyan-500 opacity-50 blur-3xl" />
+      <motion.div initial={{ width: "8rem" }} whileInView={{ width: "16rem" }} transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }} className="absolute inset-auto z-30 h-36 w-64 -translate-y-[6rem] rounded-full bg-cyan-400 blur-2xl" />
+      <motion.div initial={{ width: "15rem" }} whileInView={{ width: "30rem" }} transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }} className="absolute inset-auto z-50 h-0.5 w-[30rem] -translate-y-[7rem] bg-cyan-400" />
+      <div className="absolute inset-auto z-40 h-44 w-full -translate-y-[12.5rem] bg-slate-950" />
+    </div>
+    <div className="relative z-50 flex -translate-y-80 flex-col items-center px-5">{children}</div>
+  </div>
+)
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### background-beams (aceternity)
+**Source:** https://21st.dev/r/aceternity/background-beams
+
+Animated SVG beam lines background.
+
+```tsx
+"use client"
+import React from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export const BackgroundBeams = React.memo(({ className }: { className?: string }) => {
+  const paths = [
+    "M-380 -189C-380 -189 -312 216 152 343C616 470 684 875 684 875",
+    "M-373 -197C-373 -197 -305 208 159 335C623 462 691 867 691 867",
+    // ... 50+ path definitions
+  ]
+  return (
+    <div className={cn("absolute h-full w-full inset-0 [mask-size:40px] [mask-repeat:no-repeat] flex items-center justify-center", className)}>
+      <svg className="z-0 h-full w-full pointer-events-none absolute" width="100%" height="100%" viewBox="0 0 696 316" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="..." stroke="url(#paint0_radial_242_278)" strokeOpacity="0.05" strokeWidth="0.5" />
+        {paths.map((path, index) => (
+          <motion.path key={`path-${index}`} d={path} stroke={`url(#linearGradient-${index})`} strokeOpacity="0.4" strokeWidth="0.5" />
+        ))}
+        <defs>
+          {paths.map((path, index) => (
+            <motion.linearGradient id={`linearGradient-${index}`} key={`gradient-${index}`} initial={{ x1: "0%", x2: "0%", y1: "0%", y2: "0%" }} animate={{ x1: ["0%", "100%"], x2: ["0%", "95%"], y1: ["0%", "100%"], y2: ["0%", `${93 + Math.random() * 8}%`] }} transition={{ duration: Math.random() * 10 + 10, ease: "easeInOut", repeat: Infinity, delay: Math.random() * 10 }}>
+              <stop stopColor="#18CCFC" stopOpacity="0" />
+              <stop stopColor="#18CCFC" />
+              <stop offset="32.5%" stopColor="#6344F5" />
+              <stop offset="100%" stopColor="#AE48FF" stopOpacity="0" />
+            </motion.linearGradient>
+          ))}
+        </defs>
+      </svg>
+    </div>
+  )
+})
+
+BackgroundBeams.displayName = "BackgroundBeams"
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+**Note:** Full path definitions (50+ curves) available in 21st.dev registry
+
+---
+
+### world-map (aceternity)
+**Source:** https://21st.dev/r/aceternity/world-map
+
+Interactive dotted world map with animated connection lines.
+
+```tsx
+"use client"
+import { useRef } from "react"
+import { motion } from "framer-motion"
+import DottedMap from "dotted-map"
+import Image from "next/image"
+import { useTheme } from "next-themes"
+
+interface MapProps {
+  dots?: Array<{ start: { lat: number; lng: number; label?: string }; end: { lat: number; lng: number; label?: string } }>
+  lineColor?: string
+}
+
+export function WorldMap({ dots = [], lineColor = "#0ea5e9" }: MapProps) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  const map = new DottedMap({ height: 100, grid: "diagonal" })
+  const { theme } = useTheme()
+
+  const svgMap = map.getSVG({ radius: 0.22, color: theme === "dark" ? "#FFFFFF40" : "#00000040", shape: "circle", backgroundColor: theme === "dark" ? "black" : "white" })
+
+  const projectPoint = (lat: number, lng: number) => ({ x: (lng + 180) * (800 / 360), y: (90 - lat) * (400 / 180) })
+  const createCurvedPath = (start: { x: number; y: number }, end: { x: number; y: number }) => `M ${start.x} ${start.y} Q ${(start.x + end.x) / 2} ${Math.min(start.y, end.y) - 50} ${end.x} ${end.y}`
+
+  return (
+    <div className="w-full aspect-[2/1] dark:bg-black bg-white rounded-lg relative font-sans">
+      <Image src={`data:image/svg+xml;utf8,${encodeURIComponent(svgMap)}`} className="h-full w-full [mask-image:linear-gradient(to_bottom,transparent,white_10%,white_90%,transparent)] pointer-events-none select-none" alt="world map" height="495" width="1056" draggable={false} />
+      <svg ref={svgRef} viewBox="0 0 800 400" className="w-full h-full absolute inset-0 pointer-events-none select-none">
+        {dots.map((dot, i) => {
+          const startPoint = projectPoint(dot.start.lat, dot.start.lng)
+          const endPoint = projectPoint(dot.end.lat, dot.end.lng)
+          return (
+            <g key={`path-group-${i}`}>
+              <motion.path d={createCurvedPath(startPoint, endPoint)} fill="none" stroke="url(#path-gradient)" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1, delay: 0.5 * i, ease: "easeOut" }} />
+            </g>
+          )
+        })}
+        <defs><linearGradient id="path-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="white" stopOpacity="0" /><stop offset="5%" stopColor={lineColor} stopOpacity="1" /><stop offset="95%" stopColor={lineColor} stopOpacity="1" /><stop offset="100%" stopColor="white" stopOpacity="0" /></linearGradient></defs>
+        {dots.map((dot, i) => (
+          <g key={`points-group-${i}`}>
+            <circle cx={projectPoint(dot.start.lat, dot.start.lng).x} cy={projectPoint(dot.start.lat, dot.start.lng).y} r="2" fill={lineColor} />
+            <circle cx={projectPoint(dot.end.lat, dot.end.lng).x} cy={projectPoint(dot.end.lat, dot.end.lng).y} r="2" fill={lineColor} />
+          </g>
+        ))}
+      </svg>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `dotted-map`, `framer-motion`, `next/image`, `next-themes`
+
+---
+
+### text-generate-effect (aceternity)
+**Source:** https://21st.dev/r/aceternity/text-generate-effect
+
+Words fade in one by one with blur effect.
+
+```tsx
+"use client"
+import { useEffect } from "react"
+import { motion, stagger, useAnimate } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export const TextGenerateEffect = ({ words, className, filter = true, duration = 0.5 }: { words: string; className?: string; filter?: boolean; duration?: number }) => {
+  const [scope, animate] = useAnimate()
+  let wordsArray = words.split(" ")
+  
+  useEffect(() => {
+    animate("span", { opacity: 1, filter: filter ? "blur(0px)" : "none" }, { duration: duration || 1, delay: stagger(0.2) })
+  }, [scope.current])
+
+  const renderWords = () => (
+    <motion.div ref={scope}>
+      {wordsArray.map((word, idx) => (
+        <motion.span key={word + idx} className="dark:text-white text-black opacity-0" style={{ filter: filter ? "blur(10px)" : "none" }}>{word}{" "}</motion.span>
+      ))}
+    </motion.div>
+  )
+
+  return (
+    <div className={cn("font-bold", className)}>
+      <div className="mt-4">
+        <div className="dark:text-white text-black text-2xl leading-snug tracking-wide">{renderWords()}</div>
+      </div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### tracing-beam (aceternity)
+**Source:** https://21st.dev/r/aceternity/tracing-beam
+
+Scroll-tracking beam that follows content progress.
+
+```tsx
+"use client"
+import React, { useEffect, useRef, useState } from "react"
+import { motion, useTransform, useScroll, useSpring } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export const TracingBeam = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] })
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [svgHeight, setSvgHeight] = useState(0)
+
+  useEffect(() => { if (contentRef.current) setSvgHeight(contentRef.current.offsetHeight) }, [])
+
+  const y1 = useSpring(useTransform(scrollYProgress, [0, 0.8], [50, svgHeight]), { stiffness: 500, damping: 90 })
+  const y2 = useSpring(useTransform(scrollYProgress, [0, 1], [50, svgHeight - 200]), { stiffness: 500, damping: 90 })
+
+  return (
+    <motion.div ref={ref} className={cn("relative w-full max-w-4xl mx-auto h-full", className)}>
+      <div className="absolute -left-4 md:-left-20 top-3">
+        <motion.div className="ml-[27px] h-4 w-4 rounded-full border border-neutral-200 shadow-sm flex items-center justify-center">
+          <motion.div className="h-2 w-2 rounded-full border border-neutral-300 bg-white" />
+        </motion.div>
+        <svg viewBox={`0 0 20 ${svgHeight}`} width="20" height={svgHeight} className="ml-4 block" aria-hidden="true">
+          <motion.path d={`M 1 0V -36 l 18 24 V ${svgHeight * 0.8} l -18 24V ${svgHeight}`} fill="none" stroke="#9091A0" strokeOpacity="0.16" />
+          <motion.path d={`M 1 0V -36 l 18 24 V ${svgHeight * 0.8} l -18 24V ${svgHeight}`} fill="none" stroke="url(#gradient)" strokeWidth="1.25" className="motion-reduce:hidden" />
+          <defs>
+            <motion.linearGradient id="gradient" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1={y1} y2={y2}>
+              <stop stopColor="#18CCFC" stopOpacity="0" /><stop stopColor="#18CCFC" /><stop offset="0.325" stopColor="#6344F5" /><stop offset="1" stopColor="#AE48FF" stopOpacity="0" />
+            </motion.linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div ref={contentRef}>{children}</div>
+    </motion.div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### tabs (aceternity)
+**Source:** https://21st.dev/r/aceternity/tabs
+
+3D stacked tabs with animated transitions.
+
+```tsx
+"use client"
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+type Tab = { title: string; value: string; content?: string | React.ReactNode }
+
+export const Tabs = ({ tabs: propTabs, containerClassName, activeTabClassName, tabClassName, contentClassName }: { tabs: Tab[]; containerClassName?: string; activeTabClassName?: string; tabClassName?: string; contentClassName?: string }) => {
+  const [active, setActive] = useState<Tab>(propTabs[0])
+  const [tabs, setTabs] = useState<Tab[]>(propTabs)
+  const [hovering, setHovering] = useState(false)
+
+  const moveSelectedTabToTop = (idx: number) => { const newTabs = [...propTabs]; const selectedTab = newTabs.splice(idx, 1); newTabs.unshift(selectedTab[0]); setTabs(newTabs); setActive(newTabs[0]) }
+
+  return (
+    <>
+      <div className={cn("flex flex-row items-center justify-start [perspective:1000px] relative overflow-auto sm:overflow-visible no-visible-scrollbar max-w-full w-full", containerClassName)}>
+        {propTabs.map((tab, idx) => (
+          <button key={tab.title} onClick={() => moveSelectedTabToTop(idx)} onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)} className={cn("relative px-4 py-2 rounded-full", tabClassName)} style={{ transformStyle: "preserve-3d" }}>
+            {active.value === tab.value && <motion.div layoutId="clickedbutton" transition={{ type: "spring", bounce: 0.3, duration: 0.6 }} className={cn("absolute inset-0 bg-gray-200 dark:bg-zinc-800 rounded-full", activeTabClassName)} />}
+            <span className="relative block text-black dark:text-white">{tab.title}</span>
+          </button>
+        ))}
+      </div>
+      <FadeInDiv tabs={tabs} active={active} key={active.value} hovering={hovering} className={cn("mt-32", contentClassName)} />
+    </>
+  )
+}
+
+export const FadeInDiv = ({ className, tabs, hovering }: { className?: string; tabs: Tab[]; active: Tab; hovering?: boolean }) => (
+  <div className="relative w-full h-full">
+    {tabs.map((tab, idx) => (
+      <motion.div key={tab.value} layoutId={tab.value} style={{ scale: 1 - idx * 0.1, top: hovering ? idx * -50 : 0, zIndex: -idx, opacity: idx < 3 ? 1 - idx * 0.1 : 0 }} animate={{ y: tab.value === tabs[0].value ? [0, 40, 0] : 0 }} className={cn("w-full h-full absolute top-0 left-0", className)}>{tab.content}</motion.div>
+    ))}
+  </div>
+)
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### meteors (aceternity)
+**Source:** https://21st.dev/r/aceternity/meteors
+
+Animated meteor shower effect.
+
+```tsx
+import { cn } from "@/lib/utils"
+import React from "react"
+
+export const Meteors = ({ number, className }: { number?: number; className?: string }) => {
+  const meteors = new Array(number || 20).fill(true)
+  return (
+    <>
+      {meteors.map((el, idx) => (
+        <span key={"meteor" + idx} className={cn("animate-meteor-effect absolute top-1/2 left-1/2 h-0.5 w-0.5 rounded-[9999px] bg-slate-500 shadow-[0_0_0_1px_#ffffff10] rotate-[215deg]", "before:content-[''] before:absolute before:top-1/2 before:transform before:-translate-y-[50%] before:w-[50px] before:h-[1px] before:bg-gradient-to-r before:from-[#64748b] before:to-transparent", className)} style={{ top: 0, left: Math.floor(Math.random() * (400 - -400) + -400) + "px", animationDelay: Math.random() * 0.6 + 0.2 + "s", animationDuration: Math.floor(Math.random() * 8 + 2) + "s" }} />
+      ))}
+    </>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes meteor { 0% { transform: rotate(215deg) translateX(0); opacity: 1 } 70% { opacity: 1 } 100% { transform: rotate(215deg) translateX(-500px); opacity: 0 } }`
+
+---
+
+### hover-border-gradient (aceternity)
+**Source:** https://21st.dev/r/aceternity/hover-border-gradient
+
+Button with rotating gradient border on hover.
+
+```tsx
+"use client"
+import React, { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+type Direction = "TOP" | "LEFT" | "BOTTOM" | "RIGHT"
+
+export function HoverBorderGradient({ children, containerClassName, className, as: Tag = "button", duration = 1, clockwise = true, ...props }: React.PropsWithChildren<{ as?: React.ElementType; containerClassName?: string; className?: string; duration?: number; clockwise?: boolean } & React.HTMLAttributes<HTMLElement>>) {
+  const [hovered, setHovered] = useState<boolean>(false)
+  const [direction, setDirection] = useState<Direction>("TOP")
+
+  const rotateDirection = (curr: Direction): Direction => {
+    const dirs: Direction[] = ["TOP", "LEFT", "BOTTOM", "RIGHT"]
+    const i = dirs.indexOf(curr)
+    return clockwise ? dirs[(i - 1 + dirs.length) % dirs.length] : dirs[(i + 1) % dirs.length]
+  }
+
+  const movingMap: Record<Direction, string> = {
+    TOP: "radial-gradient(20.7% 50% at 50% 0%, hsl(0, 0%, 100%) 0%, rgba(255, 255, 255, 0) 100%)",
+    LEFT: "radial-gradient(16.6% 43.1% at 0% 50%, hsl(0, 0%, 100%) 0%, rgba(255, 255, 255, 0) 100%)",
+    BOTTOM: "radial-gradient(20.7% 50% at 50% 100%, hsl(0, 0%, 100%) 0%, rgba(255, 255, 255, 0) 100%)",
+    RIGHT: "radial-gradient(16.2% 41.2% at 100% 50%, hsl(0, 0%, 100%) 0%, rgba(255, 255, 255, 0) 100%)"
+  }
+  const highlight = "radial-gradient(75% 181.16% at 50% 50%, #3275F8 0%, rgba(255, 255, 255, 0) 100%)"
+
+  useEffect(() => { if (!hovered) { const interval = setInterval(() => setDirection(rotateDirection), duration * 1000); return () => clearInterval(interval) } }, [hovered])
+
+  return (
+    <Tag onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} className={cn("relative flex rounded-full border content-center bg-black/20 hover:bg-black/10 transition duration-500 dark:bg-white/20 items-center flex-col flex-nowrap gap-10 h-min justify-center overflow-visible p-px decoration-clone w-fit", containerClassName)} {...props}>
+      <div className={cn("w-auto text-white z-10 bg-black px-4 py-2 rounded-[inherit]", className)}>{children}</div>
+      <motion.div className={cn("flex-none inset-0 overflow-hidden absolute z-0 rounded-[inherit]")} style={{ filter: "blur(2px)", position: "absolute", width: "100%", height: "100%" }} initial={{ background: movingMap[direction] }} animate={{ background: hovered ? [movingMap[direction], highlight] : movingMap[direction] }} transition={{ ease: "linear", duration }} />
+      <div className="bg-black absolute z-1 flex-none inset-[2px] rounded-[100px]" />
+    </Tag>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### background-gradient (aceternity)
+**Source:** https://21st.dev/r/aceternity/background-gradient
+
+Animated multi-radial gradient border container.
+
+```tsx
+import { cn } from "@/lib/utils"
+import React from "react"
+import { motion } from "framer-motion"
+
+export const BackgroundGradient = ({ children, className, containerClassName, animate = true }: { children?: React.ReactNode; className?: string; containerClassName?: string; animate?: boolean }) => {
+  const variants = { initial: { backgroundPosition: "0 50%" }, animate: { backgroundPosition: ["0, 50%", "100% 50%", "0 50%"] } }
+  return (
+    <div className={cn("relative p-[4px] group", containerClassName)}>
+      <motion.div variants={animate ? variants : undefined} initial={animate ? "initial" : undefined} animate={animate ? "animate" : undefined} transition={animate ? { duration: 5, repeat: Infinity, repeatType: "reverse" } : undefined} style={{ backgroundSize: animate ? "400% 400%" : undefined }} className={cn("absolute inset-0 rounded-3xl z-[1] opacity-60 group-hover:opacity-100 blur-xl transition duration-500 will-change-transform", "bg-[radial-gradient(circle_farthest-side_at_0_100%,#00ccb1,transparent),radial-gradient(circle_farthest-side_at_100%_0,#7b61ff,transparent),radial-gradient(circle_farthest-side_at_100%_100%,#ffc414,transparent),radial-gradient(circle_farthest-side_at_0_0,#1ca0fb,#141316)]")} />
+      <motion.div variants={animate ? variants : undefined} initial={animate ? "initial" : undefined} animate={animate ? "animate" : undefined} transition={animate ? { duration: 5, repeat: Infinity, repeatType: "reverse" } : undefined} style={{ backgroundSize: animate ? "400% 400%" : undefined }} className={cn("absolute inset-0 rounded-3xl z-[1] will-change-transform", "bg-[radial-gradient(circle_farthest-side_at_0_100%,#00ccb1,transparent),radial-gradient(circle_farthest-side_at_100%_0,#7b61ff,transparent),radial-gradient(circle_farthest-side_at_100%_100%,#ffc414,transparent),radial-gradient(circle_farthest-side_at_0_0,#1ca0fb,#141316)]")} />
+      <div className={cn("relative z-10", className)}>{children}</div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### shooting-stars (aceternity)
+**Source:** https://21st.dev/r/aceternity/shooting-stars
+
+Animated shooting stars effect with customizable colors.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { useEffect, useState, useRef } from "react"
+
+interface ShootingStar { id: number; x: number; y: number; angle: number; scale: number; speed: number; distance: number }
+
+interface ShootingStarsProps { minSpeed?: number; maxSpeed?: number; minDelay?: number; maxDelay?: number; starColor?: string; trailColor?: string; starWidth?: number; starHeight?: number; className?: string }
+
+const getRandomStartPoint = () => {
+  const side = Math.floor(Math.random() * 4)
+  const offset = Math.random() * window.innerWidth
+  switch (side) {
+    case 0: return { x: offset, y: 0, angle: 45 }
+    case 1: return { x: window.innerWidth, y: offset, angle: 135 }
+    case 2: return { x: offset, y: window.innerHeight, angle: 225 }
+    case 3: return { x: 0, y: offset, angle: 315 }
+    default: return { x: 0, y: 0, angle: 45 }
+  }
+}
+
+export const ShootingStars: React.FC<ShootingStarsProps> = ({ minSpeed = 10, maxSpeed = 30, minDelay = 1200, maxDelay = 4200, starColor = "#9E00FF", trailColor = "#2EB9DF", starWidth = 10, starHeight = 1, className }) => {
+  const [star, setStar] = useState<ShootingStar | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    const createStar = () => {
+      const { x, y, angle } = getRandomStartPoint()
+      setStar({ id: Date.now(), x, y, angle, scale: 1, speed: Math.random() * (maxSpeed - minSpeed) + minSpeed, distance: 0 })
+      setTimeout(createStar, Math.random() * (maxDelay - minDelay) + minDelay)
+    }
+    createStar()
+    return () => {}
+  }, [minSpeed, maxSpeed, minDelay, maxDelay])
+
+  useEffect(() => {
+    const moveStar = () => {
+      if (star) {
+        setStar((prev) => {
+          if (!prev) return null
+          const newX = prev.x + prev.speed * Math.cos((prev.angle * Math.PI) / 180)
+          const newY = prev.y + prev.speed * Math.sin((prev.angle * Math.PI) / 180)
+          const newDistance = prev.distance + prev.speed
+          if (newX < -20 || newX > window.innerWidth + 20 || newY < -20 || newY > window.innerHeight + 20) return null
+          return { ...prev, x: newX, y: newY, distance: newDistance, scale: 1 + newDistance / 100 }
+        })
+      }
+    }
+    const animationFrame = requestAnimationFrame(moveStar)
+    return () => cancelAnimationFrame(animationFrame)
+  }, [star])
+
+  return (
+    <svg ref={svgRef} className={cn("w-full h-full absolute inset-0", className)}>
+      {star && <rect x={star.x} y={star.y} width={starWidth * star.scale} height={starHeight} fill="url(#gradient)" transform={`rotate(${star.angle}, ${star.x + (starWidth * star.scale) / 2}, ${star.y + starHeight / 2})`} />}
+      <defs><linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style={{ stopColor: trailColor, stopOpacity: 0 }} /><stop offset="100%" style={{ stopColor: starColor, stopOpacity: 1 }} /></linearGradient></defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### stars-background (aceternity)
+**Source:** https://21st.dev/r/aceternity/stars-background
+
+Animated twinkling stars canvas background.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { useState, useEffect, useRef, useCallback } from "react"
+
+interface StarProps { x: number; y: number; radius: number; opacity: number; twinkleSpeed: number | null }
+
+export const StarsBackground: React.FC<{ starDensity?: number; allStarsTwinkle?: boolean; twinkleProbability?: number; minTwinkleSpeed?: number; maxTwinkleSpeed?: number; className?: string }> = ({ starDensity = 0.00015, allStarsTwinkle = true, twinkleProbability = 0.7, minTwinkleSpeed = 0.5, maxTwinkleSpeed = 1, className }) => {
+  const [stars, setStars] = useState<StarProps[]>([])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const generateStars = useCallback((width: number, height: number): StarProps[] => {
+    const numStars = Math.floor(width * height * starDensity)
+    return Array.from({ length: numStars }, () => {
+      const shouldTwinkle = allStarsTwinkle || Math.random() < twinkleProbability
+      return { x: Math.random() * width, y: Math.random() * height, radius: Math.random() * 0.05 + 0.5, opacity: Math.random() * 0.5 + 0.5, twinkleSpeed: shouldTwinkle ? minTwinkleSpeed + Math.random() * (maxTwinkleSpeed - minTwinkleSpeed) : null }
+    })
+  }, [starDensity, allStarsTwinkle, twinkleProbability, minTwinkleSpeed, maxTwinkleSpeed])
+
+  useEffect(() => {
+    const updateStars = () => {
+      if (canvasRef.current) {
+        const canvas = canvasRef.current
+        const { width, height } = canvas.getBoundingClientRect()
+        canvas.width = width
+        canvas.height = height
+        setStars(generateStars(width, height))
+      }
+    }
+    updateStars()
+    const ro = new ResizeObserver(updateStars)
+    if (canvasRef.current) ro.observe(canvasRef.current)
+    return () => { if (canvasRef.current) ro.unobserve(canvasRef.current) }
+  }, [generateStars])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    let animationFrameId: number
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      stars.forEach((star) => {
+        ctx.beginPath()
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`
+        ctx.fill()
+        if (star.twinkleSpeed !== null) star.opacity = 0.5 + Math.abs(Math.sin((Date.now() * 0.001) / star.twinkleSpeed) * 0.5)
+      })
+      animationFrameId = requestAnimationFrame(render)
+    }
+    render()
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [stars])
+
+  return <canvas ref={canvasRef} className={cn("h-full w-full absolute inset-0", className)} />
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### dock (magicui)
+**Source:** https://21st.dev/r/magicui/dock
+
+macOS-style dock with magnification effect on hover.
+
+```tsx
+"use client"
+import React, { PropsWithChildren, useRef } from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export interface DockProps extends VariantProps<typeof dockVariants> { className?: string; magnification?: number; distance?: number; direction?: "top" | "middle" | "bottom"; children: React.ReactNode }
+
+const DEFAULT_MAGNIFICATION = 60
+const DEFAULT_DISTANCE = 140
+
+const dockVariants = cva("supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 mx-auto mt-8 flex h-[58px] w-max gap-2 rounded-2xl border p-2 backdrop-blur-md")
+
+const Dock = React.forwardRef<HTMLDivElement, DockProps>(({ className, children, magnification = DEFAULT_MAGNIFICATION, distance = DEFAULT_DISTANCE, direction = "bottom", ...props }, ref) => {
+  const mouseX = useMotionValue(Infinity)
+  const renderChildren = () => React.Children.map(children, (child) => {
+    if (React.isValidElement(child) && child.type === DockIcon) return React.cloneElement(child, { ...child.props, mouseX, magnification, distance })
+    return child
+  })
+  return (
+    <motion.div ref={ref} onMouseMove={(e) => mouseX.set(e.pageX)} onMouseLeave={() => mouseX.set(Infinity)} {...props} className={cn(dockVariants({ className }), { "items-start": direction === "top", "items-center": direction === "middle", "items-end": direction === "bottom" })}>
+      {renderChildren()}
+    </motion.div>
+  )
+})
+Dock.displayName = "Dock"
+
+export interface DockIconProps { size?: number; magnification?: number; distance?: number; mouseX?: any; className?: string; children?: React.ReactNode; props?: PropsWithChildren }
+
+const DockIcon = ({ magnification = DEFAULT_MAGNIFICATION, distance = DEFAULT_DISTANCE, mouseX, className, children, ...props }: DockIconProps) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const distanceCalc = useTransform(mouseX, (val: number) => { const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }; return val - bounds.x - bounds.width / 2 })
+  const widthSync = useTransform(distanceCalc, [-distance, 0, distance], [40, magnification, 40])
+  const width = useSpring(widthSync, { mass: 0.1, stiffness: 150, damping: 12 })
+  return <motion.div ref={ref} style={{ width }} className={cn("flex aspect-square cursor-pointer items-center justify-center rounded-full", className)} {...props}>{children}</motion.div>
+}
+DockIcon.displayName = "DockIcon"
+
+export { Dock, DockIcon, dockVariants }
+```
+
+**Dependencies:** `framer-motion`, `class-variance-authority`, `@/lib/utils`
+
+---
+
+### blur-fade (magicui)
+**Source:** https://21st.dev/r/magicui/blur-fade
+
+Fade in with blur effect triggered by scroll visibility.
+
+```tsx
+"use client"
+import { useRef } from "react"
+import { AnimatePresence, motion, useInView, UseInViewOptions, Variants } from "framer-motion"
+
+type MarginType = UseInViewOptions["margin"]
+
+interface BlurFadeProps { children: React.ReactNode; className?: string; variant?: { hidden: { y: number }; visible: { y: number } }; duration?: number; delay?: number; yOffset?: number; inView?: boolean; inViewMargin?: MarginType; blur?: string }
+
+export function BlurFade({ children, className, variant, duration = 0.4, delay = 0, yOffset = 6, inView = false, inViewMargin = "-50px", blur = "6px" }: BlurFadeProps) {
+  const ref = useRef(null)
+  const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
+  const isInView = !inView || inViewResult
+  const defaultVariants: Variants = { hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` }, visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` } }
+  const combinedVariants = variant || defaultVariants
+  return (
+    <AnimatePresence>
+      <motion.div ref={ref} initial="hidden" animate={isInView ? "visible" : "hidden"} exit="hidden" variants={combinedVariants} transition={{ delay: 0.04 + delay, duration, ease: "easeOut" }} className={className}>
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### dot-pattern (magicui)
+**Source:** https://21st.dev/r/magicui/dot-pattern
+
+SVG dot pattern background.
+
+```tsx
+import { useId } from "react"
+import { cn } from "@/lib/utils"
+
+interface DotPatternProps { width?: number; height?: number; x?: number; y?: number; cx?: number; cy?: number; cr?: number; className?: string; [key: string]: any }
+
+function DotPattern({ width = 16, height = 16, x = 0, y = 0, cx = 1, cy = 1, cr = 1, className, ...props }: DotPatternProps) {
+  const id = useId()
+  return (
+    <svg aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-neutral-400/80", className)} {...props}>
+      <defs><pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse" x={x} y={y}><circle id="pattern-circle" cx={cx} cy={cy} r={cr} /></pattern></defs>
+      <rect width="100%" height="100%" strokeWidth={0} fill={`url(#${id})`} />
+    </svg>
+  )
+}
+
+export { DotPattern }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### retro-grid (magicui)
+**Source:** https://21st.dev/r/magicui/retro-grid
+
+Animated retro 3D perspective grid background.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+export function RetroGrid({ className, angle = 65 }: { className?: string; angle?: number }) {
+  return (
+    <div className={cn("pointer-events-none absolute size-full overflow-hidden opacity-50 [perspective:200px]", className)} style={{ "--grid-angle": `${angle}deg` } as React.CSSProperties}>
+      <div className="absolute inset-0 [transform:rotateX(var(--grid-angle))]">
+        <div className={cn("animate-grid", "[background-repeat:repeat] [background-size:60px_60px] [height:300vh] [inset:0%_0px] [margin-left:-50%] [transform-origin:100%_0_0] [width:600vw]", "[background-image:linear-gradient(to_right,rgba(0,0,0,0.3)_1px,transparent_0),linear-gradient(to_bottom,rgba(0,0,0,0.3)_1px,transparent_0)]", "dark:[background-image:linear-gradient(to_right,rgba(255,255,255,0.2)_1px,transparent_0),linear-gradient(to_bottom,rgba(255,255,255,0.2)_1px,transparent_0)]")} />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent to-90% dark:from-black" />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes grid { 0% { transform: translateY(-50%) } 100% { transform: translateY(0) } }`
+
+---
+
+### animated-grid-pattern (magicui)
+**Source:** https://21st.dev/r/magicui/animated-grid-pattern
+
+Interactive grid with animated appearing squares.
+
+```tsx
+"use client"
+import { useEffect, useId, useRef, useState } from "react"
+import { motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface AnimatedGridPatternProps { width?: number; height?: number; x?: number; y?: number; strokeDasharray?: any; numSquares?: number; className?: string; maxOpacity?: number; duration?: number; repeatDelay?: number }
+
+export function AnimatedGridPattern({ width = 40, height = 40, x = -1, y = -1, numSquares = 50, className, maxOpacity = 0.5, duration = 4, ...props }: AnimatedGridPatternProps) {
+  const id = useId()
+  const containerRef = useRef(null)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const getPos = () => [Math.floor((Math.random() * dimensions.width) / width), Math.floor((Math.random() * dimensions.height) / height)]
+  const [squares, setSquares] = useState(() => Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: [0, 0] })))
+
+  const updateSquarePosition = (id: number) => setSquares((curr) => curr.map((sq) => (sq.id === id ? { ...sq, pos: getPos() } : sq)))
+
+  useEffect(() => { if (dimensions.width && dimensions.height) setSquares(Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: getPos() }))) }, [dimensions, numSquares])
+
+  useEffect(() => {
+    const ro = new ResizeObserver((entries) => { for (let e of entries) setDimensions({ width: e.contentRect.width, height: e.contentRect.height }) })
+    if (containerRef.current) ro.observe(containerRef.current)
+    return () => { if (containerRef.current) ro.unobserve(containerRef.current) }
+  }, [])
+
+  return (
+    <svg ref={containerRef} aria-hidden="true" className={cn("pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30", className)} {...props}>
+      <defs><pattern id={id} width={width} height={height} patternUnits="userSpaceOnUse" x={x} y={y}><path d={`M.5 ${height}V.5H${width}`} fill="none" /></pattern></defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
+      <svg x={x} y={y} className="overflow-visible">
+        {squares.map(({ pos: [px, py], id }, idx) => (
+          <motion.rect key={`${px}-${py}-${idx}`} initial={{ opacity: 0 }} animate={{ opacity: maxOpacity }} transition={{ duration, repeat: 1, delay: idx * 0.1, repeatType: "reverse" }} onAnimationComplete={() => updateSquarePosition(id)} width={width - 1} height={height - 1} x={px * width + 1} y={py * height + 1} fill="currentColor" strokeWidth="0" />
+        ))}
+      </svg>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### border-beam (magicui)
+**Source:** https://21st.dev/r/magicui/border-beam
+
+Animated border beam effect with gradient colors.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+interface BorderBeamProps { className?: string; size?: number; duration?: number; borderWidth?: number; anchor?: number; colorFrom?: string; colorTo?: string; delay?: number }
+
+export const BorderBeam = ({ className, size = 200, duration = 15, anchor = 90, borderWidth = 1.5, colorFrom = "#ffaa40", colorTo = "#9c40ff", delay = 0 }: BorderBeamProps) => (
+  <div style={{ "--size": size, "--duration": duration, "--anchor": anchor, "--border-width": borderWidth, "--color-from": colorFrom, "--color-to": colorTo, "--delay": `-${delay}s` } as React.CSSProperties} className={cn("pointer-events-none absolute inset-0 rounded-[inherit] [border:calc(var(--border-width)*1px)_solid_transparent]", "![mask-clip:padding-box,border-box] ![mask-composite:intersect] [mask:linear-gradient(transparent,transparent),linear-gradient(white,white)]", "after:absolute after:aspect-square after:w-[calc(var(--size)*1px)] after:animate-border-beam after:[animation-delay:var(--delay)] after:[background:linear-gradient(to_left,var(--color-from),var(--color-to),transparent)] after:[offset-anchor:calc(var(--anchor)*1%)_50%] after:[offset-path:rect(0_auto_auto_0_round_calc(var(--size)*1px))]", className)} />
+)
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes border-beam { 100% { offset-distance: 100% } }`
+
+---
+
+### orbiting-circles (magicui)
+**Source:** https://21st.dev/r/magicui/orbiting-circles
+
+Animated circles orbiting around a center point.
+
+```tsx
+import { cn } from "@/lib/utils"
+
+export interface OrbitingCirclesProps { className?: string; children?: React.ReactNode; reverse?: boolean; duration?: number; delay?: number; radius?: number; path?: boolean }
+
+export function OrbitingCircles({ className, children, reverse, duration = 20, delay = 10, radius = 50, path = true }: OrbitingCirclesProps) {
+  return (
+    <>
+      {path && <svg xmlns="http://www.w3.org/2000/svg" className="pointer-events-none absolute inset-0 size-full"><circle className="stroke-black/10 stroke-1 dark:stroke-white/10" cx="50%" cy="50%" r={radius} fill="none" /></svg>}
+      <div style={{ "--duration": duration, "--radius": radius, "--delay": -delay } as React.CSSProperties} className={cn("absolute flex transform-gpu animate-orbit items-center justify-center rounded-full border bg-black/10 [animation-delay:calc(var(--delay)*1000ms)] dark:bg-white/10", { "[animation-direction:reverse]": reverse }, className)}>
+        {children}
+      </div>
+    </>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes orbit { 0% { transform: rotate(0deg) translateY(calc(var(--radius) * 1px)) rotate(0deg) } 100% { transform: rotate(360deg) translateY(calc(var(--radius) * 1px)) rotate(-360deg) } }`
+
+---
+
+### marquee (magicui)
+**Source:** https://21st.dev/r/magicui/marquee
+
+Infinite scrolling marquee (horizontal or vertical).
+
+```tsx
+import { cn } from "@/lib/utils"
+
+interface MarqueeProps { className?: string; reverse?: boolean; pauseOnHover?: boolean; children?: React.ReactNode; vertical?: boolean; repeat?: number; [key: string]: any }
+
+export function Marquee({ className, reverse, pauseOnHover = false, children, vertical = false, repeat = 4, ...props }: MarqueeProps) {
+  return (
+    <div {...props} className={cn("group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]", { "flex-row": !vertical, "flex-col": vertical }, className)}>
+      {Array(repeat).fill(0).map((_, i) => (
+        <div key={i} className={cn("flex shrink-0 justify-around [gap:var(--gap)]", { "animate-marquee flex-row": !vertical, "animate-marquee-vertical flex-col": vertical, "group-hover:[animation-play-state:paused]": pauseOnHover, "[animation-direction:reverse]": reverse })}>
+          {children}
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(calc(-100% - var(--gap))) } }`, `@keyframes marquee-vertical { from { transform: translateY(0) } to { transform: translateY(calc(-100% - var(--gap))) } }`
+
+---
+
+### number-ticker (magicui)
+**Source:** https://21st.dev/r/magicui/number-ticker
+
+Animated number counter with spring physics.
+
+```tsx
+"use client"
+import { useEffect, useRef } from "react"
+import { useInView, useMotionValue, useSpring } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export function NumberTicker({ value, direction = "up", delay = 0, className, decimalPlaces = 0 }: { value: number; direction?: "up" | "down"; className?: string; delay?: number; decimalPlaces?: number }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const motionValue = useMotionValue(direction === "down" ? value : 0)
+  const springValue = useSpring(motionValue, { damping: 60, stiffness: 100 })
+  const isInView = useInView(ref, { once: true, margin: "0px" })
+
+  useEffect(() => { isInView && setTimeout(() => { motionValue.set(direction === "down" ? 0 : value) }, delay * 1000) }, [motionValue, isInView, delay, value, direction])
+
+  useEffect(() => springValue.on("change", (latest) => { if (ref.current) ref.current.textContent = Intl.NumberFormat("en-US", { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces }).format(Number(latest.toFixed(decimalPlaces))) }), [springValue, decimalPlaces])
+
+  return <span className={cn("inline-block tabular-nums text-black dark:text-white tracking-wider", className)} ref={ref} />
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### confetti (magicui)
+**Source:** https://21st.dev/r/magicui/confetti
+
+Confetti animation with canvas-confetti.
+
+```tsx
+import React, { createContext, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react"
+import confetti from "canvas-confetti"
+import { Button, ButtonProps } from "@/components/ui/button"
+
+type Api = { fire: (options?: any) => void }
+type Props = React.ComponentPropsWithRef<"canvas"> & { options?: any; globalOptions?: any; manualstart?: boolean; children?: React.ReactNode }
+export type ConfettiRef = Api | null
+
+const Confetti = forwardRef<ConfettiRef, Props>((props, ref) => {
+  const { options, globalOptions = { resize: true, useWorker: true }, manualstart = false, children, ...rest } = props
+  const instanceRef = useRef<any>(null)
+  const canvasRef = useCallback((node: HTMLCanvasElement) => { if (node !== null) { if (instanceRef.current) return; instanceRef.current = confetti.create(node, { ...globalOptions, resize: true }) } else { if (instanceRef.current) { instanceRef.current.reset(); instanceRef.current = null } } }, [globalOptions])
+  const fire = useCallback((opts = {}) => instanceRef.current?.({ ...options, ...opts }), [options])
+  const api = useMemo(() => ({ fire }), [fire])
+  useImperativeHandle(ref, () => api, [api])
+  useEffect(() => { if (!manualstart) fire() }, [manualstart, fire])
+  return <><canvas ref={canvasRef} {...rest} />{children}</>
+})
+
+function ConfettiButton({ options, children, ...props }: ButtonProps & { options?: any }) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    confetti({ ...options, origin: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight } })
+  }
+  return <Button onClick={handleClick} {...props}>{children}</Button>
+}
+
+Confetti.displayName = "Confetti"
+export { Confetti, ConfettiButton }
+```
+
+**Dependencies:** `canvas-confetti`, `@/components/ui/button`
+
+---
+
+### particles (magicui)
+**Source:** https://21st.dev/r/magicui/particles
+
+Interactive particle field with mouse attraction.
+
+```tsx
+"use client"
+import { cn } from "@/lib/utils"
+import React, { useEffect, useRef, useState } from "react"
+
+interface ParticlesProps { className?: string; quantity?: number; staticity?: number; ease?: number; size?: number; refresh?: boolean; color?: string; vx?: number; vy?: number }
+
+function hexToRgb(hex: string): number[] { hex = hex.replace("#", ""); if (hex.length === 3) hex = hex.split("").map(c => c + c).join(""); const hexInt = parseInt(hex, 16); return [(hexInt >> 16) & 255, (hexInt >> 8) & 255, hexInt & 255] }
+
+const Particles: React.FC<ParticlesProps> = ({ className = "", quantity = 100, staticity = 50, ease = 50, size = 0.4, refresh = false, color = "#ffffff", vx = 0, vy = 0 }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
+  const context = useRef<CanvasRenderingContext2D | null>(null)
+  const circles = useRef<any[]>([])
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1
+  const rgb = hexToRgb(color)
+
+  // Full implementation with canvas drawing, resize handling, particle physics...
+  // See 21st.dev registry for complete code
+
+  return <div className={cn("pointer-events-none", className)} ref={canvasContainerRef} aria-hidden="true"><canvas ref={canvasRef} className="size-full" /></div>
+}
+
+export { Particles }
+```
+
+**Dependencies:** `@/lib/utils`
+**Note:** Full particle physics implementation in 21st.dev registry
+
+---
+
+### shiny-button (magicui)
+**Source:** https://21st.dev/r/magicui/shiny-button
+
+Button with animated shiny sweep effect.
+
+```tsx
+"use client"
+import React from "react"
+import { motion, type AnimationProps } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+const animationProps: AnimationProps = {
+  initial: { "--x": "100%", scale: 0.8 },
+  animate: { "--x": "-100%", scale: 1 },
+  whileTap: { scale: 0.95 },
+  transition: { repeat: Infinity, repeatType: "loop", repeatDelay: 1, type: "spring", stiffness: 20, damping: 15, mass: 2, scale: { type: "spring", stiffness: 200, damping: 5, mass: 0.5 } }
+}
+
+interface ShinyButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { children: React.ReactNode; className?: string }
+
+export const ShinyButton: React.FC<ShinyButtonProps> = ({ children, className, ...props }) => (
+  <motion.button {...animationProps} {...props} className={cn("relative rounded-lg px-6 py-2 font-medium backdrop-blur-xl transition-shadow duration-300 ease-in-out hover:shadow dark:bg-[radial-gradient(circle_at_50%_0%,hsl(var(--primary)/10%)_0%,transparent_60%)] dark:hover:shadow-[0_0_20px_hsl(var(--primary)/10%)]", className)}>
+    <span className="relative block size-full text-sm uppercase tracking-wide text-[rgb(0,0,0,65%)] dark:font-light dark:text-[rgb(255,255,255,90%)]" style={{ maskImage: "linear-gradient(-75deg,hsl(var(--primary)) calc(var(--x) + 20%),transparent calc(var(--x) + 30%),hsl(var(--primary)) calc(var(--x) + 100%))" }}>{children}</span>
+    <span style={{ mask: "linear-gradient(rgb(0,0,0), rgb(0,0,0)) content-box,linear-gradient(rgb(0,0,0), rgb(0,0,0))", maskComposite: "exclude" }} className="absolute inset-0 z-10 block rounded-[inherit] bg-[linear-gradient(-75deg,hsl(var(--primary)/10%)_calc(var(--x)+20%),hsl(var(--primary)/50%)_calc(var(--x)+25%),hsl(var(--primary)/10%)_calc(var(--x)+100%))] p-px" />
+  </motion.button>
+)
+
+export default { ShinyButton }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### typing-animation (magicui)
+**Source:** https://21st.dev/r/magicui/typing-animation
+
+Typewriter text animation effect.
+
+```tsx
+"use client"
+import { useEffect, useState } from "react"
+import { cn } from "@/lib/utils"
+
+interface TypingAnimationProps { text: string; duration?: number; className?: string }
+
+export function TypingAnimation({ text, duration = 200, className }: TypingAnimationProps) {
+  const [displayedText, setDisplayedText] = useState<string>("")
+  const [i, setI] = useState<number>(0)
+
+  useEffect(() => {
+    const typingEffect = setInterval(() => {
+      if (i < text.length) { setDisplayedText(text.substring(0, i + 1)); setI(i + 1) }
+      else { clearInterval(typingEffect) }
+    }, duration)
+    return () => clearInterval(typingEffect)
+  }, [duration, i])
+
+  return <h1 className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>{displayedText || text}</h1>
+}
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### word-rotate (magicui)
+**Source:** https://21st.dev/r/magicui/word-rotate
+
+Rotating words with animation.
+
+```tsx
+"use client"
+import { useEffect, useState } from "react"
+import { AnimatePresence, HTMLMotionProps, motion } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface WordRotateProps { words: string[]; duration?: number; framerProps?: HTMLMotionProps<"h1">; className?: string }
+
+export function WordRotate({ words, duration = 2500, framerProps = { initial: { opacity: 0, y: -50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 50 }, transition: { duration: 0.25, ease: "easeOut" } }, className }: WordRotateProps) {
+  const [index, setIndex] = useState(0)
+  useEffect(() => { const interval = setInterval(() => setIndex((prev) => (prev + 1) % words.length), duration); return () => clearInterval(interval) }, [words, duration])
+  return (
+    <div className="overflow-hidden py-2">
+      <AnimatePresence mode="wait">
+        <motion.h1 key={words[index]} className={cn(className)} {...framerProps}>{words[index]}</motion.h1>
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### ripple (magicui)
+**Source:** https://21st.dev/r/magicui/ripple
+
+Animated ripple effect with concentric circles.
+
+```tsx
+import React, { CSSProperties } from "react"
+import { cn } from "@/lib/utils"
+
+interface RippleProps { mainCircleSize?: number; mainCircleOpacity?: number; numCircles?: number; className?: string }
+
+const Ripple = React.memo(function Ripple({ mainCircleSize = 210, mainCircleOpacity = 0.24, numCircles = 8, className }: RippleProps) {
+  return (
+    <div className={cn("pointer-events-none select-none absolute inset-0 [mask-image:linear-gradient(to_bottom,white,transparent)]", className)}>
+      {Array.from({ length: numCircles }, (_, i) => {
+        const size = mainCircleSize + i * 70
+        const opacity = mainCircleOpacity - i * 0.03
+        return (
+          <div key={i} className={`absolute animate-ripple rounded-full bg-foreground/25 shadow-xl border [--i:${i}]`} style={{ width: `${size}px`, height: `${size}px`, opacity, animationDelay: `${i * 0.06}s`, borderStyle: i === numCircles - 1 ? "dashed" : "solid", borderWidth: "1px", top: "50%", left: "50%", transform: "translate(-50%, -50%) scale(1)" } as CSSProperties} />
+        )
+      })}
+    </div>
+  )
+})
+
+Ripple.displayName = "Ripple"
+export { Ripple }
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes ripple { 0%, 100% { transform: translate(-50%, -50%) scale(1) } 50% { transform: translate(-50%, -50%) scale(0.9) } }`
+
+---
+
+### cool-mode (magicui)
+**Source:** https://21st.dev/r/magicui/cool-mode
+
+Particle effect wrapper (circles/images spawn on click/drag).
+
+```tsx
+import React, { ReactNode, useEffect, useRef } from "react"
+
+interface CoolParticleOptions { particle?: string; size?: number; particleCount?: number; speedHorz?: number; speedUp?: number }
+
+// Creates colorful particles on click/drag interactions
+// Particles spawn at cursor, fly with physics, respect gravity
+// Supports circles (default) or custom image particles
+
+export const CoolMode: React.FC<{ children: ReactNode; options?: CoolParticleOptions }> = ({ children, options }) => {
+  const ref = useRef<HTMLElement>(null)
+  
+  useEffect(() => {
+    if (ref.current) {
+      // See 21st.dev registry for full 150+ line particle physics implementation
+      // Handles mouse/touch, animation loop, particle lifecycle
+    }
+  }, [options])
+
+  return React.cloneElement(children as React.ReactElement, { ref })
+}
+```
+
+**Dependencies:** None
+**Note:** Full particle physics implementation in 21st.dev registry (~150 lines)
+
+---
+
+### gradual-spacing (magicui)
+**Source:** https://21st.dev/r/magicui/gradual-spacing
+
+Text animation with gradual letter spacing reveal.
+
+```tsx
+"use client"
+import { AnimatePresence, motion, Variants } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface GradualSpacingProps { text: string; duration?: number; delayMultiple?: number; framerProps?: Variants; className?: string }
+
+function GradualSpacing({ text, duration = 0.5, delayMultiple = 0.04, framerProps = { hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }, className }: GradualSpacingProps) {
+  return (
+    <div className="flex justify-center space-x-1">
+      <AnimatePresence>
+        {text.split("").map((char, i) => (
+          <motion.h1 key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("drop-shadow-sm", className)}>
+            {char === " " ? <span>&nbsp;</span> : char}
+          </motion.h1>
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export { GradualSpacing }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### scratch-to-reveal (magicui)
+**Source:** https://21st.dev/r/magicui/scratch-to-reveal
+
+Scratch card effect to reveal hidden content.
+
+```tsx
+import { cn } from "@/lib/utils"
+import React, { useRef, useEffect, useState } from "react"
+import { motion, useAnimation } from "framer-motion"
+
+interface ScratchToRevealProps { children: React.ReactNode; width: number; height: number; minScratchPercentage?: number; className?: string; onComplete?: () => void; gradientColors?: [string, string, string] }
+
+const ScratchToReveal: React.FC<ScratchToRevealProps> = ({ width, height, minScratchPercentage = 50, onComplete, children, className, gradientColors = ["#A97CF8", "#F38CB8", "#FDCC92"] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isScratching, setIsScratching] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+  const controls = useAnimation()
+
+  useEffect(() => {
+    const canvas = canvasRef.current; const ctx = canvas?.getContext("2d")
+    if (canvas && ctx) {
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
+      gradient.addColorStop(0, gradientColors[0]); gradient.addColorStop(0.5, gradientColors[1]); gradient.addColorStop(1, gradientColors[2])
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
+  }, [gradientColors])
+
+  const scratch = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current; const ctx = canvas?.getContext("2d")
+    if (canvas && ctx) {
+      const rect = canvas.getBoundingClientRect()
+      ctx.globalCompositeOperation = "destination-out"
+      ctx.beginPath(); ctx.arc(clientX - rect.left + 16, clientY - rect.top + 16, 30, 0, Math.PI * 2); ctx.fill()
+    }
+  }
+
+  const checkCompletion = () => {
+    if (isComplete) return
+    const canvas = canvasRef.current; const ctx = canvas?.getContext("2d")
+    if (canvas && ctx) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const pixels = imageData.data
+      let clearPixels = 0
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] === 0) clearPixels++
+      if ((clearPixels / (pixels.length / 4)) * 100 >= minScratchPercentage) {
+        setIsComplete(true); ctx.clearRect(0, 0, canvas.width, canvas.height)
+        controls.start({ scale: [1, 1.5, 1], rotate: [0, 10, -10, 10, -10, 0], transition: { duration: 0.5 } })
+        if (onComplete) onComplete()
+      }
+    }
+  }
+
+  return (
+    <motion.div className={cn("relative select-none", className)} style={{ width, height }} animate={controls}>
+      <canvas ref={canvasRef} width={width} height={height} className="absolute left-0 top-0" onMouseDown={() => setIsScratching(true)} onTouchStart={() => setIsScratching(true)} />
+      {children}
+    </motion.div>
+  )
+}
+
+export { ScratchToReveal }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### hyper-text (magicui)
+**Source:** https://21st.dev/r/magicui/hyper-text
+
+Text scramble effect on hover/load.
+
+```tsx
+"use client"
+import { AnimatePresence, motion, Variants } from "framer-motion"
+import { useEffect, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
+
+interface HyperTextProps { text: string; duration?: number; framerProps?: Variants; className?: string; animateOnLoad?: boolean }
+
+const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+const getRandomInt = (max: number) => Math.floor(Math.random() * max)
+
+export function HyperText({ text, duration = 800, framerProps = { initial: { opacity: 0, y: -10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 3 } }, className, animateOnLoad = true }: HyperTextProps) {
+  const [displayText, setDisplayText] = useState(text.split(""))
+  const [trigger, setTrigger] = useState(false)
+  const interations = useRef(0)
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!animateOnLoad && isFirstRender.current) { clearInterval(interval); isFirstRender.current = false; return }
+      if (interations.current < text.length) {
+        setDisplayText((t) => t.map((l, i) => l === " " ? l : i <= interations.current ? text[i] : alphabets[getRandomInt(26)]))
+        interations.current += 0.1
+      } else { setTrigger(false); clearInterval(interval) }
+    }, duration / (text.length * 10))
+    return () => clearInterval(interval)
+  }, [text, duration, trigger, animateOnLoad])
+
+  return (
+    <div className="flex scale-100 cursor-default overflow-hidden py-2" onMouseEnter={() => { interations.current = 0; setTrigger(true) }}>
+      <AnimatePresence mode="wait">
+        {displayText.map((letter, i) => <motion.span key={i} className={cn("font-mono", letter === " " ? "w-3" : "", className)} {...framerProps}>{letter.toUpperCase()}</motion.span>)}
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### morphing-text (magicui)
+**Source:** https://21st.dev/r/magicui/morphing-text
+
+Text morphing between multiple strings with blur effect.
+
+```tsx
+"use client"
+import { useCallback, useEffect, useRef } from "react"
+import { cn } from "@/lib/utils"
+
+const morphTime = 1.5
+const cooldownTime = 0.5
+
+const useMorphingText = (texts: string[]) => {
+  const textIndexRef = useRef(0), morphRef = useRef(0), cooldownRef = useRef(0), timeRef = useRef(new Date())
+  const text1Ref = useRef<HTMLSpanElement>(null), text2Ref = useRef<HTMLSpanElement>(null)
+
+  const setStyles = useCallback((fraction: number) => {
+    const [c1, c2] = [text1Ref.current, text2Ref.current]; if (!c1 || !c2) return
+    c2.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`; c2.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`
+    c1.style.filter = `blur(${Math.min(8 / (1 - fraction) - 8, 100)}px)`; c1.style.opacity = `${Math.pow(1 - fraction, 0.4) * 100}%`
+    c1.textContent = texts[textIndexRef.current % texts.length]; c2.textContent = texts[(textIndexRef.current + 1) % texts.length]
+  }, [texts])
+
+  useEffect(() => {
+    let animationFrameId: number
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate)
+      const dt = (new Date().getTime() - timeRef.current.getTime()) / 1000; timeRef.current = new Date()
+      cooldownRef.current -= dt
+      if (cooldownRef.current <= 0) { morphRef.current -= cooldownRef.current; cooldownRef.current = 0; let fraction = morphRef.current / morphTime; if (fraction > 1) { cooldownRef.current = cooldownTime; fraction = 1 }; setStyles(fraction); if (fraction === 1) textIndexRef.current++ }
+      else { morphRef.current = 0; if (text1Ref.current && text2Ref.current) { text2Ref.current.style.filter = "none"; text2Ref.current.style.opacity = "100%"; text1Ref.current.style.filter = "none"; text1Ref.current.style.opacity = "0%" } }
+    }
+    animate()
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [setStyles])
+
+  return { text1Ref, text2Ref }
+}
+
+const MorphingText: React.FC<{ texts: string[]; className?: string }> = ({ texts, className }) => {
+  const { text1Ref, text2Ref } = useMorphingText(texts)
+  return (
+    <div className={cn("relative mx-auto h-16 w-full max-w-screen-md text-center font-sans text-[40pt] font-bold leading-none [filter:url(#threshold)_blur(0.6px)] md:h-24 lg:text-[6rem]", className)}>
+      <span className="absolute inset-x-0 top-0 m-auto inline-block w-full" ref={text1Ref} />
+      <span className="absolute inset-x-0 top-0 m-auto inline-block w-full" ref={text2Ref} />
+      <svg className="hidden" preserveAspectRatio="xMidYMid slice"><defs><filter id="threshold"><feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 255 -140" /></filter></defs></svg>
+    </div>
+  )
+}
+
+export { MorphingText }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### flickering-grid (magicui)
+**Source:** https://21st.dev/r/magicui/flickering-grid
+
+Animated flickering grid pattern background.
+
+```tsx
+"use client"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+
+interface FlickeringGridProps { squareSize?: number; gridGap?: number; flickerChance?: number; color?: string; width?: number; height?: number; className?: string; maxOpacity?: number }
+
+const FlickeringGrid: React.FC<FlickeringGridProps> = ({ squareSize = 4, gridGap = 6, flickerChance = 0.3, color = "rgb(0, 0, 0)", width, height, className, maxOpacity = 0.3 }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isInView, setIsInView] = useState(false)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
+
+  const memoizedColor = useMemo(() => {
+    if (typeof window === "undefined") return `rgba(0, 0, 0,`
+    const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1
+    const ctx = canvas.getContext("2d"); if (!ctx) return "rgba(255, 0, 0,"
+    ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1)
+    const [r, g, b] = Array.from(ctx.getImageData(0, 0, 1, 1).data)
+    return `rgba(${r}, ${g}, ${b},`
+  }, [color])
+
+  // Animation loop draws grid squares with random flickering opacity
+  // Full implementation in 21st.dev registry (~100 lines)
+
+  return (
+    <div ref={containerRef} className={`w-full h-full ${className}`}>
+      <canvas ref={canvasRef} className="pointer-events-none" style={{ width: canvasSize.width, height: canvasSize.height }} />
+    </div>
+  )
+}
+
+export { FlickeringGrid }
+```
+
+**Dependencies:** None
+**Note:** Full animation loop in 21st.dev registry
+
+---
+
+### interactive-icon-cloud (magicui)
+**Source:** https://21st.dev/r/magicui/interactive-icon-cloud
+
+3D rotating cloud of technology icons.
+
+```tsx
+"use client"
+import { useEffect, useMemo, useState } from "react"
+import { useTheme } from "next-themes"
+import { Cloud, fetchSimpleIcons, ICloud, renderSimpleIcon, SimpleIcon } from "react-icon-cloud"
+
+export const cloudProps: Omit<ICloud, "children"> = {
+  containerProps: { style: { display: "flex", justifyContent: "center", alignItems: "center", width: "100%", paddingTop: 40 } },
+  options: { reverse: true, depth: 1, wheelZoom: false, imageScale: 2, activeCursor: "default", tooltip: "native", initial: [0.1, -0.1], clickToFront: 500, tooltipDelay: 0, outlineColour: "#0000", maxSpeed: 0.04, minSpeed: 0.02 }
+}
+
+export const renderCustomIcon = (icon: SimpleIcon, theme: string) => {
+  const bgHex = theme === "light" ? "#f3f2ef" : "#080510"
+  const fallbackHex = theme === "light" ? "#6e6e73" : "#ffffff"
+  return renderSimpleIcon({ icon, bgHex, fallbackHex, minContrastRatio: theme === "dark" ? 2 : 1.2, size: 42, aProps: { href: undefined, onClick: (e: any) => e.preventDefault() } })
+}
+
+export function IconCloud({ iconSlugs }: { iconSlugs: string[] }) {
+  const [data, setData] = useState<any>(null)
+  const { theme } = useTheme()
+
+  useEffect(() => { fetchSimpleIcons({ slugs: iconSlugs }).then(setData) }, [iconSlugs])
+
+  const renderedIcons = useMemo(() => (data ? Object.values(data.simpleIcons).map((icon: any) => renderCustomIcon(icon, theme || "light")) : null), [data, theme])
+
+  return <Cloud {...cloudProps}><>{renderedIcons}</></Cloud>
+}
+```
+
+**Dependencies:** `next-themes`, `react-icon-cloud`
+
+---
+
+### fade-text (magicui)
+**Source:** https://21st.dev/r/magicui/fade-text
+
+Text fading in from a direction.
+
+```tsx
+"use client"
+import { useMemo } from "react"
+import { motion, Variants } from "framer-motion"
+
+type FadeTextProps = { className?: string; direction?: "up" | "down" | "left" | "right"; framerProps?: Variants; text: string }
+
+function FadeText({ direction = "up", className, framerProps = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { type: "spring" } } }, text }: FadeTextProps) {
+  const directionOffset = useMemo(() => ({ up: 10, down: -10, left: -10, right: 10 }[direction]), [direction])
+  const axis = direction === "up" || direction === "down" ? "y" : "x"
+
+  const FADE_ANIMATION_VARIANTS = useMemo(() => {
+    const { hidden, show, ...rest } = framerProps as any
+    return { ...rest, hidden: { ...(hidden ?? {}), opacity: hidden?.opacity ?? 0, [axis]: hidden?.[axis] ?? directionOffset }, show: { ...(show ?? {}), opacity: show?.opacity ?? 1, [axis]: show?.[axis] ?? 0 } }
+  }, [directionOffset, axis, framerProps])
+
+  return <motion.div initial="hidden" animate="show" viewport={{ once: true }} variants={FADE_ANIMATION_VARIANTS}><motion.span className={className}>{text}</motion.span></motion.div>
+}
+
+export { FadeText }
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### word-pull-up (magicui)
+**Source:** https://21st.dev/r/magicui/word-pull-up
+
+Words pull up one by one with stagger effect.
+
+```tsx
+"use client"
+import { motion, Variants } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface WordPullUpProps { words: string; delayMultiple?: number; wrapperFramerProps?: Variants; framerProps?: Variants; className?: string }
+
+function WordPullUp({ words, wrapperFramerProps = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } }, framerProps = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }, className }: WordPullUpProps) {
+  return (
+    <motion.h1 variants={wrapperFramerProps} initial="hidden" animate="show" className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>
+      {words.split(" ").map((word, i) => <motion.span key={i} variants={framerProps} style={{ display: "inline-block", paddingRight: "8px" }}>{word === "" ? <span>&nbsp;</span> : word}</motion.span>)}
+    </motion.h1>
+  )
+}
+
+export { WordPullUp }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### flip-text (magicui)
+**Source:** https://21st.dev/r/magicui/flip-text
+
+3D flip animation for each character.
+
+```tsx
+"use client"
+import { AnimatePresence, motion, Variants } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+interface FlipTextProps { word: string; duration?: number; delayMultiple?: number; framerProps?: Variants; className?: string }
+
+function FlipText({ word, duration = 0.5, delayMultiple = 0.08, framerProps = { hidden: { rotateX: -90, opacity: 0 }, visible: { rotateX: 0, opacity: 1 } }, className }: FlipTextProps) {
+  return (
+    <div className="flex justify-center space-x-2">
+      <AnimatePresence mode="wait">
+        {word.split("").map((char, i) => <motion.span key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("origin-center drop-shadow-sm", className)}>{char}</motion.span>)}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export { FlipText }
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### neon-gradient-card (magicui)
+**Source:** https://21st.dev/r/magicui/neon-gradient-card
+
+Card with animated neon gradient border.
+
+```tsx
+"use client"
+import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react"
+import { cn } from "@/lib/utils"
+
+interface NeonGradientCardProps { className?: string; children?: ReactNode; borderSize?: number; borderRadius?: number; neonColors?: { firstColor: string; secondColor: string }; [key: string]: any }
+
+const NeonGradientCard: React.FC<NeonGradientCardProps> = ({ className, children, borderSize = 2, borderRadius = 20, neonColors = { firstColor: "#ff00aa", secondColor: "#00FFF1" }, ...props }) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    const updateDimensions = () => { if (containerRef.current) setDimensions({ width: containerRef.current.offsetWidth, height: containerRef.current.offsetHeight }) }
+    updateDimensions(); window.addEventListener("resize", updateDimensions)
+    return () => window.removeEventListener("resize", updateDimensions)
+  }, [children])
+
+  return (
+    <div ref={containerRef} style={{ "--border-size": `${borderSize}px`, "--border-radius": `${borderRadius}px`, "--neon-first-color": neonColors.firstColor, "--neon-second-color": neonColors.secondColor, "--card-width": `${dimensions.width}px`, "--card-height": `${dimensions.height}px`, "--after-blur": `${dimensions.width / 3}px` } as CSSProperties} className={cn("relative z-10 size-full rounded-[var(--border-radius)]", className)} {...props}>
+      <div className={cn("relative size-full min-h-[inherit] rounded-[calc(var(--border-radius)-var(--border-size))] bg-gray-100 p-6", "before:absolute before:-left-[var(--border-size)] before:-top-[var(--border-size)] before:-z-10 before:block before:animate-background-position-spin before:bg-[linear-gradient(0deg,var(--neon-first-color),var(--neon-second-color))]", "dark:bg-neutral-900")}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export { NeonGradientCard }
+```
+
+**Dependencies:** `@/lib/utils`
+**CSS:** `@keyframes background-position-spin { 0% { background-position: top center } 100% { background-position: bottom center } }`
+
+---
+
+### magic-card (magicui)
+**Source:** https://21st.dev/r/magicui/magic-card
+
+Card with mouse-following gradient highlight.
+
+```tsx
+"use client"
+import React, { useCallback, useEffect } from "react"
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+export interface MagicCardProps extends React.HTMLAttributes<HTMLDivElement> { gradientSize?: number; gradientColor?: string; gradientOpacity?: number }
+
+export function MagicCard({ children, className, gradientSize = 200, gradientColor = "#262626", gradientOpacity = 0.8 }: MagicCardProps) {
+  const mouseX = useMotionValue(-gradientSize)
+  const mouseY = useMotionValue(-gradientSize)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => { const { left, top } = e.currentTarget.getBoundingClientRect(); mouseX.set(e.clientX - left); mouseY.set(e.clientY - top) }, [mouseX, mouseY])
+  const handleMouseLeave = useCallback(() => { mouseX.set(-gradientSize); mouseY.set(-gradientSize) }, [mouseX, mouseY, gradientSize])
+
+  useEffect(() => { mouseX.set(-gradientSize); mouseY.set(-gradientSize) }, [mouseX, mouseY, gradientSize])
+
+  return (
+    <div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} className={cn("group relative flex size-full overflow-hidden rounded-xl bg-neutral-100 dark:bg-neutral-900 border text-black dark:text-white", className)}>
+      <div className="relative z-10">{children}</div>
+      <motion.div className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ background: useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 100%)`, opacity: gradientOpacity }} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### safari (magicui)
+**Source:** https://21st.dev/r/magicui/safari
+
+Safari browser mockup with address bar and content.
+
+```tsx
+import { SVGProps } from "react"
+
+export interface SafariProps extends SVGProps<SVGSVGElement> { url?: string; src?: string; width?: number; height?: number }
+
+export function Safari({ src, url, width = 1203, height = 753, ...props }: SafariProps) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <g clipPath="url(#path0)">
+        <path d="M0 52H1202V741C1202 747.627 1196.63 753 1190 753H12C5.37258 753 0 747.627 0 741V52Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M0 12C0 5.37258 5.37258 0 12 0H1190C1196.63 0 1202 5.37258 1202 12V52H0L0 12Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M1.06738 12C1.06738 5.92487 5.99225 1 12.0674 1H1189.93C1196.01 1 1200.93 5.92487 1200.93 12V51H1.06738V12Z" className="fill-white dark:fill-[#262626]" />
+        <circle cx="27" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <circle cx="47" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <circle cx="67" cy="25" r="6" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <path d="M286 17C286 13.6863 288.686 11 292 11H946C949.314 11 952 13.6863 952 17V35C952 38.3137 949.314 41 946 41H292C288.686 41 286 38.3137 286 35V17Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+        <text x="580" y="30" fill="#A3A3A3" fontSize="12" fontFamily="Arial, sans-serif">{url}</text>
+        <image href={src} width="1200" height="700" x="1" y="52" preserveAspectRatio="xMidYMid slice" clipPath="url(#roundedBottom)" />
+      </g>
+      <defs>
+        <clipPath id="path0"><rect width={width} height={height} fill="white" /></clipPath>
+        <clipPath id="roundedBottom"><path d="M1 52H1201V741C1201 747.075 1196.08 752 1190 752H12C5.92486 752 1 747.075 1 741V52Z" fill="white" /></clipPath>
+      </defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** None
+
+---
+
+### iphone-15-pro (magicui)
+**Source:** https://21st.dev/r/magicui/iphone-15-pro
+
+iPhone 15 Pro device mockup.
+
+```tsx
+import { SVGProps } from "react"
+
+export interface Iphone15ProProps extends SVGProps<SVGSVGElement> { width?: number; height?: number; src?: string }
+
+export function Iphone15Pro({ width = 433, height = 882, src, ...props }: Iphone15ProProps) {
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M2 73C2 32.6832 34.6832 0 75 0H357C397.317 0 430 32.6832 430 73V809C430 849.317 397.317 882 357 882H75C34.6832 882 2 849.317 2 809V73Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      <path d="M6 74C6 35.3401 37.3401 4 76 4H356C394.66 4 426 35.3401 426 74V808C426 846.66 394.66 878 356 878H76C37.3401 878 6 846.66 6 808V74Z" className="dark:fill-[#262626] fill-white" />
+      <path d="M21.25 75C21.25 44.2101 46.2101 19.25 77 19.25H355C385.79 19.25 410.75 44.2101 410.75 75V807C410.75 837.79 385.79 862.75 355 862.75H77C46.2101 862.75 21.25 837.79 21.25 807V75Z" className="fill-[#E5E5E5] dark:fill-[#404040]" />
+      {src && <image href={src} x="21.25" y="19.25" width="389.5" height="843.5" preserveAspectRatio="xMidYMid slice" clipPath="url(#roundedCorners)" />}
+      <path d="M154 48.5C154 38.2827 162.283 30 172.5 30H259.5C269.717 30 278 38.2827 278 48.5C278 58.7173 269.717 67 259.5 67H172.5C162.283 67 154 58.7173 154 48.5Z" className="dark:fill-[#262626] fill-[#F5F5F5]" />
+      <defs><clipPath id="roundedCorners"><rect x="21.25" y="19.25" width="389.5" height="843.5" rx="55.75" ry="55.75" /></clipPath></defs>
+    </svg>
+  )
+}
+```
+
+**Dependencies:** None
+
+---
+
+### cursor (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/cursor
+
+Custom cursor component with spring animations.
+
+```tsx
+'use client'
+import React, { useEffect, useState, useRef } from 'react'
+import { motion, SpringOptions, useMotionValue, useSpring, AnimatePresence, Transition, Variant } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+type CursorProps = { children: React.ReactNode; className?: string; springConfig?: SpringOptions; attachToParent?: boolean; transition?: Transition; variants?: { initial: Variant; animate: Variant; exit: Variant }; onPositionChange?: (x: number, y: number) => void }
+
+export function Cursor({ children, className, springConfig, attachToParent, variants, transition, onPositionChange }: CursorProps) {
+  const cursorX = useMotionValue(typeof window !== 'undefined' ? window.innerWidth / 2 : 0)
+  const cursorY = useMotionValue(typeof window !== 'undefined' ? window.innerHeight / 2 : 0)
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(!attachToParent)
+
+  useEffect(() => {
+    if (!attachToParent) document.body.style.cursor = 'none'
+    else document.body.style.cursor = 'auto'
+
+    const updatePosition = (e: MouseEvent) => { cursorX.set(e.clientX); cursorY.set(e.clientY); onPositionChange?.(e.clientX, e.clientY) }
+    document.addEventListener('mousemove', updatePosition)
+    return () => document.removeEventListener('mousemove', updatePosition)
+  }, [cursorX, cursorY, onPositionChange])
+
+  const cursorXSpring = useSpring(cursorX, springConfig || { duration: 0 })
+  const cursorYSpring = useSpring(cursorY, springConfig || { duration: 0 })
+
+  return (
+    <motion.div ref={cursorRef} className={cn('pointer-events-none fixed left-0 top-0 z-50', className)} style={{ x: cursorXSpring, y: cursorYSpring, translateX: '-50%', translateY: '-50%' }}>
+      <AnimatePresence>{isVisible && <motion.div initial='initial' animate='animate' exit='exit' variants={variants} transition={transition}>{children}</motion.div>}</AnimatePresence>
+    </motion.div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### infinite-slider (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/infinite-slider
+
+Infinite looping slider/carousel with variable speed on hover.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { useMotionValue, animate, motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import useMeasure from 'react-use-measure'
+
+type InfiniteSliderProps = { children: React.ReactNode; gap?: number; duration?: number; durationOnHover?: number; direction?: 'horizontal' | 'vertical'; reverse?: boolean; className?: string }
+
+export function InfiniteSlider({ children, gap = 16, duration = 25, durationOnHover, direction = 'horizontal', reverse = false, className }: InfiniteSliderProps) {
+  const [currentDuration, setCurrentDuration] = useState(duration)
+  const [ref, { width, height }] = useMeasure()
+  const translation = useMotionValue(0)
+
+  useEffect(() => {
+    const size = direction === 'horizontal' ? width : height
+    const contentSize = size + gap
+    const from = reverse ? -contentSize / 2 : 0
+    const to = reverse ? 0 : -contentSize / 2
+
+    const controls = animate(translation, [from, to], { ease: 'linear', duration: currentDuration, repeat: Infinity, repeatType: 'loop', onRepeat: () => translation.set(from) })
+    return controls?.stop
+  }, [translation, currentDuration, width, height, gap, direction, reverse])
+
+  const hoverProps = durationOnHover ? { onHoverStart: () => setCurrentDuration(durationOnHover), onHoverEnd: () => setCurrentDuration(duration) } : {}
+
+  return (
+    <div className={cn('overflow-hidden', className)}>
+      <motion.div className='flex w-max' style={{ ...(direction === 'horizontal' ? { x: translation } : { y: translation }), gap: `${gap}px`, flexDirection: direction === 'horizontal' ? 'row' : 'column' }} ref={ref} {...hoverProps}>
+        {children}{children}
+      </motion.div>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `react-use-measure`, `@/lib/utils`
+
+---
+
+### transition-panel (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/transition-panel
+
+Animated panel transitions between children.
+
+```tsx
+'use client'
+import { AnimatePresence, Transition, Variant, motion, MotionProps } from 'framer-motion'
+import { cn } from '@/lib/utils'
+
+type TransitionPanelProps = { children: React.ReactNode[]; className?: string; transition?: Transition; activeIndex: number; variants?: { enter: Variant; center: Variant; exit: Variant } } & MotionProps
+
+export function TransitionPanel({ children, className, transition, variants, activeIndex, ...motionProps }: TransitionPanelProps) {
+  return (
+    <div className={cn('relative', className)}>
+      <AnimatePresence initial={false} mode='popLayout' custom={motionProps.custom}>
+        <motion.div key={activeIndex} variants={variants} transition={transition} initial='enter' animate='center' exit='exit' {...motionProps}>
+          {children[activeIndex]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### animated-number (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/animated-number
+
+Spring-animated number with locale formatting.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { motion, SpringOptions, useSpring, useTransform } from 'framer-motion'
+import { useEffect } from 'react'
+
+type AnimatedNumber = { value: number; className?: string; springOptions?: SpringOptions }
+
+export function AnimatedNumber({ value, className, springOptions }: AnimatedNumber) {
+  const spring = useSpring(value, springOptions)
+  const display = useTransform(spring, (current) => Math.round(current).toLocaleString())
+
+  useEffect(() => { spring.set(value) }, [spring, value])
+
+  return <motion.span className={cn('tabular-nums', className)}>{display}</motion.span>
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### spinning-text (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/spinning-text
+
+Circular spinning text animation.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { motion, Transition, Variants } from 'framer-motion'
+import React, { CSSProperties } from 'react'
+
+type SpinningTextProps = { children: string; style?: CSSProperties; duration?: number; className?: string; reverse?: boolean; fontSize?: number; radius?: number; transition?: Transition; variants?: { container?: Variants; item?: Variants } }
+
+const BASE_TRANSITION = { repeat: Infinity, ease: 'linear' }
+
+export function SpinningText({ children, duration = 10, style, className, reverse = false, fontSize = 1, radius = 5, transition, variants }: SpinningTextProps) {
+  const letters = children.split('')
+  const totalLetters = letters.length
+
+  const containerVariants = { visible: { rotate: reverse ? -360 : 360 }, ...variants?.container }
+  const finalTransition = { ...BASE_TRANSITION, ...transition, duration: (transition as any)?.duration ?? duration }
+
+  return (
+    <motion.div className={cn('relative', className)} style={style} initial='hidden' animate='visible' variants={containerVariants} transition={finalTransition}>
+      {letters.map((letter, index) => (
+        <motion.span key={`${index}-${letter}`} aria-hidden='true' className='absolute left-1/2 top-1/2 inline-block' style={{ '--index': index, '--total': totalLetters, '--font-size': fontSize, '--radius': radius, fontSize: `calc(var(--font-size, 2) * 1rem)`, transform: `translate(-50%, -50%) rotate(calc(360deg / var(--total) * var(--index))) translateY(calc(var(--radius, 5) * -1ch))`, transformOrigin: 'center' } as CSSProperties}>
+          {letter}
+        </motion.span>
+      ))}
+      <span className='sr-only'>{children}</span>
+    </motion.div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### progressive-blur (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/progressive-blur
+
+Gradient-based progressive blur effect.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { HTMLMotionProps, motion } from 'motion/react'
+
+export const GRADIENT_ANGLES = { top: 0, right: 90, bottom: 180, left: 270 }
+
+export type ProgressiveBlurProps = { direction?: keyof typeof GRADIENT_ANGLES; blurLayers?: number; className?: string; blurIntensity?: number } & HTMLMotionProps<'div'>
+
+export function ProgressiveBlur({ direction = 'bottom', blurLayers = 8, className, blurIntensity = 0.25, ...props }: ProgressiveBlurProps) {
+  const layers = Math.max(blurLayers, 2)
+  const segmentSize = 1 / (blurLayers + 1)
+
+  return (
+    <div className={cn('relative', className)}>
+      {Array.from({ length: layers }).map((_, index) => {
+        const angle = GRADIENT_ANGLES[direction]
+        const gradientStops = [index * segmentSize, (index + 1) * segmentSize, (index + 2) * segmentSize, (index + 3) * segmentSize].map((pos, posIndex) => `rgba(255, 255, 255, ${posIndex === 1 || posIndex === 2 ? 1 : 0}) ${pos * 100}%`)
+        const gradient = `linear-gradient(${angle}deg, ${gradientStops.join(', ')})`
+        return <motion.div key={index} className='pointer-events-none absolute inset-0 rounded-[inherit]' style={{ maskImage: gradient, WebkitMaskImage: gradient, backdropFilter: `blur(${index * blurIntensity}px)` }} {...props} />
+      })}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `motion/react`, `@/lib/utils`
+
+---
+
+### disclosure (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/disclosure
+
+Animated accordion/collapse component.
+
+```tsx
+'use client'
+import * as React from 'react'
+import { AnimatePresence, motion, MotionConfig, Transition, Variant, Variants } from 'framer-motion'
+import { createContext, useContext, useState, useId, useEffect } from 'react'
+import { cn } from '@/lib/utils'
+
+type DisclosureContextType = { open: boolean; toggle: () => void; variants?: { expanded: Variant; collapsed: Variant } }
+const DisclosureContext = createContext<DisclosureContextType | undefined>(undefined)
+
+function useDisclosure() { const ctx = useContext(DisclosureContext); if (!ctx) throw new Error('useDisclosure must be used within Disclosure'); return ctx }
+
+type DisclosureProps = { open?: boolean; onOpenChange?: (open: boolean) => void; children: React.ReactNode; className?: string; variants?: { expanded: Variant; collapsed: Variant }; transition?: Transition }
+
+export function Disclosure({ open: openProp = false, onOpenChange, children, className, transition, variants }: DisclosureProps) {
+  const [internalOpen, setInternalOpen] = useState(openProp)
+  useEffect(() => setInternalOpen(openProp), [openProp])
+  const toggle = () => { const newOpen = !internalOpen; setInternalOpen(newOpen); onOpenChange?.(newOpen) }
+
+  return (
+    <MotionConfig transition={transition}>
+      <div className={className}>
+        <DisclosureContext.Provider value={{ open: internalOpen, toggle, variants }}>
+          {React.Children.toArray(children)[0]}
+          {React.Children.toArray(children)[1]}
+        </DisclosureContext.Provider>
+      </div>
+    </MotionConfig>
+  )
+}
+
+export function DisclosureTrigger({ children, className }: { children: React.ReactNode; className?: string }) {
+  const { toggle, open } = useDisclosure()
+  return <>{React.Children.map(children, (child) => React.isValidElement(child) ? React.cloneElement(child, { onClick: toggle, role: 'button', 'aria-expanded': open, tabIndex: 0, className: cn(className, (child as any).props.className), ...(child as any).props }) : child)}</>
+}
+
+export function DisclosureContent({ children, className }: { children: React.ReactNode; className?: string }) {
+  const { open, variants } = useDisclosure()
+  const BASE: Variants = { expanded: { height: 'auto', opacity: 1 }, collapsed: { height: 0, opacity: 0 } }
+  const combined = { expanded: { ...BASE.expanded, ...variants?.expanded }, collapsed: { ...BASE.collapsed, ...variants?.collapsed } }
+  return <div className={cn('overflow-hidden', className)}><AnimatePresence initial={false}>{open && <motion.div initial='collapsed' animate='expanded' exit='collapsed' variants={combined}>{children}</motion.div>}</AnimatePresence></div>
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### border-trail (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/border-trail
+
+Animated trailing border effect.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { motion, Transition } from 'framer-motion'
+
+type BorderTrailProps = { className?: string; size?: number; transition?: Transition; delay?: number; onAnimationComplete?: () => void; style?: React.CSSProperties }
+
+export function BorderTrail({ className, size = 60, transition, delay, onAnimationComplete, style }: BorderTrailProps) {
+  return (
+    <div className='pointer-events-none absolute inset-0 rounded-[inherit] border border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]'>
+      <motion.div className={cn('absolute aspect-square bg-zinc-500', className)} style={{ width: size, offsetPath: `rect(0 auto auto 0 round ${size}px)`, ...style }} animate={{ offsetDistance: ['0%', '100%'] }} transition={{ ...(transition ?? { repeat: Infinity, duration: 5, ease: 'linear' }), delay }} onAnimationComplete={onAnimationComplete} />
+    </div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### in-view (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/in-view
+
+Simple in-view animation trigger.
+
+```tsx
+'use client'
+import { ReactNode, useRef } from 'react'
+import { motion, useInView, Variant, Transition, UseInViewOptions } from 'framer-motion'
+
+interface InViewProps { children: ReactNode; variants?: { hidden: Variant; visible: Variant }; transition?: Transition; viewOptions?: UseInViewOptions }
+
+const defaultVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } }
+
+export function InView({ children, variants = defaultVariants, transition, viewOptions }: InViewProps) {
+  const ref = useRef(null)
+  const isInView = useInView(ref, viewOptions)
+  return <motion.div ref={ref} initial='hidden' animate={isInView ? 'visible' : 'hidden'} variants={variants} transition={transition}>{children}</motion.div>
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### animated-group (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/animated-group
+
+Staggered group animation with presets.
+
+```tsx
+'use client'
+import { ReactNode } from 'react'
+import { motion, Variants } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import React from 'react'
+
+type PresetType = 'fade' | 'slide' | 'scale' | 'blur' | 'blur-slide' | 'zoom' | 'flip' | 'bounce' | 'rotate' | 'swing'
+
+const presetVariants: Record<PresetType, { container: Variants; item: Variants }> = {
+  fade: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0 }, visible: { opacity: 1 } } },
+  slide: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } } },
+  scale: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, scale: 0.8 }, visible: { opacity: 1, scale: 1 } } },
+  blur: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, filter: 'blur(4px)' }, visible: { opacity: 1, filter: 'blur(0px)' } } },
+  'blur-slide': { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, filter: 'blur(4px)', y: 20 }, visible: { opacity: 1, filter: 'blur(0px)', y: 0 } } },
+  zoom: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, scale: 0.5 }, visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 20 } } } },
+  flip: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, rotateX: -90 }, visible: { opacity: 1, rotateX: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } } } },
+  bounce: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, y: -50 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 10 } } } },
+  rotate: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, rotate: -180 }, visible: { opacity: 1, rotate: 0, transition: { type: 'spring', stiffness: 200, damping: 15 } } } },
+  swing: { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0, rotate: -10 }, visible: { opacity: 1, rotate: 0, transition: { type: 'spring', stiffness: 300, damping: 8 } } } }
+}
+
+export function AnimatedGroup({ children, className, variants, preset }: { children: ReactNode; className?: string; variants?: { container?: Variants; item?: Variants }; preset?: PresetType }) {
+  const selected = preset ? presetVariants[preset] : { container: { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }, item: { hidden: { opacity: 0 }, visible: { opacity: 1 } } }
+  return (
+    <motion.div initial='hidden' animate='visible' variants={variants?.container || selected.container} className={cn(className)}>
+      {React.Children.map(children, (child, i) => <motion.div key={i} variants={variants?.item || selected.item}>{child}</motion.div>)}
+    </motion.div>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+**Presets:** `fade`, `slide`, `scale`, `blur`, `blur-slide`, `zoom`, `flip`, `bounce`, `rotate`, `swing`
+
+---
+
+### tilt (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/tilt
+
+3D tilt effect on mouse hover.
+
+```tsx
+'use client'
+import React, { useRef } from 'react'
+import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform, MotionStyle, SpringOptions } from 'framer-motion'
+
+type TiltProps = { children: React.ReactNode; className?: string; style?: MotionStyle; rotationFactor?: number; isRevese?: boolean; springOptions?: SpringOptions }
+
+export function Tilt({ children, className, style, rotationFactor = 15, isRevese = false, springOptions }: TiltProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0), y = useMotionValue(0)
+  const xSpring = useSpring(x, springOptions), ySpring = useSpring(y, springOptions)
+  const rotateX = useTransform(ySpring, [-0.5, 0.5], isRevese ? [rotationFactor, -rotationFactor] : [-rotationFactor, rotationFactor])
+  const rotateY = useTransform(xSpring, [-0.5, 0.5], isRevese ? [-rotationFactor, rotationFactor] : [rotationFactor, -rotationFactor])
+  const transform = useMotionTemplate`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    x.set(e.clientX - rect.left - rect.width / 2); y.set(e.clientY - rect.top - rect.height / 2)
+    x.set((e.clientX - rect.left) / rect.width - 0.5); y.set((e.clientY - rect.top) / rect.height - 0.5)
+  }
+
+  return <motion.div ref={ref} className={className} style={{ transformStyle: 'preserve-3d', ...style, transform }} onMouseMove={handleMouseMove} onMouseLeave={() => { x.set(0); y.set(0) }}>{children}</motion.div>
+}
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### dock (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/dock
+
+macOS-style dock with magnification (motion-primitives version).
+
+```tsx
+'use client'
+import { motion, MotionValue, useMotionValue, useSpring, useTransform, SpringOptions, AnimatePresence } from 'framer-motion'
+import { Children, cloneElement, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
+
+const DOCK_HEIGHT = 128, DEFAULT_MAG = 80, DEFAULT_DIST = 150, DEFAULT_PANEL = 64
+
+type DocContextType = { mouseX: MotionValue; spring: SpringOptions; magnification: number; distance: number }
+const DockContext = createContext<DocContextType | undefined>(undefined)
+function useDock() { const ctx = useContext(DockContext); if (!ctx) throw new Error('useDock must be used within Dock'); return ctx }
+
+export function Dock({ children, className, spring = { mass: 0.1, stiffness: 150, damping: 12 }, magnification = DEFAULT_MAG, distance = DEFAULT_DIST, panelHeight = DEFAULT_PANEL }: { children: React.ReactNode; className?: string; spring?: SpringOptions; magnification?: number; distance?: number; panelHeight?: number }) {
+  const mouseX = useMotionValue(Infinity), isHovered = useMotionValue(0)
+  const maxHeight = useMemo(() => Math.max(DOCK_HEIGHT, magnification * 1.5 + 4), [magnification])
+  const height = useSpring(useTransform(isHovered, [0, 1], [panelHeight, maxHeight]), spring)
+
+  return (
+    <motion.div style={{ height, scrollbarWidth: 'none' }} className='mx-2 flex max-w-full items-end overflow-x-auto'>
+      <motion.div onMouseMove={({ pageX }) => { isHovered.set(1); mouseX.set(pageX) }} onMouseLeave={() => { isHovered.set(0); mouseX.set(Infinity) }} className={cn('mx-auto flex w-fit gap-4 rounded-2xl bg-gray-50 px-4 dark:bg-neutral-900', className)} style={{ height: panelHeight }}>
+        <DockContext.Provider value={{ mouseX, spring, distance, magnification }}>{children}</DockContext.Provider>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+export function DockItem({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const { distance, magnification, mouseX, spring } = useDock()
+  const isHovered = useMotionValue(0)
+  const mouseDistance = useTransform(mouseX, (val) => { const rect = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }; return val - rect.x - rect.width / 2 })
+  const width = useSpring(useTransform(mouseDistance, [-distance, 0, distance], [40, magnification, 40]), spring)
+
+  return <motion.div ref={ref} style={{ width }} onHoverStart={() => isHovered.set(1)} onHoverEnd={() => isHovered.set(0)} className={cn('relative inline-flex items-center justify-center', className)} tabIndex={0}>{Children.map(children, (child) => cloneElement(child as React.ReactElement, { width, isHovered }))}</motion.div>
+}
+
+export function DockLabel({ children, className, ...rest }: { children: React.ReactNode; className?: string }) {
+  const isHovered = (rest as any).isHovered as MotionValue<number>
+  const [isVisible, setIsVisible] = useState(false)
+  useEffect(() => isHovered?.on('change', (v) => setIsVisible(v === 1)), [isHovered])
+  return <AnimatePresence>{isVisible && <motion.div initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: -10 }} exit={{ opacity: 0, y: 0 }} className={cn('absolute -top-6 left-1/2 w-fit whitespace-pre rounded-md border bg-gray-100 px-2 py-0.5 text-xs dark:bg-neutral-800', className)} style={{ x: '-50%' }}>{children}</motion.div>}</AnimatePresence>
+}
+
+export function DockIcon({ children, className, ...rest }: { children: React.ReactNode; className?: string }) {
+  const width = (rest as any).width as MotionValue<number>
+  return <motion.div style={{ width: useTransform(width, (v) => v / 2) }} className={cn('flex items-center justify-center', className)}>{children}</motion.div>
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### magnetic (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/magnetic
+
+Mouse attraction effect for elements.
+
+```tsx
+'use client'
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, useMotionValue, useSpring, SpringOptions } from 'motion/react'
+
+const SPRING_CONFIG = { stiffness: 26.7, damping: 4.1, mass: 0.2 }
+
+export type MagneticProps = { children: React.ReactNode; intensity?: number; range?: number; actionArea?: 'self' | 'parent' | 'global'; springOptions?: SpringOptions }
+
+export function Magnetic({ children, intensity = 0.6, range = 100, actionArea = 'self', springOptions = SPRING_CONFIG }: MagneticProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0), y = useMotionValue(0)
+  const springX = useSpring(x, springOptions), springY = useSpring(y, springOptions)
+
+  useEffect(() => {
+    const calc = (e: MouseEvent) => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2
+        const distX = e.clientX - centerX, distY = e.clientY - centerY
+        const absDist = Math.sqrt(distX ** 2 + distY ** 2)
+        if (isHovered && absDist <= range) { const scale = 1 - absDist / range; x.set(distX * intensity * scale); y.set(distY * intensity * scale) }
+        else { x.set(0); y.set(0) }
+      }
+    }
+    document.addEventListener('mousemove', calc)
+    return () => document.removeEventListener('mousemove', calc)
+  }, [ref, isHovered, intensity, range])
+
+  useEffect(() => {
+    if (actionArea === 'parent' && ref.current?.parentElement) {
+      const parent = ref.current.parentElement
+      parent.addEventListener('mouseenter', () => setIsHovered(true))
+      parent.addEventListener('mouseleave', () => setIsHovered(false))
+    } else if (actionArea === 'global') setIsHovered(true)
+  }, [actionArea])
+
+  return (
+    <motion.div ref={ref} onMouseEnter={actionArea === 'self' ? () => setIsHovered(true) : undefined} onMouseLeave={actionArea === 'self' ? () => { setIsHovered(false); x.set(0); y.set(0) } : undefined} style={{ x: springX, y: springY }}>
+      {children}
+    </motion.div>
+  )
+}
+```
+
+**Dependencies:** `motion/react`
+**Props:** `intensity` (strength), `range` (attraction distance), `actionArea` ('self'|'parent'|'global')
+
+---
+
+### accordion (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/accordion
+
+Animated accordion component with expand/collapse.
+
+```tsx
+'use client'
+import { motion, AnimatePresence, Transition, Variants, Variant, MotionConfig } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import React, { createContext, useContext, useState, ReactNode } from 'react'
+
+type AccordionContextType = { expandedValue: React.Key | null; toggleItem: (value: React.Key) => void; variants?: { expanded: Variant; collapsed: Variant } }
+const AccordionContext = createContext<AccordionContextType | undefined>(undefined)
+function useAccordion() { const ctx = useContext(AccordionContext); if (!ctx) throw new Error('useAccordion must be used within Accordion'); return ctx }
+
+export function Accordion({ children, className, transition, variants, expandedValue: externalVal, onValueChange }: { children: ReactNode; className?: string; transition?: Transition; variants?: { expanded: Variant; collapsed: Variant }; expandedValue?: React.Key | null; onValueChange?: (value: React.Key | null) => void }) {
+  const [internalVal, setInternalVal] = useState<React.Key | null>(null)
+  const expandedValue = externalVal !== undefined ? externalVal : internalVal
+  const toggleItem = (value: React.Key) => { const newVal = expandedValue === value ? null : value; onValueChange ? onValueChange(newVal) : setInternalVal(newVal) }
+
+  return (
+    <MotionConfig transition={transition}>
+      <div className={cn('relative', className)}>
+        <AccordionContext.Provider value={{ expandedValue, toggleItem, variants }}>{children}</AccordionContext.Provider>
+      </div>
+    </MotionConfig>
+  )
+}
+
+export function AccordionItem({ value, children, className }: { value: React.Key; children: ReactNode; className?: string }) {
+  const { expandedValue } = useAccordion()
+  const isExpanded = value === expandedValue
+  return <div className={cn('overflow-hidden', className)} {...(isExpanded ? { 'data-expanded': '' } : {})}>{React.Children.map(children, (child) => React.isValidElement(child) ? React.cloneElement(child, { ...child.props, value, expanded: isExpanded }) : child)}</div>
+}
+
+export function AccordionTrigger({ children, className, ...props }: { children: ReactNode; className?: string }) {
+  const { toggleItem, expandedValue } = useAccordion()
+  const value = (props as any).value
+  return <button onClick={() => value !== undefined && toggleItem(value)} aria-expanded={value === expandedValue} type='button' className={cn('group', className)}>{children}</button>
+}
+
+export function AccordionContent({ children, className, ...props }: { children: ReactNode; className?: string }) {
+  const { expandedValue, variants } = useAccordion()
+  const value = (props as any).value
+  const isExpanded = value === expandedValue
+  const BASE: Variants = { expanded: { height: 'auto', opacity: 1 }, collapsed: { height: 0, opacity: 0 } }
+  const combined = { expanded: { ...BASE.expanded, ...variants?.expanded }, collapsed: { ...BASE.collapsed, ...variants?.collapsed } }
+  return <AnimatePresence initial={false}>{isExpanded && <motion.div initial='collapsed' animate='expanded' exit='collapsed' variants={combined} className={className}>{children}</motion.div>}</AnimatePresence>
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### morphing-dialog (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/morphing-dialog
+
+Shared layout animation dialog that morphs from trigger.
+
+```tsx
+'use client'
+import React, { useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence, MotionConfig, Transition, Variant } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { cn } from '@/lib/utils'
+import { XIcon } from 'lucide-react'
+
+interface MorphingDialogContextType { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; uniqueId: string; triggerRef: React.RefObject<HTMLDivElement> }
+const MorphingDialogContext = React.createContext<MorphingDialogContextType | null>(null)
+function useMorphingDialog() { const ctx = useContext(MorphingDialogContext); if (!ctx) throw new Error('useMorphingDialog must be used within MorphingDialog'); return ctx }
+
+export function MorphingDialog({ children, transition }: { children: React.ReactNode; transition?: Transition }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const uniqueId = useId()
+  const triggerRef = useRef<HTMLDivElement>(null)
+  return <MorphingDialogContext.Provider value={useMemo(() => ({ isOpen, setIsOpen, uniqueId, triggerRef }), [isOpen, uniqueId])}><MotionConfig transition={transition}>{children}</MotionConfig></MorphingDialogContext.Provider>
+}
+
+export function MorphingDialogTrigger({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { setIsOpen, isOpen, uniqueId } = useMorphingDialog()
+  return <motion.div layoutId={`dialog-${uniqueId}`} className={cn('relative cursor-pointer', className)} onClick={() => setIsOpen(!isOpen)} style={style} role='button' aria-haspopup='dialog' aria-expanded={isOpen}>{children}</motion.div>
+}
+
+export function MorphingDialogContent({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { setIsOpen, isOpen, uniqueId, triggerRef } = useMorphingDialog()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false) }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [setIsOpen])
+
+  useEffect(() => { isOpen ? document.body.classList.add('overflow-hidden') : document.body.classList.remove('overflow-hidden') }, [isOpen])
+
+  return <motion.div ref={containerRef} layoutId={`dialog-${uniqueId}`} className={cn('overflow-hidden', className)} style={style} role='dialog' aria-modal='true'>{children}</motion.div>
+}
+
+export function MorphingDialogContainer({ children }: { children: React.ReactNode }) {
+  const { isOpen, uniqueId } = useMorphingDialog()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true); return () => setMounted(false) }, [])
+  if (!mounted) return null
+  return createPortal(
+    <AnimatePresence initial={false} mode='sync'>
+      {isOpen && (<><motion.div key={`backdrop-${uniqueId}`} className='fixed inset-0 h-full w-full bg-white/40 backdrop-blur-sm dark:bg-black/40' initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} /><div className='fixed inset-0 z-50 flex items-center justify-center'>{children}</div></>)}
+    </AnimatePresence>,
+    document.body
+  )
+}
+
+export function MorphingDialogTitle({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog()
+  return <motion.div layoutId={`dialog-title-container-${uniqueId}`} className={className} style={style} layout>{children}</motion.div>
+}
+
+export function MorphingDialogSubtitle({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog()
+  return <motion.div layoutId={`dialog-subtitle-container-${uniqueId}`} className={className} style={style}>{children}</motion.div>
+}
+
+export function MorphingDialogDescription({ children, className, variants, disableLayoutAnimation }: { children: React.ReactNode; className?: string; disableLayoutAnimation?: boolean; variants?: { initial: Variant; animate: Variant; exit: Variant } }) {
+  const { uniqueId } = useMorphingDialog()
+  return <motion.div key={`dialog-description-${uniqueId}`} layoutId={disableLayoutAnimation ? undefined : `dialog-description-content-${uniqueId}`} variants={variants} className={className} initial='initial' animate='animate' exit='exit'>{children}</motion.div>
+}
+
+export function MorphingDialogImage({ src, alt, className, style }: { src: string; alt: string; className?: string; style?: React.CSSProperties }) {
+  const { uniqueId } = useMorphingDialog()
+  return <motion.img src={src} alt={alt} className={cn(className)} layoutId={`dialog-img-${uniqueId}`} style={style} />
+}
+
+export function MorphingDialogClose({ children, className, variants }: { children?: React.ReactNode; className?: string; variants?: { initial: Variant; animate: Variant; exit: Variant } }) {
+  const { setIsOpen, uniqueId } = useMorphingDialog()
+  return <motion.button onClick={() => setIsOpen(false)} type='button' aria-label='Close dialog' key={`dialog-close-${uniqueId}`} className={cn('absolute right-6 top-6', className)} initial='initial' animate='animate' exit='exit' variants={variants}>{children || <XIcon size={24} />}</motion.button>
+}
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`, `@/lib/utils`
+**Note:** Requires `use-click-outside` hook for outside click detection.
+
+---
+
+### carousel (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/carousel
+
+Draggable carousel with navigation and indicators.
+
+```tsx
+'use client'
+import { Children, ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react'
+import { motion, Transition, useMotionValue } from 'motion/react'
+import { cn } from '@/lib/utils'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+type CarouselContextType = { index: number; setIndex: (n: number) => void; itemsCount: number; setItemsCount: (n: number) => void; disableDrag: boolean }
+const CarouselContext = createContext<CarouselContextType | undefined>(undefined)
+function useCarousel() { const ctx = useContext(CarouselContext); if (!ctx) throw new Error('useCarousel must be used within Carousel'); return ctx }
+
+export function Carousel({ children, className, initialIndex = 0, index: externalIdx, onIndexChange, disableDrag = false }: { children: ReactNode; className?: string; initialIndex?: number; index?: number; onIndexChange?: (n: number) => void; disableDrag?: boolean }) {
+  const [internalIdx, setInternalIdx] = useState(initialIndex)
+  const isControlled = externalIdx !== undefined
+  const currentIdx = isControlled ? externalIdx : internalIdx
+  const [itemsCount, setItemsCount] = useState(0)
+  const handleChange = (n: number) => { if (!isControlled) setInternalIdx(n); onIndexChange?.(n) }
+
+  return (
+    <CarouselContext.Provider value={{ index: currentIdx, setIndex: handleChange, itemsCount, setItemsCount, disableDrag }}>
+      <div className={cn('group/hover relative', className)}><div className='overflow-hidden'>{children}</div></div>
+    </CarouselContext.Provider>
+  )
+}
+
+export function CarouselNavigation({ className, classNameButton, alwaysShow }: { className?: string; classNameButton?: string; alwaysShow?: boolean }) {
+  const { index, setIndex, itemsCount } = useCarousel()
+  return (
+    <div className={cn('pointer-events-none absolute left-[-12.5%] top-1/2 flex w-[125%] -translate-y-1/2 justify-between px-2', className)}>
+      <button type='button' disabled={index === 0} onClick={() => index > 0 && setIndex(index - 1)} className={cn('pointer-events-auto rounded-full bg-zinc-50 p-2 dark:bg-zinc-950', alwaysShow ? 'opacity-100 disabled:opacity-40' : 'opacity-0 group-hover/hover:opacity-100', classNameButton)}><ChevronLeft size={16} /></button>
+      <button type='button' disabled={index + 1 === itemsCount} onClick={() => index < itemsCount - 1 && setIndex(index + 1)} className={cn('pointer-events-auto rounded-full bg-zinc-50 p-2 dark:bg-zinc-950', alwaysShow ? 'opacity-100 disabled:opacity-40' : 'opacity-0 group-hover/hover:opacity-100', classNameButton)}><ChevronRight size={16} /></button>
+    </div>
+  )
+}
+
+export function CarouselIndicator({ className, classNameButton }: { className?: string; classNameButton?: string }) {
+  const { index, itemsCount, setIndex } = useCarousel()
+  return (
+    <div className={cn('absolute bottom-0 z-10 flex w-full items-center justify-center', className)}>
+      <div className='flex space-x-2'>{Array.from({ length: itemsCount }, (_, i) => <button key={i} type='button' onClick={() => setIndex(i)} className={cn('h-2 w-2 rounded-full', index === i ? 'bg-zinc-950 dark:bg-zinc-50' : 'bg-zinc-900/50 dark:bg-zinc-100/50', classNameButton)} />)}</div>
+    </div>
+  )
+}
+
+export function CarouselContent({ children, className, transition }: { children: ReactNode; className?: string; transition?: Transition }) {
+  const { index, setIndex, setItemsCount, disableDrag } = useCarousel()
+  const [visibleCount, setVisibleCount] = useState(1)
+  const dragX = useMotionValue(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const itemsLength = Children.count(children)
+
+  useEffect(() => { setItemsCount(itemsLength) }, [itemsLength, setItemsCount])
+
+  const onDragEnd = () => { const x = dragX.get(); if (x <= -10 && index < itemsLength - 1) setIndex(index + 1); else if (x >= 10 && index > 0) setIndex(index - 1) }
+
+  return (
+    <motion.div drag={disableDrag ? false : 'x'} dragConstraints={{ left: 0, right: 0 }} dragMomentum={false} style={{ x: disableDrag ? undefined : dragX }} animate={{ translateX: `-${index * (100 / visibleCount)}%` }} onDragEnd={disableDrag ? undefined : onDragEnd} transition={transition || { damping: 18, stiffness: 90, type: 'spring' }} className={cn('flex items-center', !disableDrag && 'cursor-grab active:cursor-grabbing', className)} ref={containerRef}>
+      {children}
+    </motion.div>
+  )
+}
+
+export function CarouselItem({ children, className }: { children: ReactNode; className?: string }) {
+  return <motion.div className={cn('w-full min-w-0 shrink-0 grow-0 overflow-hidden', className)}>{children}</motion.div>
+}
+```
+
+**Dependencies:** `motion/react`, `lucide-react`, `@/lib/utils`
+
+---
+
+### sliding-number (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/sliding-number
+
+Animated sliding number counter with spring physics.
+
+```tsx
+'use client'
+import { useEffect, useId } from 'react'
+import { MotionValue, motion, useSpring, useTransform, motionValue } from 'motion/react'
+import useMeasure from 'react-use-measure'
+
+const TRANSITION = { type: 'spring', stiffness: 280, damping: 18, mass: 0.3 }
+
+function Digit({ value, place }: { value: number; place: number }) {
+  const valueRoundedToPlace = Math.floor(value / place) % 10
+  const initial = motionValue(valueRoundedToPlace)
+  const animatedValue = useSpring(initial, TRANSITION)
+  useEffect(() => { animatedValue.set(valueRoundedToPlace) }, [animatedValue, valueRoundedToPlace])
+
+  return (
+    <div className='relative inline-block w-[1ch] overflow-x-visible overflow-y-clip leading-none tabular-nums'>
+      <div className='invisible'>0</div>
+      {Array.from({ length: 10 }, (_, i) => <Number key={i} mv={animatedValue} number={i} />)}
+    </div>
+  )
+}
+
+function Number({ mv, number }: { mv: MotionValue<number>; number: number }) {
+  const uniqueId = useId()
+  const [ref, bounds] = useMeasure()
+  const y = useTransform(mv, (latest) => { if (!bounds.height) return 0; const placeValue = latest % 10; const offset = (10 + number - placeValue) % 10; let memo = offset * bounds.height; if (offset > 5) memo -= 10 * bounds.height; return memo })
+  if (!bounds.height) return <span ref={ref} className='invisible absolute'>{number}</span>
+  return <motion.span style={{ y }} layoutId={`${uniqueId}-${number}`} className='absolute inset-0 flex items-center justify-center' transition={TRANSITION} ref={ref}>{number}</motion.span>
+}
+
+export function SlidingNumber({ value, padStart = false, decimalSeparator = '.' }: { value: number; padStart?: boolean; decimalSeparator?: string }) {
+  const absValue = Math.abs(value)
+  const [integerPart, decimalPart] = absValue.toString().split('.')
+  const integerValue = parseInt(integerPart, 10)
+  const paddedInteger = padStart && integerValue < 10 ? `0${integerPart}` : integerPart
+  const integerDigits = paddedInteger.split('')
+  const integerPlaces = integerDigits.map((_, i) => Math.pow(10, integerDigits.length - i - 1))
+
+  return (
+    <div className='flex items-center'>
+      {value < 0 && '-'}
+      {integerDigits.map((_, idx) => <Digit key={`pos-${integerPlaces[idx]}`} value={integerValue} place={integerPlaces[idx]} />)}
+      {decimalPart && (<><span>{decimalSeparator}</span>{decimalPart.split('').map((_, idx) => <Digit key={`decimal-${idx}`} value={parseInt(decimalPart, 10)} place={Math.pow(10, decimalPart.length - idx - 1)} />)}</>)}
+    </div>
+  )
+}
+```
+
+**Dependencies:** `motion/react`, `react-use-measure`
+
+---
+
+### scroll-progress (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/scroll-progress
+
+Scroll progress indicator bar.
+
+```tsx
+'use client'
+import { motion, SpringOptions, useScroll, useSpring } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import { RefObject } from 'react'
+
+interface ScrollProgressProps { className?: string; springOptions?: SpringOptions; containerRef?: RefObject<HTMLDivElement> }
+
+const DEFAULT_SPRING: SpringOptions = { stiffness: 200, damping: 50, restDelta: 0.001 }
+
+export function ScrollProgress({ className, springOptions, containerRef }: ScrollProgressProps) {
+  const { scrollYProgress } = useScroll({ container: containerRef, layoutEffect: containerRef?.current !== null })
+  const scaleX = useSpring(scrollYProgress, { ...(springOptions ?? DEFAULT_SPRING) })
+  return <motion.div className={cn('inset-x-0 top-0 h-1 origin-left', className)} style={{ scaleX }} />
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### glow-effect (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/glow-effect
+
+Animated glow effect with multiple modes.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { motion, Transition } from 'motion/react'
+
+export type GlowEffectProps = { className?: string; style?: React.CSSProperties; colors?: string[]; mode?: 'rotate' | 'pulse' | 'breathe' | 'colorShift' | 'flowHorizontal' | 'static'; blur?: number | 'softest' | 'soft' | 'medium' | 'strong' | 'stronger' | 'strongest' | 'none'; transition?: Transition; scale?: number; duration?: number }
+
+export function GlowEffect({ className, style, colors = ['#FF5733', '#33FF57', '#3357FF', '#F1C40F'], mode = 'rotate', blur = 'medium', transition, scale = 1, duration = 5 }: GlowEffectProps) {
+  const BASE_TRANSITION = { repeat: Infinity, duration, ease: 'linear' }
+
+  const animations: Record<string, any> = {
+    rotate: { background: [`conic-gradient(from 0deg at 50% 50%, ${colors.join(', ')})`, `conic-gradient(from 360deg at 50% 50%, ${colors.join(', ')})`], transition: { ...(transition ?? BASE_TRANSITION) } },
+    pulse: { background: colors.map((c) => `radial-gradient(circle at 50% 50%, ${c} 0%, transparent 100%)`), scale: [1 * scale, 1.1 * scale, 1 * scale], opacity: [0.5, 0.8, 0.5], transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) } },
+    breathe: { background: colors.map((c) => `radial-gradient(circle at 50% 50%, ${c} 0%, transparent 100%)`), scale: [1 * scale, 1.05 * scale, 1 * scale], transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) } },
+    colorShift: { background: colors.map((c, i) => { const next = colors[(i + 1) % colors.length]; return `conic-gradient(from 0deg at 50% 50%, ${c} 0%, ${next} 50%, ${c} 100%)` }), transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) } },
+    flowHorizontal: { background: colors.map((c) => { const next = colors[(colors.indexOf(c) + 1) % colors.length]; return `linear-gradient(to right, ${c}, ${next})` }), transition: { ...(transition ?? { ...BASE_TRANSITION, repeatType: 'mirror' }) } },
+    static: { background: `linear-gradient(to right, ${colors.join(', ')})` }
+  }
+
+  const blurClass = typeof blur === 'number' ? `blur-[${blur}px]` : { softest: 'blur-sm', soft: 'blur', medium: 'blur-md', strong: 'blur-lg', stronger: 'blur-xl', strongest: 'blur-xl', none: 'blur-none' }[blur]
+
+  return <motion.div style={{ ...style, '--scale': scale, willChange: 'transform', backfaceVisibility: 'hidden' } as React.CSSProperties} animate={animations[mode]} className={cn('pointer-events-none absolute inset-0 h-full w-full scale-[var(--scale)] transform-gpu', blurClass, className)} />
+}
+```
+
+**Dependencies:** `motion/react`, `@/lib/utils`
+**Modes:** `rotate`, `pulse`, `breathe`, `colorShift`, `flowHorizontal`, `static`
+
+---
+
+### image-comparison (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/image-comparison
+
+Before/after image comparison slider.
+
+```tsx
+'use client'
+import { cn } from '@/lib/utils'
+import { useState, createContext, useContext } from 'react'
+import { motion, MotionValue, SpringOptions, useMotionValue, useSpring, useTransform } from 'framer-motion'
+
+const ImageComparisonContext = createContext<{ sliderPosition: number; setSliderPosition: (pos: number) => void; motionSliderPosition: MotionValue<number> } | undefined>(undefined)
+
+const DEFAULT_SPRING = { bounce: 0, duration: 0 }
+
+export function ImageComparison({ children, className, enableHover, springOptions }: { children: React.ReactNode; className?: string; enableHover?: boolean; springOptions?: SpringOptions }) {
+  const [isDragging, setIsDragging] = useState(false)
+  const motionValue = useMotionValue(50)
+  const motionSliderPosition = useSpring(motionValue, springOptions ?? DEFAULT_SPRING)
+  const [sliderPosition, setSliderPosition] = useState(50)
+
+  const handleDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging && !enableHover) return
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = 'touches' in e ? e.touches[0].clientX - rect.left : (e as React.MouseEvent).clientX - rect.left
+    const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100)
+    motionValue.set(percentage); setSliderPosition(percentage)
+  }
+
+  return (
+    <ImageComparisonContext.Provider value={{ sliderPosition, setSliderPosition, motionSliderPosition }}>
+      <div className={cn('relative select-none overflow-hidden', enableHover && 'cursor-ew-resize', className)} onMouseMove={handleDrag} onMouseDown={() => !enableHover && setIsDragging(true)} onMouseUp={() => !enableHover && setIsDragging(false)} onMouseLeave={() => !enableHover && setIsDragging(false)} onTouchMove={handleDrag} onTouchStart={() => !enableHover && setIsDragging(true)} onTouchEnd={() => !enableHover && setIsDragging(false)}>
+        {children}
+      </div>
+    </ImageComparisonContext.Provider>
+  )
+}
+
+export function ImageComparisonImage({ className, alt, src, position }: { className?: string; alt: string; src: string; position: 'left' | 'right' }) {
+  const { motionSliderPosition } = useContext(ImageComparisonContext)!
+  const leftClipPath = useTransform(motionSliderPosition, (v) => `inset(0 0 0 ${v}%)`)
+  const rightClipPath = useTransform(motionSliderPosition, (v) => `inset(0 ${100 - v}% 0 0)`)
+  return <motion.img src={src} alt={alt} className={cn('absolute inset-0 h-full w-full object-cover', className)} style={{ clipPath: position === 'left' ? leftClipPath : rightClipPath }} />
+}
+
+export function ImageComparisonSlider({ className, children }: { className: string; children?: React.ReactNode }) {
+  const { motionSliderPosition } = useContext(ImageComparisonContext)!
+  const left = useTransform(motionSliderPosition, (v) => `${v}%`)
+  return <motion.div className={cn('absolute bottom-0 top-0 w-1 cursor-ew-resize', className)} style={{ left }}>{children}</motion.div>
+}
+```
+
+**Dependencies:** `framer-motion`, `@/lib/utils`
+
+---
+
+### popover (motion-primitives)
+**Source:** https://21st.dev/r/motion-primitives/popover
+
+Animated popover with shared layout.
+
+```tsx
+'use client'
+import useClickOutside from '@/hooks/use-click-outside'
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
+import { ArrowLeftIcon } from 'lucide-react'
+import { useRef, useState, useEffect, useId } from 'react'
+
+const TRANSITION = { type: 'spring', bounce: 0.05, duration: 0.3 }
+
+export function Popover() {
+  const uniqueId = useId()
+  const formContainerRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [note, setNote] = useState<null | string>(null)
+
+  const openMenu = () => setIsOpen(true)
+  const closeMenu = () => { setIsOpen(false); setNote(null) }
+
+  useClickOutside(formContainerRef, closeMenu)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenu() }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  return (
+    <MotionConfig transition={TRANSITION}>
+      <div className='relative flex items-center justify-center'>
+        <motion.button key='button' layoutId={`popover-${uniqueId}`} className='flex h-9 items-center border border-zinc-950/10 bg-white px-3 text-zinc-950 dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50' style={{ borderRadius: 8 }} onClick={openMenu}>
+          <motion.span layoutId={`popover-label-${uniqueId}`} className='text-sm'>Add Note</motion.span>
+        </motion.button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div ref={formContainerRef} layoutId={`popover-${uniqueId}`} className='absolute h-[200px] w-[364px] overflow-hidden border border-zinc-950/10 bg-white outline-none dark:bg-zinc-700' style={{ borderRadius: 12 }}>
+              <form className='flex h-full flex-col' onSubmit={(e) => e.preventDefault()}>
+                <motion.span layoutId={`popover-label-${uniqueId}`} aria-hidden='true' style={{ opacity: note ? 0 : 1 }} className='absolute left-4 top-3 select-none text-sm text-zinc-500 dark:text-zinc-400'>Add Note</motion.span>
+                <textarea className='h-full w-full resize-none rounded-md bg-transparent px-4 py-3 text-sm outline-none' autoFocus onChange={(e) => setNote(e.target.value)} />
+                <div key='close' className='flex justify-between px-4 py-3'>
+                  <button type='button' className='flex items-center' onClick={closeMenu}><ArrowLeftIcon size={16} className='text-zinc-900 dark:text-zinc-100' /></button>
+                  <button className='flex h-8 items-center rounded-lg border border-zinc-950/10 bg-transparent px-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:border-zinc-50/10 dark:text-zinc-50 dark:hover:bg-zinc-800' type='submit' onClick={closeMenu}>Submit Note</button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </MotionConfig>
+  )
+}
+```
+
+**Dependencies:** `framer-motion`, `lucide-react`
+**Note:** Requires `use-click-outside` hook.
+
+---
+
+### button (shadcn)
+**Source:** https://21st.dev/r/shadcn/button
+
+Button with variants using CVA.
+
+```tsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: { default: "h-10 px-4 py-2", sm: "h-9 rounded-md px-3", lg: "h-11 rounded-md px-8", icon: "h-10 w-10" },
+    },
+    defaultVariants: { variant: "default", size: "default" },
+  }
+)
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> { asChild?: boolean }
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : "button"
+  return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+})
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+```
+
+**Dependencies:** `@radix-ui/react-slot`, `class-variance-authority`, `@/lib/utils`
+**Variants:** `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`
+**Sizes:** `default`, `sm`, `lg`, `icon`
+
+---
+
+### card (shadcn)
+**Source:** https://21st.dev/r/shadcn/card
+
+Card container with header, content, footer.
+
+```tsx
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
+))
+Card.displayName = "Card"
+
+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(({ className, ...props }, ref) => (
+  <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, ...props }, ref) => (
+  <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
+))
+CardFooter.displayName = "CardFooter"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### dialog (shadcn)
+**Source:** https://21st.dev/r/shadcn/dialog
+
+Radix-based modal dialog.
+
+```tsx
+'use client'
+import * as React from 'react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const Dialog = DialogPrimitive.Root
+const DialogTrigger = DialogPrimitive.Trigger
+const DialogPortal = DialogPrimitive.Portal
+const DialogClose = DialogPrimitive.Close
+
+const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay ref={ref} className={cn('fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0', className)} {...props} />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content ref={ref} className={cn('fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg', className)} {...props}>
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <X className="h-4 w-4" /><span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
+
+const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props} />
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
+
+const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title ref={ref} className={cn('text-lg font-semibold leading-none tracking-tight', className)} {...props} />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
+
+const DialogDescription = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Description>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
+
+export { Dialog, DialogPortal, DialogOverlay, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription }
+```
+
+**Dependencies:** `@radix-ui/react-dialog`, `lucide-react`, `@/lib/utils`
+
+---
+
+### input (shadcn)
+**Source:** https://21st.dev/r/shadcn/input
+
+Styled input field.
+
+```tsx
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type, ...props }, ref) => {
+  return (
+    <input type={type} className={cn("flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)} ref={ref} {...props} />
+  )
+})
+Input.displayName = "Input"
+
+export { Input }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### select (shadcn)
+**Source:** https://21st.dev/r/shadcn/select
+
+Radix-based select dropdown.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { Check, ChevronDown, ChevronUp } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Select = SelectPrimitive.Root
+const SelectGroup = SelectPrimitive.Group
+const SelectValue = SelectPrimitive.Value
+
+const SelectTrigger = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Trigger>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Trigger ref={ref} className={cn("flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1", className)} {...props}>
+    {children}<SelectPrimitive.Icon asChild><ChevronDown className="h-4 w-4 opacity-50" /></SelectPrimitive.Icon>
+  </SelectPrimitive.Trigger>
+))
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+
+const SelectScrollUpButton = React.forwardRef<React.ElementRef<typeof SelectPrimitive.ScrollUpButton>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollUpButton ref={ref} className={cn("flex cursor-default items-center justify-center py-1", className)} {...props}><ChevronUp className="h-4 w-4" /></SelectPrimitive.ScrollUpButton>
+))
+const SelectScrollDownButton = React.forwardRef<React.ElementRef<typeof SelectPrimitive.ScrollDownButton>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>>(({ className, ...props }, ref) => (
+  <SelectPrimitive.ScrollDownButton ref={ref} className={cn("flex cursor-default items-center justify-center py-1", className)} {...props}><ChevronDown className="h-4 w-4" /></SelectPrimitive.ScrollDownButton>
+))
+
+const SelectContent = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Content>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>>(({ className, children, position = "popper", ...props }, ref) => (
+  <SelectPrimitive.Portal>
+    <SelectPrimitive.Content ref={ref} className={cn("relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", position === "popper" && "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className)} position={position} {...props}>
+      <SelectScrollUpButton />
+      <SelectPrimitive.Viewport className={cn("p-1", position === "popper" && "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]")}>{children}</SelectPrimitive.Viewport>
+      <SelectScrollDownButton />
+    </SelectPrimitive.Content>
+  </SelectPrimitive.Portal>
+))
+SelectContent.displayName = SelectPrimitive.Content.displayName
+
+const SelectLabel = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Label>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label ref={ref} className={cn("py-1.5 pl-8 pr-2 text-sm font-semibold", className)} {...props} />
+))
+
+const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Item>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>>(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Item ref={ref} className={cn("relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50", className)} {...props}>
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center"><SelectPrimitive.ItemIndicator><Check className="h-4 w-4" /></SelectPrimitive.ItemIndicator></span>
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+  </SelectPrimitive.Item>
+))
+SelectItem.displayName = SelectPrimitive.Item.displayName
+
+const SelectSeparator = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Separator>, React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-muted", className)} {...props} />
+))
+
+export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectLabel, SelectItem, SelectSeparator, SelectScrollUpButton, SelectScrollDownButton }
+```
+
+**Dependencies:** `@radix-ui/react-select`, `lucide-react`, `@/lib/utils`
+
+---
+
+### textarea (shadcn)
+**Source:** https://21st.dev/r/shadcn/textarea
+
+Styled textarea.
+
+```tsx
+import * as React from "react"
+import { cn } from "@/lib/utils"
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => {
+  return <textarea className={cn("flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50", className)} ref={ref} {...props} />
+})
+Textarea.displayName = "Textarea"
+
+export { Textarea }
+```
+
+**Dependencies:** `@/lib/utils`
+
+---
+
+### badge (shadcn)
+**Source:** https://21st.dev/r/shadcn/badge
+
+Badge with variants using CVA.
+
+```tsx
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+      },
+    },
+    defaultVariants: { variant: "default" },
+  }
+)
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
+}
+
+export { Badge, badgeVariants }
+```
+
+**Dependencies:** `class-variance-authority`, `@/lib/utils`
+**Variants:** `default`, `secondary`, `destructive`, `outline`
+
+---
+
+### avatar (shadcn)
+**Source:** https://21st.dev/r/shadcn/avatar
+
+Radix-based avatar with fallback.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import { cn } from "@/lib/utils"
+
+const Avatar = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Root>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Root ref={ref} className={cn("relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full", className)} {...props} />
+))
+Avatar.displayName = AvatarPrimitive.Root.displayName
+
+const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image ref={ref} className={cn("aspect-square h-full w-full", className)} {...props} />
+))
+AvatarImage.displayName = AvatarPrimitive.Image.displayName
+
+const AvatarFallback = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Fallback>, React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Fallback ref={ref} className={cn("flex h-full w-full items-center justify-center rounded-full bg-muted", className)} {...props} />
+))
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+
+export { Avatar, AvatarImage, AvatarFallback }
+```
+
+**Dependencies:** `@radix-ui/react-avatar`, `@/lib/utils`
+
+---
+
+### switch (shadcn)
+**Source:** https://21st.dev/r/shadcn/switch
+
+Toggle switch.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as SwitchPrimitives from "@radix-ui/react-switch"
+import { cn } from "@/lib/utils"
+
+const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>>(({ className, ...props }, ref) => (
+  <SwitchPrimitives.Root className={cn("peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input", className)} {...props} ref={ref}>
+    <SwitchPrimitives.Thumb className={cn("pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0")} />
+  </SwitchPrimitives.Root>
+))
+Switch.displayName = SwitchPrimitives.Root.displayName
+
+export { Switch }
+```
+
+**Dependencies:** `@radix-ui/react-switch`, `@/lib/utils`
+
+---
+
+### label (shadcn)
+**Source:** https://21st.dev/r/shadcn/label
+
+Form label component.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const labelVariants = cva("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70")
+
+const Label = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root ref={ref} className={cn(labelVariants(), className)} {...props} />
+))
+Label.displayName = LabelPrimitive.Root.displayName
+
+export { Label }
+```
+
+**Dependencies:** `@radix-ui/react-label`, `class-variance-authority`, `@/lib/utils`
+
+---
+
+### checkbox (shadcn)
+**Source:** https://21st.dev/r/shadcn/checkbox
+
+Checkbox with check indicator.
+
+```tsx
+"use client"
+import * as React from "react"
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { Check } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>>(({ className, ...props }, ref) => (
+  <CheckboxPrimitive.Root ref={ref} className={cn("peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground", className)} {...props}>
+    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}><Check className="h-4 w-4" /></CheckboxPrimitive.Indicator>
+  </CheckboxPrimitive.Root>
+))
+Checkbox.displayName = CheckboxPrimitive.Root.displayName
+
+export { Checkbox }
+```
+
+**Dependencies:** `@radix-ui/react-checkbox`, `lucide-react`, `@/lib/utils`
+
+---
