@@ -4642,3 +4642,1079 @@ export { SparklesText };
 **Dependencies:** `@/lib/utils`, `framer-motion`
 
 ---
+
+### word-fade-in (magicui)
+**Source:** https://21st.dev/community/components/magicui/word-fade-in/default
+
+```tsx
+"use client";
+import { motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface WordFadeInProps { words: string; className?: string; delay?: number; variants?: Variants }
+
+function WordFadeIn({ words, delay = 0.15, variants = { hidden: { opacity: 0 }, visible: (i: number) => ({ y: 0, opacity: 1, transition: { delay: i * delay } }) }, className }: WordFadeInProps) {
+  const _words = words.split(" ");
+  return (
+    <motion.h1 variants={variants} initial="hidden" animate="visible" className={cn("font-display text-center text-4xl font-bold tracking-[-0.02em] text-black drop-shadow-sm dark:text-white md:text-7xl md:leading-[5rem]", className)}>
+      {_words.map((word, i) => <motion.span key={word} variants={variants} custom={i}>{word} </motion.span>)}
+    </motion.h1>
+  );
+}
+
+export { WordFadeIn };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### word-pull-up (magicui)
+**Source:** https://21st.dev/community/components/magicui/word-pull-up/default
+
+```tsx
+"use client";
+import { motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface WordPullUpProps { words: string; delayMultiple?: number; wrapperFramerProps?: Variants; framerProps?: Variants; className?: string }
+
+function WordPullUp({ words, wrapperFramerProps = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.2 } } }, framerProps = { hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }, className }: WordPullUpProps) {
+  return (
+    <motion.h1 variants={wrapperFramerProps} initial="hidden" animate="show" className={cn("font-display text-center text-4xl font-bold leading-[5rem] tracking-[-0.02em] drop-shadow-sm", className)}>
+      {words.split(" ").map((word, i) => <motion.span key={i} variants={framerProps} style={{ display: "inline-block", paddingRight: "8px" }}>{word === "" ? <span>&nbsp;</span> : word}</motion.span>)}
+    </motion.h1>
+  );
+}
+
+export { WordPullUp };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### flip-text (magicui)
+**Source:** https://21st.dev/community/components/magicui/flip-text/default
+
+```tsx
+"use client";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface FlipTextProps { word: string; duration?: number; delayMultiple?: number; framerProps?: Variants; className?: string }
+
+function FlipText({ word, duration = 0.5, delayMultiple = 0.08, framerProps = { hidden: { rotateX: -90, opacity: 0 }, visible: { rotateX: 0, opacity: 1 } }, className }: FlipTextProps) {
+  return (
+    <div className="flex justify-center space-x-2">
+      <AnimatePresence mode="wait">
+        {word.split("").map((char, i) => <motion.span key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("origin-center drop-shadow-sm", className)}>{char}</motion.span>)}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export { FlipText };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### hero-video-dialog (magicui)
+**Source:** https://21st.dev/community/components/magicui/hero-video-dialog/default
+
+```tsx
+"use client"
+import { useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { Play, XIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+type AnimationStyle = "from-bottom" | "from-center" | "from-top" | "from-left" | "from-right" | "fade"
+
+interface HeroVideoProps { animationStyle?: AnimationStyle; videoSrc: string; thumbnailSrc: string; thumbnailAlt?: string; className?: string }
+
+const animationVariants = {
+  "from-bottom": { initial: { y: "100%", opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: "100%", opacity: 0 } },
+  "from-center": { initial: { scale: 0.5, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.5, opacity: 0 } },
+  "from-top": { initial: { y: "-100%", opacity: 0 }, animate: { y: 0, opacity: 1 }, exit: { y: "-100%", opacity: 0 } },
+  "from-left": { initial: { x: "-100%", opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: "-100%", opacity: 0 } },
+  "from-right": { initial: { x: "100%", opacity: 0 }, animate: { x: 0, opacity: 1 }, exit: { x: "100%", opacity: 0 } },
+  fade: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
+}
+
+export function HeroVideoDialog({ animationStyle = "from-center", videoSrc, thumbnailSrc, thumbnailAlt = "Video thumbnail", className }: HeroVideoProps) {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const selectedAnimation = animationVariants[animationStyle];
+
+  return (
+    <div className={cn("relative", className)}>
+      <div className="relative cursor-pointer group" onClick={() => setIsVideoOpen(true)}>
+        <img src={thumbnailSrc} alt={thumbnailAlt} width={1920} height={1080} className="w-full transition-all duration-200 group-hover:brightness-[0.8] ease-out rounded-md shadow-lg border" />
+        <div className="absolute inset-0 flex items-center justify-center group-hover:scale-100 scale-[0.9] transition-all duration-200 ease-out rounded-2xl">
+          <div className="bg-primary/10 flex items-center justify-center rounded-full backdrop-blur-md size-28"><div className="flex items-center justify-center bg-gradient-to-b from-primary/30 to-primary shadow-md rounded-full size-20 transition-all ease-out duration-200 relative group-hover:scale-[1.2] scale-100"><Play className="size-8 text-white fill-white" /></div></div>
+        </div>
+      </div>
+      <AnimatePresence>
+        {isVideoOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setIsVideoOpen(false)} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <motion.div {...selectedAnimation} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="relative w-full max-w-4xl aspect-video mx-4 md:mx-0">
+            <motion.button className="absolute -top-16 right-0 text-white text-xl bg-neutral-900/50 ring-1 backdrop-blur-md rounded-full p-2"><XIcon className="size-5" /></motion.button>
+            <div className="size-full border-2 border-white rounded-2xl overflow-hidden"><iframe src={videoSrc} className="size-full rounded-2xl" allowFullScreen /></div>
+          </motion.div>
+        </motion.div>}
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `lucide-react`
+
+---
+
+### gradual-spacing-magicui (magicui)
+**Source:** https://21st.dev/community/components/magicui/gradual-spacing/default
+
+```tsx
+"use client";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+interface GradualSpacingProps { text: string; duration?: number; delayMultiple?: number; framerProps?: Variants; className?: string }
+
+function GradualSpacing({ text, duration = 0.5, delayMultiple = 0.04, framerProps = { hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }, className }: GradualSpacingProps) {
+  return (
+    <div className="flex justify-center space-x-1">
+      <AnimatePresence>
+        {text.split("").map((char, i) => <motion.h1 key={i} initial="hidden" animate="visible" exit="hidden" variants={framerProps} transition={{ duration, delay: i * delayMultiple }} className={cn("drop-shadow-sm", className)}>{char === " " ? <span>&nbsp;</span> : char}</motion.h1>)}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export { GradualSpacing };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### text-generate-effect-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/text-generate-effect/default
+
+```tsx
+"use client";
+import { useEffect } from "react";
+import { motion, stagger, useAnimate } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const TextGenerateEffect = ({ words, className, filter = true, duration = 0.5 }: { words: string; className?: string; filter?: boolean; duration?: number }) => {
+  const [scope, animate] = useAnimate();
+  let wordsArray = words.split(" ");
+
+  useEffect(() => {
+    animate("span", { opacity: 1, filter: filter ? "blur(0px)" : "none" }, { duration: duration || 1, delay: stagger(0.2) });
+  }, [scope.current]);
+
+  const renderWords = () => (
+    <motion.div ref={scope}>
+      {wordsArray.map((word, idx) => <motion.span key={word + idx} className="dark:text-white text-black opacity-0" style={{ filter: filter ? "blur(10px)" : "none" }}>{word} </motion.span>)}
+    </motion.div>
+  );
+
+  return <div className={cn("font-bold", className)}><div className="mt-4"><div className="dark:text-white text-black text-2xl leading-snug tracking-wide">{renderWords()}</div></div></div>;
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### direction-aware-hover (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/direction-aware-hover/default
+
+```tsx
+"use client";
+import { useRef, useState } from "react";
+import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const DirectionAwareHover = ({ imageUrl, children, childrenClassName, imageClassName, className }: { imageUrl: string; children: React.ReactNode | string; childrenClassName?: string; imageClassName?: string; className?: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [direction, setDirection] = useState<"top" | "bottom" | "left" | "right" | string>("left");
+
+  const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (!ref.current) return;
+    const { width: w, height: h, left, top } = ref.current.getBoundingClientRect();
+    const x = event.clientX - left - (w / 2) * (w > h ? h / w : 1);
+    const y = event.clientY - top - (h / 2) * (h > w ? w / h : 1);
+    const d = Math.round(Math.atan2(y, x) / 1.57079633 + 5) % 4;
+    setDirection(["top", "right", "bottom", "left"][d]);
+  };
+
+  const variants = { initial: { x: 0 }, exit: { x: 0, y: 0 }, top: { y: 20 }, bottom: { y: -20 }, left: { x: 20 }, right: { x: -20 } };
+  const textVariants = { initial: { y: 0, x: 0, opacity: 0 }, exit: { y: 0, x: 0, opacity: 0 }, top: { y: -20, opacity: 1 }, bottom: { y: 2, opacity: 1 }, left: { x: -2, opacity: 1 }, right: { x: 20, opacity: 1 } };
+
+  return (
+    <motion.div onMouseEnter={handleMouseEnter} ref={ref} className={cn("md:h-96 w-60 h-60 md:w-96 bg-transparent rounded-lg overflow-hidden group/card relative", className)}>
+      <AnimatePresence mode="wait">
+        <motion.div className="relative h-full w-full" initial="initial" whileHover={direction} exit="exit">
+          <motion.div className="group-hover/card:block hidden absolute inset-0 w-full h-full bg-black/40 z-10 transition duration-500" />
+          <motion.div variants={variants} className="h-full w-full relative bg-gray-50 dark:bg-black" transition={{ duration: 0.2, ease: "easeOut" }}>
+            <Image alt="image" className={cn("h-full w-full object-cover scale-[1.15]", imageClassName)} width="1000" height="1000" src={imageUrl} />
+          </motion.div>
+          <motion.div variants={textVariants} transition={{ duration: 0.5, ease: "easeOut" }} className={cn("text-white absolute bottom-4 left-4 z-40", childrenClassName)}>{children}</motion.div>
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `next/image`
+
+---
+
+### canvas-reveal-effect (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/canvas-reveal-effect/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import React, { useMemo, useRef } from "react";
+import * as THREE from "three";
+
+export const CanvasRevealEffect = ({ animationSpeed = 0.4, colors = [[0, 255, 255]], containerClassName, dotSize, showGradient = true }: { animationSpeed?: number; colors?: number[][]; containerClassName?: string; dotSize?: number; showGradient?: boolean }) => (
+  <div className={cn("h-full relative bg-white w-full", containerClassName)}>
+    <div className="h-full w-full">{/* DotMatrix with WebGL shader */}</div>
+    {showGradient && <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-[84%]" />}
+  </div>
+);
+```
+
+**Dependencies:** `@/lib/utils`, `three`, `@react-three/fiber`
+**Note:** Full WebGL shader implementation available from 21st.dev registry
+
+---
+
+### floating-navbar (aceternity) 
+**Source:** https://21st.dev/community/components/aceternity/floating-navbar/default
+
+```tsx
+"use client";
+import React, { useState } from "react";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+
+export const FloatingNav = ({ navItems, className }: { navItems: { name: string; link: string; icon?: JSX.Element }[]; className?: string }) => {
+  const { scrollYProgress } = useScroll();
+  const [visible, setVisible] = useState(false);
+
+  useMotionValueEvent(scrollYProgress, "change", (current) => {
+    if (typeof current === "number") {
+      let direction = current - scrollYProgress.getPrevious()!;
+      if (scrollYProgress.get() < 0.05) setVisible(false);
+      else setVisible(direction < 0);
+    }
+  });
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div initial={{ opacity: 1, y: -100 }} animate={{ y: visible ? 0 : -100, opacity: visible ? 1 : 0 }} transition={{ duration: 0.2 }} className={cn("flex max-w-fit fixed top-10 inset-x-0 mx-auto border border-transparent dark:border-white/[0.2] rounded-full dark:bg-black bg-white shadow-lg z-[5000] pr-2 pl-8 py-2 items-center justify-center space-x-4", className)}>
+        {navItems.map((navItem, idx) => <Link key={idx} href={navItem.link} className={cn("relative dark:text-neutral-50 items-center flex space-x-1 text-neutral-600 dark:hover:text-neutral-300 hover:text-neutral-500")}><span className="block sm:hidden">{navItem.icon}</span><span className="hidden sm:block text-sm">{navItem.name}</span></Link>)}
+        <button className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full"><span>Login</span></button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `next/link`
+
+---
+
+### images-slider (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/images-slider/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+
+export const ImagesSlider = ({ images, children, overlay = true, overlayClassName, className, autoplay = true, direction = "up" }: { images: string[]; children: React.ReactNode; overlay?: React.ReactNode; overlayClassName?: string; className?: string; autoplay?: boolean; direction?: "up" | "down" }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<string[]>([]);
+
+  useEffect(() => { Promise.all(images.map(src => new Promise((res, rej) => { const img = new Image(); img.src = src; img.onload = () => res(src); img.onerror = rej; }))).then(loaded => setLoadedImages(loaded as string[])); }, []);
+  useEffect(() => { if (autoplay) { const interval = setInterval(() => setCurrentIndex(prev => (prev + 1) % images.length), 5000); return () => clearInterval(interval); } }, [autoplay, images.length]);
+
+  const slideVariants = { initial: { scale: 0, opacity: 0, rotateX: 45 }, visible: { scale: 1, rotateX: 0, opacity: 1, transition: { duration: 0.5 } }, upExit: { opacity: 1, y: "-150%", transition: { duration: 1 } }, downExit: { opacity: 1, y: "150%", transition: { duration: 1 } } };
+
+  return (
+    <div className={cn("overflow-hidden h-full w-full relative flex items-center justify-center", className)} style={{ perspective: "1000px" }}>
+      {loadedImages.length > 0 && children}
+      {loadedImages.length > 0 && overlay && <div className={cn("absolute inset-0 bg-black/60 z-40", overlayClassName)} />}
+      {loadedImages.length > 0 && <AnimatePresence><motion.img key={currentIndex} src={loadedImages[currentIndex]} initial="initial" animate="visible" exit={direction === "up" ? "upExit" : "downExit"} variants={slideVariants} className="image h-full w-full absolute inset-0 object-cover object-center" /></AnimatePresence>}
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### layout-grid (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/layout-grid/default
+
+```tsx
+"use client";
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+type Card = { id: number; content: JSX.Element | React.ReactNode | string; className: string; thumbnail: string }
+
+export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
+  const [selected, setSelected] = useState<Card | null>(null);
+  const [lastSelected, setLastSelected] = useState<Card | null>(null);
+
+  const handleClick = (card: Card) => { setLastSelected(selected); setSelected(card); };
+  const handleOutsideClick = () => { setLastSelected(selected); setSelected(null); };
+
+  return (
+    <div className="w-full h-full p-10 grid grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto gap-4 relative">
+      {cards.map((card, i) => (
+        <div key={i} className={cn(card.className, "")}>
+          <motion.div onClick={() => handleClick(card)} className={cn(card.className, "relative overflow-hidden", selected?.id === card.id ? "rounded-lg cursor-pointer absolute inset-0 h-1/2 w-full md:w-1/2 m-auto z-50 flex justify-center items-center flex-wrap flex-col" : "bg-white rounded-xl h-full w-full")} layoutId={`card-${card.id}`}>
+            {selected?.id === card.id && <SelectedCard selected={selected} />}
+            <motion.img layoutId={`image-${card.id}-image`} src={card.thumbnail} className="object-cover object-top absolute inset-0 h-full w-full" alt="thumbnail" />
+          </motion.div>
+        </div>
+      ))}
+      <motion.div onClick={handleOutsideClick} className={cn("absolute h-full w-full left-0 top-0 bg-black opacity-0 z-10", selected?.id ? "pointer-events-auto" : "pointer-events-none")} animate={{ opacity: selected?.id ? 0.3 : 0 }} />
+    </div>
+  );
+};
+
+const SelectedCard = ({ selected }: { selected: Card | null }) => (
+  <div className="bg-transparent h-full w-full flex flex-col justify-end rounded-lg shadow-2xl relative z-[60]">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.6 }} className="absolute inset-0 h-full w-full bg-black opacity-60 z-10" />
+    <motion.div layoutId={`content-${selected?.id}`} initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }} transition={{ duration: 0.3 }} className="relative px-8 pb-4 z-[70]">{selected?.content}</motion.div>
+  </div>
+);
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### link-preview (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/link-preview/default
+
+```tsx
+"use client";
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
+import Image from "next/image";
+import { encode } from "qss";
+import React from "react";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+type LinkPreviewProps = { children: React.ReactNode; url: string; className?: string; width?: number; height?: number; quality?: number } & ({ isStatic: true; imageSrc: string } | { isStatic?: false; imageSrc?: never })
+
+export const LinkPreview = ({ children, url, className, width = 200, height = 125, quality = 50, isStatic = false, imageSrc = "" }: LinkPreviewProps) => {
+  const src = !isStatic ? `https://api.microlink.io/?${encode({ url, screenshot: true, meta: false, embed: "screenshot.url", colorScheme: "dark", "viewport.isMobile": true, "viewport.width": width * 3, "viewport.height": height * 3 })}` : imageSrc;
+  const [isOpen, setOpen] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
+  React.useEffect(() => setIsMounted(true), []);
+  const x = useMotionValue(0);
+  const translateX = useSpring(x, { stiffness: 100, damping: 15 });
+  const handleMouseMove = (event: any) => { const rect = event.target.getBoundingClientRect(); x.set((event.clientX - rect.left - rect.width / 2) / 2); };
+
+  return (
+    <>
+      {isMounted && <div className="hidden"><Image src={src} width={width} height={height} quality={quality} priority alt="hidden image" /></div>}
+      <HoverCardPrimitive.Root openDelay={50} closeDelay={100} onOpenChange={setOpen}>
+        <HoverCardPrimitive.Trigger onMouseMove={handleMouseMove} className={cn("text-black dark:text-white", className)} href={url}>{children}</HoverCardPrimitive.Trigger>
+        <HoverCardPrimitive.Content side="top" align="center" sideOffset={10}>
+          <AnimatePresence>{isOpen && <motion.div initial={{ opacity: 0, y: 20, scale: 0.6 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.6 }} className="shadow-xl rounded-xl" style={{ x: translateX }}><Link href={url} className="block p-1 bg-white border-2 border-transparent shadow rounded-xl"><Image src={src} width={width} height={height} quality={quality} priority className="rounded-lg" alt="preview" /></Link></motion.div>}</AnimatePresence>
+        </HoverCardPrimitive.Content>
+      </HoverCardPrimitive.Root>
+    </>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `@radix-ui/react-hover-card`, `qss`, `next/image`, `next/link`
+
+---
+
+### sticky-scroll-reveal (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/sticky-scroll-reveal/default
+
+```tsx
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import { useMotionValueEvent, useScroll, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const StickyScroll = ({ content, contentClassName }: { content: { title: string; description: string; content?: React.ReactNode }[]; contentClassName?: string }) => {
+  const [activeCard, setActiveCard] = React.useState(0);
+  const ref = useRef<any>(null);
+  const { scrollYProgress } = useScroll({ container: ref, offset: ["start start", "end start"] });
+
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const cardsBreakpoints = content.map((_, index) => index / content.length);
+    const closestBreakpointIndex = cardsBreakpoints.reduce((acc, bp, i) => Math.abs(latest - bp) < Math.abs(latest - cardsBreakpoints[acc]) ? i : acc, 0);
+    setActiveCard(closestBreakpointIndex);
+  });
+
+  const backgroundColors = ["rgb(15 23 42)", "rgb(0 0 0)", "rgb(23 23 23)"];
+  const linearGradients = ["linear-gradient(to bottom right, rgb(6 182 212), rgb(16 185 129))", "linear-gradient(to bottom right, rgb(236 72 153), rgb(99 102 241))", "linear-gradient(to bottom right, rgb(249 115 22), rgb(234 179 8))"];
+  const [backgroundGradient, setBackgroundGradient] = useState(linearGradients[0]);
+  useEffect(() => setBackgroundGradient(linearGradients[activeCard % linearGradients.length]), [activeCard]);
+
+  return (
+    <motion.div animate={{ backgroundColor: backgroundColors[activeCard % backgroundColors.length] }} className="h-[30rem] overflow-y-auto flex justify-center relative space-x-10 rounded-md p-10" ref={ref}>
+      <div className="div relative flex items-start px-4"><div className="max-w-2xl">
+        {content.map((item, index) => <div key={item.title + index} className="my-20"><motion.h2 animate={{ opacity: activeCard === index ? 1 : 0.3 }} className="text-2xl font-bold text-slate-100">{item.title}</motion.h2><motion.p animate={{ opacity: activeCard === index ? 1 : 0.3 }} className="text-lg text-slate-300 max-w-sm mt-10">{item.description}</motion.p></div>)}
+        <div className="h-40" />
+      </div></div>
+      <div style={{ background: backgroundGradient }} className={cn("hidden lg:block h-60 w-80 rounded-md bg-white sticky top-10 overflow-hidden", contentClassName)}>{content[activeCard].content ?? null}</div>
+    </motion.div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### sparkles-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/sparkles/default
+
+```tsx
+"use client";
+import React, { useId, useEffect, useState } from "react";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+import { cn } from "@/lib/utils";
+import { motion, useAnimation } from "framer-motion";
+
+type ParticlesProps = { id?: string; className?: string; background?: string; minSize?: number; maxSize?: number; speed?: number; particleColor?: string; particleDensity?: number }
+
+export const SparklesCore = ({ id, className, background, minSize, maxSize, speed, particleColor, particleDensity }: ParticlesProps) => {
+  const [init, setInit] = useState(false);
+  useEffect(() => { initParticlesEngine(async (engine) => { await loadSlim(engine); }).then(() => setInit(true)); }, []);
+  const controls = useAnimation();
+  const particlesLoaded = async (container?: any) => { if (container) controls.start({ opacity: 1, transition: { duration: 1 } }); };
+  const generatedId = useId();
+
+  return (
+    <motion.div animate={controls} className={cn("opacity-0", className)}>
+      {init && <Particles id={id || generatedId} className={cn("h-full w-full")} particlesLoaded={particlesLoaded} options={{
+        background: { color: { value: background || "#0d47a1" } },
+        fullScreen: { enable: false, zIndex: 1 },
+        fpsLimit: 120,
+        particles: {
+          color: { value: particleColor || "#ffffff" },
+          move: { enable: true, speed: { min: 0.1, max: 1 }, outModes: { default: "out" } },
+          number: { density: { enable: true, width: 400, height: 400 }, value: particleDensity || 120 },
+          opacity: { value: { min: 0.1, max: 1 }, animation: { enable: true, speed: speed || 4, sync: false } },
+          size: { value: { min: minSize || 1, max: maxSize || 3 } },
+          shape: { type: "circle" }
+        },
+        detectRetina: true
+      }} />}
+    </motion.div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `@tsparticles/react`, `@tsparticles/slim`, `@tsparticles/engine`
+
+---
+
+### container-scroll-animation (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/container-scroll-animation/default
+
+```tsx
+"use client";
+import React, { useRef } from "react";
+import { useScroll, useTransform, motion, MotionValue } from "framer-motion";
+
+export const ContainerScroll = ({ titleComponent, children }: { titleComponent: string | React.ReactNode; children: React.ReactNode }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef });
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => { const checkMobile = () => setIsMobile(window.innerWidth <= 768); checkMobile(); window.addEventListener("resize", checkMobile); return () => window.removeEventListener("resize", checkMobile); }, []);
+
+  const scaleDimensions = () => isMobile ? [0.7, 0.9] : [1.05, 1];
+  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
+  const translate = useTransform(scrollYProgress, [0, 1], [0, -100]);
+
+  return (
+    <div className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20" ref={containerRef}>
+      <div className="py-10 md:py-40 w-full relative" style={{ perspective: "1000px" }}>
+        <Header translate={translate} titleComponent={titleComponent} />
+        <Card rotate={rotate} translate={translate} scale={scale}>{children}</Card>
+      </div>
+    </div>
+  );
+};
+
+export const Header = ({ translate, titleComponent }: any) => <motion.div style={{ translateY: translate }} className="div max-w-5xl mx-auto text-center">{titleComponent}</motion.div>;
+
+export const Card = ({ rotate, scale, children }: { rotate: MotionValue<number>; scale: MotionValue<number>; translate: MotionValue<number>; children: React.ReactNode }) => (
+  <motion.div style={{ rotateX: rotate, scale, boxShadow: "0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042" }} className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl">
+    <div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4">{children}</div>
+  </motion.div>
+);
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### placeholders-and-vanish-input (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/placeholders-and-vanish-input/default
+
+```tsx
+"use client";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+export function PlaceholdersAndVanishInput({ placeholders, onChange, onSubmit }: { placeholders: string[]; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; onSubmit: (e: React.FormEvent<HTMLFormElement>) => void }) {
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState("");
+  const [animating, setAnimating] = useState(false);
+
+  useEffect(() => { intervalRef.current = setInterval(() => setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length), 3000); return () => { if (intervalRef.current) clearInterval(intervalRef.current); }; }, [placeholders]);
+
+  const draw = useCallback(() => { if (!inputRef.current || !canvasRef.current) return; const ctx = canvasRef.current.getContext("2d"); if (!ctx) return; /* Canvas drawing logic */ }, [value]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); setAnimating(true); draw(); onSubmit && onSubmit(e); };
+
+  return (
+    <form className={cn("w-full relative max-w-xl mx-auto bg-white dark:bg-zinc-800 h-12 rounded-full overflow-hidden shadow-lg transition duration-200", value && "bg-gray-50")} onSubmit={handleSubmit}>
+      <canvas className={cn("absolute pointer-events-none text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20", !animating ? "opacity-0" : "opacity-100")} ref={canvasRef} />
+      <input onChange={(e) => { if (!animating) { setValue(e.target.value); onChange && onChange(e); } }} ref={inputRef} value={value} type="text" className={cn("w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20", animating && "text-transparent dark:text-transparent")} />
+      <button disabled={!value} type="submit" className="absolute right-2 top-1/2 z-50 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-gray-100 bg-black dark:bg-zinc-900 transition duration-200 flex items-center justify-center"><motion.svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 h-4 w-4"><path d="M5 12l14 0" /><path d="M13 18l6 -6" /><path d="M13 6l6 6" /></motion.svg></button>
+      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none"><AnimatePresence mode="wait">{!value && <motion.p initial={{ y: 5, opacity: 0 }} key={`current-placeholder-${currentPlaceholder}`} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }} transition={{ duration: 0.3 }} className="dark:text-zinc-500 text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate">{placeholders[currentPlaceholder]}</motion.p>}</AnimatePresence></div>
+    </form>
+  );
+}
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+**Note:** Full canvas animation logic available from 21st.dev registry
+
+---
+
+### wavy-background-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/wavy-background/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useEffect, useRef, useState } from "react";
+import { createNoise3D } from "simplex-noise";
+
+export const WavyBackground = ({ children, className, containerClassName, colors, waveWidth, backgroundFill, blur = 10, speed = "fast", waveOpacity = 0.5, ...props }: { children?: any; className?: string; containerClassName?: string; colors?: string[]; waveWidth?: number; backgroundFill?: string; blur?: number; speed?: "slow" | "fast"; waveOpacity?: number; [key: string]: any }) => {
+  const noise = createNoise3D();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isSafari, setIsSafari] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    let w = ctx.canvas.width = window.innerWidth;
+    let h = ctx.canvas.height = window.innerHeight;
+    ctx.filter = `blur(${blur}px)`;
+    let nt = 0;
+    const waveColors = colors ?? ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+    const getSpeed = () => speed === "fast" ? 0.002 : 0.001;
+
+    const render = () => {
+      ctx.fillStyle = backgroundFill || "black";
+      ctx.globalAlpha = waveOpacity;
+      ctx.fillRect(0, 0, w, h);
+      nt += getSpeed();
+      for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.lineWidth = waveWidth || 50; ctx.strokeStyle = waveColors[i % waveColors.length]; for (let x = 0; x < w; x += 5) { const y = noise(x / 800, 0.3 * i, nt) * 100; ctx.lineTo(x, y + h * 0.5); } ctx.stroke(); ctx.closePath(); }
+      requestAnimationFrame(render);
+    };
+    render();
+    setIsSafari(typeof window !== "undefined" && navigator.userAgent.includes("Safari") && !navigator.userAgent.includes("Chrome"));
+  }, []);
+
+  return (
+    <div className={cn("h-screen flex flex-col items-center justify-center", containerClassName)}>
+      <canvas className="absolute inset-0 z-0" ref={canvasRef} style={{ ...(isSafari ? { filter: `blur(${blur}px)` } : {}) }} />
+      <div className={cn("relative z-10", className)} {...props}>{children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `simplex-noise`
+
+---
+
+### cover (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/cover/default
+
+```tsx
+"use client";
+import React, { useEffect, useId, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { SparklesCore } from "@/components/ui/sparkles";
+
+export const Cover = ({ children, className }: { children?: React.ReactNode; className?: string }) => {
+  const [hovered, setHovered] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [beamPositions, setBeamPositions] = useState<number[]>([]);
+
+  useEffect(() => { if (ref.current) { setContainerWidth(ref.current.clientWidth); const height = ref.current.clientHeight; const numberOfBeams = Math.floor(height / 10); setBeamPositions(Array.from({ length: numberOfBeams }, (_, i) => (i + 1) * (height / (numberOfBeams + 1)))); } }, []);
+
+  return (
+    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} ref={ref} className="relative hover:bg-neutral-900 group/cover inline-block dark:bg-neutral-900 bg-neutral-100 px-2 py-2 transition duration-200 rounded-sm">
+      <AnimatePresence>{hovered && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full w-full overflow-hidden absolute inset-0"><motion.div animate={{ translateX: ["-50%", "0%"] }} transition={{ translateX: { duration: 10, ease: "linear", repeat: Infinity } }} className="w-[200%] h-full flex"><SparklesCore background="transparent" minSize={0.4} maxSize={1} particleDensity={500} className="w-full h-full" particleColor="#FFFFFF" /><SparklesCore background="transparent" minSize={0.4} maxSize={1} particleDensity={500} className="w-full h-full" particleColor="#FFFFFF" /></motion.div></motion.div>}</AnimatePresence>
+      {beamPositions.map((position, index) => <Beam key={index} hovered={hovered} duration={Math.random() * 2 + 1} delay={Math.random() * 2 + 1} width={containerWidth} style={{ top: `${position}px` }} />)}
+      <motion.span key={String(hovered)} animate={{ scale: hovered ? 0.8 : 1, x: hovered ? [0, -30, 30, -30, 30, 0] : 0, y: hovered ? [0, 30, -30, 30, -30, 0] : 0 }} className={cn("dark:text-white inline-block text-neutral-900 relative z-20 group-hover/cover:text-white transition duration-200", className)}>{children}</motion.span>
+      <CircleIcon className="absolute -right-[2px] -top-[2px]" /><CircleIcon className="absolute -bottom-[2px] -right-[2px]" delay={0.4} /><CircleIcon className="absolute -left-[2px] -top-[2px]" delay={0.8} /><CircleIcon className="absolute -bottom-[2px] -left-[2px]" delay={1.6} />
+    </div>
+  );
+};
+
+export const Beam = ({ className, delay, duration, hovered, width = 600, ...svgProps }: any) => { const id = useId(); return <motion.svg width={width} height="1" viewBox={`0 0 ${width} 1`} fill="none" className={cn("absolute inset-x-0 w-full", className)} {...svgProps}><motion.path d={`M0 0.5H${width}`} stroke={`url(#svgGradient-${id})`} /><defs><motion.linearGradient id={`svgGradient-${id}`} gradientUnits="userSpaceOnUse" initial={{ x1: "0%", x2: "-5%" }} animate={{ x1: "110%", x2: "105%" }} transition={{ duration: duration ?? 2, ease: "linear", repeat: Infinity }}><stop stopColor="#2EB9DF" stopOpacity="0" /><stop stopColor="#3b82f6" /><stop offset="1" stopColor="#3b82f6" stopOpacity="0" /></motion.linearGradient></defs></motion.svg>; };
+
+export const CircleIcon = ({ className, delay }: { className?: string; delay?: number }) => <div className={cn("pointer-events-none animate-pulse group-hover/cover:hidden h-2 w-2 rounded-full bg-neutral-600 dark:bg-white opacity-20", className)} />;
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `@/components/ui/sparkles`
+**Note:** Requires sparkles component from 21st.dev
+
+---
+
+### flip-words-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/flip-words/default
+
+```tsx
+"use client";
+import React, { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const FlipWords = ({ words, duration = 3000, className }: { words: string[]; duration?: number; className?: string }) => {
+  const [currentWord, setCurrentWord] = useState(words[0]);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+
+  const startAnimation = useCallback(() => { const word = words[words.indexOf(currentWord) + 1] || words[0]; setCurrentWord(word); setIsAnimating(true); }, [currentWord, words]);
+
+  useEffect(() => { if (!isAnimating) setTimeout(() => startAnimation(), duration); }, [isAnimating, duration, startAnimation]);
+
+  return (
+    <AnimatePresence onExitComplete={() => setIsAnimating(false)}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 100, damping: 10 }} exit={{ opacity: 0, y: -40, x: 40, filter: "blur(8px)", scale: 2, position: "absolute" }} className={cn("z-10 inline-block relative text-left text-foreground px-2", className)} key={currentWord}>
+        {currentWord.split(" ").map((word, wordIndex) => (
+          <motion.span key={word + wordIndex} initial={{ opacity: 0, y: 10, filter: "blur(8px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ delay: wordIndex * 0.3, duration: 0.3 }} className="inline-block whitespace-nowrap">
+            {word.split("").map((letter, letterIndex) => <motion.span key={word + letterIndex} initial={{ opacity: 0, y: 10, filter: "blur(8px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ delay: wordIndex * 0.3 + letterIndex * 0.05, duration: 0.2 }} className="inline-block">{letter}</motion.span>)}
+            <span className="inline-block">&nbsp;</span>
+          </motion.span>
+        ))}
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### parallax-scroll-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/parallax-scroll/default
+
+```tsx
+"use client";
+import { useScroll, useTransform, motion } from "framer-motion";
+import { useRef } from "react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
+
+export const ParallaxScrollSecond = ({ images, className }: { images: string[]; className?: string }) => {
+  const gridRef = useRef<any>(null);
+  const { scrollYProgress } = useScroll({ container: gridRef, offset: ["start start", "end start"] });
+
+  const translateYFirst = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const translateXFirst = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const rotateXFirst = useTransform(scrollYProgress, [0, 1], [0, -20]);
+  const translateYThird = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const translateXThird = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const rotateXThird = useTransform(scrollYProgress, [0, 1], [0, 20]);
+
+  const third = Math.ceil(images.length / 3);
+  const firstPart = images.slice(0, third);
+  const secondPart = images.slice(third, 2 * third);
+  const thirdPart = images.slice(2 * third);
+
+  return (
+    <div className={cn("h-[40rem] items-start overflow-y-auto w-full", className)} ref={gridRef}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-start max-w-5xl mx-auto gap-10 py-40 px-10">
+        <div className="grid gap-10">{firstPart.map((el, idx) => <motion.div style={{ y: translateYFirst, x: translateXFirst, rotateZ: rotateXFirst }} key={"grid-1" + idx}><Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" /></motion.div>)}</div>
+        <div className="grid gap-10">{secondPart.map((el, idx) => <motion.div key={"grid-2" + idx}><Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" /></motion.div>)}</div>
+        <div className="grid gap-10">{thirdPart.map((el, idx) => <motion.div style={{ y: translateYThird, x: translateXThird, rotateZ: rotateXThird }} key={"grid-3" + idx}><Image src={el} className="h-80 w-full object-cover object-left-top rounded-lg" height="400" width="400" alt="thumbnail" /></motion.div>)}</div>
+      </div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `next/image`
+
+---
+
+### following-pointer (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/following-pointer/default
+
+```tsx
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export const FollowerPointerCard = ({ children, className, title }: { children: React.ReactNode; className?: string; title?: string | React.ReactNode }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [isInside, setIsInside] = useState<boolean>(false);
+
+  useEffect(() => { if (ref.current) setRect(ref.current.getBoundingClientRect()); }, []);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => { if (rect) { x.set(e.clientX - rect.left + window.scrollX); y.set(e.clientY - rect.top + window.scrollY); } };
+
+  return (
+    <div onMouseLeave={() => setIsInside(false)} onMouseEnter={() => setIsInside(true)} onMouseMove={handleMouseMove} style={{ cursor: "none" }} ref={ref} className={cn("relative", className)}>
+      <AnimatePresence>{isInside && <FollowPointer x={x} y={y} title={title} />}</AnimatePresence>
+      {children}
+    </div>
+  );
+};
+
+export const FollowPointer = ({ x, y, title }: { x: any; y: any; title?: string | React.ReactNode }) => {
+  const colors = ["rgb(14 165 233)", "rgb(115 115 115)", "rgb(20 184 166)", "rgb(34 197 94)", "rgb(59 130 246)", "rgb(239 68 68)", "rgb(234 179 8)"];
+  return (
+    <motion.div className="h-4 w-4 rounded-full absolute z-50" style={{ top: y, left: x, pointerEvents: "none" }} initial={{ scale: 1, opacity: 1 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }}>
+      <svg stroke="currentColor" fill="currentColor" strokeWidth="1" viewBox="0 0 16 16" className="h-6 w-6 text-sky-500 transform -rotate-[70deg] -translate-x-[12px] -translate-y-[10px] stroke-sky-600" height="1em" width="1em"><path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103z" /></svg>
+      <motion.div style={{ backgroundColor: colors[Math.floor(Math.random() * colors.length)] }} initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} className="px-2 py-2 text-white whitespace-nowrap min-w-max text-xs rounded-full">{title || `William Shakespeare`}</motion.div>
+    </motion.div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### sidebar (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/sidebar/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import Link, { LinkProps } from "next/link";
+import React, { useState, createContext, useContext } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, X } from "lucide-react";
+
+interface Links { label: string; href: string; icon: React.JSX.Element | React.ReactNode }
+interface SidebarContextProps { open: boolean; setOpen: React.Dispatch<React.SetStateAction<boolean>>; animate: boolean }
+
+const SidebarContext = createContext<SidebarContextProps | undefined>(undefined);
+
+export const useSidebar = () => { const context = useContext(SidebarContext); if (!context) throw new Error("useSidebar must be used within a SidebarProvider"); return context; };
+
+export const SidebarProvider = ({ children, open: openProp, setOpen: setOpenProp, animate = true }: { children: React.ReactNode; open?: boolean; setOpen?: React.Dispatch<React.SetStateAction<boolean>>; animate?: boolean }) => {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp !== undefined ? openProp : openState;
+  const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
+  return <SidebarContext.Provider value={{ open, setOpen, animate }}>{children}</SidebarContext.Provider>;
+};
+
+export const Sidebar = ({ children, open, setOpen, animate }: { children: React.ReactNode; open?: boolean; setOpen?: React.Dispatch<React.SetStateAction<boolean>>; animate?: boolean }) => <SidebarProvider open={open} setOpen={setOpen} animate={animate}>{children}</SidebarProvider>;
+
+export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => <><DesktopSidebar {...props} /><MobileSidebar {...(props as React.ComponentProps<"div">)} /></>;
+
+export const DesktopSidebar = ({ className, children, ...props }: React.ComponentProps<typeof motion.div>) => { const { open, setOpen, animate } = useSidebar(); return <motion.div className={cn("h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0", className)} animate={{ width: animate ? (open ? "300px" : "60px") : "300px" }} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} {...props}>{children}</motion.div>; };
+
+export const MobileSidebar = ({ className, children, ...props }: React.ComponentProps<"div">) => { const { open, setOpen } = useSidebar(); return <><div className={cn("h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full")} {...props}><div className="flex justify-end z-20 w-full"><Menu className="text-neutral-800 dark:text-neutral-200 cursor-pointer" onClick={() => setOpen(!open)} /></div><AnimatePresence>{open && <motion.div initial={{ x: "-100%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "-100%", opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className={cn("fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between", className)}><div className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer" onClick={() => setOpen(!open)}><X /></div>{children}</motion.div>}</AnimatePresence></div></>; };
+
+export const SidebarLink = ({ link, className, ...props }: { link: Links; className?: string; props?: LinkProps }) => { const { open, animate } = useSidebar(); return <Link href={link.href} className={cn("flex items-center justify-start gap-2 group/sidebar py-2", className)} {...props}>{link.icon}<motion.span animate={{ display: animate ? (open ? "inline-block" : "none") : "inline-block", opacity: animate ? (open ? 1 : 0) : 1 }} className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block">{link.label}</motion.span></Link>; };
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`, `next/link`, `lucide-react`
+
+---
+
+### animated-modal (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/animated-modal/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
+
+interface ModalContextType { open: boolean; setOpen: (open: boolean) => void }
+const ModalContext = createContext<ModalContextType | undefined>(undefined);
+
+export const ModalProvider = ({ children }: { children: ReactNode }) => { const [open, setOpen] = useState(false); return <ModalContext.Provider value={{ open, setOpen }}>{children}</ModalContext.Provider>; };
+export const useModal = () => { const context = useContext(ModalContext); if (!context) throw new Error("useModal must be used within a ModalProvider"); return context; };
+export function Modal({ children }: { children: ReactNode }) { return <ModalProvider>{children}</ModalProvider>; }
+
+export const ModalTrigger = ({ children, className }: { children: ReactNode; className?: string }) => { const { setOpen } = useModal(); return <button className={cn("px-4 py-2 rounded-md text-black dark:text-white text-center relative overflow-hidden", className)} onClick={() => setOpen(true)}>{children}</button>; };
+
+export const ModalBody = ({ children, className }: { children: ReactNode; className?: string }) => {
+  const { open, setOpen } = useModal();
+  const modalRef = useRef(null);
+
+  useEffect(() => { document.body.style.overflow = open ? "hidden" : "auto"; }, [open]);
+  useEffect(() => { const listener = (e: any) => { if (!modalRef.current || (modalRef.current as any).contains(e.target)) return; setOpen(false); }; document.addEventListener("mousedown", listener); return () => document.removeEventListener("mousedown", listener); }, [setOpen]);
+
+  return (
+    <AnimatePresence>{open && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, backdropFilter: "blur(10px)" }} exit={{ opacity: 0, backdropFilter: "blur(0px)" }} className="fixed [perspective:800px] inset-0 h-full w-full flex items-center justify-center z-50">
+      <motion.div className="fixed inset-0 h-full w-full bg-black bg-opacity-50 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+      <motion.div ref={modalRef} className={cn("min-h-[50%] max-h-[90%] md:max-w-[40%] bg-white dark:bg-neutral-950 border dark:border-neutral-800 md:rounded-2xl relative z-50 flex flex-col flex-1 overflow-hidden", className)} initial={{ opacity: 0, scale: 0.5, rotateX: 40, y: 40 }} animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }} exit={{ opacity: 0, scale: 0.8, rotateX: 10 }} transition={{ type: "spring", stiffness: 260, damping: 15 }}>
+        <button onClick={() => setOpen(false)} className="absolute top-4 right-4 group"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-black dark:text-white h-4 w-4 group-hover:scale-125 transition duration-200"><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg></button>
+        {children}
+      </motion.div>
+    </motion.div>}</AnimatePresence>
+  );
+};
+
+export const ModalContent = ({ children, className }: { children: ReactNode; className?: string }) => <div className={cn("flex flex-col flex-1 p-8 md:p-10", className)}>{children}</div>;
+export const ModalFooter = ({ children, className }: { children: ReactNode; className?: string }) => <div className={cn("flex justify-end p-4 bg-gray-100 dark:bg-neutral-900", className)}>{children}</div>;
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### background-gradient-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/background-gradient/default
+
+```tsx
+import { cn } from "@/lib/utils";
+import React from "react";
+import { motion } from "framer-motion";
+
+export const BackgroundGradient = ({ children, className, containerClassName, animate = true }: { children?: React.ReactNode; className?: string; containerClassName?: string; animate?: boolean }) => {
+  const variants = { initial: { backgroundPosition: "0 50%" }, animate: { backgroundPosition: ["0, 50%", "100% 50%", "0 50%"] } };
+  const gradientClass = "bg-[radial-gradient(circle_farthest-side_at_0_100%,#00ccb1,transparent),radial-gradient(circle_farthest-side_at_100%_0,#7b61ff,transparent),radial-gradient(circle_farthest-side_at_100%_100%,#ffc414,transparent),radial-gradient(circle_farthest-side_at_0_0,#1ca0fb,#141316)]";
+
+  return (
+    <div className={cn("relative p-[4px] group", containerClassName)}>
+      <motion.div variants={animate ? variants : undefined} initial={animate ? "initial" : undefined} animate={animate ? "animate" : undefined} transition={animate ? { duration: 5, repeat: Infinity, repeatType: "reverse" } : undefined} style={{ backgroundSize: animate ? "400% 400%" : undefined }} className={cn("absolute inset-0 rounded-3xl z-[1] opacity-60 group-hover:opacity-100 blur-xl transition duration-500 will-change-transform", gradientClass)} />
+      <motion.div variants={animate ? variants : undefined} initial={animate ? "initial" : undefined} animate={animate ? "animate" : undefined} transition={animate ? { duration: 5, repeat: Infinity, repeatType: "reverse" } : undefined} style={{ backgroundSize: animate ? "400% 400%" : undefined }} className={cn("absolute inset-0 rounded-3xl z-[1] will-change-transform", gradientClass)} />
+      <div className={cn("relative z-10", className)}>{children}</div>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### text-hover-effect-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/text-hover-effect/default
+
+```tsx
+"use client";
+import React, { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+
+export const TextHoverEffect = ({ text, duration }: { text: string; duration?: number }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+  const [maskPosition, setMaskPosition] = useState({ cx: "50%", cy: "50%" });
+
+  useEffect(() => { if (svgRef.current && cursor.x !== null && cursor.y !== null) { const svgRect = svgRef.current.getBoundingClientRect(); setMaskPosition({ cx: `${((cursor.x - svgRect.left) / svgRect.width) * 100}%`, cy: `${((cursor.y - svgRect.top) / svgRect.height) * 100}%` }); } }, [cursor]);
+
+  return (
+    <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })} className="select-none">
+      <defs>
+        <linearGradient id="textGradient" gradientUnits="userSpaceOnUse">{hovered && <><stop offset="0%" stopColor="rgb(234 179 8)" /><stop offset="25%" stopColor="rgb(239 68 68)" /><stop offset="50%" stopColor="rgb(59 130 246)" /><stop offset="75%" stopColor="rgb(6 182 212)" /><stop offset="100%" stopColor="rgb(139 92 246)" /></>}</linearGradient>
+        <motion.radialGradient id="revealMask" gradientUnits="userSpaceOnUse" r="20%" animate={maskPosition} transition={{ duration: duration ?? 0, ease: "easeOut" }}><stop offset="0%" stopColor="white" /><stop offset="100%" stopColor="black" /></motion.radialGradient>
+        <mask id="textMask"><rect x="0" y="0" width="100%" height="100%" fill="url(#revealMask)" /></mask>
+      </defs>
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" strokeWidth="0.3" className="font-[helvetica] font-bold stroke-neutral-200 dark:stroke-neutral-800 fill-transparent text-7xl" style={{ opacity: hovered ? 0.7 : 0 }}>{text}</text>
+      <motion.text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" strokeWidth="0.3" className="font-[helvetica] font-bold fill-transparent text-7xl stroke-neutral-200 dark:stroke-neutral-800" initial={{ strokeDashoffset: 1000, strokeDasharray: 1000 }} animate={{ strokeDashoffset: 0, strokeDasharray: 1000 }} transition={{ duration: 4, ease: "easeInOut" }}>{text}</motion.text>
+      <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" stroke="url(#textGradient)" strokeWidth="0.3" mask="url(#textMask)" className="font-[helvetica] font-bold fill-transparent text-7xl">{text}</text>
+    </svg>
+  );
+};
+```
+
+**Dependencies:** `framer-motion`
+
+---
+
+### focus-cards-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/focus-cards/default
+
+```tsx
+"use client";
+import Image from "next/image";
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+
+export const Card = React.memo(({ card, index, hovered, setHovered }: { card: any; index: number; hovered: number | null; setHovered: React.Dispatch<React.SetStateAction<number | null>> }) => (
+  <div onMouseEnter={() => setHovered(index)} onMouseLeave={() => setHovered(null)} className={cn("rounded-lg relative bg-gray-100 dark:bg-neutral-900 overflow-hidden h-60 md:h-96 w-full transition-all duration-300 ease-out", hovered !== null && hovered !== index && "blur-sm scale-[0.98]")}>
+    <Image src={card.src} alt={card.title} fill className="object-cover absolute inset-0" />
+    <div className={cn("absolute inset-0 bg-black/50 flex items-end py-8 px-4 transition-opacity duration-300", hovered === index ? "opacity-100" : "opacity-0")}><div className="text-xl md:text-2xl font-medium bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-200">{card.title}</div></div>
+  </div>
+));
+Card.displayName = "Card";
+
+type Card = { title: string; src: string };
+
+export function FocusCards({ cards }: { cards: Card[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-5xl mx-auto md:px-8 w-full">{cards.map((card, index) => <Card key={card.title} card={card} index={index} hovered={hovered} setHovered={setHovered} />)}</div>;
+}
+```
+
+**Dependencies:** `@/lib/utils`, `next/image`
+
+---
+
+### infinite-moving-cards-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/infinite-moving-cards/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import React, { useEffect, useState } from "react";
+
+export const InfiniteMovingCards = ({ items, direction = "left", speed = "fast", pauseOnHover = true, className }: { items: { quote: string; name: string; title: string }[]; direction?: "left" | "right"; speed?: "fast" | "normal" | "slow"; pauseOnHover?: boolean; className?: string }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const scrollerRef = React.useRef<HTMLUListElement>(null);
+  const [start, setStart] = useState(false);
+
+  useEffect(() => {
+    if (containerRef.current && scrollerRef.current) {
+      const scrollerContent = Array.from(scrollerRef.current.children);
+      scrollerContent.forEach((item) => { scrollerRef.current?.appendChild(item.cloneNode(true)); });
+      containerRef.current.style.setProperty("--animation-direction", direction === "left" ? "forwards" : "reverse");
+      containerRef.current.style.setProperty("--animation-duration", speed === "fast" ? "20s" : speed === "normal" ? "40s" : "80s");
+      setStart(true);
+    }
+  }, []);
+
+  return (
+    <div ref={containerRef} className={cn("scroller relative z-20 max-w-7xl overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_20%,white_80%,transparent)]", className)}>
+      <ul ref={scrollerRef} className={cn("flex min-w-full shrink-0 gap-4 py-4 w-max flex-nowrap", start && "animate-scroll", pauseOnHover && "hover:[animation-play-state:paused]")}>
+        {items.map((item) => <li key={item.name} className="w-[350px] max-w-full relative rounded-2xl border border-slate-700 px-8 py-6 md:w-[450px]" style={{ background: "linear-gradient(180deg, var(--slate-800), var(--slate-900)" }}><blockquote><span className="relative z-20 text-sm leading-[1.6] text-gray-100 font-normal">{item.quote}</span><div className="relative z-20 mt-6 flex flex-row items-center"><span className="flex flex-col gap-1"><span className="text-sm text-gray-400">{item.name}</span><span className="text-sm text-gray-400">{item.title}</span></span></div></blockquote></li>)}
+      </ul>
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`
+**Note:** Requires CSS animation `@keyframes scroll { to { transform: translate(calc(-50% - .5rem)); } }` and `.animate-scroll { animation: scroll var(--animation-duration) var(--animation-direction) linear infinite; }`
+
+---
+
+### moving-border-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/moving-border/default
+
+```tsx
+"use client";
+import React, { useRef } from "react";
+import { motion, useAnimationFrame, useMotionTemplate, useMotionValue, useTransform } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+export function Button({ borderRadius = "1.75rem", children, as: Component = "button", containerClassName, borderClassName, duration, className, ...otherProps }: { borderRadius?: string; children: React.ReactNode; as?: any; containerClassName?: string; borderClassName?: string; duration?: number; className?: string; [key: string]: any }) {
+  return (
+    <Component className={cn("bg-transparent relative text-xl h-16 w-40 p-[1px] overflow-hidden", containerClassName)} style={{ borderRadius }} {...otherProps}>
+      <div className="absolute inset-0" style={{ borderRadius: `calc(${borderRadius} * 0.96)` }}><MovingBorder duration={duration} rx="30%" ry="30%"><div className={cn("h-20 w-20 opacity-[0.8] bg-[radial-gradient(var(--sky-500)_40%,transparent_60%)]", borderClassName)} /></MovingBorder></div>
+      <div className={cn("relative bg-slate-900/[0.8] border border-slate-800 backdrop-blur-xl text-white flex items-center justify-center w-full h-full text-sm antialiased", className)} style={{ borderRadius: `calc(${borderRadius} * 0.96)` }}>{children}</div>
+    </Component>
+  );
+}
+
+export const MovingBorder = ({ children, duration = 2000, rx, ry, ...otherProps }: { children: React.ReactNode; duration?: number; rx?: string; ry?: string; [key: string]: any }) => {
+  const pathRef = useRef<any>();
+  const progress = useMotionValue<number>(0);
+
+  useAnimationFrame((time) => { const length = pathRef.current?.getTotalLength(); if (length) progress.set((time * (length / duration)) % length); });
+  const x = useTransform(progress, (val) => pathRef.current?.getPointAtLength(val).x);
+  const y = useTransform(progress, (val) => pathRef.current?.getPointAtLength(val).y);
+  const transform = useMotionTemplate`translateX(${x}px) translateY(${y}px) translateX(-50%) translateY(-50%)`;
+
+  return <><svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="absolute h-full w-full" width="100%" height="100%" {...otherProps}><rect fill="none" width="100%" height="100%" rx={rx} ry={ry} ref={pathRef} /></svg><motion.div style={{ position: "absolute", top: 0, left: 0, display: "inline-block", transform }}>{children}</motion.div></>;
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
+
+### typewriter-effect-aceternity (aceternity)
+**Source:** https://21st.dev/community/components/aceternity/typewriter-effect/default
+
+```tsx
+"use client";
+import { cn } from "@/lib/utils";
+import { motion, stagger, useAnimate, useInView } from "framer-motion";
+import { useEffect } from "react";
+
+export const TypewriterEffect = ({ words, className, cursorClassName }: { words: { text: string; className?: string }[]; className?: string; cursorClassName?: string }) => {
+  const wordsArray = words.map((word) => ({ ...word, text: word.text.split("") }));
+  const [scope, animate] = useAnimate();
+  const isInView = useInView(scope);
+
+  useEffect(() => { if (isInView) animate("span", { display: "inline-block", opacity: 1, width: "fit-content" }, { duration: 0.3, delay: stagger(0.1), ease: "easeInOut" }); }, [isInView]);
+
+  return (
+    <div className={cn("text-base sm:text-xl md:text-3xl lg:text-5xl font-bold text-center", className)}>
+      <motion.div ref={scope} className="inline">{wordsArray.map((word, idx) => <div key={`word-${idx}`} className="inline-block">{word.text.map((char, index) => <motion.span key={`char-${index}`} className={cn("dark:text-white text-black opacity-0 hidden", word.className)}>{char}</motion.span>)}&nbsp;</div>)}</motion.div>
+      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }} className={cn("inline-block rounded-sm w-[4px] h-4 md:h-6 lg:h-10 bg-blue-500", cursorClassName)} />
+    </div>
+  );
+};
+
+export const TypewriterEffectSmooth = ({ words, className, cursorClassName }: { words: { text: string; className?: string }[]; className?: string; cursorClassName?: string }) => {
+  const wordsArray = words.map((word) => ({ ...word, text: word.text.split("") }));
+  return (
+    <div className={cn("flex space-x-1 my-6", className)}>
+      <motion.div className="overflow-hidden pb-2" initial={{ width: "0%" }} whileInView={{ width: "fit-content" }} transition={{ duration: 2, ease: "linear", delay: 1 }}><div className="text-xs sm:text-base md:text-xl lg:text-3xl xl:text-5xl font-bold" style={{ whiteSpace: "nowrap" }}>{wordsArray.map((word, idx) => <div key={`word-${idx}`} className="inline-block">{word.text.map((char, i) => <span key={`char-${i}`} className={cn("dark:text-white text-black", word.className)}>{char}</span>)}&nbsp;</div>)}</div></motion.div>
+      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, repeat: Infinity, repeatType: "reverse" }} className={cn("block rounded-sm w-[4px] h-4 sm:h-6 xl:h-12 bg-blue-500", cursorClassName)} />
+    </div>
+  );
+};
+```
+
+**Dependencies:** `@/lib/utils`, `framer-motion`
+
+---
