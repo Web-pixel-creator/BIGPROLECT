@@ -224,13 +224,19 @@ export class SmartComponentSelector {
 
   private collectDeps(components: SelectedComponent[]): string[] {
     const deps = new Set<string>();
+    // Always add base dependencies for cn() utility
+    deps.add('clsx');
+    deps.add('tailwind-merge');
+    deps.add('framer-motion');
+    deps.add('lucide-react');
+    
     components.forEach((c) => {
       const text = `${c.code}`.toLowerCase();
-      if (text.includes('framer-motion')) deps.add('framer-motion');
-      if (text.includes('lucide-react')) deps.add('lucide-react');
+      if (text.includes('class-variance-authority') || text.includes('cva')) deps.add('class-variance-authority');
       if (text.includes('@/components/ui/')) deps.add('shadcn-ui-base'); // placeholder marker
       if (text.includes('three') || text.includes('webgl')) deps.add('three');
       if (text.includes('gsap')) deps.add('gsap');
+      if (text.includes('@radix-ui')) deps.add('@radix-ui/react-slot');
     });
     return Array.from(deps);
   }
