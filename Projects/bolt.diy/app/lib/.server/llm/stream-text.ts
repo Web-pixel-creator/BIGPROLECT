@@ -1,6 +1,4 @@
 import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
-import * as fs from 'fs';
-import * as path from 'path';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
@@ -203,7 +201,6 @@ export async function streamText(props: {
         logger.info(
           `Added structured component context: comps=${selection.components.length}, effects=${selection.effects.length}`,
         );
-        writeSelectionLog(selection, lastUserMessage.content);
       } else {
         logger.warn('No components selected for user message');
       }
@@ -212,47 +209,198 @@ export async function streamText(props: {
     logger.warn('Failed to match components for prompt:', error);
   }
 
+  // Registry components (shadcn-compatible registries)
+  try {
+    const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
+    if (registryContext) {
+      systemPrompt = `${systemPrompt}\n${registryContext}`;
+      logger.info('Added registry components to prompt context');
+    }
+  } catch (error) {
+    logger.warn('Failed to load registry components for prompt:', error);
+  }
 
-    // DEBUG selection summary
-  // TOKEN GUARD for component context length
-  const maxContextChars = 20000;
-  if (selection && selection.components && selection.effects) {
-    const dbgParts = (selection.components || []).concat(selection.effects || []);
-    const approxContext = dbgParts.map((c) => c.code || '').join('\n');
-    if (approxContext.length > maxContextChars) {
-      const sorted = dbgParts.sort((a, b) => (b.score || 0) - (a.score || 0));
-      let acc = '';
-      const keep = [] as typeof sorted;
-      for (const c of sorted) {
-        const next = acc.length + (c.code || '').length;
-        if (next > maxContextChars) continue;
-        acc += c.code || '';
-        keep.push(c);
+  if (chatMode === 'build' && contextFiles && contextOptimization) {
+    const codeContext = createFilesContext(contextFiles, true);
+
+    systemPrompt = `${systemPrompt}
+
+    Below is the artifact containing the context loaded into context buffer for you to have knowledge of and might need changes to fullfill current user request.
+    CONTEXT BUFFER:
+    ---
+    ${codeContext}
+    ---
+    `;
+
+    if (summary) {
+      systemPrompt = `${systemPrompt}
+      below is the chat history till now
+      CHAT SUMMARY:
+      ---
+      ${props.summary}
+      ---
+      `;
+
+      if (props.messageSliceId) {
+        processedMessages = processedMessages.slice(props.messageSliceId);
+      } else {
+        const lastMessage = processedMessages.pop();
+
+        if (lastMessage) {
+          processedMessages = [lastMessage];
+        }
       }
-      const keepSet = new Set(keep.map((c) => `${c.name}__${c.source}`));
-      selection.components = selection.components?.filter((c) => keepSet.has(`${c.name}__${c.source}`)) || [];
-      selection.effects = selection.effects?.filter((c) => keepSet.has(`${c.name}__${c.source}`)) || [];
-      selection.totalCodeLines = keep.reduce((s, c) => s + (c.code ? c.code.split(/\r?\n/).length : 0), 0);
-      logger.warn(`Component context trimmed to ${keep.length} items (chars=${acc.length}) due to token guard`);
     }
   }
 
-  const selectionDebug = selection?.debug || {};
+  const effectiveLockedFilePaths = new Set<string>();
+
+  if (files) {
+    for (const [filePath, fileDetails] of Object.entries(files)) {
+      if (fileDetails?.isLocked) {
+        effectiveLockedFilePaths.add(filePath);
+      }
+    }
+  }
+
+  if (effectiveLockedFilePaths.size > 0) {
+    const lockedFilesListString = Array.from(effectiveLockedFilePaths)
+      .map((filePath) => `- ${filePath}`)
+      .join('\n');
+    systemPrompt = `${systemPrompt}
+
+    IMPORTANT: The following files are locked and MUST NOT be modified in any way. Do not suggest or make any changes to these files. You can proceed with the request but DO NOT make any changes to these files specifically:
+    ${lockedFilesListString}
+    ---
+    `;
+  } else {
+    console.log('No locked files found from any source for prompt.');
+  }
+
+  logger.info(`Sending llm call to ${provider.name} with model ${modelDetails.name}`);
+
+  // Log reasoning model detection and token parameters
+  const isReasoning = isReasoningModel(modelDetails.name);
   logger.info(
-    'DEBUG COMPONENT SELECTION',
-    {
-      theme: selectionDebug.theme,
-      sections: selectionDebug.sections,
-      effects: selectionDebug.effects,
-      components:
-        selection?.components?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/\r?\n/).length || 0 })) ||
-        [],
-      effectsSelected:
-        selection?.effects?.map((c) => ({ name: c.name, source: c.source, lines: c.code?.split(/\r?\n/).length || 0 })) ||
-        [],
-      totalLines: selection?.totalCodeLines,
-      deps: selection?.dependencies,
-    },
+    `Model "${modelDetails.name}" is reasoning model: ${isReasoning}, using ${isReasoning ? 'maxCompletionTokens' : 'maxTokens'}: ${safeMaxTokens}`,
   );
 
+  // Validate token limits before API call
+  if (safeMaxTokens > (modelDetails.maxTokenAllowed || 128000)) {
+    logger.warn(
+      `Token limit warning: requesting ${safeMaxTokens} tokens but model supports max ${modelDetails.maxTokenAllowed || 128000}`,
+    );
+  }
+
+  // Use maxCompletionTokens for reasoning models (o1, GPT-5), maxTokens for traditional models
+  const tokenParams = isReasoning ? { maxCompletionTokens: safeMaxTokens } : { maxTokens: safeMaxTokens };
+
+  // Filter out unsupported parameters for reasoning models
+  const filteredOptions =
+    isReasoning && options
+      ? Object.fromEntries(
+          Object.entries(options).filter(
+            ([key]) =>
+              ![
+                'temperature',
+                'topP',
+                'presencePenalty',
+                'frequencyPenalty',
+                'logprobs',
+                'topLogprobs',
+                'logitBias',
+              ].includes(key),
+          ),
+        )
+      : options || {};
+
+  // DEBUG: Log filtered options
+  logger.info(
+    `DEBUG STREAM: Options filtering for model "${modelDetails.name}":`,
+    JSON.stringify(
+      {
+        isReasoning,
+        originalOptions: options || {},
+        filteredOptions,
+        originalOptionsKeys: options ? Object.keys(options) : [],
+        filteredOptionsKeys: Object.keys(filteredOptions),
+        removedParams: options ? Object.keys(options).filter((key) => !(key in filteredOptions)) : [],
+      },
+      null,
+      2,
+    ),
+  );
+
+  const streamParams = {
+    model: provider.getModelInstance({
+      model: modelDetails.name,
+      serverEnv,
+      apiKeys,
+      providerSettings,
+    }),
+    system: chatMode === 'build' ? systemPrompt : discussPrompt(),
+    ...tokenParams,
+    messages: convertToCoreMessages(processedMessages as any),
+    ...filteredOptions,
+
+    // Set temperature to 1 for reasoning models (required by OpenAI API)
+    ...(isReasoning ? { temperature: 1 } : {}),
+  };
+
+  // DEBUG: Log final streaming parameters
+  logger.info(
+    `DEBUG STREAM: Final streaming params for model "${modelDetails.name}":`,
+    JSON.stringify(
+      {
+        hasTemperature: 'temperature' in streamParams,
+        hasMaxTokens: 'maxTokens' in streamParams,
+        hasMaxCompletionTokens: 'maxCompletionTokens' in streamParams,
+        paramKeys: Object.keys(streamParams).filter((key) => !['model', 'messages', 'system'].includes(key)),
+        streamParams: Object.fromEntries(
+          Object.entries(streamParams).filter(([key]) => !['model', 'messages', 'system'].includes(key)),
+        ),
+      },
+      null,
+      2,
+    ),
+  );
+
+  return await _streamText(streamParams);
+}
+
+function inferTheme(text: string): string | undefined {
+  if (!text) return undefined;
+  const t = text.toLowerCase();
+  if (t.includes('web3') || t.includes('crypto')) return 'web3';
+  if (t.includes('saas') || t.includes('startup')) return 'saas';
+  if (t.includes('auto') || t.includes('car')) return 'auto';
+  if (t.includes('food') || t.includes('restaurant') || t.includes('delivery')) return 'food';
+  if (t.includes('construction') || t.includes('builder')) return 'construction';
+  if (t.includes('finance') || t.includes('bank')) return 'finance';
+  if (t.includes('education') || t.includes('school') || t.includes('course')) return 'education';
+  if (t.includes('ecommerce') || t.includes('shop') || t.includes('store')) return 'ecommerce';
+  if (t.includes('portfolio')) return 'portfolio';
+  return undefined;
+}
+
+function inferSections(text: string): string[] | undefined {
+  if (!text) return undefined;
+  const t = text.toLowerCase();
+  const sections: string[] = [];
+  if (t.includes('hero')) sections.push('hero');
+  if (t.includes('pricing') || t.includes('plan')) sections.push('pricing');
+  if (t.includes('faq')) sections.push('faq');
+  if (t.includes('testimonials') || t.includes('reviews')) sections.push('testimonials');
+  if (t.includes('features') || t.includes('services')) sections.push('features');
+  if (t.includes('contact') || t.includes('form')) sections.push('contact');
+  if (t.includes('gallery') || t.includes('cases') || t.includes('case')) sections.push('gallery', 'cases');
+   if (t.includes('blog') || t.includes('article')) sections.push('blog');
+   if (t.includes('team') || t.includes('about')) sections.push('team', 'about');
+   if (t.includes('roadmap') || t.includes('timeline')) sections.push('roadmap');
+  return sections.length ? sections : undefined;
+}
+
+function allow3d(text: string): boolean {
+  const t = text.toLowerCase();
+  return t.includes('3d') || t.includes('webgl') || t.includes('three');
 }
