@@ -14,19 +14,33 @@ export default class GoogleProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     /*
-     * Gemini 2.5 Flash - Latest and most capable flash model
+     * Gemini 2.5 Pro - Most capable model for complex tasks
      * 1M context, up to 65K output tokens
+     * https://ai.google.dev/gemini-api/docs/models#gemini-2.5-pro
      */
     {
-      name: 'gemini-2.5-flash-preview-05-20',
-      label: 'Gemini 2.5 Flash (Preview)',
+      name: 'gemini-2.5-pro',
+      label: 'Gemini 2.5 Pro',
       provider: 'Google',
       maxTokenAllowed: 1000000,
       maxCompletionTokens: 65536,
     },
 
     /*
-     * Gemini 2.0 Flash - Fast and efficient
+     * Gemini 2.5 Flash - Fast and efficient, great for most tasks
+     * 1M context, up to 65K output tokens
+     * https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash
+     */
+    {
+      name: 'gemini-2.5-flash',
+      label: 'Gemini 2.5 Flash',
+      provider: 'Google',
+      maxTokenAllowed: 1000000,
+      maxCompletionTokens: 65536,
+    },
+
+    /*
+     * Gemini 2.0 Flash - Previous generation flash model
      * 1M context, 8K output limit
      */
     {
@@ -38,18 +52,7 @@ export default class GoogleProvider extends BaseProvider {
     },
 
     /*
-     * Gemini 2.0 Flash Experimental - Latest experimental
-     */
-    {
-      name: 'gemini-2.0-flash-exp',
-      label: 'Gemini 2.0 Flash (Experimental)',
-      provider: 'Google',
-      maxTokenAllowed: 1000000,
-      maxCompletionTokens: 8192,
-    },
-
-    /*
-     * Gemini 1.5 Pro: 2M context, 8K output limit (verified from API docs)
+     * Gemini 1.5 Pro: 2M context, 8K output limit
      */
     {
       name: 'gemini-1.5-pro',
@@ -59,7 +62,9 @@ export default class GoogleProvider extends BaseProvider {
       maxCompletionTokens: 8192,
     },
 
-    // Gemini 1.5 Flash: 1M context, 8K output limit, fast and cost-effective
+    /*
+     * Gemini 1.5 Flash: 1M context, 8K output limit, fast and cost-effective
+     */
     {
       name: 'gemini-1.5-flash',
       label: 'Gemini 1.5 Flash',
