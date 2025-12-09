@@ -6,13 +6,7 @@ import WithTooltip from '~/components/ui/Tooltip';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { WORK_DIR } from '~/utils/constants';
 import type { ProviderInfo } from '~/types/model';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Button,
-} from '~/components/ui/shadcn';
+import { Card, CardContent, CardHeader, CardTitle, Button } from '~/components/ui/shadcn';
 import type {
   FileUIPart,
   ReasoningUIPart,
@@ -78,16 +72,11 @@ export const AssistantMessage = memo(
     addToolResult,
   }: AssistantMessageProps) => {
     const filteredAnnotations = (annotations?.filter(
-      (annotation: JSONValue) =>
-        annotation && typeof annotation === 'object' && 'type' in annotation,
+      (annotation: JSONValue) => annotation && typeof annotation === 'object' && 'type' in annotation,
     ) || []) as { type: string; value: any } & { [key: string]: any }[];
 
-    const chatSummary = filteredAnnotations.find((a) => a.type === 'chatSummary')?.summary as
-      | string
-      | undefined;
-    const codeContext = filteredAnnotations.find((a) => a.type === 'codeContext')?.files as
-      | string[]
-      | undefined;
+    const chatSummary = filteredAnnotations.find((a) => a.type === 'chatSummary')?.summary as string | undefined;
+    const codeContext = filteredAnnotations.find((a) => a.type === 'codeContext')?.files as string[] | undefined;
 
     const usage =
       (filteredAnnotations.find((a) => a.type === 'usage')?.value as
@@ -105,14 +94,17 @@ export const AssistantMessage = memo(
 
     const { planning, cleanContent } = useMemo(() => {
       const result = parsePlanningBlock(content);
+
       if (result.planning) {
         const hasArtifacts = content.includes('<boltArtifact');
         const isComplete = content.includes('</boltArtifact>') && !content.includes('<boltArtifact');
+
         return {
           planning: updatePlanningStatus(result.planning, hasArtifacts, isComplete),
           cleanContent: result.cleanContent,
         };
       }
+
       return result;
     }, [content]);
 
@@ -129,9 +121,7 @@ export const AssistantMessage = memo(
             <Popover
               side="right"
               align="start"
-              trigger={
-                <div className="i-ph:info text-purple-400 hover:text-purple-300 cursor-pointer" />
-              }
+              trigger={<div className="i-ph:info text-purple-400 hover:text-purple-300 cursor-pointer" />}
             >
               {chatSummary && (
                 <Card className="max-w-chat">
@@ -188,24 +178,14 @@ export const AssistantMessage = memo(
               <div className="flex gap-1 ml-auto">
                 {onRewind && (
                   <WithTooltip tooltip="Revert to this message">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRewind(messageId)}
-                      className="h-7 w-7 p-0"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => onRewind(messageId)} className="h-7 w-7 p-0">
                       <span className="i-ph:arrow-u-up-left text-lg" />
                     </Button>
                   </WithTooltip>
                 )}
                 {onFork && (
                   <WithTooltip tooltip="Fork chat from this message">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onFork(messageId)}
-                      className="h-7 w-7 p-0"
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => onFork(messageId)} className="h-7 w-7 p-0">
                       <span className="i-ph:git-fork text-lg" />
                     </Button>
                   </WithTooltip>
@@ -245,7 +225,9 @@ export const AssistantMessage = memo(
                 icon: 'i-ph:paint-brush-duotone',
                 title: 'Refine & Customize',
                 description: 'Adjust colors, styles, and animations through prompts',
-                action: () => {},
+                action: () => {
+                  // no-op placeholder
+                },
               },
               {
                 icon: 'i-ph:chat-circle-text-duotone',

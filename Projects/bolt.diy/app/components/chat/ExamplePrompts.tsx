@@ -1,43 +1,34 @@
 import React from 'react';
 
-const EXAMPLE_PROMPTS = [
-  { text: 'Create a mobile app about bolt.diy' },
-  { text: 'Build a todo app in React using Tailwind' },
-  { text: 'Build a simple blog using Astro' },
-  { text: 'Create a cookie consent form using Material UI' },
-  { text: 'Make a space invaders game' },
-  { text: 'Make a Tic Tac Toe game in html, css and js only' },
-  // Design-focused prompts using curated presets (shadcn/Radix compatible)
-  { text: 'Hero + burger menu using shadcn/ui patterns and Radix' },
-  { text: 'Spotlight hero inspired by Aceternity UI with fashion image' },
-  { text: 'Glassmorphism landing hero in MagicUI style with CTA pair' },
-  { text: 'Minimal navbar + hero in Cult UI style (burger on mobile)' },
-  { text: 'Playful gradient hero inspired by DaisyUI' },
-  { text: 'Clean product hero in NextUI style with features bullets' },
+// Простой список быстрых промптов без i18next
+const QUICK_PROMPTS: string[] = [
+  'IT-стартап (светлый): hero + CTA, преимущества, 3 тарифа, FAQ.',
+  'SaaS (тёмный): hero с CTA, фичи, тарифы, отзывы, футер.',
+  'Лендинг недвижимости: hero с фильтром, карта + карточки, преимущества, CTA.',
+  'Портфолио дизайнера: hero + 2 CTA, кейсы (6), преимущества, контакты.',
+  'Онлайн-курс: hero, программа (6), блок про автора, отзывы, CTA.',
+  'Эком-магазин: hero, подборки товаров, преимущества доставки, отзывы, CTA.',
+  'Ресторан/доставка: hero, меню + карточки (6), подборка недели, отзывы, бронирование.',
 ];
 
-export function ExamplePrompts(sendMessage?: { (event: React.UIEvent, messageInput?: string): void | undefined }) {
+type ExamplePromptsProps = {
+  onSelect?: (prompt: string) => void;
+};
+
+export function ExamplePrompts({ onSelect }: ExamplePromptsProps) {
   return (
-    <div id="examples" className="relative flex flex-col gap-9 w-full max-w-3xl mx-auto flex justify-center mt-6">
-      <div
-        className="flex flex-wrap justify-center gap-2"
-        style={{
-          animation: '.25s ease-out 0s 1 _fade-and-move-in_g2ptj_1 forwards',
-        }}
-      >
-        {EXAMPLE_PROMPTS.map((examplePrompt, index: number) => {
-          return (
-            <button
-              key={index}
-              onClick={(event) => {
-                sendMessage?.(event, examplePrompt.text);
-              }}
-              className="border border-bolt-elements-borderColor rounded-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-950 dark:hover:bg-gray-900 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary px-3 py-1 text-xs transition-theme"
-            >
-              {examplePrompt.text}
-            </button>
-          );
-        })}
+    <div className="space-y-2 text-sm text-bolt-elements-textSecondary">
+      <p className="text-xs uppercase text-bolt-elements-textSecondary/70">Быстрые промпты</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {QUICK_PROMPTS.map((prompt, idx) => (
+          <button
+            key={idx}
+            onClick={() => onSelect?.(prompt)}
+            className="w-full text-left rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 px-3 py-2 hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
+          >
+            {prompt}
+          </button>
+        ))}
       </div>
     </div>
   );

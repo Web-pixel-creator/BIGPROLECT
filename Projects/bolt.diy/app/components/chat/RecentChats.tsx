@@ -16,6 +16,7 @@ export function RecentChats() {
 
       try {
         const allChats = await getAll(db);
+
         // Filter chats with description and sort by timestamp
         const validChats = allChats
           .filter((chat) => chat.urlId && chat.description)
@@ -89,7 +90,13 @@ export function RecentChats() {
   );
 }
 
-function PreviewImage({ messages, metadata }: { messages: ChatHistoryItem['messages']; metadata?: ChatHistoryItem['metadata'] }) {
+function PreviewImage({
+  messages,
+  metadata,
+}: {
+  messages: ChatHistoryItem['messages'];
+  metadata?: ChatHistoryItem['metadata'];
+}) {
   const url = metadata?.previewUrl || findPreviewImage(messages);
 
   if (!url) {
@@ -104,15 +111,17 @@ function PreviewImage({ messages, metadata }: { messages: ChatHistoryItem['messa
 
   return (
     <div className="mb-3 aspect-video w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 relative group/preview">
-      <img 
-        src={url} 
-        alt="Project Preview" 
+      <img
+        src={url}
+        alt="Project Preview"
         className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
         onError={(e) => {
           // Fallback if image fails to load
           const target = e.target as HTMLImageElement;
           target.style.display = 'none';
+
           const parent = target.parentElement;
+
           if (parent) {
             parent.innerHTML = `
               <div class="h-full w-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/20 via-purple-600/10 to-gray-900/20">
@@ -137,6 +146,7 @@ function PreviewImage({ messages, metadata }: { messages: ChatHistoryItem['messa
  */
 function findPreviewImage(messages: ChatHistoryItem['messages']): string | undefined {
   type Candidate = { url: string; score: number };
+
   const candidates: Candidate[] = [];
   const keywordRe = /(hero|preview|landing|screenshot|ui|design|page|banner|header)/i;
 
@@ -149,17 +159,31 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
         : '';
 
     const pushUrl = (url?: string, extraScore = 0) => {
-      if (!url) return;
+      if (!url) {
+        return;
+      }
+
       let score = extraScore;
       const isHttp = url.startsWith('http');
       const isData = url.startsWith('data:image/');
       const keyword = keywordRe.test(url);
       const isImageExt = /\.(png|jpe?g|webp|gif|svg)$/i.test(url);
 
-      if (isHttp) score += 3;
-      if (isImageExt) score += 1;
-      if (keyword) score += 3; // Higher priority for hero/landing images
-      if (isData) score -= 1; // data-uri as last resort
+      if (isHttp) {
+        score += 3;
+      }
+
+      if (isImageExt) {
+        score += 1;
+      }
+
+      if (keyword) {
+        score += 3; // Higher priority for hero/landing images
+      }
+
+      if (isData) {
+        score -= 1; // data-uri as last resort
+      }
 
       candidates.push({ url, score });
     };
@@ -168,17 +192,19 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
     const boltActions = [...content.matchAll(/<boltAction[^>]*type=["']file["'][^>]*>([\s\S]*?)<\/boltAction>/gi)];
     boltActions.forEach((action) => {
       const fileContent = action[1];
-      
+
       // Find images in HTML/JSX code with higher priority
       const codeImgs = [...fileContent.matchAll(/<img[^>]*src=["'](?<url>[^"']+)["'][^>]*>/gi)];
       codeImgs.forEach((m) => pushUrl(m.groups?.url, 2)); // +2 bonus for images in code
-      
+
       // Find background images in CSS
       const bgImgs = [...fileContent.matchAll(/background(?:-image)?:\s*url\(["']?(?<url>[^"')]+)["']?\)/gi)];
       bgImgs.forEach((m) => pushUrl(m.groups?.url, 2));
-      
+
       // Find image imports in JS/JSX
-      const imports = [...fileContent.matchAll(/import\s+\w+\s+from\s+["'](?<url>[^"']+\.(png|jpe?g|webp|gif|svg))["']/gi)];
+      const imports = [
+        ...fileContent.matchAll(/import\s+\w+\s+from\s+["'](?<url>[^"']+\.(png|jpe?g|webp|gif|svg))["']/gi),
+      ];
       imports.forEach((m) => pushUrl(m.groups?.url, 1));
     });
 
@@ -195,7 +221,9 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
     plainImgs.forEach((m) => pushUrl(m[1]));
 
     // Unsplash/placeholder images (common in demos)
-    const unsplashImgs = [...content.matchAll(/(https?:\/\/(?:images\.unsplash\.com|via\.placeholder\.com|picsum\.photos)[^\s)"']+)/gi)];
+    const unsplashImgs = [
+      ...content.matchAll(/(https?:\/\/(?:images\.unsplash\.com|via\.placeholder\.com|picsum\.photos)[^\s)"']+)/gi),
+    ];
     unsplashImgs.forEach((m) => pushUrl(m[1], 2));
 
     // Data URI base64 image (lowest priority)
@@ -203,10 +231,13 @@ function findPreviewImage(messages: ChatHistoryItem['messages']): string | undef
     dataUris.forEach((m) => pushUrl(m[1]));
   }
 
-  if (!candidates.length) return undefined;
+  if (!candidates.length) {
+    return undefined;
+  }
 
   // Sort by score (highest first), then by order (most recent first)
   candidates.sort((a, b) => b.score - a.score);
+
   return candidates[0].url;
 }
 

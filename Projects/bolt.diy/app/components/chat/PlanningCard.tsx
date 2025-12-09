@@ -1,447 +1,304 @@
-import { memo, useRef, useState } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
+  Badge,
   Button,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  Progress,
+  ScrollArea,
+  Separator,
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '~/components/ui/shadcn';
-
-export interface PlanningData {
-  title: string;
-  inspiration?: string[];
-  designConcept?: {
-    colors?: string;
-    effects?: string;
-    typography?: string;
-    animations?: string;
-  };
-  features?: string[];
-  techStack?: string[];
-  steps?: string[];
-  status: 'planning' | 'implementing' | 'complete';
-}
+import type { PlanningBlock } from '~/types/planning';
 
 interface PlanningCardProps {
-  data: PlanningData;
-  onExpand?: () => void;
+  data: PlanningBlock;
+  className?: string;
+  onEdit?: () => void;
+  onContinue?: () => void;
 }
 
-const statusConfig = {
-  planning: {
-    icon: 'i-ph:lightbulb-duotone',
-    color: 'text-yellow-400',
-    bgColor: 'from-yellow-500/20 via-amber-500/10 to-transparent',
-    borderColor: 'border-yellow-500/30',
-    glowColor: 'shadow-yellow-500/20',
-    label: 'Planning...',
-    pulseColor: 'bg-yellow-400',
-  },
-  implementing: {
-    icon: 'i-ph:code-duotone',
-    color: 'text-blue-400',
-    bgColor: 'from-blue-500/20 via-cyan-500/10 to-transparent',
-    borderColor: 'border-blue-500/30',
-    glowColor: 'shadow-blue-500/20',
-    label: 'Implementing...',
-    pulseColor: 'bg-blue-400',
-  },
-  complete: {
-    icon: 'i-ph:check-circle-duotone',
-    color: 'text-emerald-400',
-    bgColor: 'from-emerald-500/20 via-green-500/10 to-transparent',
-    borderColor: 'border-emerald-500/30',
-    glowColor: 'shadow-emerald-500/20',
-    label: 'Complete',
-    pulseColor: 'bg-emerald-400',
-  },
+const statusColors = {
+  todo: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  in_progress: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+  complete: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  blocked: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  skipped: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
 };
 
-const sectionVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.3, ease: 'easeOut' },
-  }),
+const statusIcons = {
+  todo: 'i-ph:circle',
+  in_progress: 'i-ph:spinner-gap animate-spin',
+  complete: 'i-ph:check-circle-fill',
+  blocked: 'i-ph:x-circle',
+  skipped: 'i-ph:minus-circle',
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: { delay: i * 0.05, duration: 0.2 },
-  }),
-};
+export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps) => {
+  const [expanded, setExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'graph'>('overview');
 
-export const PlanningCard = memo(({ data }: PlanningCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const status = statusConfig[data.status];
-
-  const sections = [
-    { key: 'inspiration', icon: 'i-ph:sparkle', colorClass: 'text-purple-400', label: 'Inspiration' },
-    { key: 'design', icon: 'i-ph:palette', colorClass: 'text-pink-400', label: 'Design' },
-    { key: 'features', icon: 'i-ph:list-checks', colorClass: 'text-emerald-400', label: 'Features' },
-    { key: 'techStack', icon: 'i-ph:stack', colorClass: 'text-blue-400', label: 'Tech Stack' },
-    { key: 'steps', icon: 'i-ph:steps', colorClass: 'text-amber-400', label: 'Steps' },
-  ];
-
-  const handleJumpToSection = (key: string) => {
-    setActiveSection(key);
-    const node = sectionRefs.current[key];
-    if (node) {
-      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  const progress = Math.round(
+    (data.steps.filter((s) => s.status === 'complete').length / Math.max(1, data.steps.length)) * 100,
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card
-        className={`overflow-hidden ${status.borderColor} bg-gradient-to-br ${status.bgColor} backdrop-blur-xl shadow-lg ${status.glowColor}`}
-      >
-        {/* Animated background effect */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            className={`absolute -top-1/2 -right-1/2 w-full h-full rounded-full ${status.bgColor} blur-3xl opacity-30`}
-            animate={{
-              scale: [1, 1.2, 1],
-              rotate: [0, 90, 0],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          />
-        </div>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={className}>
+      <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-purple-900/5 to-transparent backdrop-blur-xl shadow-lg shadow-purple-500/5 relative overflow-hidden group">
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-50" />
 
-        <CardHeader className="pb-2 relative">
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-3 relative">
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              {/* Status indicator with pulse */}
               <div className="relative">
-                <motion.div
-                  className={`${status.icon} text-2xl ${status.color}`}
-                  animate={data.status !== 'complete' ? { scale: [1, 1.1, 1] } : {}}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                {data.status !== 'complete' && (
-                  <motion.div
-                    className={`absolute inset-0 ${status.pulseColor} rounded-full opacity-30`}
-                    animate={{ scale: [1, 2], opacity: [0.3, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  />
-                )}
+                <div className="absolute inset-0 bg-purple-500 blur-lg opacity-20" />
+                <div className="relative rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 p-2 border border-purple-500/20">
+                  <span className="i-ph:kanban-duotone text-xl text-purple-300" />
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-base font-semibold">{data.title}</CardTitle>
-                <CardDescription className="text-xs flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${status.pulseColor}`} />
-                  {status.label}
-                </CardDescription>
+              <div className="space-y-1">
+                <CardTitle className="text-base font-semibold text-purple-100 flex items-center gap-2">
+                  Development Plan
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-purple-500/10 border-purple-500/20">
+                    v{data.version || '1.0'}
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center gap-3 text-xs text-purple-300/60">
+                  <span className="flex items-center gap-1">
+                    <span className="i-ph:steps-duotone" />
+                    {data.steps.length} Steps
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="i-ph:clock-duotone" />
+                    Est. {Math.round(data.steps.length * 5)}m
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Section quick nav dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <span className="i-ph:dots-three-vertical" />
-                  </Button>
-                </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Jump to section</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {sections.map((section) => (
-                      <DropdownMenuItem
-                        key={section.key}
-                        onClick={() => handleJumpToSection(section.key)}
-                      >
-                        <span className={`${section.icon} mr-2 ${section.colorClass}`} />
-                        {section.label}
-                      </DropdownMenuItem>
-                    ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="hidden group-hover:flex items-center bg-black/20 rounded-lg p-0.5 border border-white/5 mr-2">
+                {(['overview', 'details'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-all ${
+                      activeTab === tab ? 'bg-purple-500/20 text-purple-200' : 'text-white/40 hover:text-white/60'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
 
-              {/* Expand/Collapse button */}
+              {onEdit && (
+                <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 w-8 p-0 text-white/40">
+                  <span className="i-ph:pencil-simple" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="h-8 w-8 p-0"
+                onClick={() => setExpanded(!expanded)}
+                className="h-8 w-8 p-0 text-white/40"
               >
                 <motion.span
                   className="i-ph:caret-down"
-                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  animate={{ rotate: expanded ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
                 />
               </Button>
             </div>
           </div>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-xs text-purple-200/50 mb-1.5">
+              <span>Overall Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-1.5 bg-purple-950/50" indicatorClassName="bg-purple-500" />
+          </div>
         </CardHeader>
 
-        <AnimatePresence>
-          {isExpanded && (
+        <AnimatePresence initial={false}>
+          {expanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              transition={{ duration: 0.3 }}
             >
-              <CardContent className="pt-2 space-y-4 relative">
-                {/* Inspiration */}
-                {data.inspiration && data.inspiration.length > 0 && (
-                  <motion.div
-                    custom={0}
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                    ref={(el) => {
-                      sectionRefs.current['inspiration'] = el;
-                    }}
-                    className={activeSection === 'inspiration' ? 'ring-1 ring-purple-400/40 rounded-lg p-1' : undefined}
-                  >
-                    <h4 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                      <span className="i-ph:sparkle text-purple-400" />
-                      Inspiration
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.inspiration.map((item, i) => (
-                        <motion.span
-                          key={i}
-                          custom={i}
-                          variants={itemVariants}
-                          initial="hidden"
-                          animate="visible"
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          className="px-2.5 py-1 text-xs rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 cursor-default hover:bg-purple-500/30 transition-colors"
-                        >
-                          {item}
-                        </motion.span>
-                      ))}
+              <Separator className="bg-white/5" />
+              <CardContent className="pt-4 max-h-[400px] overflow-hidden flex flex-col">
+                <ScrollArea className="flex-1 -mr-4 pr-4">
+                  <div className="space-y-4">
+                    {/* Goal & Description */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-white/80">Goal</h4>
+                      <p className="text-sm text-white/60 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
+                        {data.goal}
+                      </p>
                     </div>
-                  </motion.div>
-                )}
 
-                {/* Design Concept */}
-                {data.designConcept && (
-                  <motion.div
-                    custom={1}
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                    ref={(el) => {
-                      sectionRefs.current['design'] = el;
-                    }}
-                    className={activeSection === 'design' ? 'ring-1 ring-pink-400/40 rounded-lg p-1' : undefined}
-                  >
-                    <h4 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                      <span className="i-ph:palette text-pink-400" />
-                      Design Concept
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {data.designConcept.colors && (
-                        <motion.div
-                          whileHover={{ x: 2 }}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                        >
-                          <span className="i-ph:paint-bucket text-cyan-400 mt-0.5" />
-                          <div>
-                            <span className="text-white/40 text-[10px] uppercase tracking-wider">Colors</span>
-                            <p className="text-white/70">{data.designConcept.colors}</p>
-                          </div>
-                        </motion.div>
-                      )}
-                      {data.designConcept.effects && (
-                        <motion.div
-                          whileHover={{ x: 2 }}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                        >
-                          <span className="i-ph:magic-wand text-violet-400 mt-0.5" />
-                          <div>
-                            <span className="text-white/40 text-[10px] uppercase tracking-wider">Effects</span>
-                            <p className="text-white/70">{data.designConcept.effects}</p>
-                          </div>
-                        </motion.div>
-                      )}
-                      {data.designConcept.typography && (
-                        <motion.div
-                          whileHover={{ x: 2 }}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                        >
-                          <span className="i-ph:text-aa text-orange-400 mt-0.5" />
-                          <div>
-                            <span className="text-white/40 text-[10px] uppercase tracking-wider">Typography</span>
-                            <p className="text-white/70">{data.designConcept.typography}</p>
-                          </div>
-                        </motion.div>
-                      )}
-                      {data.designConcept.animations && (
-                        <motion.div
-                          whileHover={{ x: 2 }}
-                          className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                        >
-                          <span className="i-ph:play text-green-400 mt-0.5" />
-                          <div>
-                            <span className="text-white/40 text-[10px] uppercase tracking-wider">Animations</span>
-                            <p className="text-white/70">{data.designConcept.animations}</p>
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
+                    {/* Steps */}
+                    <div className="space-y-3">
+                      <div className="sticky top-0 bg-transparent backdrop-blur-sm pb-2 z-10 flex justify-between items-center">
+                        <h4 className="text-sm font-medium text-white/80">Action Plan</h4>
+                        <div className="flex gap-2 text-[10px]">
+                          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-400 border-emerald-500/20">
+                            {data.steps.filter((s) => s.status === 'complete').length} Done
+                          </Badge>
+                          <Badge variant="outline" className="bg-sky-500/5 text-sky-400 border-sky-500/20">
+                            {data.steps.filter((s) => s.status === 'in_progress').length} Active
+                          </Badge>
+                        </div>
+                      </div>
 
-                {/* Features */}
-                {data.features && data.features.length > 0 && (
-                  <motion.div
-                    custom={2}
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                    ref={(el) => {
-                      sectionRefs.current['features'] = el;
-                    }}
-                    className={activeSection === 'features' ? 'ring-1 ring-emerald-400/40 rounded-lg p-1' : undefined}
-                  >
-                    <h4 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                      <span className="i-ph:list-checks text-emerald-400" />
-                      Features
-                    </h4>
-                    <ul className="space-y-1.5">
-                      {data.features.map((feature, i) => (
-                        <motion.li
-                          key={i}
-                          custom={i}
-                          variants={itemVariants}
-                          initial="hidden"
-                          animate="visible"
-                          className="flex items-center gap-2 text-xs text-white/70 group"
-                        >
-                          <motion.span
-                            className="i-ph:check-circle text-emerald-400 text-sm"
-                            whileHover={{ scale: 1.2 }}
-                          />
-                          <span className="group-hover:text-white/90 transition-colors">{feature}</span>
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-                )}
+                      <div className="relative pl-4 space-y-4">
+                        {/* Timeline Line */}
+                        <div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-white/5" />
 
-                {/* Tech Stack */}
-                {data.techStack && data.techStack.length > 0 && (
-                  <motion.div
-                    custom={3}
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                    ref={(el) => {
-                      sectionRefs.current['techStack'] = el;
-                    }}
-                    className={activeSection === 'techStack' ? 'ring-1 ring-blue-400/40 rounded-lg p-1' : undefined}
-                  >
-                    <h4 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                      <span className="i-ph:stack text-blue-400" />
-                      Tech Stack
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.techStack.map((tech, i) => (
-                        <motion.span
-                          key={i}
-                          custom={i}
-                          variants={itemVariants}
-                          initial="hidden"
-                          animate="visible"
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          className="px-2.5 py-1 text-xs rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30 cursor-default hover:bg-blue-500/30 transition-colors"
-                        >
-                          {tech}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Implementation Steps */}
-                {data.steps && data.steps.length > 0 && (
-                  <motion.div
-                    custom={4}
-                    variants={sectionVariants}
-                    initial="hidden"
-                    animate="visible"
-                    ref={(el) => {
-                      sectionRefs.current['steps'] = el;
-                    }}
-                    className={activeSection === 'steps' ? 'ring-1 ring-amber-400/40 rounded-lg p-1' : undefined}
-                  >
-                    <h4 className="text-xs font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                      <span className="i-ph:steps text-amber-400" />
-                      Implementation Plan
-                    </h4>
-                    <ol className="space-y-2">
-                      {data.steps.map((step, i) => (
-                        <motion.li
-                          key={i}
-                          custom={i}
-                          variants={itemVariants}
-                          initial="hidden"
-                          animate="visible"
-                          className="flex items-start gap-2.5 text-xs group"
-                        >
-                          <motion.span
-                            whileHover={{ scale: 1.1 }}
-                            className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/20 text-amber-400 flex items-center justify-center text-[10px] font-semibold border border-amber-500/30 group-hover:from-amber-500/40 group-hover:to-orange-500/30 transition-all"
+                        {data.steps.map((step, index) => (
+                          <motion.div
+                            key={step.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="relative group/step"
                           >
-                            {i + 1}
-                          </motion.span>
-                          <span className="text-white/70 pt-0.5 group-hover:text-white/90 transition-colors">
-                            {step}
-                          </span>
-                        </motion.li>
-                      ))}
-                    </ol>
-                  </motion.div>
-                )}
-              </CardContent>
+                            <div className="flex gap-3">
+                              {/* Status Dot */}
+                              <div
+                                className={`
+                                  relative z-10 w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center
+                                  transition-colors duration-300 bg-[#0A0A0A]
+                                  ${
+                                    step.status === 'complete'
+                                      ? 'border-emerald-500 text-emerald-500'
+                                      : step.status === 'in_progress'
+                                        ? 'border-sky-500 text-sky-500 '
+                                        : 'border-white/10 text-white/20'
+                                  }
+                                `}
+                              >
+                                {step.status === 'complete' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
+                                {step.status === 'in_progress' && (
+                                  <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+                                )}
+                              </div>
 
-              {/* Footer with progress indicator */}
-              {data.status === 'implementing' && (
-                <CardFooter className="pt-0 pb-3">
-                  <div className="w-full">
-                    <div className="flex items-center justify-between text-xs text-white/50 mb-1.5">
-                      <span>Progress</span>
-                      <span>Implementing...</span>
-                    </div>
-                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                        initial={{ width: '0%' }}
-                        animate={{ width: '60%' }}
-                        transition={{ duration: 2, ease: 'easeOut' }}
-                      />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="space-y-1">
+                                    <p
+                                      className={`text-sm font-medium leading-none transition-colors ${
+                                        step.status === 'complete'
+                                          ? 'text-white/40 line-through decoration-white/20'
+                                          : step.status === 'in_progress'
+                                            ? 'text-sky-300'
+                                            : 'text-white/80'
+                                      }`}
+                                    >
+                                      {step.title}
+                                    </p>
+                                    <p
+                                      className={`text-xs leading-relaxed ${
+                                        step.status === 'complete' ? 'text-white/20' : 'text-white/50'
+                                      }`}
+                                    >
+                                      {step.description}
+                                    </p>
+                                  </div>
+
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge
+                                          variant="outline"
+                                          className={`capitalize text-[10px] h-5 px-1.5 whitespace-nowrap ${statusColors[step.status]}`}
+                                        >
+                                          <span className={`${statusIcons[step.status]} mr-1 text-xs`} />
+                                          {step.status.replace('_', ' ')}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="left">
+                                        <p className="text-xs">Step status: {step.status}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+
+                                {step.command && (
+                                  <div className="mt-2 bg-black/30 rounded border border-white/5 p-2 font-mono text-[10px] text-emerald-400 overflow-x-auto">
+                                    <span className="text-emerald-600 mr-2">$</span>
+                                    {step.command}
+                                  </div>
+                                )}
+
+                                {activeTab === 'details' && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    className="mt-2 text-xs text-white/40 space-y-1 border-l-2 border-white/5 pl-2 ml-1"
+                                  >
+                                    {/* Additional step details could go here */}
+                                  </motion.div>
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </CardFooter>
-              )}
+                </ScrollArea>
+              </CardContent>
+
+              <Separator className="bg-white/5" />
+              <CardFooter className="py-3 bg-white/[0.02]">
+                <div className="flex items-center justify-between w-full text-xs text-white/30">
+                  <span>ID: {data.id.slice(0, 8)}</span>
+                  <div className="flex gap-4">
+                    <span className="flex items-center hover:text-white/50 cursor-pointer transition-colors">
+                      <span className="i-ph:bug mr-1.5" />
+                      Report Issue
+                    </span>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <span className="flex items-center hover:text-white/50 cursor-pointer transition-colors">
+                          <span className="i-ph:info mr-1.5" />
+                          Details
+                        </span>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-80" side="top">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold">Technical Details</h4>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <div className="flex justify-between">
+                              <span>Total Steps:</span>
+                              <span className="text-foreground">{data.steps.length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Created:</span>
+                              <span className="text-foreground">{new Date().toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </div>
+              </CardFooter>
             </motion.div>
           )}
         </AnimatePresence>

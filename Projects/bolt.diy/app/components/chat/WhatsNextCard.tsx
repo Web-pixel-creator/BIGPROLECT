@@ -78,11 +78,7 @@ const actionVariants = {
 };
 
 export const WhatsNextCard = memo(
-  ({
-    title = "What's next?",
-    subtitle = 'Your project is ready!',
-    actions = defaultActions,
-  }: WhatsNextCardProps) => {
+  ({ title = "What's next?", subtitle = 'Your project is ready!', actions = defaultActions }: WhatsNextCardProps) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [hoveredAction, setHoveredAction] = useState<number | null>(null);
 

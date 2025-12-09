@@ -1,4 +1,6 @@
-﻿// Presets for quick prompts, effects, sections and themes (UTF-8)
+// Presets for quick prompts, effects, sections and themes (UTF-8)
+
+import effectsList from './effects-list.json';
 
 export const PROMPT_PRESETS = [
   'IT-стартап (светлый): hero + CTA, преимущества, 3 тарифа, FAQ.',
@@ -15,22 +17,11 @@ export type EffectPreset = {
   hint: string;
 };
 
-export const EFFECT_PRESETS: EffectPreset[] = [
-  { label: 'Blob cursor', hint: 'Мягкий курсор-капля, тянется за мышью.' },
-  { label: 'Stagger fade-in on scroll', hint: 'Плавное поочередное появление элементов при скролле.' },
-  { label: 'Gradient border glow', hint: 'Светящаяся градиентная обводка при наведении.' },
-  { label: 'Aurora background + parallax', hint: 'Живой фон-«аврора» с мягким параллаксом.' },
-  { label: 'Plasma / mesh background', hint: 'Динамический плазменный/mesh фон.' },
-  { label: 'Glassmorphism cards', hint: 'Прозрачные карточки с блюром (glassmorphism).' },
-  { label: 'Magnetic buttons', hint: 'Кнопки, притягивающиеся к курсору.' },
-  { label: 'Hover spotlight', hint: 'Спотлайт/луч света под курсором на hover.' },
-  { label: 'Tilt-on-hover cards', hint: '3D-наклон карточек при наведении.' },
-  { label: 'Ripple effect', hint: 'Рябь от клика или наведения.' },
-  { label: 'Shiny button', hint: 'Блик, прокатывающийся по поверхности кнопки.' },
-  { label: 'Parallax hero layers', hint: 'Слои hero двигаются с параллаксом.' },
-  { label: 'Noise / grain overlay', hint: 'Лёгкая плёнка шума/зерна.' },
-  { label: 'Hover gradient beam', hint: 'Градиентный луч по бордеру при наведении.' },
-] as const;
+// Список эффектов берём из облегчённого JSON (без кода компонентов)
+export const EFFECT_PRESETS: EffectPreset[] = effectsList.map((item) => ({
+  label: item.label || item.id,
+  hint: item.hint || '',
+}));
 
 export const SECTION_PRESETS = [
   'Hero + CTA + преимущества',

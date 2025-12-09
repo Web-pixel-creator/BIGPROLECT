@@ -1,8 +1,20 @@
 import { buildIndex, type ComponentIndex, type ComponentMeta } from './component-index.ts';
+import effectsRegistry from '~/lib/constants/effects-registry.json';
 
 export type UserIntent = {
   type?: 'landing' | 'dashboard' | 'ecommerce' | 'portfolio' | 'blog' | 'web3' | string;
-  theme?: 'saas' | 'construction' | 'auto' | 'food' | 'finance' | 'education' | 'web3' | 'fashion' | 'health' | 'photo' | string;
+  theme?:
+    | 'saas'
+    | 'construction'
+    | 'auto'
+    | 'food'
+    | 'finance'
+    | 'education'
+    | 'web3'
+    | 'fashion'
+    | 'health'
+    | 'photo'
+    | string;
   sections?: string[];
   effects?: string[];
   style?: string;
@@ -65,7 +77,10 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   professional: { sections: ['hero', 'services', 'cases', 'testimonials', 'cta'], effects: ['spotlight', 'fade'] },
   retail: { sections: ['hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
   technology: { sections: ['hero', 'features', 'cases', 'cta'], effects: ['sparkles', 'border-beam'] },
-  transportation: { sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'], effects: ['slide', 'spotlight'] },
+  transportation: {
+    sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'],
+    effects: ['slide', 'spotlight'],
+  },
   weddings: { sections: ['hero', 'gallery', 'schedule', 'pricing', 'faq', 'contact'], effects: ['glow', 'spotlight'] },
 };
 
@@ -116,13 +131,33 @@ const SOURCE_PRIORITY: Record<string, number> = {
 
 export class SmartComponentSelector {
   private index: ComponentIndex;
+  private effectsPool: ComponentMeta[];
 
   constructor(index?: ComponentIndex) {
     this.index = index || buildIndex(process.cwd(), true);
+    // Подготавливаем пул эффектов из облегчённого реестра
+    this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
+      name: e.name || e.id,
+      description: e.hint || '',
+      category: 'effects',
+      rawCategory: e.category || 'effects',
+      source: e.source || 'effects-registry',
+      code: e.code || '',
+      tags: e.tags || [],
+    }));
   }
 
   public refresh() {
     this.index = buildIndex(process.cwd(), false);
+    this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
+      name: e.name || e.id,
+      description: e.hint || '',
+      category: 'effects',
+      rawCategory: e.category || 'effects',
+      source: e.source || 'effects-registry',
+      code: e.code || '',
+      tags: e.tags || [],
+    }));
   }
 
   select(intent: UserIntent): SelectionResult {
@@ -146,11 +181,10 @@ export class SmartComponentSelector {
     let totalCodeLines = [...components, ...effects].reduce((sum, c) => sum + this.countLines(c.code), 0);
 
     // Trim if too large (keep highest score)
-    ({ components: components as any, effects: effects as any, totalLines: totalCodeLines } = this.trimBySize(
-      components,
-      effects,
-      1200,
-    ));
+    const trimmed = this.trimBySize(components, effects, 1200);
+    components = trimmed.components as any;
+    effects = trimmed.effects as any;
+    totalCodeLines = trimmed.totalLines;
 
     return {
       components,
@@ -168,7 +202,12 @@ export class SmartComponentSelector {
 
   private getPreset(intent: UserIntent): { sections: string[]; effects: string[] } {
     const theme = (intent.theme || intent.type || '').toLowerCase();
-    return INDUSTRY_PRESETS[theme] || { sections: intent.sections || ['hero', 'features', 'cta'], effects: intent.effects || [] };
+    return (
+      INDUSTRY_PRESETS[theme] || {
+        sections: intent.sections || ['hero', 'features', 'cta'],
+        effects: intent.effects || [],
+      }
+    );
   }
 
   private pickForSection(section: string, intent: UserIntent): SelectedComponent | null {
@@ -178,7 +217,9 @@ export class SmartComponentSelector {
   }
 
   private pickForEffect(effect: string, intent: UserIntent): SelectedComponent | null {
-    const candidates = this.index.components.filter((c) => this.matchesEffect(c, effect));
+    const candidates = this.index.components
+      .filter((c) => this.matchesEffect(c, effect))
+      .concat(this.effectsPool.filter((c) => this.matchesEffect(c as any, effect)));
     if (!candidates.length) return null;
     return this.rankAndPick(candidates, intent, effect);
   }
@@ -229,7 +270,7 @@ export class SmartComponentSelector {
     deps.add('tailwind-merge');
     deps.add('framer-motion');
     deps.add('lucide-react');
-    
+
     components.forEach((c) => {
       const text = `${c.code}`.toLowerCase();
       if (text.includes('class-variance-authority') || text.includes('cva')) deps.add('class-variance-authority');

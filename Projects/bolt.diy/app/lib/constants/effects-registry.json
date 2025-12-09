@@ -1,0 +1,1156 @@
+{
+  "effects": [
+    {
+      "id": "particles",
+      "name": "particles",
+      "hint": "Particles",
+      "source": "shadcnui-blocks.md",
+      "category": "ui",
+      "code": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport React, { useEffect, useRef, useState } from \"react\";\n\ninterface MousePosition {\n  x: number;\n  y: number;\n}\n\nfunction MousePosition(): MousePosition {\n  const [mousePosition, setMousePosition] = useState<MousePosition>({\n    x: 0,\n    y: 0,\n  });\n\n  useEffect(() => {\n    const handleMouseMove = (event: MouseEvent) => {\n      setMousePosition({ x: event.clientX, y: event.clientY });\n    };\n\n    window.addEventListener(\"mousemove\", handleMouseMove);\n\n    return () => {\n      window.removeEventListener(\"mousemove\", handleMouseMove);\n    };\n  }, []);\n\n  return mousePosition;\n}\n\ninterface ParticlesProps {\n  className?: string;\n  quantity?: number;\n  staticity?: number;\n  ease?: number;\n  size?: number;\n  refresh?: boolean;\n  color?: string;\n  vx?: number;\n  vy?: number;\n}\nfunction hexToRgb(hex: string): number[] {\n  hex = hex.replace(\"#\", \"\");\n\n  if (hex.length === 3) {\n    hex = hex\n      .split(\"\")\n      .map((char) => char + char)\n      .join(\"\");\n  }\n\n  const hexInt = parseInt(hex, 16);\n  const red = (hexInt >> 16) & 255;\n  const green = (hexInt >> 8) & 255;\n  const blue = hexInt & 255;\n  return [red, green, blue];\n}\n\nconst Particles: React.FC<ParticlesProps> = ({\n  className = \"\",\n  quantity = 100,\n  staticity = 50,\n  ease = 50,\n  size = 0.4,\n  refresh = false,\n  color = \"#ffffff\",\n  vx = 0,\n  vy = 0,\n}) => {\n  const canvasRef = useRef<HTMLCanvasElement>(null);\n  const canvasContainerRef = useRef<HTMLDivElement>(null);\n  const context = useRef<CanvasRenderingContext2D | null>(null);\n  const circles = useRef<Circle[]>([]);\n  const mousePosition = MousePosition();\n  const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 });\n  const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 });\n  const dpr = typeof window !== \"undefined\" ? window.devicePixelRatio : 1;\n\n  useEffect(() => {\n    if (canvasRef.current) {\n      context.current = canvasRef.current.getContext(\"2d\");\n    }\n    initCanvas();\n    animate();\n    window.addEventListener(\"resize\", initCanvas);\n\n    return () => {\n      window.removeEventListener(\"resize\", initCanvas);\n    };\n  }, [color]);\n\n  useEffect(() => {\n    onMouseMove();\n  }, [mousePosition.x, mousePosition.y]);\n\n  useEffect(() => {\n    initCanvas();\n  }, [refresh]);\n\n  const initCanvas = () => {\n    resizeCanvas();\n    drawParticles();\n  };\n\n  const onMouseMove = () => {\n    if (canvasRef.current) {\n      const rect = canvasRef.current.getBoundingClientRect();\n      const { w, h } = canvasSize.current;\n      const x = mousePosition.x - rect.left - w / 2;\n      const y = mousePosition.y - rect.top - h / 2;\n      const inside = x < w / 2 && x > -w / 2 && y < h / 2 && y > -h / 2;\n      if (inside) {\n        mouse.current.x = x;\n        mouse.current.y = y;\n      }\n    }\n  };\n\n  type Circle = {\n    x: number;\n    y: number;\n    translateX: number;\n    translateY: number;\n    size: number;\n    alpha: number;\n    targetAlpha: number;\n    dx: number;\n    dy: number;\n    magnetism: number;\n  };\n\n  const resizeCanvas = () => {\n    if (canvasContainerRef.current && canvasRef.current && context.current) {\n      circles.current.length = 0;\n      canvasSize.current.w = canvasContainerRef.current.offsetWidth;\n      canvasSize.current.h = canvasContainerRef.current.offsetHeight;\n      canvasRef.current.width = canvasSize.current.w * dpr;\n      canvasRef.current.height = canvasSize.current.h * dpr;\n      canvasRef.current.style.width = `${canvasSize.current.w}px`;\n      canvasRef.current.style.height = `${canvasSize.current.h}px`;\n      context.current.scale(dpr, dpr);\n    }\n  };\n\n  const circleParams = (): Circle => {\n    const x = Math.floor(Math.random() * canvasSize.current.w);\n    const y = Math.floor(Math.random() * canvasSize.current.h);\n    const translateX = 0;\n    const translateY = 0;\n    const pSize = Math.floor(Math.random() * 2) + size;\n    const alpha = 0;\n    const targetAlpha = parseFloat((Math.random() * 0.6 + 0.1).toFixed(1));\n    const dx = (Math.random() - 0.5) * 0.1;\n    const dy = (Math.random() - 0.5) * 0.1;\n    const magnetism = 0.1 + Math.random() * 4;\n    return {\n      x,\n      y,\n      translateX,\n      translateY,\n      size: pSize,\n      alpha,\n      targetAlpha,\n      dx,\n      dy,\n      magnetism,\n    };\n  };\n\n  const rgb = hexToRgb(color);\n\n  const drawCircle = (circle: Circle, update = false) => {\n    if (context.current) {\n      const { x, y, translateX, translateY, size, alpha } = circle;\n      context.current.translate(translateX, translateY);\n      context.current.beginPath();\n      context.current.arc(x, y, size, 0, 2 * Math.PI);\n      context.current.fillStyle = `rgba(${rgb.join(\", \")}, ${alpha})`;\n      context.current.fill();\n      context.current.setTransform(dpr, 0, 0, dpr, 0, 0);\n\n      if (!update) {\n        circles.current.push(circle);\n      }\n    }\n  };\n\n  const clearContext = () => {\n    if (context.current) {\n      context.current.clearRect(\n        0,\n        0,\n        canvasSize.current.w,\n        canvasSize.current.h,\n      );\n    }\n  };\n\n  const drawParticles = () => {\n    clearContext();\n    const particleCount = quantity;\n    for (let i = 0; i < particleCount; i++) {\n      const circle = circleParams();\n      drawCircle(circle);\n    }\n  };\n\n  const remapValue = (\n    value: number,\n    start1: number,\n    end1: number,\n    start2: number,\n    end2: number,\n  ): number => {\n    const remapped =\n      ((value - start1) * (end2 - start2)) / (end1 - start1) + start2;\n    return remapped > 0 ? remapped : 0;\n  };\n\n  const animate = () => {\n    clearContext();\n    circles.current.forEach((circle: Circle, i: number) => {\n      // Handle the alpha value\n      const edge = [\n        circle.x + circle.translateX - circle.size, // distance from left edge\n        canvasSize.current.w - circle.x - circle.translateX - circle.size, // distance from right edge\n        circle.y + circle.translateY - circle.size, // distance from top edge\n        canvasSize.current.h - circle.y - circle.translateY - circle.size, // distance from bottom edge\n      ];\n      const closestEdge = edge.reduce((a, b) => Math.min(a, b));\n      const remapClosestEdge = parseFloat(\n        remapValue(closestEdge, 0, 20, 0, 1).toFixed(2),\n      );\n      if (remapClosestEdge > 1) {\n        circle.alpha += 0.02;\n        if (circle.alpha > circle.targetAlpha) {\n          circle.alpha = circle.targetAlpha;\n        }\n      } else {\n        circle.alpha = circle.targetAlpha * remapClosestEdge;\n      }\n      circle.x += circle.dx + vx;\n      circle.y += circle.dy + vy;\n      circle.translateX +=\n        (mouse.current.x / (staticity / circle.magnetism) - circle.translateX) /\n        ease;\n      circle.translateY +=\n        (mouse.current.y / (staticity / circle.magnetism) - circle.translateY) /\n        ease;\n\n      drawCircle(circle, true);\n\n      // circle gets out of the canvas\n      if (\n        circle.x < -circle.size ||\n        circle.x > canvasSize.current.w + circle.size ||\n        circle.y < -circle.size ||\n        circle.y > canvasSize.current.h + circle.size\n      ) {\n        // remove the circle from the array\n        circles.current.splice(i, 1);\n        // create a new circle\n        const newCircle = circleParams();\n        drawCircle(newCircle);\n        // update the circle position\n      }\n    });\n    window.requestAnimationFrame(animate);\n  };\n\n  return (\n    <div\n      className={cn(\"pointer-events-none\", className)}\n      ref={canvasContainerRef}\n      aria-hidden=\"true\"\n    >\n      <canvas ref={canvasRef} className=\"size-full\" />\n    </div>\n  );\n};\n\nexport default Particles;",
+      "tags": [
+        "ui",
+        "(4)"
+      ]
+    },
+    {
+      "id": "animated-grid-pattern",
+      "name": "animated-grid-pattern",
+      "hint": "Animated Grid Pattern",
+      "source": "shadcnui-blocks.md",
+      "category": "ui",
+      "code": "\"use client\";\n\nimport { motion } from \"motion/react\";\nimport { useEffect, useId, useRef, useState } from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\ninterface AnimatedGridPatternProps {\n  width?: number;\n  height?: number;\n  x?: number;\n  y?: number;\n  strokeDasharray?: string | number;\n  numSquares?: number;\n  className?: string;\n  maxOpacity?: number;\n  duration?: number;\n}\n\nexport default function AnimatedGridPattern({\n  width = 40,\n  height = 40,\n  x = -1,\n  y = -1,\n  strokeDasharray = 0,\n  numSquares = 50,\n  className,\n  maxOpacity = 0.5,\n  duration = 4,\n  ...props\n}: AnimatedGridPatternProps) {\n  const id = useId();\n  const containerRef = useRef(null);\n  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });\n  const [squares, setSquares] = useState(() => generateSquares(numSquares));\n\n  function getPos() {\n    return [\n      Math.floor((Math.random() * dimensions.width) / width),\n      Math.floor((Math.random() * dimensions.height) / height),\n    ];\n  }\n\n  // Adjust the generateSquares function to return objects with an id, x, and y\n  function generateSquares(count: number) {\n    return Array.from({ length: count }, (_, i) => ({\n      id: i,\n      pos: getPos(),\n    }));\n  }\n\n  // Function to update a single square's position\n  const updateSquarePosition = (id: number) => {\n    setSquares((currentSquares) =>\n      currentSquares.map((sq) =>\n        sq.id === id\n          ? {\n              ...sq,\n              pos: getPos(),\n            }\n          : sq\n      )\n    );\n  };\n\n  // Update squares to animate in\n  useEffect(() => {\n    if (dimensions.width && dimensions.height) {\n      setSquares(generateSquares(numSquares));\n    }\n  }, [dimensions, numSquares]);\n\n  // Resize observer to update container dimensions\n  useEffect(() => {\n    const resizeObserver = new ResizeObserver((entries) => {\n      for (const entry of entries) {\n        setDimensions({\n          width: entry.contentRect.width,\n          height: entry.contentRect.height,\n        });\n      }\n    });\n\n    if (containerRef.current) {\n      resizeObserver.observe(containerRef.current);\n    }\n\n    return () => {\n      if (containerRef.current) {\n        resizeObserver.unobserve(containerRef.current);\n      }\n    };\n  }, [containerRef]);\n\n  return (\n    <svg\n      ref={containerRef}\n      aria-hidden=\"true\"\n      className={cn(\n        \"pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30\",\n        className\n      )}\n      {...props}\n    >\n      <defs>\n        <pattern\n          id={id}\n          width={width}\n          height={height}\n          patternUnits=\"userSpaceOnUse\"\n          x={x}\n          y={y}\n        >\n          <path\n            d={`M.5 ${height}V.5H${width}`}\n            fill=\"none\"\n            strokeDasharray={strokeDasharray}\n          />\n        </pattern>\n      </defs>\n      <rect width=\"100%\" height=\"100%\" fill={`url(#${id})`} />\n      <svg x={x} y={y} className=\"overflow-visible\">\n        {squares.map(({ pos: [x, y], id }, index) => (\n          <motion.rect\n            initial={{ opacity: 0 }}\n            animate={{ opacity: maxOpacity }}\n            transition={{\n              duration,\n              repeat: 1,\n              delay: index * 0.1,\n              repeatType: \"reverse\",\n            }}\n            onAnimationComplete={() => updateSquarePosition(id)}\n            key={`${x}-${y}-${index}`}\n            width={width - 1}\n            height={height - 1}\n            x={x * width + 1}\n            y={y * height + 1}\n            fill=\"currentColor\"\n            strokeWidth=\"0\"\n          />\n        ))}\n      </svg>\n    </svg>\n  );\n}",
+      "tags": [
+        "ui",
+        "(4)"
+      ]
+    },
+    {
+      "id": "alert-06",
+      "name": "alert-06",
+      "hint": "Alert With Background",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Alert, AlertDescription, AlertTitle } from \"@/registry/ui/alert\";\nimport { OctagonAlertIcon } from \"lucide-react\";\n\nexport default function AlertWithBackgroundDemo() {\n  return (\n    <Alert className=\"bg-muted\">\n      <OctagonAlertIcon className=\"size-4\" />\n      <AlertTitle className=\"text-foreground\">Something Went Wrong</AlertTitle>\n      <AlertDescription className=\"text-foreground\">\n        An error occurred while processing your request.\n      </AlertDescription>\n    </Alert>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "avatar-05",
+      "name": "avatar-05",
+      "hint": "Avatar with Hover Card",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Avatar, AvatarFallback, AvatarImage } from \"@/registry/ui/avatar\";\nimport {\n  HoverCard,\n  HoverCardContent,\n  HoverCardTrigger,\n} from \"@/registry/ui/hover-card\";\nimport { CalendarIcon } from \"lucide-react\";\n\nexport default function AvatarHoverCardDemo() {\n  return (\n    <HoverCard>\n      <HoverCardTrigger className=\"cursor-pointer\">\n        <Avatar>\n          <AvatarImage src=\"https://github.com/shadcn.png\" alt=\"@shadcn\" />\n          <AvatarFallback>CN</AvatarFallback>\n        </Avatar>\n      </HoverCardTrigger>\n      <HoverCardContent className=\"w-full max-w-xs\">\n        <div className=\"flex justify-between space-x-4\">\n          <Avatar>\n            <AvatarImage src=\"https://github.com/shadcn.png\" alt=\"@shadcn\" />\n            <AvatarFallback>CN</AvatarFallback>\n          </Avatar>\n          <div className=\"space-y-1\">\n            <h4 className=\"text-sm font-semibold\">@shadcn</h4>\n            <p className=\"text-sm\">\n              The founder of Shadcn UI. I own a computer.\n            </p>\n            <div className=\"flex items-center pt-2\">\n              <CalendarIcon className=\"mr-2 h-4 w-4 opacity-70\" />{\" \"}\n              <span className=\"text-xs text-muted-foreground\">\n                Joined December 2021\n              </span>\n            </div>\n          </div>\n        </div>\n      </HoverCardContent>\n    </HoverCard>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "badge-06",
+      "name": "badge-06",
+      "hint": "Gradient Badge",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Badge } from \"@/registry/ui/badge\";\n\nconst BadgeGradientDemo = () => {\n  return (\n    <Badge className=\"rounded-full border-none bg-linear-to-r from-sky-500 to-indigo-600 text-white\">\n      Gradient\n    </Badge>\n  );\n};\n\nexport default BadgeGradientDemo;",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "badge-07",
+      "name": "badge-07",
+      "hint": "Gradient Outline Badge",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Badge } from \"@/registry/ui/badge\";\n\nconst BadgeGradientOutlineDemo = () => {\n  return (\n    <div className=\"bg-linear-to-r from-sky-400 to-indigo-600 rounded-full p-0.5 flex items-center justify-center\">\n      <Badge className=\"bg-background text-foreground rounded-full border-none\">\n        Gradient Outline\n      </Badge>\n    </div>\n  );\n};\n\nexport default BadgeGradientOutlineDemo;",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "button-09",
+      "name": "button-09",
+      "hint": "Gradient Button",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Button } from \"@/registry/ui/button\";\nimport { cn } from \"@/lib/utils\";\nimport { StarIcon } from \"lucide-react\";\n\nconst ButtonGradient = ({\n  className,\n  ...props\n}: React.ComponentProps<typeof Button>) => (\n  <Button\n    className={cn(\n      \"bg-linear-to-r from-blue-500 to-indigo-500 text-primary-foreground dark:text-foreground shadow-sm hover:to-blue-500\",\n      className\n    )}\n    {...props}\n  />\n);\n\nconst GradientButtonDemo = () => (\n  <div className=\"flex items-center gap-2 flex-wrap\">\n    <ButtonGradient>Gradient</ButtonGradient>\n    <ButtonGradient size=\"icon\">\n      <StarIcon />\n    </ButtonGradient>\n    <ButtonGradient>\n      <StarIcon /> Star\n    </ButtonGradient>\n  </div>\n);\n\nexport default GradientButtonDemo;",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "card-02",
+      "name": "card-02",
+      "hint": "Card with Background",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import * as React from \"react\";\n\nimport { Button } from \"@/registry/ui/button\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardFooter,\n  CardHeader,\n  CardTitle,\n} from \"@/registry/ui/card\";\nimport { Input } from \"@/registry/ui/input\";\nimport { Label } from \"@/registry/ui/label\";\nimport {\n  Select,\n  SelectContent,\n  SelectItem,\n  SelectTrigger,\n  SelectValue,\n} from \"@/registry/ui/select\";\n\nexport default function CardWithBackground() {\n  return (\n    <Card className=\"w-[350px] bg-secondary/50 shadow-none\">\n      <CardHeader>\n        <CardTitle>Create Task</CardTitle>\n        <CardDescription>\n          Quickly add a new task to stay organized.\n        </CardDescription>\n      </CardHeader>\n      <CardContent>\n        <form>\n          <div className=\"grid w-full items-center gap-4\">\n            <div className=\"flex flex-col space-y-1.5\">\n              <Label htmlFor=\"name\">Name</Label>\n              <Input id=\"name\" placeholder=\"Name of your project\" />\n            </div>\n            <div className=\"flex flex-col space-y-1.5\">\n              <Label htmlFor=\"framework\">Priority</Label>\n              <Select>\n                <SelectTrigger id=\"framework\" className=\"w-full\">\n                  <SelectValue placeholder=\"Select\" />\n                </SelectTrigger>\n                <SelectContent position=\"popper\">\n                  <SelectItem value=\"low\">Low</SelectItem>\n                  <SelectItem value=\"medium\">Medium</SelectItem>\n                  <SelectItem value=\"high\">High</SelectItem>\n                </SelectContent>\n              </Select>\n            </div>\n          </div>\n        </form>\n      </CardContent>\n      <CardFooter className=\"flex justify-between\">\n        <Button variant=\"outline\">Cancel</Button>\n        <Button>Create</Button>\n      </CardFooter>\n    </Card>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "breadcrumb-09",
+      "name": "breadcrumb-09",
+      "hint": "Breadcrumb with Background",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import {\n  Breadcrumb,\n  BreadcrumbItem,\n  BreadcrumbLink,\n  BreadcrumbList,\n  BreadcrumbPage,\n  BreadcrumbSeparator,\n} from \"@/registry/ui/breadcrumb\";\nimport { ChevronsRight } from \"lucide-react\";\n\nconst BreadcrumbsWithBackground = () => {\n  return (\n    <Breadcrumb className=\"bg-secondary py-1.5 px-3 rounded-lg\">\n      <BreadcrumbList>\n        <BreadcrumbItem>\n          <BreadcrumbLink href=\"#\">Home</BreadcrumbLink>\n        </BreadcrumbItem>\n        <BreadcrumbSeparator>\n          <ChevronsRight />\n        </BreadcrumbSeparator>\n        <BreadcrumbItem>\n          <BreadcrumbLink href=\"#/components\">Components</BreadcrumbLink>\n        </BreadcrumbItem>\n        <BreadcrumbSeparator>\n          <ChevronsRight />\n        </BreadcrumbSeparator>\n        <BreadcrumbItem>\n          <BreadcrumbPage>Breadcrumb</BreadcrumbPage>\n        </BreadcrumbItem>\n      </BreadcrumbList>\n    </Breadcrumb>\n  );\n};\n\nexport default BreadcrumbsWithBackground;",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "pagination-07",
+      "name": "pagination-07",
+      "hint": "Bordered Pagination",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { buttonVariants } from \"@/registry/ui/button\";\nimport {\n  Pagination,\n  PaginationContent,\n  PaginationItem,\n  PaginationLink,\n  PaginationNext,\n  PaginationPrevious,\n} from \"@/registry/ui/pagination\";\nimport { cn } from \"@/lib/utils\";\n\nconst pages = [1, 2, 3];\n\nexport default function PaginationBordered() {\n  return (\n    <Pagination>\n      <PaginationContent className=\"gap-0 border rounded-lg divide-x overflow-hidden\">\n        <PaginationItem>\n          <PaginationPrevious href=\"#\" className=\"rounded-none\" />\n        </PaginationItem>\n        {pages.map((page) => {\n          const isActive = page === 2;\n\n          return (\n            <PaginationItem key={page}>\n              <PaginationLink\n                href={`#${page}`}\n                className={cn(\n                  {\n                    [buttonVariants({\n                      variant: \"default\",\n                      className:\n                        \"dark:bg-primary dark:hover:bg-primary/90 hover:text-primary-foreground!\",\n                    })]: isActive,\n                  },\n                  \"rounded-none border-none\"\n                )}\n                isActive={isActive}\n              >\n                {page}\n              </PaginationLink>\n            </PaginationItem>\n          );\n        })}\n        <PaginationItem>\n          <PaginationNext href=\"#\" className=\"rounded-none\" />\n        </PaginationItem>\n      </PaginationContent>\n    </Pagination>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "progress-05",
+      "name": "progress-05",
+      "hint": "Gradient Progress",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "\"use client\";\n\nimport * as React from \"react\";\n\nimport { Progress } from \"@/registry/ui/progress\";\n\nexport default function ProgressGradientDemo() {\n  const [progress, setProgress] = React.useState(13);\n\n  React.useEffect(() => {\n    const timer = setTimeout(() => setProgress(66), 500);\n    return () => clearTimeout(timer);\n  }, []);\n\n  return (\n    <Progress\n      value={progress}\n      className=\"w-[60%] [&>div]:bg-linear-to-r [&>div]:from-cyan-400 [&>div]:via-sky-500 [&>div]:to-indigo-500 [&>div]:rounded-l-full\"\n    />\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "select-02",
+      "name": "select-02",
+      "hint": "Select with Background Color",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import {\n  Select,\n  SelectContent,\n  SelectGroup,\n  SelectItem,\n  SelectLabel,\n  SelectTrigger,\n  SelectValue,\n} from \"@/registry/ui/select\";\n\nexport default function SelectBackgroundColorDemo() {\n  return (\n    <Select defaultValue=\"apple\">\n      <SelectTrigger className=\"w-44 bg-indigo-600/25 dark:text-white text-indigo-600 border-none shadow-none\">\n        <SelectValue placeholder=\"Select a fruit\" />\n      </SelectTrigger>\n      <SelectContent>\n        <SelectGroup className=\"[&_div:focus]:bg-indigo-600 [&_div:focus]:text-white\">\n          <SelectLabel>Fruits</SelectLabel>\n          <SelectItem value=\"apple\">Apple</SelectItem>\n          <SelectItem value=\"banana\">Banana</SelectItem>\n          <SelectItem value=\"blueberry\">Blueberry</SelectItem>\n          <SelectItem value=\"grapes\">Grapes</SelectItem>\n          <SelectItem value=\"pineapple\">Pineapple</SelectItem>\n        </SelectGroup>\n      </SelectContent>\n    </Select>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "slider-11",
+      "name": "slider-11",
+      "hint": "Slider with Sticky Label on Hover",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "\"use client\";\n\nimport * as React from \"react\";\n\nimport { Badge } from \"@/registry/ui/badge\";\nimport { Slider as SliderPrimitive } from \"radix-ui\";\n\nexport default function SliderWithHoverStickyLabelDemo() {\n  const [progress, setProgress] = React.useState([30]);\n\n  return (\n    <div className=\"relative w-full flex flex-col items-center max-w-sm\">\n      <SliderPrimitive.Root\n        defaultValue={progress}\n        max={100}\n        step={1}\n        onValueChange={setProgress}\n        className=\"relative flex w-full touch-none select-none items-center\"\n      >\n        <SliderPrimitive.Track className=\"relative h-1.5 w-full grow overflow-hidden rounded-full bg-primary/20\">\n          <SliderPrimitive.Range className=\"absolute h-full bg-primary\" />\n        </SliderPrimitive.Track>\n\n        <SliderPrimitive.Thumb className=\"group block h-4 w-4 rounded-full border border-primary/50 bg-background shadow-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50\">\n          {/* Sticky label */}\n          <Badge className=\"scale-0 group-hover:scale-100 transition-transform absolute left-1/2 -translate-x-1/2 -translate-y-1/2 -top-4\">\n            {progress[0]}%\n          </Badge>\n        </SliderPrimitive.Thumb>\n      </SliderPrimitive.Root>\n    </div>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "table-02",
+      "name": "table-02",
+      "hint": "Bordered Table",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import {\n  Table,\n  TableBody,\n  TableCaption,\n  TableCell,\n  TableFooter,\n  TableHead,\n  TableHeader,\n  TableRow,\n} from \"@/registry/ui/table\";\n\nconst invoices = [\n  {\n    invoice: \"INV001\",\n    paymentStatus: \"Paid\",\n    totalAmount: \"$250.00\",\n    paymentMethod: \"Credit Card\",\n  },\n  {\n    invoice: \"INV002\",\n    paymentStatus: \"Pending\",\n    totalAmount: \"$150.00\",\n    paymentMethod: \"PayPal\",\n  },\n  {\n    invoice: \"INV003\",\n    paymentStatus: \"Unpaid\",\n    totalAmount: \"$350.00\",\n    paymentMethod: \"Bank Transfer\",\n  },\n  {\n    invoice: \"INV004\",\n    paymentStatus: \"Paid\",\n    totalAmount: \"$450.00\",\n    paymentMethod: \"Credit Card\",\n  },\n  {\n    invoice: \"INV005\",\n    paymentStatus: \"Paid\",\n    totalAmount: \"$550.00\",\n    paymentMethod: \"PayPal\",\n  },\n  {\n    invoice: \"INV006\",\n    paymentStatus: \"Pending\",\n    totalAmount: \"$200.00\",\n    paymentMethod: \"Bank Transfer\",\n  },\n  {\n    invoice: \"INV007\",\n    paymentStatus: \"Unpaid\",\n    totalAmount: \"$300.00\",\n    paymentMethod: \"Credit Card\",\n  },\n];\n\nexport default function BorderedTableDemo() {\n  return (\n    <Table className=\"border\">\n      <TableCaption>A list of your recent invoices.</TableCaption>\n      <TableHeader>\n        <TableRow className=\"[&>th]:border-r last:border-r-0\">\n          <TableHead className=\"w-[100px]\">Invoice</TableHead>\n          <TableHead>Status</TableHead>\n          <TableHead>Method</TableHead>\n          <TableHead className=\"text-right\">Amount</TableHead>\n        </TableRow>\n      </TableHeader>\n      <TableBody>\n        {invoices.map((invoice) => (\n          <TableRow\n            key={invoice.invoice}\n            className=\"[&>td]:border-r last:border-r-0\"\n          >\n            <TableCell className=\"font-medium\">{invoice.invoice}</TableCell>\n            <TableCell>{invoice.paymentStatus}</TableCell>\n            <TableCell>{invoice.paymentMethod}</TableCell>\n            <TableCell className=\"text-right\">{invoice.totalAmount}</TableCell>\n          </TableRow>\n        ))}\n      </TableBody>\n      <TableFooter>\n        <TableRow className=\"*:border-r last:border-r-0\">\n          <TableCell colSpan={3}>Total</TableCell>\n          <TableCell className=\"text-right\">$2,500.00</TableCell>\n        </TableRow>\n      </TableFooter>\n    </Table>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "tabs-04",
+      "name": "tabs-04",
+      "hint": "Bordered Tabs",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Button } from \"@/registry/ui/button\";\nimport { Tabs, TabsContent, TabsList, TabsTrigger } from \"@/registry/ui/tabs\";\nimport { Copy } from \"lucide-react\";\n\nconst tabs = [\n  {\n    name: \"pnpm\",\n    value: \"pnpm\",\n    content: \"pnpm dlx shadcn@latest add tabs\",\n  },\n  {\n    name: \"npm\",\n    value: \"npm\",\n    content: \"npx shadcn@latest add tabs\",\n  },\n  {\n    name: \"yarn\",\n    value: \"yarn\",\n    content: \"npx shadcn@latest add tabs\",\n  },\n  {\n    name: \"bun\",\n    value: \"bun\",\n    content: \"bunx --bun shadcn@latest add tabs\",\n  },\n];\n\nexport default function TabsBorderedDemo() {\n  return (\n    <Tabs defaultValue={tabs[0].value} className=\"max-w-xs w-full\">\n      <TabsList className=\"p-0 h-auto bg-background gap-1\">\n        {tabs.map((tab) => (\n          <TabsTrigger\n            key={tab.value}\n            value={tab.value}\n            className=\"border border-transparent data-[state=active]:border-border data-[state=active]:shadow-none\"\n          >\n            <code className=\"text-[13px]\">{tab.name}</code>\n          </TabsTrigger>\n        ))}\n      </TabsList>\n\n      {tabs.map((tab) => (\n        <TabsContent key={tab.value} value={tab.value}>\n          <div className=\"h-10 flex items-center justify-between border gap-2 rounded-md pl-3 pr-1.5\">\n            <code className=\"text-[13px]\">{tab.content}</code>\n            <Button size=\"icon\" variant=\"secondary\" className=\"h-7 w-7\">\n              <Copy className=\"h-3.5! w-3.5!\" />\n            </Button>\n          </div>\n        </TabsContent>\n      ))}\n    </Tabs>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "tabs-14",
+      "name": "tabs-14",
+      "hint": "Vertical Left Bordered Tabs",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Tabs, TabsContent, TabsList, TabsTrigger } from \"@/registry/ui/tabs\";\nimport { Bot, Home, Settings, User } from \"lucide-react\";\n\nconst tabs = [\n  {\n    name: \"Home\",\n    value: \"home\",\n    icon: Home,\n  },\n  {\n    name: \"Profile\",\n    value: \"profile\",\n    icon: User,\n  },\n  {\n    name: \"Messages\",\n    value: \"messages\",\n    icon: Bot,\n  },\n  {\n    name: \"Settings\",\n    value: \"settings\",\n    icon: Settings,\n  },\n];\n\nexport default function VerticalLeftBorderedTabsDemo() {\n  return (\n    <Tabs\n      orientation=\"vertical\"\n      defaultValue={tabs[0].value}\n      className=\"max-w-md w-full flex flex-row items-start gap-4 justify-center\"\n    >\n      <TabsList className=\"shrink-0 grid grid-cols-1 min-w-28 p-0 bg-background\">\n        {tabs.map((tab) => (\n          <TabsTrigger\n            key={tab.value}\n            value={tab.value}\n            className=\"border-l-2 border-transparent justify-start rounded-none data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/5 py-1.5\"\n          >\n            <tab.icon className=\"h-5 w-5 me-2\" /> {tab.name}\n          </TabsTrigger>\n        ))}\n      </TabsList>\n\n      <div className=\"h-40 flex items-center justify-center max-w-xs w-full border rounded-md font-medium text-muted-foreground\">\n        {tabs.map((tab) => (\n          <TabsContent\n            key={tab.value}\n            value={tab.value}\n            className=\"flex items-center justify-center h-full\"\n          >\n            {tab.name} Content\n          </TabsContent>\n        ))}\n      </div>\n    </Tabs>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "tabs-17",
+      "name": "tabs-17",
+      "hint": "Vertical Bordered Tabs",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Tabs, TabsContent, TabsList, TabsTrigger } from \"@/registry/ui/tabs\";\nimport { cn } from \"@/lib/utils\";\nimport { Bot, Settings, User } from \"lucide-react\";\nimport React from \"react\";\n\nconst tabs = [\n  {\n    value: \"profile\",\n    icon: User,\n  },\n  {\n    value: \"chat\",\n    icon: Bot,\n  },\n  {\n    value: \"settings\",\n    icon: Settings,\n  },\n];\n\nconst VerticalBorderedTabs = () => {\n  return (\n    <Tabs\n      defaultValue={tabs[0].value}\n      orientation=\"vertical\"\n      className=\"w-full flex flex-row items-start justify-center gap-2\"\n    >\n      <TabsList className=\"grid grid-cols-1 h-auto w-fit p-0 divide-y border shrink-0\">\n        {tabs.map((item) => (\n          <TabsTrigger\n            key={item.value}\n            value={item.value}\n            className={cn(\n              \"rounded-none first:rounded-t-md last:rounded-b-md bg-background h-10 w-11 p-0\",\n              \"data-[state=active]:bg-primary data-[state=active]:text-primary-foreground\"\n            )}\n          >\n            <item.icon className=\"h-5 w-5\" />\n          </TabsTrigger>\n        ))}\n      </TabsList>\n\n      <div className=\"grow w-full max-w-48 aspect-square flex items-center justify-center border rounded-lg p-6\">\n        {tabs.map((item) => (\n          <TabsContent key={item.value} value={item.value}>\n            <div className=\"mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-muted\">\n              <item.icon />\n            </div>\n            <p className=\"text-center text-lg mt-4 font-medium text-muted-foreground tracking-tight capitalize\">\n              {item.value}\n            </p>\n          </TabsContent>\n        ))}\n      </div>\n    </Tabs>\n  );\n};\n\nexport default VerticalBorderedTabs;",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "textarea-02",
+      "name": "textarea-02",
+      "hint": "Textarea with Background Color",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Textarea } from \"@/registry/ui/textarea\";\n\nexport default function TextareaWithBackgroundColorDemo() {\n  return (\n    <Textarea\n      placeholder=\"Type your message here.\"\n      className=\"bg-muted shadow-none\"\n    />\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "tooltip-04",
+      "name": "tooltip-04",
+      "hint": "Tooltip with Disabled Hoverable Content",
+      "source": "shadcnui-blocks.md",
+      "category": "components",
+      "code": "import { Button } from \"@/registry/ui/button\";\nimport {\n  Tooltip,\n  TooltipContent,\n  TooltipProvider,\n  TooltipTrigger,\n} from \"@/registry/ui/tooltip\";\n\nexport default function TooltipWithDisabledHoverableContentDemo() {\n  return (\n    <TooltipProvider>\n      <Tooltip disableHoverableContent>\n        <TooltipTrigger asChild>\n          <Button variant=\"outline\">Hover</Button>\n        </TooltipTrigger>\n        <TooltipContent>\n          <p>You can&apos;t hover over me</p>\n        </TooltipContent>\n      </Tooltip>\n    </TooltipProvider>\n  );\n}",
+      "tags": [
+        "components",
+        "(291)"
+      ]
+    },
+    {
+      "id": "warp-background",
+      "name": "warp-background",
+      "hint": "Warp Background",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "aurora-text",
+      "name": "aurora-text",
+      "hint": "Aurora Text",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "smooth-cursor",
+      "name": "smooth-cursor",
+      "hint": "smooth-cursor",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "progressive-blur",
+      "name": "progressive-blur",
+      "hint": "Progressive Blur",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "neon-gradient-card",
+      "name": "neon-gradient-card",
+      "hint": "Neon Gradient Card",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "meteors",
+      "name": "meteors",
+      "hint": "Meteors",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "grid-pattern",
+      "name": "grid-pattern",
+      "hint": "Grid Pattern",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "interactive-grid-pattern",
+      "name": "interactive-grid-pattern",
+      "hint": "Interactive Grid Pattern",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "flickering-grid",
+      "name": "flickering-grid",
+      "hint": "Flickering Grid",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "bento-grid",
+      "name": "bento-grid",
+      "hint": "Bento Grid",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "ripple",
+      "name": "ripple",
+      "hint": "Ripple",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "retro-grid",
+      "name": "retro-grid",
+      "hint": "Retro Grid",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "border-beam",
+      "name": "border-beam",
+      "hint": "Border Beam",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "animated-beam",
+      "name": "animated-beam",
+      "hint": "Animated Beam",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "animated-gradient-text",
+      "name": "animated-gradient-text",
+      "hint": "Animated Gradient Text",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "orbiting-circles",
+      "name": "orbiting-circles",
+      "hint": "Orbiting Circles",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "sparkles-text",
+      "name": "sparkles-text",
+      "hint": "Sparkles Text",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "shine-border",
+      "name": "shine-border",
+      "hint": "Shine Border",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "ripple-button",
+      "name": "ripple-button",
+      "hint": "Ripple Button",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "blur-fade",
+      "name": "blur-fade",
+      "hint": "Blur Fade",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "interactive-hover-button",
+      "name": "interactive-hover-button",
+      "hint": "interactive-hover-button",
+      "source": "magicui-components.md",
+      "category": "components",
+      "code": "",
+      "tags": [
+        "components",
+        "(69)"
+      ]
+    },
+    {
+      "id": "dotted-map",
+      "name": "dotted-map",
+      "hint": "Dotted Map",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "warp-background-demo",
+      "name": "warp-background-demo",
+      "hint": "Warp Background Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "aurora-text-demo",
+      "name": "aurora-text-demo",
+      "hint": "Aurora Text Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "smooth-cursor-demo",
+      "name": "smooth-cursor-demo",
+      "hint": "smooth-cursor-demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "progressive-blur-demo",
+      "name": "progressive-blur-demo",
+      "hint": "Progressive Blur Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "neon-gradient-card-demo",
+      "name": "neon-gradient-card-demo",
+      "hint": "Neon Gradient Card Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "meteors-demo",
+      "name": "meteors-demo",
+      "hint": "Meteors Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "grid-pattern-demo",
+      "name": "grid-pattern-demo",
+      "hint": "Grid Pattern Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "grid-pattern-linear-gradient",
+      "name": "grid-pattern-linear-gradient",
+      "hint": "Grid Pattern Linear Gradient",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "grid-pattern-dashed",
+      "name": "grid-pattern-dashed",
+      "hint": "Grid Pattern Dashed",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "dot-pattern-linear-gradient",
+      "name": "dot-pattern-linear-gradient",
+      "hint": "Dot Pattern Linear Gradient",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "dot-pattern-with-glow-effect",
+      "name": "dot-pattern-with-glow-effect",
+      "hint": "Dot Pattern with glow effect",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "flickering-grid-demo",
+      "name": "flickering-grid-demo",
+      "hint": "Flickering Grid Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "flickering-grid-rounded-demo",
+      "name": "flickering-grid-rounded-demo",
+      "hint": "Flickering Grid Rounded Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "ripple-demo",
+      "name": "ripple-demo",
+      "hint": "Ripple Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "retro-grid-demo",
+      "name": "retro-grid-demo",
+      "hint": "Retro Grid Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "particles-demo",
+      "name": "particles-demo",
+      "hint": "Particles Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-grid-pattern-demo",
+      "name": "animated-grid-pattern-demo",
+      "hint": "Animated Grid Pattern Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "interactive-grid-pattern-demo",
+      "name": "interactive-grid-pattern-demo",
+      "hint": "Interactive Grid Pattern Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "interactive-grid-pattern-demo-2",
+      "name": "interactive-grid-pattern-demo-2",
+      "hint": "Interactive Grid Pattern Demo 2",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "border-beam-demo",
+      "name": "border-beam-demo",
+      "hint": "Border Beam Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "border-beam-demo-2",
+      "name": "border-beam-demo-2",
+      "hint": "Border Beam Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "border-beam-demo-3",
+      "name": "border-beam-demo-3",
+      "hint": "Border Beam Demo 3",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "border-beam-demo-4",
+      "name": "border-beam-demo-4",
+      "hint": "Border Beam Demo 4",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-beam-demo",
+      "name": "animated-beam-demo",
+      "hint": "Animated Beam Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-beam-unidirectional",
+      "name": "animated-beam-unidirectional",
+      "hint": "Animated Beam Unidirectional",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-beam-bidirectional",
+      "name": "animated-beam-bidirectional",
+      "hint": "Animated Beam Bidirectional",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-beam-multiple-inputs",
+      "name": "animated-beam-multiple-inputs",
+      "hint": "Animated Beam Multiple Inputs",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-beam-multiple-outputs",
+      "name": "animated-beam-multiple-outputs",
+      "hint": "Animated Beam Multiple Outputs",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-gradient-text-demo",
+      "name": "animated-gradient-text-demo",
+      "hint": "Animated Gradient Text Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "animated-gradient-text-demo-2",
+      "name": "animated-gradient-text-demo-2",
+      "hint": "Animated Gradient Text Demo 2",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "orbiting-circles-demo",
+      "name": "orbiting-circles-demo",
+      "hint": "Orbiting Circles Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "typing-animation-demo-5",
+      "name": "typing-animation-demo-5",
+      "hint": "Typing Animation Without Cursor",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "typing-animation-demo-7",
+      "name": "typing-animation-demo-7",
+      "hint": "Typing Animation Cursor Blinking",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "typing-animation-demo-8",
+      "name": "typing-animation-demo-8",
+      "hint": "Typing Animation Cursor Styles",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "sparkles-text-demo",
+      "name": "sparkles-text-demo",
+      "hint": "Sparkles Text Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "shine-border-demo",
+      "name": "shine-border-demo",
+      "hint": "Shine Border Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "shine-border-demo-2",
+      "name": "shine-border-demo-2",
+      "hint": "Shine Border Demo 2",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "confetti-stars",
+      "name": "confetti-stars",
+      "hint": "Confetti Stars",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "ripple-button-demo",
+      "name": "ripple-button-demo",
+      "hint": "Ripple Button Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "blur-fade-demo",
+      "name": "blur-fade-demo",
+      "hint": "Blur Fade Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "blur-fade-text-demo",
+      "name": "blur-fade-text-demo",
+      "hint": "Blur Fade Text Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "interactive-hover-button-demo",
+      "name": "interactive-hover-button-demo",
+      "hint": "Interactive Hover Button Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "dotted-map-demo",
+      "name": "dotted-map-demo",
+      "hint": "Dotted Map Demo",
+      "source": "magicui-components.md",
+      "category": "templates/showcase",
+      "code": "",
+      "tags": [
+        "templates/showcase",
+        "(136)"
+      ]
+    },
+    {
+      "id": "dotted-map-demo-2",
+      "name": "dotted-map-demo-2",
+      "hint": "Dotted Map Demo 2",
+      "source": "magicui-components.md",
+      "category": "lib",
+      "code": "",
+      "tags": [
+        "lib",
+        "(1)"
+      ]
+    },
+    {
+      "id": "bundui",
+      "name": "bundui",
+      "hint": "magnetic-button",
+      "source": "21st-dev-components.md",
+      "category": "backgrounds",
+      "code": "'use client';\r\nimport React, { useState, useEffect, useRef } from 'react';\r\nimport { motion, useMotionValue, useSpring } from 'framer-motion';\r\n\r\nconst SPRING_CONFIG = { damping: 100, stiffness: 400 };\r\n\r\ntype MagneticButtonType = {\r\n  children: React.ReactNode;\r\n  distance?: number;\r\n};\r\n\r\nfunction MagneticButton({\r\n  children,\r\n  distance = 0.6,\r\n}: MagneticButtonType) {\r\n  const [isHovered, setIsHovered] = useState(false);\r\n  const ref = useRef<HTMLDivElement>(null);\r\n  const x = useMotionValue(0);\r\n  const y = useMotionValue(0);\r\n  const springX = useSpring(x, SPRING_CONFIG);\r\n  const springY = useSpring(y, SPRING_CONFIG);\r\n\r\n  useEffect(() => {\r\n    const calculateDistance = (e: MouseEvent) => {\r\n      if (ref.current) {\r\n        const rect = ref.current.getBoundingClientRect();\r\n        const centerX = rect.left + rect.width / 2;\r\n        const centerY = rect.top + rect.height / 2;\r\n        const distanceX = e.clientX - centerX;\r\n        const distanceY = e.clientY - centerY;\r\n\r\n        if (isHovered) {\r\n          x.set(distanceX * distance);\r\n          y.set(distanceY * distance);\r\n        } else {\r\n          x.set(0);\r\n          y.set(0);\r\n        }\r\n      }\r\n    };\r\n\r\n    const handleMouseLeave = () => {\r\n      setIsHovered(false);\r\n      x.set(0);\r\n      y.set(0);\r\n    };\r\n\r\n    const handleMouseEnter = () => {\r\n      setIsHovered(true);\r\n    };\r\n\r\n    if (ref.current) {\r\n      ref.current.addEventListener('mousemove', calculateDistance);\r\n      ref.current.addEventListener('mouseleave', handleMouseLeave);\r\n      ref.current.addEventListener('mouseenter', handleMouseEnter);\r\n    }\r\n\r\n    return () => {\r\n      if (ref.current) {\r\n        ref.current.removeEventListener('mousemove', calculateDistance);\r\n        ref.current.removeEventListener('mouseleave', handleMouseLeave);\r\n        ref.current.removeEventListener('mouseenter', handleMouseEnter);\r\n      }\r\n    };\r\n  }, [isHovered, x, y, distance]);\r\n\r\n  return (\r\n    <motion.div\r\n      ref={ref}\r\n      style={{ x: springX, y: springY }}\r\n      className=\"inline-block\"\r\n    >\r\n      {children}\r\n    </motion.div>\r\n  );\r\n}\r\n\r\nexport { MagneticButton };",
+      "tags": [
+        "backgrounds"
+      ]
+    },
+    {
+      "id": "aceternity",
+      "name": "aceternity",
+      "hint": "aurora-background",
+      "source": "21st-dev-components.md",
+      "category": "backgrounds",
+      "code": "\"use client\";\r\nimport { cn } from \"@/lib/utils\";\r\nimport React, { ReactNode } from \"react\";\r\n\r\ninterface AuroraBackgroundProps extends React.HTMLProps<HTMLDivElement> {\r\n  children: ReactNode;\r\n  showRadialGradient?: boolean;\r\n}\r\n\r\nexport const AuroraBackground = ({\r\n  className,\r\n  children,\r\n  showRadialGradient = true,\r\n  ...props\r\n}: AuroraBackgroundProps) => {\r\n  return (\r\n    <main>\r\n      <div\r\n        className={cn(\r\n          \"relative flex flex-col h-[100vh] items-center justify-center bg-zinc-50 dark:bg-zinc-900 text-slate-950 transition-bg\",\r\n          className\r\n        )}\r\n        {...props}\r\n      >\r\n        <div className=\"absolute inset-0 overflow-hidden\">\r\n          <div\r\n            className={cn(\r\n              `\r\n            [--white-gradient:repeating-linear-gradient(100deg,var(--white)_0%,var(--white)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--white)_16%)]\r\n            [--dark-gradient:repeating-linear-gradient(100deg,var(--black)_0%,var(--black)_7%,var(--transparent)_10%,var(--transparent)_12%,var(--black)_16%)]\r\n            [--aurora:repeating-linear-gradient(100deg,var(--blue-500)_10%,var(--indigo-300)_15%,var(--blue-300)_20%,var(--violet-200)_25%,var(--blue-400)_30%)]\r\n            [background-image:var(--white-gradient),var(--aurora)]\r\n            dark:[background-image:var(--dark-gradient),var(--aurora)]\r\n            [background-size:300%,_200%]\r\n            [background-position:50%_50%,50%_50%]\r\n            filter blur-[10px] invert dark:invert-0\r\n            after:content-[\"\"] after:absolute after:inset-0 after:[background-image:var(--white-gradient),var(--aurora)]\r\n            after:dark:[background-image:var(--dark-gradient),var(--aurora)]\r\n            after:[background-size:200%,_100%]\r\n            after:animate-aurora after:[background-attachment:fixed] after:mix-blend-difference\r\n            pointer-events-none\r\n            absolute -inset-[10px] opacity-50 will-change-transform`,\r\n              showRadialGradient &&\r\n                `[mask-image:radial-gradient(ellipse_at_100%_0%,black_10%,var(--transparent)_70%)]`\r\n            )}\r\n          ></div>\r\n        </div>\r\n        {children}\r\n      </div>\r\n    </main>\r\n  );\r\n};",
+      "tags": [
+        "backgrounds"
+      ]
+    },
+    {
+      "id": "danielpetho",
+      "name": "danielpetho",
+      "hint": "text-cursor-proximity",
+      "source": "21st-dev-components.md",
+      "category": "community",
+      "code": "\"use client\"\r\nimport React, { CSSProperties, forwardRef, useRef } from \"react\"\r\nimport { motion, useAnimationFrame, useMotionValue, useTransform } from \"motion/react\"\r\nimport { useMousePositionRef } from \"@/hooks/use-mouse-position-ref\"\r\n\r\ninterface TextProps extends React.HTMLAttributes<HTMLSpanElement> {\r\n  label: string\r\n  styles: Partial<{ [K in keyof CSSProperties]: { from: any; to: any } }>\r\n  containerRef: React.RefObject<HTMLDivElement>\r\n  radius?: number\r\n  falloff?: \"linear\" | \"exponential\" | \"gaussian\"\r\n}\r\n\r\nconst TextCursorProximity = forwardRef<HTMLSpanElement, TextProps>(({ label, styles, containerRef, radius = 50, falloff = \"linear\", className, onClick, ...props }, ref) => {\r\n  const letterRefs = useRef<(HTMLSpanElement | null)[]>([])\r\n  const mousePositionRef = useMousePositionRef(containerRef)\r\n  const letterProximities = useRef(Array(label.replace(/\\s/g, \"\").length).fill(0).map(() => useMotionValue(0)))\r\n\r\n  const calculateDistance = (x1: number, y1: number, x2: number, y2: number): number => Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))\r\n  \r\n  const calculateFalloff = (distance: number): number => {\r\n    const norm = Math.min(Math.max(1 - distance / radius, 0), 1)\r\n    if (falloff === \"exponential\") return Math.pow(norm, 2)\r\n    if (falloff === \"gaussian\") return Math.exp(-Math.pow(distance / (radius / 2), 2) / 2)\r\n    return norm\r\n  }\r\n\r\n  useAnimationFrame(() => {\r\n    if (!containerRef.current) return\r\n    const containerRect = containerRef.current.getBoundingClientRect()\r\n    letterRefs.current.forEach((letterRef, index) => {\r\n      if (!letterRef) return\r\n      const rect = letterRef.getBoundingClientRect()\r\n      const distance = calculateDistance(mousePositionRef.current.x, mousePositionRef.current.y, rect.left + rect.width / 2 - containerRect.left, rect.top + rect.height / 2 - containerRect.top)\r\n      letterProximities.current[index].set(calculateFalloff(distance))\r\n    })\r\n  })\r\n\r\n  const words = label.split(\" \")\r\n  let letterIndex = 0\r\n\r\n  return (\r\n    <span ref={ref} className={`${className} inline`} onClick={onClick} {...props}>\r\n      {words.map((word, wordIndex) => (\r\n        <span key={wordIndex} className=\"inline-block whitespace-nowrap\">\r\n          {word.split(\"\").map((letter) => {\r\n            const idx = letterIndex++\r\n            const proximity = letterProximities.current[idx]\r\n            const transformedStyles = Object.entries(styles).reduce((acc, [key, value]) => { acc[key] = useTransform(proximity, [0, 1], [value.from, value.to]); return acc }, {} as Record<string, any>)\r\n            return <motion.span key={idx} ref={(el) => { letterRefs.current[idx] = el }} className=\"inline-block\" style={transformedStyles}>{letter}</motion.span>\r\n          })}\r\n          {wordIndex < words.length - 1 && <span className=\"inline-block\">&nbsp;</span>}\r\n        </span>\r\n      ))}\r\n      <span className=\"sr-only\">{label}</span>\r\n    </span>\r\n  )\r\n})\r\n\r\nTextCursorProximity.displayName = \"TextCursorProximity\"\r\nexport default TextCursorProximity",
+      "tags": [
+        "community",
+        "components",
+        "(new",
+        "batch)"
+      ]
+    },
+    {
+      "id": "hammamikhairi",
+      "name": "hammamikhairi",
+      "hint": "animated-gradient-background",
+      "source": "21st-dev-components.md",
+      "category": "community",
+      "code": "import { motion } from \"framer-motion\";\r\nimport React, { useEffect, useRef } from \"react\";\r\n\r\ninterface AnimatedGradientBackgroundProps {\r\n  startingGap?: number;\r\n  Breathing?: boolean;\r\n  gradientColors?: string[];\r\n  gradientStops?: number[];\r\n  animationSpeed?: number;\r\n  breathingRange?: number;\r\n  containerStyle?: React.CSSProperties;\r\n  containerClassName?: string;\r\n  topOffset?: number;\r\n}\r\n\r\nconst AnimatedGradientBackground: React.FC<AnimatedGradientBackgroundProps> = ({\r\n  startingGap = 125, Breathing = false,\r\n  gradientColors = [\"#0A0A0A\", \"#2979FF\", \"#FF80AB\", \"#FF6D00\", \"#FFD600\", \"#00E676\", \"#3D5AFE\"],\r\n  gradientStops = [35, 50, 60, 70, 80, 90, 100],\r\n  animationSpeed = 0.02, breathingRange = 5, containerStyle = {}, topOffset = 0, containerClassName = \"\"\r\n}) => {\r\n  const containerRef = useRef<HTMLDivElement | null>(null);\r\n\r\n  useEffect(() => {\r\n    let animationFrame: number;\r\n    let width = startingGap;\r\n    let directionWidth = 1;\r\n\r\n    const animateGradient = () => {\r\n      if (width >= startingGap + breathingRange) directionWidth = -1;\r\n      if (width <= startingGap - breathingRange) directionWidth = 1;\r\n      if (!Breathing) directionWidth = 0;\r\n      width += directionWidth * animationSpeed;\r\n\r\n      const gradientStopsString = gradientStops.map((stop, i) => `${gradientColors[i]} ${stop}%`).join(\", \");\r\n      const gradient = `radial-gradient(${width}% ${width + topOffset}% at 50% 20%, ${gradientStopsString})`;\r\n      if (containerRef.current) containerRef.current.style.background = gradient;\r\n      animationFrame = requestAnimationFrame(animateGradient);\r\n    };\r\n\r\n    animationFrame = requestAnimationFrame(animateGradient);\r\n    return () => cancelAnimationFrame(animationFrame);\r\n  }, [startingGap, Breathing, gradientColors, gradientStops, animationSpeed, breathingRange, topOffset]);\r\n\r\n  return (\r\n    <motion.div key=\"animated-gradient-background\" initial={{ opacity: 0, scale: 1.5 }} animate={{ opacity: 1, scale: 1, transition: { duration: 2, ease: [0.25, 0.1, 0.25, 1] } }} className={`absolute inset-0 overflow-hidden ${containerClassName}`}>\r\n      <div ref={containerRef} style={containerStyle} className=\"absolute inset-0 transition-transform\" />\r\n    </motion.div>\r\n  );\r\n};\r\n\r\nexport default AnimatedGradientBackground;",
+      "tags": [
+        "community",
+        "components",
+        "(new",
+        "batch)"
+      ]
+    },
+    {
+      "id": "66hex",
+      "name": "66hex",
+      "hint": "fluid-gradient",
+      "source": "21st-dev-components.md",
+      "category": "community",
+      "code": "\"use client\"\r\nimport React, { useRef, useMemo, useEffect, useState } from 'react'\r\nimport { Canvas, useFrame, useThree } from '@react-three/fiber'\r\nimport * as THREE from 'three'\r\nimport { useFBO } from '@react-three/drei'\r\n\r\n// Full shader fluid simulation component using WebGL\r\n// Features: brush interaction, color mixing, decay effects, smooth mouse interpolation\r\n\r\nexport const FluidGradient = () => {\r\n  const [simKey, setSimKey] = useState(0)\r\n  useEffect(() => {\r\n    const handleResize = () => setSimKey(prev => prev + 1)\r\n    window.addEventListener('resize', handleResize)\r\n    return () => window.removeEventListener('resize', handleResize)\r\n  }, [])\r\n  \r\n  return (\r\n    <Canvas className='absolute inset-0' gl={{ antialias: true }}>\r\n      {/* Orthographic camera and fluid simulation mesh */}\r\n      {/* Uses custom GLSL shaders for fluid dynamics */}\r\n    </Canvas>\r\n  )\r\n}",
+      "tags": [
+        "community",
+        "components",
+        "(new",
+        "batch)"
+      ]
+    },
+    {
+      "id": "shabanhr",
+      "name": "shabanhr",
+      "hint": "zoom-parallax",
+      "source": "21st-dev-components.md",
+      "category": "community",
+      "code": "'use client'\r\nimport { useScroll, useTransform, motion } from 'framer-motion'\r\nimport { useRef } from 'react'\r\n\r\ninterface Image { src: string; alt?: string }\r\n\r\nexport function ZoomParallax({ images }: { images: Image[] }) {\r\n  const container = useRef(null)\r\n  const { scrollYProgress } = useScroll({ target: container, offset: ['start start', 'end end'] })\r\n\r\n  const scale4 = useTransform(scrollYProgress, [0, 1], [1, 4])\r\n  const scale5 = useTransform(scrollYProgress, [0, 1], [1, 5])\r\n  const scale6 = useTransform(scrollYProgress, [0, 1], [1, 6])\r\n  const scale8 = useTransform(scrollYProgress, [0, 1], [1, 8])\r\n  const scale9 = useTransform(scrollYProgress, [0, 1], [1, 9])\r\n  const scales = [scale4, scale5, scale6, scale5, scale6, scale8, scale9]\r\n\r\n  return (\r\n    <div ref={container} className=\"relative h-[300vh]\">\r\n      <div className=\"sticky top-0 h-screen overflow-hidden\">\r\n        {images.map(({ src, alt }, index) => {\r\n          const scale = scales[index % scales.length]\r\n          return (\r\n            <motion.div key={index} style={{ scale }} className={`absolute top-0 flex h-full w-full items-center justify-center`}>\r\n              <div className=\"relative h-[25vh] w-[25vw]\">\r\n                <img src={src || '/placeholder.svg'} alt={alt || `Parallax image ${index + 1}`} className=\"h-full w-full object-cover\" />\r\n              </div>\r\n            </motion.div>\r\n          )\r\n        })}\r\n      </div>\r\n    </div>\r\n  )\r\n}",
+      "tags": [
+        "community",
+        "components",
+        "(new",
+        "batch)"
+      ]
+    },
+    {
+      "id": "ibelick",
+      "name": "ibelick",
+      "hint": "animated-background",
+      "source": "21st-dev-components.md",
+      "category": "community",
+      "code": "'use client'\r\nimport { cn } from '@/lib/utils'\r\nimport { AnimatePresence, Transition, motion } from 'framer-motion'\r\nimport { Children, cloneElement, ReactElement, useEffect, useState, useId } from 'react'\r\n\r\ntype AnimatedBackgroundProps = {\r\n  children: ReactElement<{ 'data-id': string }>[] | ReactElement<{ 'data-id': string }>\r\n  defaultValue?: string\r\n  onValueChange?: (newActiveId: string | null) => void\r\n  className?: string\r\n  transition?: Transition\r\n  enableHover?: boolean\r\n}\r\n\r\nexport default function AnimatedBackground({ children, defaultValue, onValueChange, className, transition, enableHover = false }: AnimatedBackgroundProps) {\r\n  const [activeId, setActiveId] = useState<string | null>(null)\r\n  const uniqueId = useId()\r\n\r\n  const handleSetActiveId = (id: string | null) => {\r\n    setActiveId(id)\r\n    if (onValueChange) onValueChange(id)\r\n  }\r\n\r\n  useEffect(() => {\r\n    if (defaultValue !== undefined) setActiveId(defaultValue)\r\n  }, [defaultValue])\r\n\r\n  return Children.map(children, (child: any, index) => {\r\n    const id = child.props['data-id']\r\n    const interactionProps = enableHover\r\n      ? { onMouseEnter: () => handleSetActiveId(id), onMouseLeave: () => handleSetActiveId(null) }\r\n      : { onClick: () => handleSetActiveId(id) }\r\n\r\n    return cloneElement(child, {\r\n      key: index,\r\n      className: cn('relative inline-flex', child.props.className),\r\n      'aria-selected': activeId === id,\r\n      'data-checked': activeId === id ? 'true' : 'false',\r\n      ...interactionProps,\r\n    }, <>\r\n      <AnimatePresence initial={false}>\r\n        {activeId === id && (\r\n          <motion.div layoutId={`background-${uniqueId}`} className={cn('absolute inset-0', className)} transition={transition} initial={{ opacity: defaultValue ? 1 : 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />\r\n        )}\r\n      </AnimatePresence>\r\n      <span className='z-10'>{child.props.children}</span>\r\n    </>)\r\n  })\r\n}",
+      "tags": [
+        "community",
+        "components",
+        "(new",
+        "batch)"
+      ]
+    },
+    {
+      "id": "deepaksslibra",
+      "name": "deepaksslibra",
+      "hint": "fluid-menu",
+      "source": "21st-dev-components-part2.md",
+      "category": "📱",
+      "code": "\"use client\"\r\n\r\nimport React, { useState } from \"react\"\r\nimport { ChevronDown } from \"lucide-react\"\r\n\r\ninterface MenuProps { trigger: React.ReactNode; children: React.ReactNode; align?: \"left\" | \"right\"; showChevron?: boolean }\r\n\r\nexport function Menu({ trigger, children, align = \"left\", showChevron = true }: MenuProps) {\r\n  const [isOpen, setIsOpen] = useState(false)\r\n  return (\r\n    <div className=\"relative inline-block text-left\">\r\n      <div onClick={() => setIsOpen(!isOpen)} className=\"cursor-pointer inline-flex items-center\" role=\"button\">\r\n        {trigger}\r\n        {showChevron && <ChevronDown className=\"ml-2 -mr-1 h-4 w-4 text-gray-500\" />}\r\n      </div>\r\n      {isOpen && (\r\n        <div className={`absolute ${align === \"right\" ? \"right-0\" : \"left-0\"} mt-2 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black dark:ring-gray-700 z-50`}>\r\n          <div className=\"py-1\">{children}</div>\r\n        </div>\r\n      )}\r\n    </div>\r\n  )\r\n}\r\n\r\nexport function MenuItem({ children, onClick, disabled = false, icon, isActive = false }: { children?: React.ReactNode; onClick?: () => void; disabled?: boolean; icon?: React.ReactNode; isActive?: boolean }) {\r\n  return (\r\n    <button className={`relative block w-full h-16 text-center group ${disabled ? \"text-gray-400 cursor-not-allowed\" : \"text-gray-600 dark:text-gray-300\"}`} onClick={onClick} disabled={disabled}>\r\n      <span className=\"flex items-center justify-center h-full\">{icon && <span className=\"h-6 w-6\">{icon}</span>}{children}</span>\r\n    </button>\r\n  )\r\n}",
+      "tags": [
+        "📱",
+        "menus"
+      ]
+    },
+    {
+      "id": "spoonyvu",
+      "name": "spoonyvu",
+      "hint": "glow-menu",
+      "source": "21st-dev-components-part2.md",
+      "category": "📱",
+      "code": "\"use client\"\r\n\r\nimport * as React from \"react\"\r\nimport { motion } from \"framer-motion\"\r\nimport { useTheme } from \"next-themes\"\r\nimport { cn } from \"@/lib/utils\"\r\nimport { LucideIcon } from \"lucide-react\"\r\n\r\ninterface MenuItem { icon: LucideIcon; label: string; href: string; gradient: string; iconColor: string }\r\n\r\nconst glowVariants = { initial: { opacity: 0, scale: 0.8 }, hover: { opacity: 1, scale: 2 } };\r\n\r\nexport const MenuBar = React.forwardRef<HTMLDivElement, { items: MenuItem[]; activeItem?: string; onItemClick?: (label: string) => void }>(\r\n  ({ className, items, activeItem, onItemClick }, ref) => {\r\n    const { theme } = useTheme()\r\n    return (\r\n      <motion.nav ref={ref} className={cn(\"p-2 rounded-2xl bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-lg border\", className)} initial=\"initial\" whileHover=\"hover\">\r\n        <ul className=\"flex items-center gap-2 relative z-10\">\r\n          {items.map((item) => {\r\n            const Icon = item.icon\r\n            return (\r\n              <motion.li key={item.label}>\r\n                <button onClick={() => onItemClick?.(item.label)} className=\"block w-full\">\r\n                  <motion.div className=\"block rounded-xl overflow-visible group relative\" style={{ perspective: \"600px\" }} whileHover=\"hover\">\r\n                    <motion.div className=\"absolute inset-0 z-0 pointer-events-none\" variants={glowVariants} style={{ background: item.gradient, borderRadius: \"16px\" }} />\r\n                    <motion.div className=\"flex items-center gap-2 px-4 py-2 relative z-10\">\r\n                      <Icon className=\"h-5 w-5\" /><span>{item.label}</span>\r\n                    </motion.div>\r\n                  </motion.div>\r\n                </button>\r\n              </motion.li>\r\n            )\r\n          })}\r\n        </ul>\r\n      </motion.nav>\r\n    )\r\n  }\r\n)",
+      "tags": [
+        "📱",
+        "menus"
+      ]
+    },
+    {
+      "id": "ravikatiyar",
+      "name": "ravikatiyar",
+      "hint": "glass-radio-group",
+      "source": "21st-dev-components-part2.md",
+      "category": "🎨",
+      "code": "import React from 'react';\r\nimport styled from 'styled-components';\r\n\r\nconst Radio = () => {\r\n  return (\r\n    <StyledWrapper>\r\n      <div className=\"glass-radio-group\">\r\n        <input type=\"radio\" name=\"plan\" id=\"glass-silver\" defaultChecked />\r\n        <label htmlFor=\"glass-silver\">Silver</label>\r\n        <input type=\"radio\" name=\"plan\" id=\"glass-gold\" />\r\n        <label htmlFor=\"glass-gold\">Gold</label>\r\n        <input type=\"radio\" name=\"plan\" id=\"glass-platinum\" />\r\n        <label htmlFor=\"glass-platinum\">Platinum</label>\r\n        <div className=\"glass-glider\" />\r\n      </div>\r\n    </StyledWrapper>\r\n  );\r\n}\r\n\r\nconst StyledWrapper = styled.div`\r\n  .glass-radio-group {\r\n    --bg: rgba(255, 255, 255, 0.06);\r\n    display: flex; position: relative; background: var(--bg);\r\n    border-radius: 1rem; backdrop-filter: blur(12px);\r\n    box-shadow: inset 1px 1px 4px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);\r\n  }\r\n  .glass-radio-group input { display: none; }\r\n  .glass-radio-group label {\r\n    flex: 1; display: flex; align-items: center; justify-content: center;\r\n    padding: 0.8rem 1.6rem; cursor: pointer; font-weight: 600; color: #e5e5e5;\r\n    position: relative; z-index: 2; transition: color 0.3s;\r\n  }\r\n  .glass-glider {\r\n    position: absolute; top: 0; bottom: 0; width: calc(100% / 3);\r\n    border-radius: 1rem; z-index: 1;\r\n    transition: transform 0.5s cubic-bezier(0.37, 1.95, 0.66, 0.56);\r\n  }\r\n  #glass-silver:checked ~ .glass-glider { transform: translateX(0%); background: linear-gradient(135deg, #c0c0c055, #e0e0e0); }\r\n  #glass-gold:checked ~ .glass-glider { transform: translateX(100%); background: linear-gradient(135deg, #ffd70055, #ffcc00); }\r\n  #glass-platinum:checked ~ .glass-glider { transform: translateX(200%); background: linear-gradient(135deg, #d0e7ff55, #a0d8ff); }\r\n`;\r\n\r\nexport default Radio;",
+      "tags": [
+        "🎨",
+        "origin",
+        "ui",
+        "components"
+      ]
+    }
+  ],
+  "generatedFrom": "component-registry.json",
+  "count": 95
+}
