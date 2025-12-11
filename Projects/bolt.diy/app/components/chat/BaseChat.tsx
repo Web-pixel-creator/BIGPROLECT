@@ -360,18 +360,21 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               </div>
             )}
             <StickToBottom
-              className={classNames('pt-6 px-2 sm:px-6 relative', {
-                'h-full flex flex-col modern-scrollbar': chatStarted,
-              })}
+              className={classNames(
+                'pt-6 px-4 sm:px-6 lg:px-8 relative max-w-[900px] mx-auto',
+                {
+                  'h-full flex flex-col modern-scrollbar': chatStarted,
+                },
+              )}
               resize="smooth"
               initial="smooth"
             >
-              <StickToBottom.Content className="flex flex-col gap-4 relative ">
+              <StickToBottom.Content className="flex flex-col gap-4 relative items-center">
                 <ClientOnly>
                   {() => {
                     return chatStarted ? (
                       <Messages
-                        className="flex flex-col w-full flex-1 max-w-chat pb-4 mx-auto z-1"
+                        className="flex flex-col w-full flex-1 max-w-[640px] px-4 sm:px-5 pb-4 mx-auto z-1"
                         messages={messages}
                         isStreaming={isStreaming}
                         append={append}
@@ -387,7 +390,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                 <ScrollToBottom />
               </StickToBottom.Content>
               <div
-                className={classNames('my-auto flex flex-col gap-2 w-full max-w-chat mx-auto z-prompt mb-6', {
+                className={classNames('flex flex-col gap-2 w-full max-w-[640px] px-4 sm:px-5 mx-auto z-prompt mb-6', {
                   'sticky bottom-2': chatStarted,
                 })}
               >

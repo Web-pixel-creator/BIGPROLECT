@@ -51,7 +51,15 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
     };
 
     return (
-      <div id={id} className={props.className} ref={ref}>
+      <div
+        id={id}
+        ref={ref}
+        className={classNames(
+          props.className,
+          // Сужаем колонку, чтобы не заходить под правые панели
+          'mx-auto w-full max-w-[640px] px-4 sm:px-5'
+        )}
+      >
         {messages.length > 0
           ? messages.map((message, index) => {
               const { role, content, id: messageId, annotations, parts } = message;
@@ -71,7 +79,7 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
                     'border-b border-white/5 pb-6': !isUserMessage && index < messages.length - 1,
                   })}
                 >
-                  <div className="grid grid-col-1 w-full">
+                  <div className="grid grid-col-1 w-full overflow-hidden">
                     {isUserMessage ? (
                       <UserMessage content={content} parts={parts} />
                     ) : (

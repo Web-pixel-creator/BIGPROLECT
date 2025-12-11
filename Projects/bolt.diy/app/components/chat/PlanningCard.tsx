@@ -1,24 +1,12 @@
 import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-  Badge,
-  Button,
-  Progress,
-  ScrollArea,
-  Separator,
-  HoverCard,
-  HoverCardTrigger,
-  HoverCardContent,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '~/components/ui/shadcn';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '~/components/ui/shadcn';
+import { Badge } from '~/components/ui/Badge';
+import { Button } from '~/components/ui/Button';
+import { Progress } from '~/components/ui/Progress';
+import { ScrollArea } from '~/components/ui/ScrollArea';
+import { Separator } from '~/components/ui/Separator';
+import { Tooltip } from '~/components/ui/Tooltip';
 import type { PlanningBlock } from '~/types/planning';
 
 interface PlanningCardProps {
@@ -48,8 +36,14 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'graph'>('overview');
 
+  // Early return if no data
+  if (!data) {
+    return null;
+  }
+
+  const steps = data.steps || [];
   const progress = Math.round(
-    (data.steps.filter((s) => s.status === 'complete').length / Math.max(1, data.steps.length)) * 100,
+    (steps.filter((s: any) => s.status === 'complete').length / Math.max(1, steps.length)) * 100,
   );
 
   return (
@@ -76,11 +70,11 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
                 <div className="flex items-center gap-3 text-xs text-purple-300/60">
                   <span className="flex items-center gap-1">
                     <span className="i-ph:steps-duotone" />
-                    {data.steps.length} Steps
+                    {steps.length} Steps
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="i-ph:clock-duotone" />
-                    Est. {Math.round(data.steps.length * 5)}m
+                    Est. {Math.round(steps.length * 5)}m
                   </span>
                 </div>
               </div>
@@ -126,7 +120,7 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
               <span>Overall Progress</span>
               <span>{progress}%</span>
             </div>
-            <Progress value={progress} className="h-1.5 bg-purple-950/50" indicatorClassName="bg-purple-500" />
+            <Progress value={progress} className="h-1.5 bg-purple-950/50" />
           </div>
         </CardHeader>
 
@@ -156,10 +150,10 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
                         <h4 className="text-sm font-medium text-white/80">Action Plan</h4>
                         <div className="flex gap-2 text-[10px]">
                           <Badge variant="outline" className="bg-emerald-500/5 text-emerald-400 border-emerald-500/20">
-                            {data.steps.filter((s) => s.status === 'complete').length} Done
+                            {steps.filter((s) => s.status === 'complete').length} Done
                           </Badge>
                           <Badge variant="outline" className="bg-sky-500/5 text-sky-400 border-sky-500/20">
-                            {data.steps.filter((s) => s.status === 'in_progress').length} Active
+                            {steps.filter((s) => s.status === 'in_progress').length} Active
                           </Badge>
                         </div>
                       </div>
@@ -168,7 +162,7 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
                         {/* Timeline Line */}
                         <div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-white/5" />
 
-                        {data.steps.map((step, index) => (
+                        {steps.map((step, index) => (
                           <motion.div
                             key={step.id}
                             initial={{ opacity: 0, x: -10 }}
@@ -220,22 +214,15 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
                                     </p>
                                   </div>
 
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <Badge
-                                          variant="outline"
-                                          className={`capitalize text-[10px] h-5 px-1.5 whitespace-nowrap ${statusColors[step.status]}`}
-                                        >
-                                          <span className={`${statusIcons[step.status]} mr-1 text-xs`} />
-                                          {step.status.replace('_', ' ')}
-                                        </Badge>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="left">
-                                        <p className="text-xs">Step status: {step.status}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                                  <Tooltip content={`Step status: ${step.status}`} side="left">
+                                    <Badge
+                                      variant="outline"
+                                      className={`capitalize text-[10px] h-5 px-1.5 whitespace-nowrap ${statusColors[step.status]}`}
+                                    >
+                                      <span className={`${statusIcons[step.status]} mr-1 text-xs`} />
+                                      {step.status.replace('_', ' ')}
+                                    </Badge>
+                                  </Tooltip>
                                 </div>
 
                                 {step.command && (
@@ -267,35 +254,21 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
               <Separator className="bg-white/5" />
               <CardFooter className="py-3 bg-white/[0.02]">
                 <div className="flex items-center justify-between w-full text-xs text-white/30">
-                  <span>ID: {data.id.slice(0, 8)}</span>
+                  <span>ID: {(data?.id || 'unknown').slice(0, 8)}</span>
                   <div className="flex gap-4">
                     <span className="flex items-center hover:text-white/50 cursor-pointer transition-colors">
                       <span className="i-ph:bug mr-1.5" />
                       Report Issue
                     </span>
-                    <HoverCard>
-                      <HoverCardTrigger asChild>
-                        <span className="flex items-center hover:text-white/50 cursor-pointer transition-colors">
-                          <span className="i-ph:info mr-1.5" />
-                          Details
-                        </span>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-80" side="top">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-semibold">Technical Details</h4>
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            <div className="flex justify-between">
-                              <span>Total Steps:</span>
-                              <span className="text-foreground">{data.steps.length}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Created:</span>
-                              <span className="text-foreground">{new Date().toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
+                    <Tooltip
+                      content={`Steps: ${steps.length} | Created: ${new Date().toLocaleDateString()}`}
+                      side="top"
+                    >
+                      <span className="flex items-center hover:text-white/50 cursor-pointer transition-colors">
+                        <span className="i-ph:info mr-1.5" />
+                        Details
+                      </span>
+                    </Tooltip>
                   </div>
                 </div>
               </CardFooter>

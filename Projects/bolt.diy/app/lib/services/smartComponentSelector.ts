@@ -182,13 +182,13 @@ export class SmartComponentSelector {
 
     // Trim if too large (keep highest score)
     const trimmed = this.trimBySize(components, effects, 1200);
-    components = trimmed.components as any;
-    effects = trimmed.effects as any;
+    const finalComponents = trimmed.components as SelectedComponent[];
+    const finalEffects = trimmed.effects as SelectedComponent[];
     totalCodeLines = trimmed.totalLines;
 
     return {
-      components,
-      effects,
+      components: finalComponents,
+      effects: finalEffects,
       dependencies: deps,
       total: components.length + effects.length,
       totalCodeLines,

@@ -318,7 +318,9 @@ export const Workbench = memo(
     useEffect(() => {
       if (prevStreamingRef.current && !isStreaming) {
         const previewStore = usePreviewStore();
-        previewStore.refreshAllPreviews();
+        if (previewStore?.refreshAllPreviews) {
+          previewStore.refreshAllPreviews();
+        }
       }
       prevStreamingRef.current = isStreaming;
     }, [isStreaming]);
@@ -345,7 +347,9 @@ export const Workbench = memo(
         .then(() => {
           // Авто-обновление превью после сохранения
           const previewStore = usePreviewStore();
-          previewStore.refreshAllPreviews();
+          if (previewStore?.refreshAllPreviews) {
+            previewStore.refreshAllPreviews();
+          }
         })
         .catch(() => {
           toast.error('Failed to update file content');

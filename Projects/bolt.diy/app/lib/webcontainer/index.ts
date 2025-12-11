@@ -23,11 +23,16 @@ if (!import.meta.env.SSR) {
     import.meta.hot?.data.webcontainer ??
     Promise.resolve()
       .then(() => {
+        console.log('[WebContainer] Starting boot...');
         return WebContainer.boot({
           coep: 'credentialless',
           workdirName: WORK_DIR_NAME,
           forwardPreviewErrors: true, // Enable error forwarding from iframes
         });
+      })
+      .catch((error) => {
+        console.error('[WebContainer] Boot failed:', error);
+        throw error;
       })
       .then(async (webcontainer) => {
         webcontainerContext.loaded = true;

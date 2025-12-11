@@ -450,22 +450,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             <CustomModelSelector
               selectedModel={props.model || 'gemini-2.5-pro'}
               onModelChange={(modelId) => {
-                // Map model IDs to their correct providers
-                let providerName = 'Google'; // default
-
-                if (modelId.startsWith('gemini')) {
-                  providerName = 'Google';
-                } else if (modelId.includes('deepseek') || modelId.includes('grok')) {
+                let providerName = 'Google';
+                if (modelId.includes('deepseek')) {
                   providerName = 'OpenRouter';
+                } else if (modelId.includes('llama')) {
+                  providerName = 'Groq';
                 }
-
-                // Find and set the provider
                 const providerInfo = props.providerList.find((p) => p.name === providerName);
-
                 if (providerInfo && props.setProvider) {
                   props.setProvider(providerInfo);
                 }
-
                 props.setModel?.(modelId);
               }}
             />

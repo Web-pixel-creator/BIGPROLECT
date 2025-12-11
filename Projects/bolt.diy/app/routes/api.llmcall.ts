@@ -41,23 +41,15 @@ function getCompletionTokenLimit(modelDetails: ModelInfo): number {
   return Math.min(MAX_TOKENS, 16384);
 }
 
-function validateTokenLimits(modelDetails: ModelInfo, requestedTokens: number): { valid: boolean; error?: string } {
+function validateTokenLimits(modelDetails: ModelInfo): { valid: boolean; error?: string } {
+  // Just check that model has valid configuration
   const modelMaxTokens = modelDetails.maxTokenAllowed || 128000;
   const maxCompletionTokens = getCompletionTokenLimit(modelDetails);
 
-  // Check against model's context window
-  if (requestedTokens > modelMaxTokens) {
+  if (modelMaxTokens <= 0 || maxCompletionTokens <= 0) {
     return {
       valid: false,
-      error: `Requested tokens (${requestedTokens}) exceed model's context window (${modelMaxTokens}). Please reduce your request size.`,
-    };
-  }
-
-  // Check against completion token limits
-  if (requestedTokens > maxCompletionTokens) {
-    return {
-      valid: false,
-      error: `Requested tokens (${requestedTokens}) exceed model's completion limit (${maxCompletionTokens}). Consider using a model with higher token limits.`,
+      error: `Invalid token configuration for model ${modelDetails.name}`,
     };
   }
 
@@ -161,7 +153,7 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       const dynamicMaxTokens = modelDetails ? getCompletionTokenLimit(modelDetails) : Math.min(MAX_TOKENS, 16384);
 
       // Validate token limits before making API request
-      const validation = validateTokenLimits(modelDetails, dynamicMaxTokens);
+      const validation = validateTokenLimits(modelDetails);
 
       if (!validation.valid) {
         throw new Response(validation.error, {

@@ -90,25 +90,38 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     provider,
     system: starterTemplateSelectionPrompt(templates),
   };
-  const response = await fetch('/api/llmcall', {
-    method: 'POST',
-    body: JSON.stringify(requestBody),
-  });
-  const respJson: { text: string } = await response.json();
-  console.log(respJson);
 
-  const { text } = respJson;
-  const selectedTemplate = parseSelectedTemplate(text);
+  try {
+    const response = await fetch('/api/llmcall', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
 
-  if (selectedTemplate) {
-    return selectedTemplate;
-  } else {
-    console.log('No template selected, using blank template');
+    if (!response.ok) {
+      console.error('Template selection API error:', response.status, response.statusText);
+      return { template: 'blank', title: '' };
+    }
 
-    return {
-      template: 'blank',
-      title: '',
-    };
+    const respJson: { text?: string; error?: boolean; message?: string } = await response.json();
+    console.log(respJson);
+
+    if (respJson.error || !respJson.text) {
+      console.error('Template selection failed:', respJson.message || 'No text in response');
+      return { template: 'blank', title: '' };
+    }
+
+    const { text } = respJson;
+    const selectedTemplate = parseSelectedTemplate(text);
+
+    if (selectedTemplate) {
+      return selectedTemplate;
+    } else {
+      console.log('No template selected, using blank template');
+      return { template: 'blank', title: '' };
+    }
+  } catch (error) {
+    console.error('Error selecting starter template:', error);
+    return { template: 'blank', title: '' };
   }
 };
 

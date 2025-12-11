@@ -20,6 +20,7 @@ import { useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
+import { enhancePromptWithDesignSystem, shouldEnhancePrompt } from '~/lib/services/promptEnhancer';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
 import { supabaseConnection } from '~/lib/stores/supabase';
@@ -323,13 +324,29 @@ export const ChatImpl = memo(
         return;
       }
 
-      await Promise.all([
-        animate('#examples', { opacity: 0, display: 'none' }, { duration: 0.1 }),
-        animate('#intro', { opacity: 0, flex: 1 }, { duration: 0.2, ease: cubicEasingFn }),
-      ]);
+      try {
+        // Check if elements exist before animating
+        const examplesEl = document.querySelector('#examples');
+        const introEl = document.querySelector('#intro');
+
+        const animations = [];
+
+        if (examplesEl) {
+          animations.push(animate('#examples', { opacity: 0, display: 'none' }, { duration: 0.1 }));
+        }
+
+        if (introEl) {
+          animations.push(animate('#intro', { opacity: 0, flex: 1 }, { duration: 0.2, ease: cubicEasingFn }));
+        }
+
+        if (animations.length > 0) {
+          await Promise.all(animations);
+        }
+      } catch (error) {
+        console.warn('Animation error (non-critical):', error);
+      }
 
       chatStore.setKey('started', true);
-
       setChatStarted(true);
     };
 
@@ -399,12 +416,23 @@ export const ChatImpl = memo(
       }
 
       let finalMessageContent = messageContent;
+      let displayMessageContent = messageContent; // What user sees in chat
+
+      // Enhance prompt with design system if it's a design/website request (для всех сообщений, не только первого)
+      if (shouldEnhancePrompt(messageContent)) {
+        const enhanced = enhancePromptWithDesignSystem(messageContent);
+        finalMessageContent = enhanced.enhancedPrompt;
+        // Show enhanced prompt to user so they can see what was sent
+        displayMessageContent = `${messageContent}\n\n✨ Enhanced with ${enhanced.detectedTheme} theme:\n• Colors: ${enhanced.colors.dark}, ${enhanced.colors.light}, ${enhanced.colors.accent}\n• ${enhanced.images.hero.length} hero images, ${enhanced.images.gallery.length} gallery images`;
+        console.log('Prompt enhanced for theme:', enhanced.detectedTheme);
+      }
 
       if (selectedElement) {
         console.log('Selected Element:', selectedElement);
 
         const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
-        finalMessageContent = messageContent + elementInfo;
+        finalMessageContent = finalMessageContent + elementInfo;
+        displayMessageContent = displayMessageContent + elementInfo;
       }
 
       runAnimation();

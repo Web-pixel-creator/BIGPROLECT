@@ -37,8 +37,8 @@ export function UserMessage({ content, parts }: UserMessageProps) {
     const textContent = stripMetadata(textItem?.text || '');
 
     return (
-      <div className="overflow-hidden flex flex-col gap-3 items-center">
-        <div className="flex flex-row items-start justify-center overflow-hidden shrink-0 self-start">
+      <div className="overflow-hidden flex flex-col gap-3 w-full">
+        <div className="flex flex-row items-start overflow-hidden shrink-0">
           {profile?.avatar || profile?.username ? (
             <div className="flex items-end gap-2">
               <img
@@ -56,8 +56,8 @@ export function UserMessage({ content, parts }: UserMessageProps) {
             <div className="i-ph:user-fill text-purple-400 text-2xl" />
           )}
         </div>
-        <Card className="mr-auto border-purple-500/20 bg-purple-500/5">
-          <CardContent className="p-3">
+        <Card className="border-purple-500/20 bg-purple-500/5 w-full overflow-hidden">
+          <CardContent className="p-3 overflow-hidden break-words">
             {textContent && <Markdown html>{textContent}</Markdown>}
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
@@ -81,8 +81,8 @@ export function UserMessage({ content, parts }: UserMessageProps) {
   const textContent = stripMetadata(content);
 
   return (
-    <Card className="ml-auto border-purple-500/20 bg-purple-500/5 max-w-[85%]">
-      <CardContent className="p-4">
+    <Card className="border-purple-500/20 bg-purple-500/5 w-full overflow-hidden">
+      <CardContent className="p-4 overflow-hidden break-words">
         {images.length > 0 && (
           <div className="flex gap-3 mb-3">
             {images.map((item, index) => (

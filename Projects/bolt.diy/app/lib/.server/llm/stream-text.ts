@@ -10,10 +10,11 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
-import { registryService } from '~/lib/services/registryService';
-import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
-import { SmartComponentSelector } from '~/lib/services/smartComponentSelector';
-import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
+// Component injection disabled - these imports are no longer needed
+// import { registryService } from '~/lib/services/registryService';
+// import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
+// import { SmartComponentSelector } from '~/lib/services/smartComponentSelector';
+// import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
 
 export type Messages = Message[];
 
@@ -136,13 +137,6 @@ export async function streamText(props: {
     modelDetails = modelsList.find((m) => m.name === currentModel);
 
     if (!modelDetails) {
-      // Check if it's a Google provider and the model name looks like it might be incorrect
-      if (provider.name === 'Google' && currentModel.includes('2.5')) {
-        throw new Error(
-          `Model "${currentModel}" not found. Gemini 2.5 Pro doesn't exist. Available Gemini models include: gemini-1.5-pro, gemini-2.0-flash, gemini-1.5-flash. Please select a valid model.`,
-        );
-      }
-
       // Fallback to first model with warning
       logger.warn(
         `MODEL [${currentModel}] not found in provider [${provider.name}]. Falling back to first model. ${modelsList[0].name}`,
@@ -173,52 +167,23 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
-  // Component selection - analyze user request and add relevant components
-  try {
-    // Get the last user message to analyze
-    const lastUserMessage = processedMessages.filter((m) => m.role === 'user').pop();
-
-    if (lastUserMessage && typeof lastUserMessage.content === 'string') {
-      const userLower = lastUserMessage.content.toLowerCase();
-
-      const requestedEffects = EFFECT_PRESETS.filter((e) => userLower.includes(e.label.toLowerCase())).map((e) =>
-        e.label.toLowerCase(),
-      );
-
-      const selector = new SmartComponentSelector();
-      const builder = new StructuredPromptBuilder();
-
-      const selection = selector.select({
-        theme: inferTheme(userLower),
-        sections: inferSections(userLower),
-        effects: requestedEffects,
-        allow3d: allow3d(userLower),
-      });
-
-      if (selection.components.length > 0 || selection.effects.length > 0) {
-        const componentContext = builder.build(selection, lastUserMessage.content);
-        systemPrompt = `${systemPrompt}\n${componentContext}`;
-        logger.info(
-          `Added structured component context: comps=${selection.components.length}, effects=${selection.effects.length}`,
-        );
-      } else {
-        logger.warn('No components selected for user message');
-      }
-    }
-  } catch (error) {
-    logger.warn('Failed to match components for prompt:', error);
-  }
+  // Component selection - DISABLED
+  // Component injection was causing import errors because LLM copies component code
+  // that uses framer-motion/@/lib/utils without adding dependencies to package.json
+  // Now LLM generates pure Tailwind CSS code based on system prompt rules
+  logger.info('Component injection disabled - using pure Tailwind CSS generation');
 
   // Registry components (shadcn-compatible registries)
-  try {
-    const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
-    if (registryContext) {
-      systemPrompt = `${systemPrompt}\n${registryContext}`;
-      logger.info('Added registry components to prompt context');
-    }
-  } catch (error) {
-    logger.warn('Failed to load registry components for prompt:', error);
-  }
+  // TEMPORARILY DISABLED: Same issue as above - components require dependencies
+  // try {
+  //   const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
+  //   if (registryContext) {
+  //     systemPrompt = `${systemPrompt}\n${registryContext}`;
+  //     logger.info('Added registry components to prompt context');
+  //   }
+  // } catch (error) {
+  //   logger.warn('Failed to load registry components for prompt:', error);
+  // }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContext(contextFiles, true);
@@ -368,66 +333,6 @@ export async function streamText(props: {
   return await _streamText(streamParams);
 }
 
-function inferTheme(text: string): string | undefined {
-  if (!text) return undefined;
-  const t = text.toLowerCase();
-  if (t.includes('web3') || t.includes('crypto')) return 'web3';
-  if (t.includes('saas') || t.includes('startup')) return 'saas';
-  if (t.includes('auto') || t.includes('car')) return 'auto';
-  if (t.includes('food') || t.includes('restaurant') || t.includes('delivery')) return 'food';
-  if (t.includes('construction') || t.includes('builder')) return 'construction';
-  if (t.includes('finance') || t.includes('bank')) return 'finance';
-  if (t.includes('education') || t.includes('school') || t.includes('course')) return 'education';
-  if (t.includes('ecommerce') || t.includes('shop') || t.includes('store')) return 'ecommerce';
-  if (t.includes('portfolio')) return 'portfolio';
-  if (t.includes('architecture') || t.includes('design')) return 'architecture';
-  if (t.includes('art') || t.includes('entertainment')) return 'arts';
-  if (t.includes('blog') || t.includes('editorial')) return 'blog';
-  if (t.includes('community') || t.includes('nonprofit')) return 'community';
-  if (t.includes('doc') || t.includes('documentation')) return 'documentation';
-  if (t.includes('environment')) return 'environment';
-  if (t.includes('government')) return 'government';
-  if (t.includes('hr') || t.includes('hiring') || t.includes('careers')) return 'hr';
-  if (t.includes('hair') || t.includes('beauty')) return 'beauty';
-  if (t.includes('home service') || t.includes('home repair')) return 'home';
-  if (t.includes('launch') || t.includes('coming soon') || t.includes('countdown')) return 'launch';
-  if (t.includes('medical') || t.includes('clinic') || t.includes('health')) return 'medical';
-  if (t.includes('music') || t.includes('audio')) return 'music';
-  if (t.includes('personal')) return 'personal';
-  if (t.includes('agency') || t.includes('services')) return 'agency';
-  if (t.includes('professional services')) return 'professional';
-  if (t.includes('real estate')) return 'realestate';
-  if (t.includes('retail')) return 'retail';
-  if (t.includes('tech') || t.includes('technology')) return 'technology';
-  if (t.includes('transport')) return 'transportation';
-  if (t.includes('wedding') || t.includes('event')) return 'weddings';
-  return undefined;
-}
-
-function inferSections(text: string): string[] | undefined {
-  if (!text) return undefined;
-  const t = text.toLowerCase();
-  const sections: string[] = [];
-  if (t.includes('hero')) sections.push('hero');
-  if (t.includes('pricing') || t.includes('plan')) sections.push('pricing');
-  if (t.includes('faq')) sections.push('faq');
-  if (t.includes('testimonials') || t.includes('reviews')) sections.push('testimonials');
-  if (t.includes('features') || t.includes('services')) sections.push('features');
-  if (t.includes('contact') || t.includes('form')) sections.push('contact');
-  if (t.includes('gallery') || t.includes('cases') || t.includes('case')) sections.push('gallery', 'cases');
-  if (t.includes('blog') || t.includes('article')) sections.push('blog');
-  if (t.includes('team') || t.includes('about')) sections.push('team', 'about');
-  if (t.includes('roadmap') || t.includes('timeline')) sections.push('roadmap');
-  if (t.includes('docs') || t.includes('documentation')) sections.push('docs');
-  if (t.includes('news') || t.includes('press')) sections.push('news');
-  if (t.includes('jobs') || t.includes('careers') || t.includes('hiring')) sections.push('jobs');
-  if (t.includes('newsletter')) sections.push('newsletter');
-  if (t.includes('countdown') || t.includes('launch')) sections.push('countdown');
-  return sections.length ? sections : undefined;
-}
-
-function allow3d(text: string): boolean {
-  const t = text.toLowerCase();
-  return t.includes('3d') || t.includes('webgl') || t.includes('three');
-}
+// Component selection functions removed - component injection is disabled
+// LLM now generates pure Tailwind CSS code based on system prompt rules
 
