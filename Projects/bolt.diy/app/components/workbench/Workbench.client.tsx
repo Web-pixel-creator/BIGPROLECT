@@ -385,7 +385,7 @@ export const Workbench = memo(
         initial="closed"
         animate={showWorkbench ? 'open' : 'closed'}
         variants={workbenchVariants}
-        className="z-workbench"
+        className="z-workbench flex-none shrink-0"
       >
         <div
           className={classNames(
