@@ -4,7 +4,7 @@ export type TemplateFile = {
   content: string;
 };
 
-const BASELINE_UI_FILES: TemplateFile[] = [
+export const WEB_BASELINE_FILES: TemplateFile[] = [
   {
     name: 'utils.ts',
     path: 'src/lib/utils.ts',
@@ -191,14 +191,14 @@ export { Separator };
   },
 ];
 
-const BASELINE_DEPS: Record<string, string> = {
+export const WEB_BASELINE_DEPS: Record<string, string> = {
   clsx: '^2.1.1',
   'tailwind-merge': '^2.6.0',
   'lucide-react': '^0.485.0',
   'framer-motion': '^11.12.0',
 };
 
-const BASELINE_DEV_DEPS: Record<string, string> = {
+export const WEB_BASELINE_DEV_DEPS: Record<string, string> = {
   'vite-tsconfig-paths': '^5.0.1',
 };
 
@@ -213,7 +213,7 @@ export function applyWebTemplateBaseline(templateFiles: TemplateFile[]): Templat
     existingPaths.add(normalizedPath);
   };
 
-  for (const file of BASELINE_UI_FILES) {
+  for (const file of WEB_BASELINE_FILES) {
     addFileIfMissing(file);
   }
 
@@ -235,14 +235,14 @@ function ensurePackageJsonDeps(files: TemplateFile[]) {
 
     let changed = false;
 
-    for (const [dep, version] of Object.entries(BASELINE_DEPS)) {
+    for (const [dep, version] of Object.entries(WEB_BASELINE_DEPS)) {
       if (!deps[dep]) {
         deps[dep] = version;
         changed = true;
       }
     }
 
-    for (const [dep, version] of Object.entries(BASELINE_DEV_DEPS)) {
+    for (const [dep, version] of Object.entries(WEB_BASELINE_DEV_DEPS)) {
       if (!devDeps[dep]) {
         devDeps[dep] = version;
         changed = true;

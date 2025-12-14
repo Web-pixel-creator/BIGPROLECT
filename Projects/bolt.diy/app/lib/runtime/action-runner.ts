@@ -5,6 +5,7 @@ import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction,
 import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { unreachable } from '~/utils/unreachable';
+import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
 
@@ -268,6 +269,8 @@ export class ActionRunner {
       action.content = validationResult.modifiedCommand;
     }
 
+    await this.#maybePreflightProject(action.content);
+
     const resp = await shell.executeCommand(this.runnerId.get(), action.content, () => {
       logger.debug(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort();
@@ -296,6 +299,8 @@ export class ActionRunner {
       unreachable('Shell terminal not found');
     }
 
+    await this.#maybePreflightProject(action.content);
+
     const resp = await shell.executeCommand(this.runnerId.get(), action.content, () => {
       logger.debug(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort();
@@ -307,6 +312,19 @@ export class ActionRunner {
     }
 
     return resp;
+  }
+
+  async #maybePreflightProject(command: string) {
+    const wantsInstall = /\b(npm|pnpm|yarn)\s+install\b/.test(command);
+    const wantsDev = /\b(npm|pnpm|yarn)\s+run\s+dev\b/.test(command) || /\bpnpm\s+dev\b/.test(command);
+    if (!wantsInstall && !wantsDev) return;
+
+    try {
+      const webcontainer = await this.#webcontainer;
+      await preflightViteReactBaseline(webcontainer);
+    } catch (error) {
+      logger.debug('Preflight failed:', error);
+    }
   }
 
   async #runFileAction(action: ActionState) {
