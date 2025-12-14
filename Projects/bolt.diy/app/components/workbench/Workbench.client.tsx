@@ -329,6 +329,15 @@ export const Workbench = memo(
       workbenchStore.setDocuments(files);
     }, [files]);
 
+    useEffect(() => {
+      if (!showWorkbench) return;
+      if (isStreaming) return;
+      if (selectedView !== 'preview') return;
+      if (hasPreview) return;
+
+      workbenchStore.ensurePreviewRunning();
+    }, [showWorkbench, isStreaming, selectedView, hasPreview]);
+
     const onEditorChange = useCallback<OnEditorChange>((update) => {
       workbenchStore.setCurrentDocumentContent(update.content);
     }, []);

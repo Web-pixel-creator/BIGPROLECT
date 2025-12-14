@@ -40,6 +40,7 @@ export class WorkbenchStore {
   #filesStore = new FilesStore(webcontainer);
   #editorStore = new EditorStore(this.#filesStore);
   #terminalStore = new TerminalStore(webcontainer);
+  #previewAutostartInProgress = false;
 
   #reloadedMessages = new Set<string>();
 
@@ -138,6 +139,121 @@ export class WorkbenchStore {
 
   toggleTerminal(value?: boolean) {
     this.#terminalStore.toggleTerminal(value);
+  }
+
+  async ensurePreviewRunning() {
+    if (this.#previewAutostartInProgress) {
+      return;
+    }
+
+    // If we already have a preview port open, nothing to do.
+    if (this.previews.get().length > 0) {
+      return;
+    }
+
+    const artifact = this.firstArtifact;
+    if (!artifact) {
+      return;
+    }
+
+    this.#previewAutostartInProgress = true;
+
+    try {
+      const wc = await webcontainer;
+
+      const hasNodeModules = await (async () => {
+        try {
+          await wc.fs.readdir('node_modules');
+          return true;
+        } catch {
+          return false;
+        }
+      })();
+
+      const hasBaselineDepsInstalled = await (async () => {
+        const required = [
+          'node_modules/react/package.json',
+          'node_modules/vite/package.json',
+          'node_modules/framer-motion/package.json',
+          'node_modules/lucide-react/package.json',
+          'node_modules/clsx/package.json',
+          'node_modules/tailwind-merge/package.json',
+        ];
+
+        for (const filePath of required) {
+          try {
+            await wc.fs.readFile(filePath, 'utf-8');
+          } catch {
+            return false;
+          }
+        }
+
+        return true;
+      })();
+
+      const messageId = 'auto-preview';
+      const mkId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const shouldInstall = !hasNodeModules || !hasBaselineDepsInstalled;
+
+      if (shouldInstall) {
+        const installActionId = mkId('install');
+        const installAction = {
+          artifactId: artifact.id,
+          messageId,
+          actionId: installActionId,
+          action: { type: 'shell', content: 'npm install' },
+        } as const;
+
+        artifact.runner.addAction(installAction);
+        await artifact.runner.runAction(installAction);
+      }
+
+      // Start dev server with --host so WebContainer can expose the port.
+      const startActionId = mkId('dev');
+      const startAction = {
+        artifactId: artifact.id,
+        messageId,
+        actionId: startActionId,
+        action: { type: 'start', content: 'npm run dev -- --host 0.0.0.0 --port 5173' },
+      } as const;
+
+      artifact.runner.addAction(startAction);
+      try {
+        await artifact.runner.runAction(startAction);
+      } catch (error) {
+        // If starting failed and we skipped install, try a one-time install+retry.
+        if (!shouldInstall) {
+          const retryInstallActionId = mkId('install-retry');
+          const retryInstallAction = {
+            artifactId: artifact.id,
+            messageId,
+            actionId: retryInstallActionId,
+            action: { type: 'shell', content: 'npm install' },
+          } as const;
+
+          artifact.runner.addAction(retryInstallAction);
+          await artifact.runner.runAction(retryInstallAction);
+
+          const retryStartActionId = mkId('dev-retry');
+          const retryStartAction = {
+            artifactId: artifact.id,
+            messageId,
+            actionId: retryStartActionId,
+            action: { type: 'start', content: 'npm run dev -- --host 0.0.0.0 --port 5173' },
+          } as const;
+
+          artifact.runner.addAction(retryStartAction);
+          await artifact.runner.runAction(retryStartAction);
+        } else {
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to auto-start preview:', error);
+    } finally {
+      this.#previewAutostartInProgress = false;
+    }
   }
 
   attachTerminal(terminal: ITerminal) {
