@@ -3,6 +3,7 @@ import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
 import { createScopedLogger } from '~/utils/logger';
+import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { unreachable } from '~/utils/unreachable';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
@@ -331,7 +332,23 @@ export class ActionRunner {
     }
 
     try {
-      await webcontainer.fs.writeFile(relativePath, action.content);
+      let contentToWrite = action.content;
+
+      // Don't sanitize internal history snapshots – they may store JSON under .tsx-like filenames.
+      if (typeof contentToWrite === 'string' && !relativePath.startsWith('.history/')) {
+        const { content, changed, warnings } = sanitizeGeneratedFile(relativePath, contentToWrite);
+        contentToWrite = content;
+
+        if (changed) {
+          logger.debug(`Sanitized generated file ${relativePath}`);
+        }
+
+        if (warnings.length > 0) {
+          logger.debug(`Sanitizer notes for ${relativePath}:\n- ${warnings.join('\n- ')}`);
+        }
+      }
+
+      await webcontainer.fs.writeFile(relativePath, contentToWrite);
       logger.debug(`File written ${relativePath}`);
     } catch (error) {
       logger.error('Failed to write file\n\n', error);
