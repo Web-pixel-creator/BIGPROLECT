@@ -1,4 +1,4 @@
-import { buildIndex, type ComponentIndex, type ComponentMeta } from './component-index.ts';
+import { BOLT_ROOT, buildIndex, type ComponentIndex, type ComponentMeta } from './component-index';
 import effectsRegistry from '~/lib/constants/effects-registry.json';
 
 export type UserIntent = {
@@ -134,7 +134,7 @@ export class SmartComponentSelector {
   private effectsPool: ComponentMeta[];
 
   constructor(index?: ComponentIndex) {
-    this.index = index || buildIndex(process.cwd(), true);
+    this.index = index || buildIndex(BOLT_ROOT, true);
     // Подготавливаем пул эффектов из облегчённого реестра
     this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
       name: e.name || e.id,
@@ -148,7 +148,7 @@ export class SmartComponentSelector {
   }
 
   public refresh() {
-    this.index = buildIndex(process.cwd(), false);
+    this.index = buildIndex(BOLT_ROOT, false);
     this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
       name: e.name || e.id,
       description: e.hint || '',

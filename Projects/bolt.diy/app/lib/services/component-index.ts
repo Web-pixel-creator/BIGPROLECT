@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 export type ComponentMeta = {
   name: string;
@@ -15,6 +16,7 @@ export type ComponentIndex = {
   components: ComponentMeta[];
   total: number;
   generatedAt?: number;
+  mdFiles?: string[];
 };
 
 const MD_FILES = [
@@ -22,18 +24,25 @@ const MD_FILES = [
   'aceternity-components.md',
   'kokonutui-components.md',
   'magicui-components.md',
+  'magicui-bento-grid.md',
+  'magicui-tweet-card.md',
+  'magicui-extra.md',
   'reactbits-components.md',
   '21st-dev-components.md',
   '21st-dev-components-part2.md',
+  'shadcn-io-components.md',
   'tailark-components.md',
 ];
 
-const REGISTRY_JSON = 'Projects/bolt.diy/component-registry.json';
-const CACHE_PATH = 'Projects/bolt.diy/app/lib/services/component-index-cache.json';
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+export const BOLT_ROOT = path.resolve(MODULE_DIR, '../../..');
 
-export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = true): ComponentIndex {
-  const cacheFullPath = path.resolve(process.cwd(), CACHE_PATH);
-  const registryPath = path.resolve(process.cwd(), REGISTRY_JSON);
+const REGISTRY_JSON = 'component-registry.json';
+const CACHE_PATH = 'app/lib/services/component-index-cache.json';
+
+export function buildIndex(mdDir: string = BOLT_ROOT, useCache: boolean = true): ComponentIndex {
+  const cacheFullPath = path.resolve(mdDir, CACHE_PATH);
+  const registryPath = path.resolve(mdDir, REGISTRY_JSON);
 
   const mdPaths = MD_FILES.map((f) => path.resolve(mdDir, f)).filter((p) => fs.existsSync(p));
   const newestMd = mdPaths.reduce((ts, p) => Math.max(ts, fs.statSync(p).mtimeMs), 0);
@@ -46,7 +55,14 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
       if (cacheStat.mtimeMs >= newestSource) {
         const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
         if (!cached.generatedAt) cached.generatedAt = cacheStat.mtimeMs;
-        if (cached?.components?.length) return cached;
+        if (
+          cached?.components?.length &&
+          Array.isArray(cached.mdFiles) &&
+          cached.mdFiles.length === MD_FILES.length &&
+          cached.mdFiles.every((file, index) => file === MD_FILES[index])
+        ) {
+          return cached;
+        }
       }
     } catch {
       // ignore cache errors
@@ -57,11 +73,13 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
   if (fs.existsSync(registryPath)) {
     try {
       const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as ComponentIndex;
-      const deduped = dedupeByName(registry.components || []);
+      const merged = mergeWithMD(registry.components || [], mdDir);
+      const deduped = dedupeByName(merged);
       const indexFromRegistry: ComponentIndex = {
         components: deduped,
         total: deduped.length,
         generatedAt: Date.now(),
+        mdFiles: [...MD_FILES],
       };
       writeCache(cacheFullPath, indexFromRegistry);
       return indexFromRegistry;
@@ -70,7 +88,15 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
     }
   }
 
-  const components: ComponentMeta[] = [];
+  const parsed = mergeWithMD([], mdDir);
+  const deduped = dedupeByName(parsed);
+  const index: ComponentIndex = { components: deduped, total: deduped.length, generatedAt: Date.now(), mdFiles: [...MD_FILES] };
+  writeCache(cacheFullPath, index);
+  return index;
+}
+
+function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] {
+  const components: ComponentMeta[] = [...existing];
 
   for (const file of MD_FILES) {
     const fullPath = path.resolve(mdDir, file);
@@ -80,15 +106,19 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
     let currentCategory = file.replace('.md', '').toLowerCase();
     let currentRawCategory = currentCategory;
     let currentComponent: Partial<ComponentMeta> | null = null;
+    let pendingAuthorTag: string | null = null;
     let codeBuffer: string[] = [];
     let inCode = false;
 
     for (const line of lines) {
       if (line.startsWith('## ')) {
         currentRawCategory = line.replace('## ', '').trim();
-        currentCategory = currentRawCategory.split(' ')[0].toLowerCase();
+        const cleanedCategory = currentRawCategory.replace(/^[^A-Za-z0-9]+/, '').trim();
+        const categoryToken = cleanedCategory.split(/\s+/)[0];
+        currentCategory = (categoryToken || file.replace('.md', '')).toLowerCase();
         continue;
       }
+
       if (line.startsWith('### ')) {
         if (currentComponent?.name) {
           components.push({
@@ -102,23 +132,44 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
               ...new Set([
                 currentCategory,
                 ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : []),
+                ...(pendingAuthorTag ? [pendingAuthorTag.toLowerCase()] : []),
               ]),
             ],
           });
         }
+
+        pendingAuthorTag = null;
         const match = line.match(/### (.+?) \((.+?)\)/);
         if (match) {
-          currentComponent = {
-            description: match[1],
-            name: match[2],
-            category: currentCategory,
-            source: file,
-            code: '',
-          };
+          const left = match[1].trim();
+          const right = match[2].trim();
+
+          // Support two formats:
+          // 1) "Title Case Name (component-id)"  -> description=Title Case Name, name=component-id
+          // 2) "component-id (author)"          -> description=Title Case from id, name=component-id, tag=author
+          const leftLooksSlug = /^[a-z0-9][a-z0-9-]*$/.test(left);
+          const leftLooksTitle = /[A-Z]/.test(left) || left.includes(' ');
+
+          if (leftLooksTitle) {
+            currentComponent = { description: left, name: right, category: currentCategory, source: file, code: '' };
+          } else if (leftLooksSlug) {
+            pendingAuthorTag = right;
+            currentComponent = {
+              description: left.replace(/-/g, ' '),
+              name: left,
+              category: currentCategory,
+              source: file,
+              code: '',
+            };
+          } else {
+            // Fallback to old behavior
+            currentComponent = { description: left, name: right, category: currentCategory, source: file, code: '' };
+          }
         }
         codeBuffer = [];
         continue;
       }
+
       if (line.startsWith('```')) {
         if (inCode && currentComponent) {
           currentComponent.code = (currentComponent.code || '') + codeBuffer.join('\n') + '\n\n';
@@ -127,6 +178,7 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
         inCode = !inCode;
         continue;
       }
+
       if (inCode) codeBuffer.push(line);
     }
 
@@ -142,16 +194,14 @@ export function buildIndex(mdDir: string = process.cwd(), useCache: boolean = tr
           ...new Set([
             currentCategory,
             ...(currentRawCategory ? currentRawCategory.toLowerCase().split(/\s+/) : []),
+            ...(pendingAuthorTag ? [pendingAuthorTag.toLowerCase()] : []),
           ]),
         ],
       });
     }
   }
 
-  const deduped = dedupeByName(components);
-  const index: ComponentIndex = { components: deduped, total: deduped.length, generatedAt: Date.now() };
-  writeCache(cacheFullPath, index);
-  return index;
+  return components;
 }
 
 function dedupeByName(components: ComponentMeta[]): ComponentMeta[] {

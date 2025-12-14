@@ -2,6 +2,7 @@ import ignore from 'ignore';
 import type { ProviderInfo } from '~/types/model';
 import type { Template } from '~/types/template';
 import { STARTER_TEMPLATES } from './constants';
+import { applyWebTemplateBaseline } from './templateBaseline';
 
 const starterTemplateSelectionPrompt = (templates: Template[]) => `
 You are an experienced developer who helps people choose the best starter template for their projects.
@@ -194,6 +195,12 @@ export async function getTemplates(templateName: string, title?: string) {
 
     filesToImport.files = filteredFiles;
     filesToImport.ignoreFile = ignoredFiles;
+  }
+
+  const templateTags = template.tags ?? [];
+  const isViteReactTemplate = templateTags.includes('vite') && templateTags.includes('react');
+  if (isViteReactTemplate) {
+    filesToImport.files = applyWebTemplateBaseline(filesToImport.files);
   }
 
   const assistantMessage = `

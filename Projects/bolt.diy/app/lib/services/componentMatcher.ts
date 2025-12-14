@@ -1,7 +1,7 @@
-import { createScopedLogger } from '../../utils/logger.ts';
+import { createScopedLogger } from '../../utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildIndex, type ComponentMeta } from './component-index.ts';
+import { BOLT_ROOT, buildIndex, type ComponentMeta } from './component-index';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
@@ -560,7 +560,7 @@ const GALLERY_TYPES = ['gallery', 'grid', 'list', 'carousel'];
 let ALIAS_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
 let ALIAS_THEME_KEYWORDS = THEME_KEYWORDS;
 try {
-  const aliasPath = path.resolve(process.cwd(), 'Projects/bolt.diy/app/lib/services/component-aliases.json');
+  const aliasPath = path.resolve(BOLT_ROOT, 'app/lib/services/component-aliases.json');
   if (fs.existsSync(aliasPath)) {
     const raw = fs.readFileSync(aliasPath, 'utf8');
     const parsed = JSON.parse(raw) as {
@@ -599,7 +599,7 @@ export class ComponentMatcher {
     try {
       // In server context, read the file
       if (typeof window === 'undefined') {
-        const fullPath = path.resolve(process.cwd(), mdFilePath);
+        const fullPath = path.resolve(BOLT_ROOT, mdFilePath);
         const content = fs.readFileSync(fullPath, 'utf-8');
         this._parseComponents(content, mdFilePath);
         this._loadedFiles.add(mdFilePath);
@@ -614,9 +614,8 @@ export class ComponentMatcher {
     // Try prebuilt index first
     if (!this._prebuilt) {
       try {
-        const idx = buildIndex(process.cwd(), true);
+        const idx = buildIndex(BOLT_ROOT, true);
         this._prebuilt = idx.components;
-        this._prebuiltGeneratedAt = idx.generatedAt || null;
         this._prebuiltGeneratedAt = idx.generatedAt || null;
         this._componentsIndex.clear();
         for (const meta of idx.components) {
@@ -639,14 +638,19 @@ export class ComponentMatcher {
 
     // Load all component MD files
     // load from registry/index instead of raw MD (already deduped and cached)
-    const index = buildIndex(process.cwd(), true);
-    this.components = index.components.map((c) => ({
-      name: c.name,
-      category: c.category,
-      description: c.description,
-      code: c.code,
-      source: c.source,
-    }));
+    const index = buildIndex(BOLT_ROOT, true);
+    this._componentsIndex.clear();
+    for (const meta of index.components) {
+      const cat = meta.category || 'other';
+      if (!this._componentsIndex.has(cat)) this._componentsIndex.set(cat, []);
+      this._componentsIndex.get(cat)!.push({
+        name: meta.name,
+        category: cat,
+        description: meta.description,
+        code: meta.code,
+        relevance: 0,
+      });
+    }
 
     const stats = this.getStats();
     logger.info(`Total loaded: ${stats.totalComponents} components in ${stats.categories} categories (registry)`);
@@ -901,4 +905,3 @@ ${code}
 }
 
 export const componentMatcher = ComponentMatcher.getInstance();
-
