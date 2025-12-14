@@ -321,7 +321,43 @@ export class ActionRunner {
 
     try {
       const webcontainer = await this.#webcontainer;
-      await preflightViteReactBaseline(webcontainer);
+      const result = await preflightViteReactBaseline(webcontainer);
+
+      // If we're about to start dev server, ensure deps are installed when preflight mutated package.json
+      // or when the project doesn't have node_modules yet. This prevents "black screen" loops where Vite
+      // fails to resolve imports after registry/CLI commands wrote files directly.
+      if (wantsDev && result.isViteReact) {
+        const hasNodeModules = await (async () => {
+          try {
+            await webcontainer.fs.readdir('node_modules');
+            return true;
+          } catch {
+            return false;
+          }
+        })();
+
+        const needsInstall =
+          !hasNodeModules || result.packageJsonChanged || (result.addedDependencies && result.addedDependencies.length > 0);
+
+        if (needsInstall) {
+          const installProcess = await webcontainer.spawn('npm', ['install']);
+          let output = '';
+          installProcess.output.pipeTo(
+            new WritableStream({
+              write(data) {
+                output += data;
+              },
+            }),
+          );
+
+          const exitCode = await installProcess.exit;
+          if (exitCode !== 0) {
+            logger.debug('Preflight npm install failed:', output);
+          } else {
+            logger.debug('Preflight npm install completed');
+          }
+        }
+      }
     } catch (error) {
       logger.debug('Preflight failed:', error);
     }
