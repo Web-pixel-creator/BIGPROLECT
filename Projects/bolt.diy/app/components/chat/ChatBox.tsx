@@ -100,6 +100,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
     setShowPromptPanel(false);
   };
 
+  type RegistryPreviewItem = { name: string; registry?: string; description?: string };
+  type RegistryPreviewResponse = { count?: number; components?: RegistryPreviewItem[] };
+
   const refreshRegistries = async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent;
 
@@ -113,7 +116,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         throw new Error('Failed to refresh registries');
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as RegistryPreviewResponse;
 
       if (data?.count !== undefined) {
         setRegistryCount(data.count);
@@ -558,7 +561,7 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               <button
                 type="button"
                 className="px-2 py-1 rounded-full border border-bolt-elements-borderColor hover:border-bolt-elements-focus hover:text-bolt-elements-textPrimary transition-all"
-                onClick={refreshRegistries}
+                onClick={() => void refreshRegistries()}
               >
                 Обновить
               </button>

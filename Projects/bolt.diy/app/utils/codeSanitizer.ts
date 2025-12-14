@@ -13,6 +13,7 @@ const DEFAULT_WEB_DEPS: Record<string, string> = {
   'clsx': '^2.1.1',
   'framer-motion': '^11.12.0',
   'lucide-react': '^0.485.0',
+  'motion': '^12.23.26',
   'tailwind-merge': '^2.6.0',
 };
 
@@ -44,11 +45,20 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
 }
 
 function sanitizeImportPaths(code: string, relativePath: string, warnings: string[]) {
+  let next = code;
+
+  // Some registries/snippets use "@/registry/ui/*" paths. Our baseline uses "@/components/ui/*".
+  const beforeRegistry = next;
+  next = next.replace(/(['"])@\/registry\/ui\//g, '$1@/components/ui/');
+  if (next !== beforeRegistry) {
+    warnings.push('Rewrote @/registry/ui import path to @/components/ui');
+  }
+
   // Fix common alias usage in generated Vite projects:
   // - "@/..." assumes Next/shadcn-style alias; convert to relative path against src/.
   const fileDir = nodePath.dirname(relativePath);
 
-  return code.replace(/from\s+(['"])@\/([^'"]+)\1/g, (_match, quote: string, aliasPath: string) => {
+  return next.replace(/from\s+(['"])@\/([^'"]+)\1/g, (_match, quote: string, aliasPath: string) => {
     const targetPath = nodePath.join('src', aliasPath);
     let relativeImport = nodePath.relative(fileDir, targetPath).replace(/\\/g, '/');
 

@@ -196,6 +196,7 @@ export const WEB_BASELINE_DEPS: Record<string, string> = {
   'tailwind-merge': '^2.6.0',
   'lucide-react': '^0.485.0',
   'framer-motion': '^11.12.0',
+  motion: '^12.23.26',
 };
 
 export const WEB_BASELINE_DEV_DEPS: Record<string, string> = {

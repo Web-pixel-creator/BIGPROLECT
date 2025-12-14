@@ -1,4 +1,6 @@
-import type { PlanningData } from '~/components/chat/PlanningCard';
+import type { PlanningBlock } from '~/types/planning';
+
+type PlanningData = PlanningBlock;
 
 /**
  * Parses planning blocks from AI responses
@@ -32,6 +34,17 @@ export function parsePlanningBlock(content: string): { planning: PlanningData | 
   return { planning: null, cleanContent: content };
 }
 
+function makePlanId(seed: string): string {
+  const input = seed.trim().slice(0, 2048);
+  let hash = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) | 0;
+  }
+
+  return `plan-${Math.abs(hash)}`;
+}
+
 function parseXMLPlanning(xml: string): PlanningData {
   const getTag = (tag: string): string | undefined => {
     const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
@@ -47,7 +60,7 @@ function parseXMLPlanning(xml: string): PlanningData {
       .filter(Boolean);
   };
 
-  const title = getTag('title') || 'Project Plan';
+  const goal = getTag('title') || 'Project Plan';
   const inspiration = getListTag('inspiration');
   const features = getListTag('features');
   const techStack = getListTag('techStack');
@@ -68,7 +81,8 @@ function parseXMLPlanning(xml: string): PlanningData {
   }
 
   return {
-    title,
+    id: makePlanId(xml),
+    goal,
     inspiration: inspiration.length > 0 ? inspiration : undefined,
     designConcept: Object.keys(designConcept).length > 0 ? designConcept : undefined,
     features: features.length > 0 ? features : undefined,
@@ -212,7 +226,8 @@ function parseFreeFormPlanning(text: string): PlanningData {
   }
 
   return {
-    title: title.length > 3 ? title : 'Project Plan',
+    id: makePlanId(text),
+    goal: title.length > 3 ? title : 'Project Plan',
     designConcept: Object.keys(designConcept).length > 0 ? designConcept : undefined,
     features: features.length > 0 ? features.slice(0, 5) : undefined,
     status: 'planning',
@@ -221,7 +236,7 @@ function parseFreeFormPlanning(text: string): PlanningData {
 
 function hasEnoughPlanningData(planning: PlanningData): boolean {
   let score = 0;
-  if (planning.title && planning.title !== 'Project Plan') score++;
+  if (planning.goal && planning.goal !== 'Project Plan') score++;
   if (planning.designConcept?.effects) score++;
   if (planning.designConcept?.animations) score++;
   if (planning.designConcept?.colors) score++;

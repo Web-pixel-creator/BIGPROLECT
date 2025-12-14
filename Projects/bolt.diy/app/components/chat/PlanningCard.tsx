@@ -7,7 +7,7 @@ import { Progress } from '~/components/ui/Progress';
 import { ScrollArea } from '~/components/ui/ScrollArea';
 import { Separator } from '~/components/ui/Separator';
 import { Tooltip } from '~/components/ui/Tooltip';
-import type { PlanningBlock } from '~/types/planning';
+import type { PlanningBlock, PlanningStep, PlanningStepStatus } from '~/types/planning';
 
 interface PlanningCardProps {
   data: PlanningBlock;
@@ -16,7 +16,7 @@ interface PlanningCardProps {
   onContinue?: () => void;
 }
 
-const statusColors = {
+const statusColors: Record<PlanningStepStatus, string> = {
   todo: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   in_progress: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
   complete: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -24,7 +24,7 @@ const statusColors = {
   skipped: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
 };
 
-const statusIcons = {
+const statusIcons: Record<PlanningStepStatus, string> = {
   todo: 'i-ph:circle',
   in_progress: 'i-ph:spinner-gap animate-spin',
   complete: 'i-ph:check-circle-fill',
@@ -41,10 +41,20 @@ export const PlanningCard = memo(({ data, className, onEdit }: PlanningCardProps
     return null;
   }
 
-  const steps = data.steps || [];
-  const progress = Math.round(
-    (steps.filter((s: any) => s.status === 'complete').length / Math.max(1, steps.length)) * 100,
-  );
+  const steps: PlanningStep[] = (data.steps ?? []).map((step, index) => {
+    if (typeof step === 'string') {
+      return {
+        id: `step-${index + 1}`,
+        title: step,
+        description: '',
+        status: 'todo',
+      };
+    }
+
+    return step;
+  });
+
+  const progress = Math.round((steps.filter((s) => s.status === 'complete').length / Math.max(1, steps.length)) * 100);
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={className}>

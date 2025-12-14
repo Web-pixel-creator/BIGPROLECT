@@ -10,6 +10,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import { buildEffectRecipesPromptSection } from '~/lib/services/effectRecipes';
 // Component injection disabled - these imports are no longer needed
 // import { registryService } from '~/lib/services/registryService';
 // import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
@@ -166,6 +167,17 @@ export async function streamText(props: {
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
     }) ?? getSystemPrompt();
+
+  if (chatMode === 'build') {
+    const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
+    const userPrompt = lastUserMessage?.content ?? '';
+    const effectRecipes = buildEffectRecipesPromptSection(userPrompt);
+
+    if (effectRecipes) {
+      systemPrompt = `${systemPrompt}\n\n${effectRecipes}\n`;
+      logger.info('Added effect recipes to prompt context');
+    }
+  }
 
   // Component selection - DISABLED
   // Component injection was causing import errors because LLM copies component code
@@ -335,4 +347,3 @@ export async function streamText(props: {
 
 // Component selection functions removed - component injection is disabled
 // LLM now generates pure Tailwind CSS code based on system prompt rules
-

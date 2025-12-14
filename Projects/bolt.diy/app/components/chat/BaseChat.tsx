@@ -483,14 +483,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     <GitCloneButton importChat={importChat} />
                   </div>
                   <div className="flex flex-col gap-5">
-                    {ExamplePrompts((event, messageInput) => {
-                      if (isStreaming) {
-                        handleStop?.();
-                        return;
-                      }
+                    <ExamplePrompts
+                      onSelect={(prompt) => {
+                        if (isStreaming) {
+                          handleStop?.();
+                          return;
+                        }
 
-                      handleSendMessage?.(event, messageInput);
-                    })}
+                        handleSendMessage?.({} as unknown as React.UIEvent, prompt);
+                      }}
+                    />
                     <StarterTemplates />
                   </div>
                 </div>

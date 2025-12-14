@@ -14,8 +14,9 @@ interface Logger {
   setLevel: (level: DebugLevel) => void;
 }
 
-const metaEnv = (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
-const nodeEnv = typeof process !== 'undefined' ? process.env : {};
+const metaEnv: Record<string, any> = (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
+const nodeEnv: Record<string, string | undefined> =
+  typeof process !== 'undefined' ? (process.env as Record<string, string | undefined>) : {};
 let currentLevel: DebugLevel =
   (metaEnv.VITE_LOG_LEVEL as DebugLevel) ||
   (nodeEnv.VITE_LOG_LEVEL as DebugLevel) ||

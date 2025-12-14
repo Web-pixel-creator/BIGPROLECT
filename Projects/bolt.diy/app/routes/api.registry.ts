@@ -13,15 +13,23 @@ export const loader: LoaderFunction = async ({ request }) => {
    */
 
   if (preview) {
+    const registry = effectsRegistry as unknown as {
+      effects?: Array<{ name: string; source?: string; hint?: string }>;
+      count?: number;
+    };
+
+    const effects = registry.effects ?? [];
+    const count = registry.count ?? effects.length;
+
     // Return a lightweight list for the UI
-    const components = (effectsRegistry as any[]).map((effect) => ({
+    const components = effects.map((effect) => ({
       name: effect.name,
       registry: effect.source,
       description: effect.hint,
     }));
 
     return json({
-      count: effectsRegistry.length,
+      count,
       components,
     });
   }
