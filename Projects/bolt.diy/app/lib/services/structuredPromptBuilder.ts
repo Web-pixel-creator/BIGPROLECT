@@ -2,47 +2,63 @@ import type { SelectionResult } from './smartComponentSelector.ts';
 
 export class StructuredPromptBuilder {
   build(selection: SelectionResult, userRequest: string): string {
-    const comps = selection.components;
-    const effects = selection.effects;
+    const deps = selection.dependencies
+      .filter((dep) => dep && dep !== 'shadcn-ui-base')
+      .sort((a, b) => a.localeCompare(b));
 
-    // Simple prompt without complex code examples that cause syntax issues
+    const componentBlocks = selection.components
+      .map(
+        (c, i) => `
+### Component ${i + 1}: ${c.name} (${c.source})
+Category: ${c.category}
+Description: ${c.description || '—'}
+
+\`\`\`tsx
+${c.code}
+\`\`\`
+`,
+      )
+      .join('\n');
+
+    const effectBlocks = selection.effects
+      .map(
+        (c, i) => `
+### Effect ${i + 1}: ${c.name} (${c.source})
+Category: ${c.category}
+Description: ${c.description || '—'}
+
+\`\`\`tsx
+${c.code}
+\`\`\`
+`,
+      )
+      .join('\n');
+
     return `
-You are a senior front-end engineer. Build exactly what the user asks.
-
-## USER REQUEST
+## SELECTED UI BUILDING BLOCKS (USE THESE FIRST)
+The user asked:
 ${userRequest}
 
-## COMPONENTS TO USE
-${comps
-  .map(
-    (c, i) => `
-${i + 1}. ${c.name} [${c.source}]
-Description: ${c.description}
-Category: ${c.category}
-`,
-  )
-  .join('\n')}
+You are in a Vite + React + TypeScript project (NOT Next.js).
+Path alias \`@\` points to \`src\` (already configured).
+\`src/lib/utils.ts\` provides \`cn()\` (already available).
+\`src/components/ui\` contains baseline primitives (button, input, card, badge, separator).
 
-## EFFECTS (OPTIONAL)
-${effects
-  .map(
-    (c, i) => `
-Effect ${i + 1}: ${c.name} [${c.source}]
-Description: ${c.description}
-`,
-  )
-  .join('\n')}
+### Dependencies (add to package.json if missing)
+${deps.map((d) => `- ${d}`).join('\n')}
 
-## RULES
-- Use plain Tailwind CSS for styling
-- Do NOT use framer-motion (use CSS animations instead)
-- Do NOT import from @/components/ui/* (create inline with Tailwind)
-- Do NOT use cn() function (use template literals for conditional classes)
-- Icons: import from 'lucide-react' (named imports). NEVER import from 'lucide-react/dist'.
-- Do NOT use next/image (use plain <img src=\"...\" alt=\"...\" loading=\"lazy\" />)
-- Do NOT use react-router-dom (no <Link>), use simple <a href=\"#\"> or <button> instead
-- Do NOT default-import \"Lucide\"; import specific icons via named imports from 'lucide-react'
-- Keep code simple and self-contained
+### Components
+${componentBlocks || '_No matching components found._'}
+
+### Effects
+${effectBlocks || '_No matching effects found._'}
+
+### Rules (critical)
+- Prefer the provided code blocks above; do not invent random placeholders.
+- Icons: import from \`lucide-react\` via named imports. NEVER import from \`lucide-react/dist\`.
+- Do NOT use \`next/*\` imports (use plain React/Vite APIs).
+- Do NOT use \`react-router-dom\` unless you also add it to \`package.json\` and wire routes intentionally.
+- If you need extra UI primitives under \`src/components/ui\`, create them there (do not import from non-existent paths).
 `;
   }
 }

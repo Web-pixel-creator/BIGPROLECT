@@ -29,11 +29,12 @@ import type { ProgressAnnotation } from '~/types/context';
 import { SupabaseChatAlert } from '~/components/chat/SupabaseAlert';
 import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
 import { useStore } from '@nanostores/react';
-import { StickToBottom, useStickToBottomContext } from '~/lib/hooks';
+import useViewport, { StickToBottom, useStickToBottomContext } from '~/lib/hooks';
 import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
+import { workbenchStore } from '~/lib/stores/workbench';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -145,6 +146,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
+    const showWorkbench = useStore(workbenchStore.showWorkbench);
+    const isSmallViewport = useViewport(1024);
+    const constrainChatWidth = showWorkbench && !isSmallViewport;
 
     useEffect(() => {
       if (expoUrl) {
@@ -348,7 +352,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       >
         <ClientOnly>{() => <Menu />}</ClientOnly>
         <div className="flex flex-col lg:flex-row overflow-y-auto overflow-x-hidden w-full h-full">
-          <div className={classNames(styles.Chat, 'flex flex-col flex-grow min-w-0 lg:min-w-[var(--chat-min-width)] h-full')}>
+          <div
+            className={classNames(styles.Chat, 'flex flex-col flex-grow min-w-0 lg:min-w-[var(--chat-min-width)] h-full', {
+              'lg:w-[var(--workbench-left)] lg:max-w-[var(--workbench-left)]': constrainChatWidth,
+            })}
+          >
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
                 <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">

@@ -11,11 +11,8 @@ import { createFilesContext, extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { buildEffectRecipesPromptSection } from '~/lib/services/effectRecipes';
-// Component injection disabled - these imports are no longer needed
-// import { registryService } from '~/lib/services/registryService';
-// import { EFFECT_PRESETS } from '~/lib/constants/promptPresets';
-// import { SmartComponentSelector } from '~/lib/services/smartComponentSelector';
-// import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
+import { SmartComponentSelector, type UserIntent } from '~/lib/services/smartComponentSelector';
+import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
 
 export type Messages = Message[];
 
@@ -31,6 +28,9 @@ export interface StreamingOptions extends Omit<Parameters<typeof _streamText>[0]
 }
 
 const logger = createScopedLogger('stream-text');
+
+const componentSelector = new SmartComponentSelector();
+const promptBuilder = new StructuredPromptBuilder();
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
@@ -62,6 +62,85 @@ function sanitizeText(text: string): string {
   sanitized = sanitized.replace(/<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g, '');
 
   return sanitized.trim();
+}
+
+function extractIntentFromPrompt(userPrompt: string): UserIntent {
+  const raw = userPrompt || '';
+  const lower = raw.toLowerCase();
+
+  const themeFromTag =
+    raw.match(/\[design:\s*([^\]|]+?)(?:\s+theme)?\s*\|/i)?.[1]?.trim() ||
+    raw.match(/\btheme:\s*([a-z0-9_-]+)/i)?.[1]?.trim() ||
+    undefined;
+
+  const themeFromKeywords = (() => {
+    const pairs: Array<[string, string[]]> = [
+      ['ecommerce', ['e-commerce', 'ecommerce', 'магазин', 'интернет-магазин', 'каталог', 'товары', 'корзин']],
+      ['saas', ['saas', 'b2b', 'startup', 'стартап']],
+      ['construction', ['construction', 'строитель', 'дом', 'ремонт']],
+      ['auto', ['auto', 'car', 'авто', 'машин', 'автосалон']],
+      ['food', ['food', 'delivery', 'еда', 'доставка', 'ресторан', 'кафе']],
+      ['finance', ['finance', 'bank', 'финанс', 'банк', 'инвест']],
+      ['education', ['education', 'course', 'курс', 'обуч', 'школ']],
+      ['web3', ['web3', 'crypto', 'wallet', 'dao', 'nft', 'крипт', 'кошел']],
+      ['portfolio', ['portfolio', 'agency', 'портфолио', 'агентств', 'кейсы']],
+      ['photo', ['photo', 'photography', 'фото', 'фотограф']],
+      ['hospitality', ['hotel', 'booking', 'отель', 'бронь', 'resort']],
+      ['industrial', ['industrial', 'energy', 'oil', 'gas', 'энерг', 'нефт', 'газ']],
+    ];
+
+    for (const [theme, needles] of pairs) {
+      if (needles.some((n) => lower.includes(n))) return theme;
+    }
+
+    return undefined;
+  })();
+
+  const theme = (themeFromTag || themeFromKeywords || undefined) as string | undefined;
+
+  // Effects: pick short “effect-like” lines and also common phrases.
+  const effects = Array.from(
+    new Set(
+      raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line) => line.length <= 48)
+        .filter((line) => {
+          const l = line.toLowerCase();
+          if (/^[a-z0-9][a-z0-9-]+$/.test(l)) return true; // slug id
+          // common human names from presets (EN+RU)
+          return (
+            l.includes('cursor') ||
+            l.includes('spotlight') ||
+            l.includes('aurora') ||
+            l.includes('plasma') ||
+            l.includes('parallax') ||
+            l.includes('tilt') ||
+            l.includes('beam') ||
+            l.includes('ripple') ||
+            l.includes('fade') ||
+            l.includes('stagger') ||
+            l.includes('glow') ||
+            l.includes('noise') ||
+            l.includes('grain') ||
+            l.includes('градиент') ||
+            l.includes('параллакс') ||
+            l.includes('курсор') ||
+            l.includes('свечение')
+          );
+        }),
+    ),
+  ).slice(0, 8);
+
+  const allow3d = /\b(3d|webgl|three\.js|cobe)\b/i.test(raw);
+
+  return {
+    type: theme,
+    theme,
+    effects: effects.length ? effects : undefined,
+    allow3d,
+  };
 }
 
 export async function streamText(props: {
@@ -179,11 +258,39 @@ export async function streamText(props: {
     }
   }
 
-  // Component selection - DISABLED
-  // Component injection was causing import errors because LLM copies component code
-  // that uses framer-motion/@/lib/utils without adding dependencies to package.json
-  // Now LLM generates pure Tailwind CSS code based on system prompt rules
-  logger.info('Component injection disabled - using pure Tailwind CSS generation');
+  // Component selection + injection (MD component library + effects registry)
+  if (chatMode === 'build') {
+    try {
+      const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
+      const userPrompt = lastUserMessage?.content ?? '';
+      const intent = extractIntentFromPrompt(userPrompt);
+      const selection = componentSelector.select(intent);
+
+      // Avoid overwhelming context (rough guard by chars)
+      let injection = promptBuilder.build(selection, userPrompt);
+      const maxContextChars = 80_000;
+      if (injection.length > maxContextChars) {
+        // Try a smaller injection (top few items) instead of skipping entirely.
+        const reduced = {
+          ...selection,
+          components: selection.components.slice(0, 3),
+          effects: selection.effects.slice(0, 2),
+        };
+        injection = promptBuilder.build(reduced, userPrompt);
+      }
+
+      if (injection.length > maxContextChars) {
+        logger.warn(`Component injection skipped: too large (${injection.length} chars > ${maxContextChars})`);
+      } else {
+        systemPrompt = `${systemPrompt}\n\n${injection}\n`;
+        logger.info(
+          `Added component injection: ${selection.components.length} comps, ${selection.effects.length} effects (${selection.totalCodeLines} lines)`,
+        );
+      }
+    } catch (error) {
+      logger.warn('Failed to build component injection context:', error);
+    }
+  }
 
   // Registry components (shadcn-compatible registries)
   // TEMPORARILY DISABLED: Same issue as above - components require dependencies

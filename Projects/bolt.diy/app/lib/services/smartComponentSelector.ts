@@ -148,7 +148,7 @@ export class SmartComponentSelector {
   }
 
   public refresh() {
-    this.index = buildIndex(BOLT_ROOT, false);
+    this.index = buildIndex(BOLT_ROOT, true);
     this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
       name: e.name || e.id,
       description: e.hint || '',
