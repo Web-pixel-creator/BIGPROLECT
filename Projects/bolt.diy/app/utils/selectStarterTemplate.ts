@@ -66,6 +66,70 @@ MOST IMPORTANT: YOU DONT HAVE TIME TO THINK JUST START RESPONDING BASED ON HUNCH
 
 const templates: Template[] = STARTER_TEMPLATES.filter((t) => !t.name.includes('shadcn'));
 
+function titleFromPrompt(message: string): string {
+  const raw = (message || '').trim();
+  if (!raw) return '';
+
+  const firstLine = raw.split(/\r?\n/)[0] ?? raw;
+  const cleaned = firstLine.replace(/^\[Model:.*?\]\s*/i, '').replace(/^\[Provider:.*?\]\s*/i, '').trim();
+
+  const maxLen = 80;
+  if (cleaned.length <= maxLen) return cleaned;
+  return cleaned.slice(0, maxLen - 1).trimEnd() + '…';
+}
+
+function heuristicSelectStarterTemplate(message: string): { template: string; title: string } | null {
+  const raw = (message || '').trim();
+  if (!raw) return null;
+
+  const lower = raw.toLowerCase();
+
+  // Simple scripts
+  if (
+    /\b(script|one-?liner|bash|powershell|shell|cmd|python|node\.js|regex|generate numbers)\b/.test(lower) &&
+    !/\b(react|vite|website|landing|ui)\b/.test(lower)
+  ) {
+    return { template: 'blank', title: titleFromPrompt(raw) };
+  }
+
+  // Explicit framework hints
+  if (/\b(expo|react native|android|iphone|ios)\b/.test(lower)) {
+    return { template: 'Expo App', title: titleFromPrompt(raw) };
+  }
+
+  if (/\bastro\b/.test(lower)) {
+    return { template: 'Basic Astro', title: titleFromPrompt(raw) };
+  }
+
+  if (/\b(svelte|sveltekit)\b/.test(lower)) {
+    return { template: 'Sveltekit', title: titleFromPrompt(raw) };
+  }
+
+  if (/\bvue\b/.test(lower)) {
+    return { template: 'Vue', title: titleFromPrompt(raw) };
+  }
+
+  if (/\bangular\b/.test(lower)) {
+    return { template: 'Angular', title: titleFromPrompt(raw) };
+  }
+
+  if (/\bqwik\b/.test(lower)) {
+    return { template: 'Qwik Typescript', title: titleFromPrompt(raw) };
+  }
+
+  // Default for UI/website/design requests: Vite React baseline is the most reliable.
+  if (
+    /\b(website|landing|web app|ui|design|frontend|react|vite|tailwind|shadcn|e-?commerce)\b/.test(lower) ||
+    /\b(лендинг|сайт|дизайн|интерфейс|магазин|интернет-магазин|витрина|каталог)\b/.test(lower) ||
+    /\[style:\s*[^\]]+\]/i.test(raw) ||
+    /\[design:\s*[^\]]+\]/i.test(raw)
+  ) {
+    return { template: 'Vite React', title: titleFromPrompt(raw) };
+  }
+
+  return null;
+}
+
 const parseSelectedTemplate = (llmOutput: string): { template: string; title: string } | null => {
   try {
     // Extract content between <templateName> tags
@@ -85,6 +149,12 @@ const parseSelectedTemplate = (llmOutput: string): { template: string; title: st
 
 export const selectStarterTemplate = async (options: { message: string; model: string; provider: ProviderInfo }) => {
   const { message, model, provider } = options;
+
+  const heuristic = heuristicSelectStarterTemplate(message);
+  if (heuristic) {
+    return heuristic;
+  }
+
   const requestBody = {
     message,
     model,

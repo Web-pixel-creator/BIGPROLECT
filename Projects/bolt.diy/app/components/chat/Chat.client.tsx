@@ -418,12 +418,19 @@ export const ChatImpl = memo(
       let finalMessageContent = messageContent;
       let displayMessageContent = messageContent; // What user sees in chat
 
-      // Enhance prompt with design system if it's a design/website request (для всех сообщений, не только первого)
+      // Enhance prompt with design system if it's a design/website request.
       if (shouldEnhancePrompt(messageContent)) {
         const enhanced = enhancePromptWithDesignSystem(messageContent);
         finalMessageContent = enhanced.enhancedPrompt;
         // Show enhanced prompt to user so they can see what was sent
-        displayMessageContent = `${messageContent}\n\n✨ Enhanced with ${enhanced.detectedTheme} theme:\n• Colors: ${enhanced.colors.dark}, ${enhanced.colors.light}, ${enhanced.colors.accent}\n• ${enhanced.images.hero.length} hero images, ${enhanced.images.gallery.length} gallery images`;
+        displayMessageContent = [
+          messageContent,
+          '',
+          '[Улучшенный промпт]',
+          `- Тема: ${enhanced.detectedTheme}`,
+          `- Цвета: ${enhanced.colors.dark}, ${enhanced.colors.light}, ${enhanced.colors.accent}`,
+          `- Изображения: hero=${enhanced.images.hero.length}, gallery=${enhanced.images.gallery.length}`,
+        ].join('\n');
         console.log('Prompt enhanced for theme:', enhanced.detectedTheme);
       }
 
