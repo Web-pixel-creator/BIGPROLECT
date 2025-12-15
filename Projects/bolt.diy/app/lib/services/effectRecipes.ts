@@ -25,6 +25,7 @@ export type EffectRecipesOptions = {
   maxEffects?: number;
   includeCode?: boolean;
   maxCodeChars?: number;
+  maxTotalCodeChars?: number;
 };
 
 const EFFECTS: EffectListItem[] = (effectsList as EffectListItem[]) ?? [];
@@ -152,14 +153,17 @@ export function extractEffectIdsFromText(text: string, options?: { maxEffects?: 
 }
 
 export function buildEffectRecipesPromptSection(userPrompt: string, opts?: EffectRecipesOptions): string | null {
-  const maxEffects = opts?.maxEffects ?? 6;
+  const maxEffects = opts?.maxEffects ?? 4;
   const includeCode = opts?.includeCode ?? true;
-  const maxCodeChars = opts?.maxCodeChars ?? 40_000;
+  const maxCodeChars = opts?.maxCodeChars ?? 12_000;
+  const maxTotalCodeChars = opts?.maxTotalCodeChars ?? 24_000;
 
   const effectIds = extractEffectIdsFromText(userPrompt, { maxEffects });
   if (!effectIds.length) return null;
 
   const omitted = extractEffectIdsFromText(userPrompt, { maxEffects: 999 }).slice(effectIds.length);
+
+  let remainingCodeChars = maxTotalCodeChars;
 
   const header = [
     `### EFFECT APPLICATION RECIPES (MANDATORY)`,
@@ -183,14 +187,19 @@ export function buildEffectRecipesPromptSection(userPrompt: string, opts?: Effec
 
     if (includeCode && registry?.code) {
       const normalized = normalizeRegistryImports(registry.code);
-      const codeToInclude = normalized.length > maxCodeChars ? normalized.slice(0, maxCodeChars) : normalized;
-      lines.push(`\nCreate file: \`src/components/effects/${id}.tsx\``);
-      lines.push('```tsx');
-      lines.push(codeToInclude.trim());
-      lines.push('```');
+      const fitsSingle = normalized.length <= maxCodeChars;
+      const fitsBudget = normalized.length <= remainingCodeChars;
 
-      if (normalized.length > maxCodeChars) {
-        lines.push(`(Note: code snippet was truncated to ${maxCodeChars} chars; keep implementation concise if you need to rewrite it.)`);
+      if (fitsSingle && fitsBudget) {
+        lines.push(`\nCreate file: \`src/components/effects/${id}.tsx\``);
+        lines.push('```tsx');
+        lines.push(normalized.trim());
+        lines.push('```');
+        remainingCodeChars -= normalized.length;
+      } else {
+        lines.push(
+          `\n(Code omitted due to context budget. Implement a minimal compatible version of \`${id}\` and keep it small.)`,
+        );
       }
     } else {
       lines.push(`\n(No code snippet found for \`${id}\`. Implement a minimal compatible version or skip the effect ONLY if impossible.)`);
@@ -201,6 +210,10 @@ export function buildEffectRecipesPromptSection(userPrompt: string, opts?: Effec
 
   if (omitted.length) {
     sections.push(`\n(Additional selected effects omitted from recipes due to limit: ${omitted.join(', ')})`);
+  }
+
+  if (includeCode && maxTotalCodeChars > 0) {
+    sections.push(`\n(Note: Effect code snippets are capped to keep prompts small.)`);
   }
 
   return sections.join('\n');

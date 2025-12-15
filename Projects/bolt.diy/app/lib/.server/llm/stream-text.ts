@@ -7,7 +7,7 @@ import { PromptLibrary } from '~/lib/common/prompt-library';
 import { allowedHTMLElements } from '~/utils/markdown';
 import { LLMManager } from '~/lib/modules/llm/manager';
 import { createScopedLogger } from '~/utils/logger';
-import { createFilesContext, extractPropertiesFromMessage } from './utils';
+import { extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { buildEffectRecipesPromptSection } from '~/lib/services/effectRecipes';
@@ -62,6 +62,89 @@ function sanitizeText(text: string): string {
   sanitized = sanitized.replace(/<boltAction type="file" filePath="package-lock\.json">[\s\S]*?<\/boltAction>/g, '');
 
   return sanitized.trim();
+}
+
+function estimateMessageChars(message: Omit<Message, 'id'>): number {
+  const content = (message as any).content;
+  const contentText =
+    typeof content === 'string'
+      ? content
+      : Array.isArray(content)
+        ? (content.filter((item: any) => item?.type === 'text').map((item: any) => item.text).join('') as string)
+        : '';
+
+  const partsText = Array.isArray((message as any).parts)
+    ? ((message as any).parts as any[])
+        .filter((part) => part && part.type === 'text' && typeof part.text === 'string')
+        .map((part) => part.text)
+        .join('')
+    : '';
+
+  return contentText.length + partsText.length;
+}
+
+function pruneMessagesForBuild(messages: Omit<Message, 'id'>[], opts: { sliceId?: number; maxChars: number }) {
+  const sliceId = opts.sliceId;
+  const maxChars = opts.maxChars;
+
+  let result = messages;
+
+  if (typeof sliceId === 'number' && sliceId > 0 && sliceId < messages.length) {
+    result = messages.slice(sliceId);
+  }
+
+  if (result.length <= 1) return result;
+
+  let total = 0;
+  const kept: Omit<Message, 'id'>[] = [];
+
+  for (let i = result.length - 1; i >= 0; i--) {
+    const message = result[i];
+    const messageChars = estimateMessageChars(message);
+
+    if (kept.length > 0 && total + messageChars > maxChars) break;
+
+    kept.push(message);
+    total += messageChars;
+  }
+
+  return kept.reverse();
+}
+
+function createFilesContextCapped(files: FileMap, opts: { maxTotalChars: number; maxFileChars: number }) {
+  const maxTotalChars = opts.maxTotalChars;
+  const maxFileChars = opts.maxFileChars;
+
+  const filePaths = Object.keys(files);
+  const fileContexts: string[] = [];
+  let remaining = maxTotalChars;
+  let truncated = false;
+
+  for (const filePath of filePaths) {
+    const dirent = files[filePath];
+
+    if (!dirent || dirent.type !== 'file' || dirent.isBinary) continue;
+
+    const maxForThisFile = Math.min(maxFileChars, remaining);
+    if (maxForThisFile <= 0) {
+      truncated = true;
+      break;
+    }
+
+    const content = dirent.content.length > maxForThisFile ? dirent.content.slice(0, maxForThisFile) : dirent.content;
+    truncated ||= dirent.content.length > maxForThisFile;
+    remaining -= content.length;
+
+    fileContexts.push(`<boltAction type="file" filePath="${filePath}">${content}</boltAction>`);
+
+    if (remaining <= 0) break;
+  }
+
+  const note = truncated
+    ? '\n<!-- NOTE: Context was truncated to fit prompt budget. Ask for specific files/sections if needed. -->\n'
+    : '\n';
+
+  return `<boltArtifact id="code-content" title="Code Content" >\n${fileContexts.join('\n')}${note}</boltArtifact>`;
 }
 
 function extractIntentFromPrompt(userPrompt: string): UserIntent {
@@ -169,6 +252,7 @@ export async function streamText(props: {
     contextOptimization,
     contextFiles,
     summary,
+    messageSliceId,
     chatMode,
     designScheme,
   } = props;
@@ -195,6 +279,10 @@ export async function streamText(props: {
 
     return newMessage;
   });
+
+  if (chatMode === 'build') {
+    processedMessages = pruneMessagesForBuild(processedMessages, { sliceId: messageSliceId, maxChars: 24_000 });
+  }
 
   const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
   const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
@@ -250,7 +338,12 @@ export async function streamText(props: {
   if (chatMode === 'build') {
     const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
     const userPrompt = lastUserMessage?.content ?? '';
-    const effectRecipes = buildEffectRecipesPromptSection(userPrompt);
+    const effectRecipes = buildEffectRecipesPromptSection(userPrompt, {
+      maxEffects: 4,
+      includeCode: true,
+      maxCodeChars: 12_000,
+      maxTotalCodeChars: 24_000,
+    });
 
     if (effectRecipes) {
       systemPrompt = `${systemPrompt}\n\n${effectRecipes}\n`;
@@ -259,6 +352,10 @@ export async function streamText(props: {
   }
 
   // Component selection + injection (MD component library + effects registry)
+  // DISABLED: Component injection causes token limit issues
+  // The system prompt + promptEnhancer already provides enough guidance
+  // Components are better handled by the baseline template + sanitizer
+  /*
   if (chatMode === 'build') {
     try {
       const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
@@ -268,13 +365,13 @@ export async function streamText(props: {
 
       // Avoid overwhelming context (rough guard by chars)
       let injection = promptBuilder.build(selection, userPrompt);
-      const maxContextChars = 80_000;
+      const maxContextChars = 15_000; // Reduced from 80k to avoid token limits
       if (injection.length > maxContextChars) {
         // Try a smaller injection (top few items) instead of skipping entirely.
         const reduced = {
           ...selection,
-          components: selection.components.slice(0, 3),
-          effects: selection.effects.slice(0, 2),
+          components: selection.components.slice(0, 2),
+          effects: selection.effects.slice(0, 1),
         };
         injection = promptBuilder.build(reduced, userPrompt);
       }
@@ -291,6 +388,7 @@ export async function streamText(props: {
       logger.warn('Failed to build component injection context:', error);
     }
   }
+  */
 
   // Registry components (shadcn-compatible registries)
   // TEMPORARILY DISABLED: Same issue as above - components require dependencies
@@ -305,7 +403,7 @@ export async function streamText(props: {
   // }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
-    const codeContext = createFilesContext(contextFiles, true);
+    const codeContext = createFilesContextCapped(contextFiles, { maxTotalChars: 40_000, maxFileChars: 12_000 });
 
     systemPrompt = `${systemPrompt}
 
