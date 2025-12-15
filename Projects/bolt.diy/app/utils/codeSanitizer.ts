@@ -36,12 +36,27 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   const warnings: string[] = [];
   let next = content;
 
+  if (ext === '.tsx' || ext === '.jsx') {
+    next = sanitizeJsxComments(next, warnings);
+  }
+
   next = sanitizeImportPaths(next, relativePath, warnings);
   next = sanitizeLucide(next, warnings);
   next = sanitizeNext(next, warnings);
   next = sanitizeRouter(next, warnings);
 
   return { content: next, changed: next !== content, warnings };
+}
+
+function sanitizeJsxComments(code: string, warnings: string[]) {
+  const before = code;
+  const next = code.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+  if (next !== before) {
+    warnings.push('Removed JSX comment blocks');
+  }
+
+  return next;
 }
 
 function sanitizeImportPaths(code: string, relativePath: string, warnings: string[]) {
@@ -82,12 +97,16 @@ function sanitizeLucide(code: string, warnings: string[]) {
   }
 
   // House is frequently hallucinated; lucide-react uses Home.
-  // If the file imports House from lucide-react, replace with Home and adjust usages conservatively.
+  // CirclePlay can be missing in older lucide-react versions; PlayCircle is widely available.
+  // If the file imports these from lucide-react, replace and adjust usages conservatively.
   let replacedHouseImport = false;
+  let replacedCirclePlayImport = false;
   next = next.replace(
     /^import\s+\{([^}]*?)\}\s+from\s+['"]lucide-react['"]\s*;?\s*$/gm,
     (full, specifiers: string) => {
-      if (!/\bHouse\b/.test(specifiers)) return full;
+      const hasHouse = /\bHouse\b/.test(specifiers);
+      const hasCirclePlay = /\bCirclePlay\b/.test(specifiers);
+      if (!hasHouse && !hasCirclePlay) return full;
 
       const parts = specifiers
         .split(',')
@@ -98,6 +117,10 @@ function sanitizeLucide(code: string, warnings: string[]) {
         if (/^House(\s+as\s+.+)?$/.test(part) || /^House\s+as\s+/.test(part)) {
           replacedHouseImport = true;
           return part.replace(/^House\b/, 'Home');
+        }
+        if (/^CirclePlay(\s+as\s+.+)?$/.test(part) || /^CirclePlay\s+as\s+/.test(part)) {
+          replacedCirclePlayImport = true;
+          return part.replace(/^CirclePlay\b/, 'PlayCircle');
         }
         return part;
       });
@@ -112,7 +135,12 @@ function sanitizeLucide(code: string, warnings: string[]) {
         deduped.push(part);
       }
 
-      warnings.push('Replaced lucide icon House -> Home');
+      if (hasHouse) {
+        warnings.push('Replaced lucide icon House -> Home');
+      }
+      if (hasCirclePlay) {
+        warnings.push('Replaced lucide icon CirclePlay -> PlayCircle');
+      }
       return `import { ${deduped.join(', ')} } from "lucide-react";`;
     },
   );
@@ -121,6 +149,12 @@ function sanitizeLucide(code: string, warnings: string[]) {
     next = next.replace(/<\s*House\b/g, '<Home');
     next = next.replace(/<\/\s*House\b/g, '</Home');
     next = next.replace(/\bHouse\b/g, 'Home');
+  }
+
+  if (replacedCirclePlayImport) {
+    next = next.replace(/<\s*CirclePlay\b/g, '<PlayCircle');
+    next = next.replace(/<\/\s*CirclePlay\b/g, '</PlayCircle');
+    next = next.replace(/\bCirclePlay\b/g, 'PlayCircle');
   }
 
   // LLM иногда пишет `import { Lucide } from "lucide-react"` — такого экспорта нет.
@@ -201,10 +235,22 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
     let changed = false;
 
     for (const [dep, version] of Object.entries(DEFAULT_WEB_DEPS)) {
-      if (!deps[dep]) {
+      const current = deps[dep];
+      if (!current) {
         deps[dep] = version;
         changed = true;
         warnings.push(`Added dependency to package.json: ${dep}@${version}`);
+        continue;
+      }
+
+      const currentSemver = extractSemver(current);
+      const baselineSemver = extractSemver(version);
+      if (!currentSemver || !baselineSemver) continue;
+
+      if (isSemverLess(currentSemver, baselineSemver)) {
+        deps[dep] = version;
+        changed = true;
+        warnings.push(`Upgraded dependency in package.json: ${dep} ${current} -> ${version}`);
       }
     }
 
@@ -219,4 +265,18 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
     warnings.push('Skipped package.json sanitization (invalid JSON)');
     return { content, warnings };
   }
+}
+
+type Semver = { major: number; minor: number; patch: number };
+
+function extractSemver(version: string): Semver | null {
+  const match = version.match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return null;
+  return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) };
+}
+
+function isSemverLess(left: Semver, right: Semver): boolean {
+  if (left.major !== right.major) return left.major < right.major;
+  if (left.minor !== right.minor) return left.minor < right.minor;
+  return left.patch < right.patch;
 }

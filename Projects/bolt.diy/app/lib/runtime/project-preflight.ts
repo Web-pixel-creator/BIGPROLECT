@@ -98,7 +98,15 @@ async function ensureBaselinePackageJson(
   const added: string[] = [];
 
   for (const [dep, version] of Object.entries(WEB_BASELINE_DEPS)) {
-    if (!next.dependencies[dep]) {
+    const current = next.dependencies[dep];
+    if (!current) {
+      next.dependencies[dep] = version;
+      changed = true;
+      added.push(dep);
+      continue;
+    }
+
+    if (shouldUpgradeDep(current, version)) {
       next.dependencies[dep] = version;
       changed = true;
       added.push(dep);
@@ -106,7 +114,15 @@ async function ensureBaselinePackageJson(
   }
 
   for (const [dep, version] of Object.entries(WEB_BASELINE_DEV_DEPS)) {
-    if (!next.devDependencies[dep]) {
+    const current = next.devDependencies[dep];
+    if (!current) {
+      next.devDependencies[dep] = version;
+      changed = true;
+      added.push(dep);
+      continue;
+    }
+
+    if (shouldUpgradeDep(current, version)) {
       next.devDependencies[dep] = version;
       changed = true;
       added.push(dep);
@@ -122,6 +138,27 @@ async function ensureBaselinePackageJson(
   await webcontainer.fs.writeFile('package.json', sanitized.content);
 
   return { packageJsonChanged: true, addedDependencies: added };
+}
+
+type Semver = { major: number; minor: number; patch: number };
+
+function shouldUpgradeDep(current: string, baseline: string): boolean {
+  const currentSemver = extractSemver(current);
+  const baselineSemver = extractSemver(baseline);
+  if (!currentSemver || !baselineSemver) return false;
+  return isSemverLess(currentSemver, baselineSemver);
+}
+
+function extractSemver(version: string): Semver | null {
+  const match = version.match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return null;
+  return { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) };
+}
+
+function isSemverLess(left: Semver, right: Semver): boolean {
+  if (left.major !== right.major) return left.major < right.major;
+  if (left.minor !== right.minor) return left.minor < right.minor;
+  return left.patch < right.patch;
 }
 
 async function readTextFile(webcontainer: WebContainer, filePath: string): Promise<string | null> {
