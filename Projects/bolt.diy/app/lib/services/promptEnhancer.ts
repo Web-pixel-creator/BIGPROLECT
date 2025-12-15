@@ -7,12 +7,54 @@
 // Theme detection keywords
 // Порядок важен: сначала узкие темы, затем общий ecommerce
 const THEME_KEYWORDS = {
-  furniture: ['furniture', 'sofa', 'chair', 'table', 'storage', 'seating', 'decor', 'cabinet', 'мебель', 'стул', 'стол', 'хранение'],
-  fashion: ['fashion', 'clothing', 'apparel', 'shoes', 'accessories', 'lookbook', 'одежда', 'обувь'],
-  beauty: ['beauty', 'cosmetics', 'makeup', 'skincare', 'fragrance', 'косметика', 'макияж'],
-  electronics: ['electronics', 'gadget', 'phone', 'laptop', 'smart home', 'camera', 'электроника', 'гаджет'],
-  food: ['food', 'grocery', 'beverage', 'coffee', 'tea', 'snack', 'bakery', 'еда', 'кофе', 'чай'],
-  ecommerce: ['e-commerce', 'ecommerce', 'shop', 'store', 'product', 'cart', 'магазин', 'товар', 'корзин'],
+  furniture: [
+    'furniture',
+    'sofa',
+    'chair',
+    'table',
+    'storage',
+    'seating',
+    'decor',
+    'cabinet',
+    'furnishing',
+    'home decor',
+    'мебель',
+    'диван',
+    'кресло',
+    'стул',
+    'стулья',
+    'стол',
+    'столы',
+    'шкаф',
+    'комод',
+    'стеллаж',
+    'хранение',
+    'интерьер',
+    'декор',
+  ],
+  fashion: ['fashion', 'clothing', 'apparel', 'shoes', 'accessories', 'lookbook', 'мода', 'одежда', 'обувь', 'аксессуар', 'лукбук'],
+  beauty: ['beauty', 'cosmetics', 'makeup', 'skincare', 'fragrance', 'косметика', 'макияж', 'уход', 'парфюм', 'салон'],
+  electronics: ['electronics', 'gadget', 'phone', 'laptop', 'smart home', 'camera', 'электроника', 'гаджет', 'гаджеты', 'смартфон', 'телефон', 'ноутбук', 'планшет', 'техника'],
+  food: ['food', 'grocery', 'beverage', 'coffee', 'tea', 'snack', 'bakery', 'еда', 'кофе', 'чай', 'доставка', 'ресторан', 'кафе', 'меню'],
+  ecommerce: [
+    'e-commerce',
+    'ecommerce',
+    'shop',
+    'store',
+    'product',
+    'cart',
+    'checkout',
+    'интернет-магазин',
+    'магазин',
+    'товары',
+    'товар',
+    'каталог',
+    'витрина',
+    'корзина',
+    'корзин',
+    'оплата',
+    'заказ',
+  ],
   photography: ['photography', 'photographer', 'photo shoot', 'portfolio', 'gallery', 'freelance', 'creative', 'visual', 'squarespace'],
   industrial: ['industrial', 'energy', 'oil', 'gas', 'power', 'refinery', 'pipeline', 'manufacturing', 'factory'],
   hotel: ['hotel', 'hospitality', 'resort', 'boutique', 'spa', 'accommodation', 'booking'],
@@ -39,6 +81,14 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   onyx: { hex: '#0f0f0f', type: 'dark' },
   ebony: { hex: '#111111', type: 'dark' },
   slate: { hex: '#1e293b', type: 'dark' },
+  'тёмный': { hex: '#0a0a0a', type: 'dark' },
+  'темный': { hex: '#0a0a0a', type: 'dark' },
+  'чёрный': { hex: '#000000', type: 'dark' },
+  'черный': { hex: '#000000', type: 'dark' },
+  'темно-серый': { hex: '#1a1a1a', type: 'dark' },
+  'тёмно-серый': { hex: '#1a1a1a', type: 'dark' },
+  'угольный': { hex: '#111113', type: 'dark' },
+  'графит': { hex: '#111113', type: 'dark' },
 
   // Light colors
   white: { hex: '#ffffff', type: 'light' },
@@ -57,6 +107,13 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   linen: { hex: '#FAF0E6', type: 'light' },
   seashell: { hex: '#FFF5EE', type: 'light' },
   alabaster: { hex: '#F2F0EB', type: 'light' },
+  'белый': { hex: '#ffffff', type: 'light' },
+  'кремовый': { hex: '#FDF5E6', type: 'light' },
+  'молочный': { hex: '#FDF8F5', type: 'light' },
+  'слоновая кость': { hex: '#F4F3EF', type: 'light' },
+  'айвори': { hex: '#F4F3EF', type: 'light' },
+  'бежевый': { hex: '#F5F5DC', type: 'light' },
+  'светлый': { hex: '#ffffff', type: 'light' },
 
   // Accent colors - Gold/Yellow family
   gold: { hex: '#C9A66B', type: 'accent' },
@@ -69,6 +126,11 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   mustard: { hex: '#FFDB58', type: 'accent' },
   honey: { hex: '#EB9605', type: 'accent' },
   copper: { hex: '#B87333', type: 'accent' },
+  'золото': { hex: '#C9A66B', type: 'accent' },
+  'золотой': { hex: '#C9A66B', type: 'accent' },
+  'янтарный': { hex: '#F59E0B', type: 'accent' },
+  'бронзовый': { hex: '#CD7F32', type: 'accent' },
+  'медный': { hex: '#B87333', type: 'accent' },
 
   // Accent colors - Blue family
   blue: { hex: '#3b82f6', type: 'accent' },
@@ -745,7 +807,36 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
 
     // For accent, only override if user explicitly mentioned an accent color word
     // (gold, amber, blue, etc.) - don't override theme accent with random color matches
-    const accentKeywords = ['gold', 'amber', 'bronze', 'copper', 'blue', 'cyan', 'teal', 'green', 'emerald', 'red', 'orange', 'purple', 'violet', 'pink'];
+    const accentKeywords = [
+      'gold',
+      'amber',
+      'bronze',
+      'copper',
+      'blue',
+      'cyan',
+      'teal',
+      'green',
+      'emerald',
+      'red',
+      'orange',
+      'purple',
+      'violet',
+      'pink',
+      'золото',
+      'золотой',
+      'янтарный',
+      'бронзовый',
+      'медный',
+      'синий',
+      'голубой',
+      'бирюзовый',
+      'зелёный',
+      'зеленый',
+      'красный',
+      'оранжевый',
+      'фиолетовый',
+      'розовый',
+    ];
     const lowerPrompt = userPrompt.toLowerCase();
     const hasExplicitAccent = accentKeywords.some(keyword => lowerPrompt.includes(keyword));
     
@@ -756,25 +847,39 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
 
   // Check if user specified specific layouts
   const lowerPrompt = userPrompt.toLowerCase();
-  const hasSpecificLayout = 
-    lowerPrompt.includes('слева') || 
-    lowerPrompt.includes('справа') || 
-    lowerPrompt.includes('left') || 
+  const hasSpecificLayout =
+    lowerPrompt.includes('слева') ||
+    lowerPrompt.includes('справа') ||
+    lowerPrompt.includes('левая') ||
+    lowerPrompt.includes('правая') ||
+    lowerPrompt.includes('две колонки') ||
+    lowerPrompt.includes('2 колонки') ||
+    lowerPrompt.includes('двухколоноч') ||
+    lowerPrompt.includes('картинка слева') ||
+    lowerPrompt.includes('картинка справа') ||
+    lowerPrompt.includes('текст слева') ||
+    lowerPrompt.includes('текст справа') ||
+    lowerPrompt.includes('left') ||
     lowerPrompt.includes('right') ||
     lowerPrompt.includes('split') ||
     lowerPrompt.includes('two column') ||
+    lowerPrompt.includes('two-column') ||
     lowerPrompt.includes('image on') ||
     lowerPrompt.includes('text on') ||
     lowerPrompt.includes('шапка с') ||
     lowerPrompt.includes('grid') ||
+    lowerPrompt.includes('сетка') ||
     lowerPrompt.includes('carousel') ||
-    lowerPrompt.includes('slider');
+    lowerPrompt.includes('карусель') ||
+    lowerPrompt.includes('slider') ||
+    lowerPrompt.includes('слайдер');
 
   // Helper to pick random item
   const pickRandom = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
   // Detect which sections user mentioned in prompt
   const sectionKeywords: Record<string, string[]> = {
+    navigation: ['navigation', 'navbar', 'menu', 'top nav', 'top navigation', 'header menu', 'меню', 'навигация', 'пункты меню', 'верхнее меню'],
     hero: ['hero', 'шапка', 'header', 'banner', 'главный', 'intro', 'landing'],
     features: ['feature', 'функци', 'services', 'услуг', 'offerings', 'benefits', 'преимущества'],
     gallery: ['gallery', 'галерея', 'portfolio', 'портфолио', 'photos', 'фото', 'images', 'work', 'projects'],
@@ -802,6 +907,11 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
 
   // Section layout variants
   const sectionLayouts: Record<string, string[]> = {
+    navigation: [
+      'Top nav: logo left, links center, icons (search/cart/profile) right; sticky with blur',
+      'Top nav: logo left, links right, cart/profile icons; clean minimal',
+      'Top nav: logo + burger menu on mobile; dropdown/mega menu on desktop',
+    ],
     hero: [
       'Full-width hero with centered text overlay and dark gradient',
       'Split hero: large image on left (60%), text content on right (40%)',
@@ -899,10 +1009,56 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
     }
   }
 
-  // Build MINIMAL enhanced prompt - NO image URLs
+  const pickSome = (urls: string[], max: number) => {
+    const unique = [...new Set(urls)];
+    for (let index = unique.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [unique[index], unique[swap]] = [unique[swap], unique[index]];
+    }
+    return unique.slice(0, Math.min(max, unique.length));
+  };
+
+  const buildImageSuggestions = () => {
+    const blocks: string[] = [];
+
+    const addList = (title: string, urls: string[]) => {
+      if (!urls || urls.length === 0) return;
+      blocks.push(`${title}:\n${urls.map((url) => `- ${url}`).join('\n')}`);
+    };
+
+    if (mentionedSections.includes('hero') && Array.isArray((images as any).hero)) {
+      addList('HERO IMAGES', pickSome((images as any).hero, 3));
+    }
+
+    if (mentionedSections.includes('gallery') && Array.isArray((images as any).gallery)) {
+      addList('GALLERY IMAGES', pickSome((images as any).gallery, 6));
+    }
+
+    if (mentionedSections.includes('products') && Array.isArray((images as any).products)) {
+      addList('PRODUCT IMAGES', pickSome((images as any).products, 8));
+    }
+
+    if (mentionedSections.includes('categories') && (images as any).categories && typeof (images as any).categories === 'object') {
+      const categories = (images as any).categories as Record<string, string[]>;
+      const categoryBlocks = Object.entries(categories)
+        .map(([name, urls]) => `${name.toUpperCase()}:\n${pickSome(urls, 3).map((url) => `- ${url}`).join('\n')}`)
+        .join('\n\n');
+
+      if (categoryBlocks) {
+        blocks.push(`CATEGORY IMAGES:\n${categoryBlocks}`);
+      }
+    }
+
+    if (blocks.length === 0) return '';
+
+    return `\nIMAGES\n- Use ONLY the URLs listed below. DO NOT invent new image URLs.\n- If you need more images, repeat from the lists.\n- For <img>, set crossOrigin=\"anonymous\" and add loading=\"lazy\".\n- Avoid Picsum and local /images/* placeholders (may break in WebContainer/COEP).\n\n${blocks.join('\n\n')}`;
+  };
+
+  const imageSuggestions = buildImageSuggestions();
+
   const enhancedPrompt = `${userPrompt}
 ${layoutSuggestions ? `\n${layoutSuggestions}` : ''}
-[Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
+[Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imageSuggestions ? `\n${imageSuggestions}` : ''}`;
 
   return {
     originalPrompt: userPrompt,
