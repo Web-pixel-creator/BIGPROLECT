@@ -119,11 +119,29 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         });
       }
 
+      // Quota / rate limiting is often reported without the literal "429" or "rate limit" string.
+      const errorMessage = error instanceof Error ? error.message || '' : '';
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      const statusCode = (error as any)?.statusCode;
+      if (
+        statusCode === 429 ||
+        lowerErrorMessage.includes('quota') ||
+        lowerErrorMessage.includes('resource_exhausted') ||
+        lowerErrorMessage.includes('too many requests') ||
+        lowerErrorMessage.includes('requests per minute') ||
+        lowerErrorMessage.includes('tokens per minute')
+      ) {
+        throw new Response('API quota/rate limit exceeded. Please wait and try again, or check provider billing/quotas.', {
+          status: 429,
+          statusText: 'Rate Limit Exceeded',
+        });
+      }
+
       // Handle token limit errors with helpful messages
       if (
         error instanceof Error &&
         (error.message?.includes('max_tokens') ||
-          error.message?.includes('token') ||
+          (error.message?.includes('token') && error.message?.includes('limit')) ||
           error.message?.includes('exceeds') ||
           error.message?.includes('maximum'))
       ) {
@@ -150,6 +168,9 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         throw new Error('Model not found');
       }
 
+      // NOTE: `/api/llmcall` is currently only used for starter template selection.
+      // Keep the output token budget intentionally small to avoid provider-specific max output limits
+      // (e.g. Gemini output caps) and to reduce the chance of quota/limit errors.
       const dynamicMaxTokens = modelDetails ? getCompletionTokenLimit(modelDetails) : Math.min(MAX_TOKENS, 16384);
 
       // Validate token limits before making API request
@@ -174,8 +195,12 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       const isReasoning = isReasoningModel(modelDetails.name);
       logger.info(`DEBUG: Model "${modelDetails.name}" detected as reasoning model: ${isReasoning}`);
 
+      // Hard cap for template selection responses (we only need a tiny XML payload).
+      const TEMPLATE_SELECTION_MAX_TOKENS = 1024;
+      const safeMaxTokens = Math.max(1, Math.min(dynamicMaxTokens, TEMPLATE_SELECTION_MAX_TOKENS));
+
       // Use maxCompletionTokens for reasoning models (o1, GPT-5), maxTokens for traditional models
-      const tokenParams = isReasoning ? { maxCompletionTokens: dynamicMaxTokens } : { maxTokens: dynamicMaxTokens };
+      const tokenParams = isReasoning ? { maxCompletionTokens: safeMaxTokens } : { maxTokens: safeMaxTokens };
 
       // Filter out unsupported parameters for reasoning models
       const baseParams = {
@@ -257,11 +282,41 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         );
       }
 
+      const lowerErrorMessage =
+        typeof errorResponse.message === 'string'
+          ? errorResponse.message.toLowerCase()
+          : String(errorResponse.message).toLowerCase();
+
+      // Quota / rate limiting should not be treated as token/context window issues.
+      if (
+        errorResponse.statusCode === 429 ||
+        lowerErrorMessage.includes('quota') ||
+        lowerErrorMessage.includes('resource_exhausted') ||
+        lowerErrorMessage.includes('too many requests') ||
+        lowerErrorMessage.includes('requests per minute') ||
+        lowerErrorMessage.includes('tokens per minute')
+      ) {
+        return new Response(
+          JSON.stringify({
+            ...errorResponse,
+            message:
+              'API quota/rate limit exceeded. Please wait a moment and try again, or check billing/quotas for the selected provider/model.',
+            statusCode: 429,
+            isRetryable: true,
+          }),
+          {
+            status: 429,
+            headers: { 'Content-Type': 'application/json' },
+            statusText: 'Rate Limit Exceeded',
+          },
+        );
+      }
+
       // Handle token limit errors with helpful messages
       if (
         error instanceof Error &&
         (error.message?.includes('max_tokens') ||
-          error.message?.includes('token') ||
+          (error.message?.includes('token') && error.message?.includes('limit')) ||
           error.message?.includes('exceeds') ||
           error.message?.includes('maximum'))
       ) {

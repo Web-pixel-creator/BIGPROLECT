@@ -349,6 +349,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       onError: (error: any) => {
         // Provide more specific error messages for common issues
         const errorMessage = error.message || 'Unknown error';
+        const lowerErrorMessage = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
 
         if (errorMessage.includes('model') && errorMessage.includes('not found')) {
           return 'Custom error: Invalid model selected. Please check that the model name is correct and available.';
@@ -364,6 +365,18 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           errorMessage.includes('authentication')
         ) {
           return 'Custom error: Invalid or missing API key. Please check your API key configuration.';
+        }
+
+        // Quota / rate limiting (Gemini often reports this without the words "rate limit" or the "429" string)
+        if (
+          lowerErrorMessage.includes('quota') ||
+          lowerErrorMessage.includes('resource_exhausted') ||
+          lowerErrorMessage.includes('too many requests') ||
+          lowerErrorMessage.includes('requests per minute') ||
+          lowerErrorMessage.includes('tokensperminute') ||
+          lowerErrorMessage.includes('tokens per minute')
+        ) {
+          return 'Custom error: API quota/rate limit exceeded. Please wait a moment and try again, or check billing/quotas for the selected provider/model.';
         }
 
         if (errorMessage.includes('token') && errorMessage.includes('limit')) {
