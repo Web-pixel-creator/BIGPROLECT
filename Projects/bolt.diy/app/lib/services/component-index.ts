@@ -33,6 +33,7 @@ const MD_FILES = [
   '21st-dev-components-part2.md',
   'shadcn-io-components.md',
   'tailark-components.md',
+  'coss-origin-navbars.md',
 ];
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));

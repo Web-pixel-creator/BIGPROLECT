@@ -42,7 +42,7 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   saas: { sections: ['hero', 'features', 'pricing', 'testimonials', 'cta'], effects: ['sparkles', 'border-beam'] },
   construction: { sections: ['hero', 'features', 'projects', 'stats', 'cta', 'contact'], effects: ['fade', 'slide'] },
   auto: { sections: ['hero', 'features', 'gallery', 'pricing', 'cta'], effects: ['spotlight', 'glow'] },
-  ecommerce: { sections: ['hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  ecommerce: { sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
   portfolio: { sections: ['hero', 'projects', 'about', 'contact'], effects: ['parallax', 'tilt'] },
   web3: { sections: ['hero', 'cases', 'cta', 'contact'], effects: ['aurora', 'grid', 'sparkles'] },
   finance: { sections: ['hero', 'features', 'stats', 'testimonials', 'cta'], effects: ['fade', 'hover'] },
@@ -75,7 +75,7 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   music: { sections: ['hero', 'gallery', 'events', 'cta'], effects: ['glow', 'spotlight'] },
   personal: { sections: ['hero', 'about', 'blog', 'contact'], effects: ['fade'] },
   professional: { sections: ['hero', 'services', 'cases', 'testimonials', 'cta'], effects: ['spotlight', 'fade'] },
-  retail: { sections: ['hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  retail: { sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
   technology: { sections: ['hero', 'features', 'cases', 'cta'], effects: ['sparkles', 'border-beam'] },
   transportation: {
     sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'],
@@ -86,6 +86,7 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
 
 // Lightweight keyword map to help ranking
 const KEYWORDS: Record<string, string[]> = {
+  navigation: ['navigation', 'navbar', 'nav', 'menu', 'top nav', 'header', 'корзина', 'cart', 'profile', 'account', 'search'],
   hero: ['hero', 'header', 'landing', 'splash', 'above fold'],
   features: ['feature', 'features', 'services', 'benefits'],
   pricing: ['pricing', 'price', 'plans'],
@@ -126,6 +127,7 @@ const SOURCE_PRIORITY: Record<string, number> = {
   'reactbits-components.md': 65,
   '21st-dev-components.md': 60,
   '21st-dev-components-part2.md': 50,
+  'coss-origin-navbars.md': 50,
   'tailark-components.md': 40,
 };
 
