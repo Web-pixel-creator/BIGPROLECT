@@ -97,7 +97,7 @@ function PreviewImage({
   messages: ChatHistoryItem['messages'];
   metadata?: ChatHistoryItem['metadata'];
 }) {
-  const url = metadata?.previewUrl || findPreviewImage(messages);
+  const url = normalizePreviewImageUrl(metadata?.previewUrl || findPreviewImage(messages));
 
   if (!url) {
     return (
@@ -135,6 +135,35 @@ function PreviewImage({
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover/preview:opacity-100 transition-opacity duration-200" />
     </div>
   );
+}
+
+function normalizePreviewImageUrl(url?: string): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+
+  const trimmed = url.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  // Allow embedded previews (e.g. screenshots) without network requests.
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+
+  // Normalize common relative variants.
+  const normalized = trimmed.startsWith('images/') ? `/${trimmed}` : trimmed;
+
+  // The UI itself only serves a small, stable set of preview placeholders. Any external URL is blocked
+  // by COEP/COOP in WebContainer contexts and causes noisy errors + broken thumbnails.
+  const pathname = normalized.split('?')[0].split('#')[0];
+  if (pathname === '/images/hero.svg' || pathname === '/images/placeholder.svg') {
+    return normalized;
+  }
+
+  return '/images/placeholder.svg';
 }
 
 /**
