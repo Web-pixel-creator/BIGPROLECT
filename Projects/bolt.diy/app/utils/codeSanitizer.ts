@@ -44,6 +44,7 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   next = sanitizeLucide(next, warnings);
   next = sanitizeNext(next, warnings);
   next = sanitizeRouter(next, warnings);
+  next = sanitizeImages(next, warnings);
 
   return { content: next, changed: next !== content, warnings };
 }
@@ -219,6 +220,41 @@ function sanitizeRouter(code: string, warnings: string[]) {
     next = next.replace(/<\s*Link\b/g, '<a');
     next = next.replace(/<\/\s*Link\b/g, '</a');
     next = next.replace(/\bto=/g, 'href=');
+  }
+
+  return next;
+}
+
+function sanitizeImages(code: string, warnings: string[]) {
+  let next = code;
+
+  // Some generated projects reference non-existent local assets like /images/hero.jpg.
+  const beforeLocalHero = next;
+  next = next.replace(/(['"])\/images\/hero\.(?:jpg|jpeg|png)\1/g, '$1/images/hero.svg$1');
+  next = next.replace(/(['"])\/images\/hero\.(?:jpg|jpeg|png)\?\S*?\1/g, '$1/images/hero.svg$1');
+
+  if (next !== beforeLocalHero) {
+    warnings.push('Rewrote /images/hero.(jpg|png) to /images/hero.svg');
+  }
+
+  // WebContainer preview runs with COEP/COOP which can block many cross-origin images.
+  // Replace common external placeholder/image hosts with local SVG placeholders for stability.
+  const beforeExternal = next;
+  next = next.replace(/https?:\/\/picsum\.photos[^\s'")`}]*/g, '/images/placeholder.svg');
+  next = next.replace(/https?:\/\/images\.unsplash\.com[^\s'")`}]*/g, '/images/placeholder.svg');
+  next = next.replace(/https?:\/\/placehold\.co[^\s'")`}]*/g, '/images/placeholder.svg');
+  next = next.replace(/https?:\/\/via\.placeholder\.com[^\s'")`}]*/g, '/images/placeholder.svg');
+
+  if (next !== beforeExternal) {
+    warnings.push('Rewrote external image URLs to local /images/placeholder.svg for preview stability');
+  }
+
+  // If an external URL is used inside CSS url(...), ensure it's also rewritten.
+  const beforeCssUrls = next;
+  next = next.replace(/url\((['"]?)(https?:\/\/[^'")]+)\1\)/g, "url('/images/placeholder.svg')");
+
+  if (next !== beforeCssUrls) {
+    warnings.push('Rewrote external CSS url(...) images to local placeholder');
   }
 
   return next;

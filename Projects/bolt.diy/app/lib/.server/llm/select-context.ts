@@ -50,6 +50,17 @@ export async function selectContext(props: {
   const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
   const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
   let modelDetails = staticModels.find((m) => m.name === currentModel);
+  let internalModel = currentModel;
+
+  // Use a cheaper/faster model for internal file-selection to reduce provider rate-limit pressure.
+  if (provider.name === 'Google') {
+    const availableModels = new Set(staticModels.map((m) => m.name));
+    internalModel = (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
+
+    if (internalModel !== currentModel) {
+      logger.info(`Using internal model "${internalModel}" for context selection (original: "${currentModel}")`);
+    }
+  }
 
   if (!modelDetails) {
     const modelsList = [
@@ -74,6 +85,10 @@ export async function selectContext(props: {
       );
       modelDetails = modelsList[0];
     }
+  }
+
+  if (provider.name !== 'Google') {
+    internalModel = modelDetails.name;
   }
 
   const { codeContext } = extractCurrentContext(processedMessages);
@@ -120,6 +135,8 @@ export async function selectContext(props: {
 
   // select files from the list of code file from the project that might be useful for the current request from the user
   const resp = await generateText({
+    // Keep internal file-selection compact.
+    maxTokens: 1024,
     system: `
         You are a software engineer. You are working on a project. You have access to the following files:
 
@@ -169,7 +186,7 @@ export async function selectContext(props: {
 
         `,
     model: provider.getModelInstance({
-      model: currentModel,
+      model: internalModel,
       serverEnv,
       apiKeys,
       providerSettings,

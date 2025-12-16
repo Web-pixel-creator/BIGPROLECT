@@ -75,7 +75,7 @@ function titleFromPrompt(message: string): string {
 
   const maxLen = 80;
   if (cleaned.length <= maxLen) return cleaned;
-  return cleaned.slice(0, maxLen - 1).trimEnd() + '…';
+  return cleaned.slice(0, maxLen - 1).trimEnd() + '\u2026';
 }
 
 function heuristicSelectStarterTemplate(message: string): { template: string; title: string } | null {
@@ -121,7 +121,7 @@ function heuristicSelectStarterTemplate(message: string): { template: string; ti
   // (Tailwind + @ alias + ui-kit) to reduce preview failures from missing baseline files.
   if (
     /\b(website|landing|web app|ui|design|frontend|react|vite|tailwind|shadcn|e-?commerce)\b/.test(lower) ||
-    /\b(лендинг|сайт|дизайн|интерфейс|магазин|интернет-магазин|витрина|каталог)\b/.test(lower) ||
+    /(лендинг|сайт|дизайн|интерфейс|магазин|интернет[\\s-]магазин|витрина|каталог)/.test(lower) ||
     /\[style:\s*[^\]]+\]/i.test(raw) ||
     /\[design:\s*[^\]]+\]/i.test(raw)
   ) {

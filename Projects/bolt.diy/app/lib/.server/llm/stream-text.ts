@@ -315,8 +315,18 @@ export async function streamText(props: {
 
   const dynamicMaxTokens = modelDetails ? getCompletionTokenLimit(modelDetails) : Math.min(MAX_TOKENS, 16384);
 
-  // Use model-specific limits directly - no artificial cap needed
-  const safeMaxTokens = dynamicMaxTokens;
+  // Cap Google output tokens to reduce rate-limit/quota spikes (Gemini 2.5 can advertise very large output limits).
+  let safeMaxTokens = dynamicMaxTokens;
+  const isGoogleProvider = modelDetails?.provider === 'Google' || provider.name === 'Google';
+
+  if (isGoogleProvider) {
+    const googleCap = chatMode === 'build' ? 8192 : 16384;
+
+    if (safeMaxTokens > googleCap) {
+      logger.info(`Capping Google maxTokens from ${safeMaxTokens} to ${googleCap} to reduce rate-limit risk`);
+      safeMaxTokens = googleCap;
+    }
+  }
 
   logger.info(
     `Token limits for model ${modelDetails.name}: maxTokens=${safeMaxTokens}, maxTokenAllowed=${modelDetails.maxTokenAllowed}, maxCompletionTokens=${modelDetails.maxCompletionTokens}`,

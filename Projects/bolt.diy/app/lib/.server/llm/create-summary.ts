@@ -42,6 +42,17 @@ export async function createSummary(props: {
   const provider = PROVIDER_LIST.find((p) => p.name === currentProvider) || DEFAULT_PROVIDER;
   const staticModels = LLMManager.getInstance().getStaticModelListFromProvider(provider);
   let modelDetails = staticModels.find((m) => m.name === currentModel);
+  let internalModel = currentModel;
+
+  // Use a cheaper/faster model for internal summarization to reduce provider rate-limit pressure.
+  if (provider.name === 'Google') {
+    const availableModels = new Set(staticModels.map((m) => m.name));
+    internalModel = (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
+
+    if (internalModel !== currentModel) {
+      logger.info(`Using internal model "${internalModel}" for summaries (original: "${currentModel}")`);
+    }
+  }
 
   if (!modelDetails) {
     const modelsList = [
@@ -66,6 +77,10 @@ export async function createSummary(props: {
       );
       modelDetails = modelsList[0];
     }
+  }
+
+  if (provider.name !== 'Google') {
+    internalModel = modelDetails.name;
   }
 
   let slicedMessages = processedMessages;
@@ -101,6 +116,8 @@ ${summary.summary}`;
 
   // select files from the list of code file from the project that might be useful for the current request from the user
   const resp = await generateText({
+    // Keep internal summaries compact.
+    maxTokens: 2048,
     system: `
         You are a software engineer. You are working on a project. you need to summarize the work till now and provide a summary of the chat till now.
 
@@ -180,7 +197,7 @@ ${slicedMessages
 Please provide a summary of the chat till now including the hitorical summary of the chat.
 `,
     model: provider.getModelInstance({
-      model: currentModel,
+      model: internalModel,
       serverEnv,
       apiKeys,
       providerSettings,
