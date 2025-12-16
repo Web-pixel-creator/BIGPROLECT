@@ -6,7 +6,7 @@ type SanitizationResult = {
   warnings: string[];
 };
 
-const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs']);
+const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.html', '.css', '.scss']);
 
 // Conservative default versions taken from this repo's own dependencies.
 const DEFAULT_WEB_DEPS: Record<string, string> = {
@@ -45,6 +45,10 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   next = sanitizeNext(next, warnings);
   next = sanitizeRouter(next, warnings);
   next = sanitizeImages(next, warnings);
+
+  if (ext === '.css' || ext === '.scss') {
+    next = sanitizeTailwindShadcnTokensInCss(next, warnings);
+  }
 
   return { content: next, changed: next !== content, warnings };
 }
@@ -230,8 +234,9 @@ function sanitizeImages(code: string, warnings: string[]) {
 
   // Some generated projects reference non-existent local assets like /images/hero.jpg.
   const beforeLocalHero = next;
-  next = next.replace(/(['"])\/images\/hero\.(?:jpg|jpeg|png)\1/g, '$1/images/hero.svg$1');
-  next = next.replace(/(['"])\/images\/hero\.(?:jpg|jpeg|png)\?\S*?\1/g, '$1/images/hero.svg$1');
+  next = next.replace(/(['"`])\/images\/hero\.(?:jpg|jpeg|png)\1/g, '$1/images/hero.svg$1');
+  next = next.replace(/(['"`])\/images\/hero\.(?:jpg|jpeg|png)\?\S*?\1/g, '$1/images/hero.svg$1');
+  next = next.replace(/url\((['"]?)\/images\/hero\.(?:jpg|jpeg|png)(?:\?[^'")]+)?\1\)/g, "url('/images/hero.svg')");
 
   if (next !== beforeLocalHero) {
     warnings.push('Rewrote /images/hero.(jpg|png) to /images/hero.svg');
@@ -240,21 +245,55 @@ function sanitizeImages(code: string, warnings: string[]) {
   // WebContainer preview runs with COEP/COOP which can block many cross-origin images.
   // Replace common external placeholder/image hosts with local SVG placeholders for stability.
   const beforeExternal = next;
-  next = next.replace(/https?:\/\/picsum\.photos[^\s'")`}]*/g, '/images/placeholder.svg');
-  next = next.replace(/https?:\/\/images\.unsplash\.com[^\s'")`}]*/g, '/images/placeholder.svg');
-  next = next.replace(/https?:\/\/placehold\.co[^\s'")`}]*/g, '/images/placeholder.svg');
-  next = next.replace(/https?:\/\/via\.placeholder\.com[^\s'")`}]*/g, '/images/placeholder.svg');
+  // Handle both absolute, protocol-relative (`//host/...`) and scheme-less (`host/...`) forms.
+  next = next.replace(/(?:https?:\/\/|\/\/)?(?:www\.)?picsum\.photos\/[^\s'")`}]*/gi, '/images/placeholder.svg');
+  next = next.replace(/(?:https?:\/\/|\/\/)?images\.unsplash\.com\/[^\s'")`}]*/gi, '/images/placeholder.svg');
+  next = next.replace(/(?:https?:\/\/|\/\/)?placehold\.co\/[^\s'")`}]*/gi, '/images/placeholder.svg');
+  next = next.replace(/(?:https?:\/\/|\/\/)?via\.placeholder\.com\/[^\s'")`}]*/gi, '/images/placeholder.svg');
+
+  // Catch other external image URLs with common image extensions.
+  next = next.replace(
+    /https?:\/\/[^\s'"`)}]+?\.(?:png|jpe?g|webp|gif|svg)(?:\?[^\s'"`)}]*)?/gi,
+    '/images/placeholder.svg',
+  );
+  next = next.replace(
+    /\/\/[^\s'"`)}]+?\.(?:png|jpe?g|webp|gif|svg)(?:\?[^\s'"`)}]*)?/gi,
+    '/images/placeholder.svg',
+  );
 
   if (next !== beforeExternal) {
     warnings.push('Rewrote external image URLs to local /images/placeholder.svg for preview stability');
   }
 
-  // If an external URL is used inside CSS url(...), ensure it's also rewritten.
-  const beforeCssUrls = next;
-  next = next.replace(/url\((['"]?)(https?:\/\/[^'")]+)\1\)/g, "url('/images/placeholder.svg')");
+  return next;
+}
 
-  if (next !== beforeCssUrls) {
-    warnings.push('Rewrote external CSS url(...) images to local placeholder');
+function sanitizeTailwindShadcnTokensInCss(code: string, warnings: string[]) {
+  const before = code;
+  let next = code;
+
+  // Tailwind throws on `@apply` for unknown utilities. Many shadcn templates rely on tokens like
+  // `border-border`/`bg-background` which may not exist in generated configs.
+  // Map the most common ones to safe Tailwind defaults so the preview doesn't white-screen.
+  const replacements: Array<[RegExp, string]> = [
+    [/\bborder-border\b/g, 'border-neutral-200 dark:border-neutral-800'],
+    [/\bborder-input\b/g, 'border-neutral-300 dark:border-neutral-700'],
+    [/\bbg-background\b/g, 'bg-white dark:bg-neutral-950'],
+    [/\btext-foreground\b/g, 'text-neutral-900 dark:text-neutral-50'],
+    [/\bbg-card\b/g, 'bg-white dark:bg-neutral-900'],
+    [/\btext-card-foreground\b/g, 'text-neutral-900 dark:text-neutral-50'],
+    [/\bbg-popover\b/g, 'bg-white dark:bg-neutral-900'],
+    [/\btext-popover-foreground\b/g, 'text-neutral-900 dark:text-neutral-50'],
+    [/\btext-muted-foreground\b/g, 'text-neutral-500 dark:text-neutral-400'],
+    [/\bring-ring\b/g, 'ring-neutral-400 dark:ring-neutral-500'],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    next = next.replace(pattern, replacement);
+  }
+
+  if (next !== before) {
+    warnings.push('Rewrote shadcn Tailwind tokens in CSS to stable neutral defaults');
   }
 
   return next;

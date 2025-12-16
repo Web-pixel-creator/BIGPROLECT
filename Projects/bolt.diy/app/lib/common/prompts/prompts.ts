@@ -93,13 +93,21 @@ Theme defaults (when no colors specified):
 </color_extraction>
 
 <images_rule>
-CRITICAL: NEVER use local image paths like /images/hero.jpg or logo.svg - they don't exist!
-For ALL images use ONLY placeholder service:
-- https://placehold.co/800x600/1a1a1a/ffffff?text=Hero
-- https://placehold.co/400x400/f5f5f5/333333?text=Product
-- https://placehold.co/600x400/e5e5e5/666666?text=Category
+🚫 CRITICAL: WebContainer BLOCKS ALL external images due to COEP policy!
 
-DO NOT use Unsplash URLs - they often break. Use placehold.co ONLY.
+FORBIDDEN (WILL CAUSE WHITE SCREEN):
+- ANY external URL (placehold.co, picsum.photos, unsplash, etc.)
+- ALL https:// image URLs
+
+✅ USE ONLY LOCAL SVG PLACEHOLDERS:
+- /images/hero.svg (1200x600 dark gradient for hero sections)
+- /images/placeholder.svg (800x600 dark placeholder for other images)
+
+Example:
+<img src="/images/hero.svg" alt="Hero" className="w-full h-auto" />
+<img src="/images/placeholder.svg" alt="Product" className="w-64 h-48 object-cover" />
+
+These SVG files are automatically created in public/images/ - no need to create them!
 </images_rule>
 
 <layout_rules>

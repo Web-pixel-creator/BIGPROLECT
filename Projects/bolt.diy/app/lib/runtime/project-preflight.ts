@@ -289,10 +289,12 @@ async function sanitizeSourceTree(webcontainer: WebContainer): Promise<{ sanitiz
   const importedPackages = new Set<string>();
   let sanitizedFiles = 0;
 
-  const root = 'src';
+  // Scan source directories (src, components, pages, app)
+  const sourceDirs = ['src', 'components', 'pages', 'app', 'lib'];
 
   const walk = async (dirPath: string): Promise<void> => {
     let entries: Array<{ name: string; isFile: () => boolean; isDirectory: () => boolean }> = [];
+
 
     try {
       entries = (await webcontainer.fs.readdir(dirPath, { withFileTypes: true })) as any;
@@ -301,9 +303,9 @@ async function sanitizeSourceTree(webcontainer: WebContainer): Promise<{ sanitiz
     }
 
     for (const entry of entries) {
-      const fullPath = `${dirPath}/${entry.name}`;
+      const fullPath = dirPath === '.' ? entry.name : `${dirPath}/${entry.name}`;
       if (entry.isDirectory()) {
-        if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') {
+        if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build' || entry.name === 'public') {
           continue;
         }
         await walk(fullPath);
@@ -338,7 +340,10 @@ async function sanitizeSourceTree(webcontainer: WebContainer): Promise<{ sanitiz
     }
   };
 
-  await walk(root);
+  // Walk each source directory that exists
+  for (const dir of sourceDirs) {
+    await walk(dir);
+  }
   return { sanitizedFiles, importedPackages };
 }
 

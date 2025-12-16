@@ -20,7 +20,6 @@ export function cn(...inputs: ClassValue[]) {
     name: 'button.tsx',
     path: 'src/components/ui/button.tsx',
     content: `import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -29,11 +28,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-  ghost: "hover:bg-accent hover:text-accent-foreground",
-  link: "text-primary underline-offset-4 hover:underline",
+  default: "bg-neutral-900 text-white shadow hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200",
+  secondary: "bg-neutral-100 text-neutral-900 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700",
+  outline: "border border-neutral-300 bg-transparent shadow-sm hover:bg-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-800",
+  ghost: "hover:bg-neutral-100 dark:hover:bg-neutral-800",
+  link: "text-neutral-900 underline-offset-4 hover:underline dark:text-white",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
@@ -50,7 +49,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:pointer-events-none disabled:opacity-50",
           variantClasses[variant],
           sizeClasses[size],
           className,
@@ -69,7 +68,6 @@ export { Button };
     name: 'input.tsx',
     path: 'src/components/ui/input.tsx',
     content: `import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
@@ -80,7 +78,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type,
       ref={ref}
       type={type}
       className={cn(
-        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-white dark:placeholder:text-neutral-500",
         className,
       )}
       {...props}
@@ -96,7 +94,6 @@ export { Input };
     name: 'badge.tsx',
     path: 'src/components/ui/badge.tsx',
     content: `import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -104,17 +101,17 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<NonNullable<BadgeProps["variant"]>, string> = {
-  default: "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
-  secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  destructive: "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-  outline: "text-foreground",
+  default: "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900",
+  secondary: "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white",
+  destructive: "bg-red-500 text-white",
+  outline: "border border-neutral-300 text-neutral-900 dark:border-neutral-600 dark:text-white",
 };
 
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
         variantClasses[variant],
         className,
       )}
@@ -128,12 +125,11 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
     name: 'card.tsx',
     path: 'src/components/ui/card.tsx',
     content: `import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("rounded-xl border bg-card text-card-foreground shadow", className)} {...props} />
+    <div ref={ref} className={cn("rounded-xl border border-neutral-200 bg-white shadow dark:border-neutral-700 dark:bg-neutral-900", className)} {...props} />
   ),
 );
 Card.displayName = "Card";
@@ -147,14 +143,14 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("font-semibold leading-none tracking-tight", className)} {...props} />
+    <h3 ref={ref} className={cn("font-semibold leading-none tracking-tight text-neutral-900 dark:text-white", className)} {...props} />
   ),
 );
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
+    <p ref={ref} className={cn("text-sm text-neutral-500 dark:text-neutral-400", className)} {...props} />
   ),
 );
 CardDescription.displayName = "CardDescription";
@@ -178,11 +174,10 @@ export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
     name: 'separator.tsx',
     path: 'src/components/ui/separator.tsx',
     content: `import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 const Separator = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn("h-px w-full bg-border", className)} {...props} />,
+  ({ className, ...props }, ref) => <div ref={ref} className={cn("h-px w-full bg-neutral-200 dark:bg-neutral-700", className)} {...props} />,
 );
 Separator.displayName = "Separator";
 
