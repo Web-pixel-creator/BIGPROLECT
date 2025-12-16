@@ -102,7 +102,7 @@ function sanitizeLucide(code: string, warnings: string[]) {
   let replacedHouseImport = false;
   let replacedCirclePlayImport = false;
   next = next.replace(
-    /^import\s+\{([^}]*?)\}\s+from\s+['"]lucide-react['"]\s*;?\s*$/gm,
+    /import\s+\{([\s\S]*?)\}\s+from\s+['"]lucide-react['"]\s*;?/g,
     (full, specifiers: string) => {
       const hasHouse = /\bHouse\b/.test(specifiers);
       const hasCirclePlay = /\bCirclePlay\b/.test(specifiers);
@@ -157,12 +157,11 @@ function sanitizeLucide(code: string, warnings: string[]) {
     next = next.replace(/\bCirclePlay\b/g, 'PlayCircle');
   }
 
-  // LLM иногда пишет `import { Lucide } from "lucide-react"` — такого экспорта нет.
-  // Безопасный вариант: убрать Lucide из импортов; если он реально используется, TS всё равно упадёт,
-  // но на практике это почти всегда ошибка импорта.
+  // Some LLMs hallucinate `import { Lucide } from "lucide-react"`, but `Lucide` is not a valid export.
+  // Remove it to prevent runtime/import errors.
   const beforeLucide = next;
   next = next.replace(
-    /^import\s+\{([^}]*?)\}\s+from\s+['"]lucide-react['"]\s*;?\s*$/gm,
+    /import\s+\{([\s\S]*?)\}\s+from\s+['"]lucide-react['"]\s*;?/g,
     (full, specifiers: string) => {
       if (!/\bLucide\b/.test(specifiers)) return full;
       const parts = specifiers
@@ -188,7 +187,7 @@ function sanitizeNext(code: string, warnings: string[]) {
 
   // next/image is not available in Vite projects; convert to <img>.
   const beforeNextImage = next;
-  next = next.replace(/^import\s+.*from\s+['"]next\/image['"]\s*;?\s*$/gm, '');
+  next = removeModuleImports(next, 'next/image');
   if (next !== beforeNextImage) {
     warnings.push('Removed next/image import (use <img>)');
     next = next.replace(/<\s*Image\b/g, '<img');
@@ -197,7 +196,7 @@ function sanitizeNext(code: string, warnings: string[]) {
 
   // next/link is not available; convert to <a>.
   const beforeNextLink = next;
-  next = next.replace(/^import\s+.*from\s+['"]next\/link['"]\s*;?\s*$/gm, '');
+  next = removeModuleImports(next, 'next/link');
   if (next !== beforeNextLink) {
     warnings.push('Removed next/link import (use <a>)');
     next = next.replace(/<\s*Link\b/g, '<a');
@@ -212,7 +211,7 @@ function sanitizeRouter(code: string, warnings: string[]) {
 
   // react-router-dom isn't part of the default Vite template in this context.
   const before = next;
-  next = next.replace(/^import\s+.*from\s+['"]react-router-dom['"]\s*;?\s*$/gm, '');
+  next = removeModuleImports(next, 'react-router-dom');
   if (next !== before) {
     warnings.push('Removed react-router-dom import (use <a href>)');
     next = next.replace(/<\s*NavLink\b/g, '<a');
@@ -223,6 +222,30 @@ function sanitizeRouter(code: string, warnings: string[]) {
   }
 
   return next;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeModuleImports(code: string, moduleName: string): string {
+  const escaped = escapeRegExp(moduleName);
+  const before = code;
+
+  // Remove `import ... from "module"` (supports multi-line import blocks).
+  // The tempered pattern prevents accidentally spanning across multiple import statements.
+  const fromRe = new RegExp(
+    String.raw`^\\s*import(?:(?!^\\s*import)[\\s\\S])*?\\bfrom\\s+['"]${escaped}['"]\\s*;?\\s*$`,
+    'gm',
+  );
+
+  let next = code.replace(fromRe, '');
+
+  // Remove side-effect imports: `import "module"`.
+  const sideEffectRe = new RegExp(String.raw`^\\s*import\\s+['"]${escaped}['"]\\s*;?\\s*$`, 'gm');
+  next = next.replace(sideEffectRe, '');
+
+  return next === before ? code : next;
 }
 
 function sanitizePackageJson(content: string): { content: string; warnings: string[] } {

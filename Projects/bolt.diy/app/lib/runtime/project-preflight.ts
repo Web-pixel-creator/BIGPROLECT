@@ -46,6 +46,8 @@ export async function preflightViteReactBaseline(webcontainer: WebContainer): Pr
   }
 
   const baselineFilesAdded = await ensureBaselineFiles(webcontainer);
+  await ensureTsconfigAlias(webcontainer);
+  await ensureViteConfigAlias(webcontainer);
   const { packageJsonChanged: baselinePkgChanged, addedDependencies: baselineDepsAdded } = await ensureBaselinePackageJson(
     webcontainer,
     pkgText,
@@ -83,6 +85,86 @@ async function ensureBaselineFiles(webcontainer: WebContainer): Promise<number> 
   }
 
   return added;
+}
+
+async function ensureTsconfigAlias(webcontainer: WebContainer): Promise<boolean> {
+  const tsconfigText = await readTextFile(webcontainer, 'tsconfig.json');
+  if (!tsconfigText) return false;
+
+  const config = safeParseJson<Record<string, any>>(tsconfigText);
+  if (!config) return false;
+
+  const compilerOptions = { ...(config.compilerOptions ?? {}) } as Record<string, any>;
+  const paths = { ...(compilerOptions.paths ?? {}) } as Record<string, any>;
+
+  let changed = false;
+
+  if (!compilerOptions.baseUrl) {
+    compilerOptions.baseUrl = '.';
+    changed = true;
+  }
+
+  if (!paths['@/*']) {
+    paths['@/*'] = ['./src/*'];
+    changed = true;
+  }
+
+  if (!changed) return false;
+
+  compilerOptions.paths = paths;
+  config.compilerOptions = compilerOptions;
+
+  const nextContent = JSON.stringify(config, null, 2) + '\n';
+  const sanitized = sanitizeGeneratedFile('tsconfig.json', nextContent);
+  await webcontainer.fs.writeFile('tsconfig.json', sanitized.content);
+  return true;
+}
+
+async function ensureViteConfigAlias(webcontainer: WebContainer): Promise<boolean> {
+  const viteConfigPath = await findFirstExistingFile(webcontainer, [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+  ]);
+  if (!viteConfigPath) return false;
+
+  const original = await readTextFile(webcontainer, viteConfigPath);
+  if (!original) return false;
+  if (original.includes('vite-tsconfig-paths')) return false;
+
+  let next = original;
+  const isCommonJs = /\bmodule\.exports\b/.test(next) || (/\brequire\(/.test(next) && !/\bexport\s+default\b/.test(next));
+
+  if (isCommonJs) {
+    const requireMatches = [...next.matchAll(/^const .*require\(.*\).*$/gm)];
+    if (requireMatches.length > 0) {
+      const last = requireMatches[requireMatches.length - 1];
+      const insertAt = (last.index ?? 0) + last[0].length;
+      next = `${next.slice(0, insertAt)}\nconst tsconfigPaths = require(\"vite-tsconfig-paths\").default;${next.slice(insertAt)}`;
+    } else {
+      next = `const tsconfigPaths = require(\"vite-tsconfig-paths\").default;\n${next}`;
+    }
+  } else {
+    const importMatches = [...next.matchAll(/^import .*$/gm)];
+    if (importMatches.length > 0) {
+      const last = importMatches[importMatches.length - 1];
+      const insertAt = (last.index ?? 0) + last[0].length;
+      next = `${next.slice(0, insertAt)}\nimport tsconfigPaths from \"vite-tsconfig-paths\";${next.slice(insertAt)}`;
+    } else {
+      next = `import tsconfigPaths from \"vite-tsconfig-paths\";\n${next}`;
+    }
+  }
+
+  if (next.includes('plugins: [') && !next.includes('tsconfigPaths()')) {
+    next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}tsconfigPaths(), `);
+  }
+
+  if (next === original) return false;
+
+  const sanitized = sanitizeGeneratedFile(viteConfigPath, next);
+  await webcontainer.fs.writeFile(viteConfigPath, sanitized.content);
+  return true;
 }
 
 async function ensureBaselinePackageJson(
@@ -176,6 +258,15 @@ async function fileExists(webcontainer: WebContainer, filePath: string): Promise
   } catch {
     return false;
   }
+}
+
+async function findFirstExistingFile(webcontainer: WebContainer, candidates: string[]): Promise<string | null> {
+  for (const filePath of candidates) {
+    if (await fileExists(webcontainer, filePath)) {
+      return filePath;
+    }
+  }
+  return null;
 }
 
 async function ensureParentDir(webcontainer: WebContainer, filePath: string) {

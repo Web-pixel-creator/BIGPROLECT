@@ -117,14 +117,15 @@ function heuristicSelectStarterTemplate(message: string): { template: string; ti
     return { template: 'Qwik Typescript', title: titleFromPrompt(raw) };
   }
 
-  // Default for UI/website/design requests: Vite React baseline is the most reliable.
+  // Default for UI/website/design requests: prefer the shadcn-ready Vite template
+  // (Tailwind + @ alias + ui-kit) to reduce preview failures from missing baseline files.
   if (
     /\b(website|landing|web app|ui|design|frontend|react|vite|tailwind|shadcn|e-?commerce)\b/.test(lower) ||
     /\b(лендинг|сайт|дизайн|интерфейс|магазин|интернет-магазин|витрина|каталог)\b/.test(lower) ||
     /\[style:\s*[^\]]+\]/i.test(raw) ||
     /\[design:\s*[^\]]+\]/i.test(raw)
   ) {
-    return { template: 'Vite React', title: titleFromPrompt(raw) };
+    return { template: 'Vite Shadcn', title: titleFromPrompt(raw) };
   }
 
   return null;

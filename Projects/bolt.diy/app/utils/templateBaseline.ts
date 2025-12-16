@@ -292,7 +292,7 @@ function ensureTsconfigPaths(files: TemplateFile[]) {
 }
 
 function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
-  const viteConfigIndex = files.findIndex((file) => file.path === 'vite.config.ts');
+  const viteConfigIndex = files.findIndex((file) => /^vite\.config\.(ts|mts|js|mjs)$/.test(file.path));
   if (viteConfigIndex === -1) return;
 
   const original = files[viteConfigIndex].content;
@@ -302,15 +302,31 @@ function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
 
   let next = original;
 
-  if (!next.includes("from 'vite-tsconfig-paths'") && !next.includes('from \"vite-tsconfig-paths\"')) {
-    // Insert after the last import line.
-    const importMatches = [...next.matchAll(/^import .*$/gm)];
-    if (importMatches.length > 0) {
-      const last = importMatches[importMatches.length - 1];
-      const insertAt = (last.index ?? 0) + last[0].length;
-      next = `${next.slice(0, insertAt)}\nimport tsconfigPaths from \"vite-tsconfig-paths\";${next.slice(insertAt)}`;
-    } else {
-      next = `import tsconfigPaths from \"vite-tsconfig-paths\";\n${next}`;
+  const isCommonJs = /\bmodule\.exports\b/.test(next) || (/\brequire\(/.test(next) && !/\bexport\s+default\b/.test(next));
+
+  if (isCommonJs) {
+    if (!next.includes('vite-tsconfig-paths')) {
+      // Insert after the last require line (or at the top if no requires found).
+      const requireMatches = [...next.matchAll(/^const .*require\(.*\).*$/gm)];
+      if (requireMatches.length > 0) {
+        const last = requireMatches[requireMatches.length - 1];
+        const insertAt = (last.index ?? 0) + last[0].length;
+        next = `${next.slice(0, insertAt)}\nconst tsconfigPaths = require(\"vite-tsconfig-paths\").default;${next.slice(insertAt)}`;
+      } else {
+        next = `const tsconfigPaths = require(\"vite-tsconfig-paths\").default;\n${next}`;
+      }
+    }
+  } else {
+    if (!next.includes("from 'vite-tsconfig-paths'") && !next.includes('from \"vite-tsconfig-paths\"')) {
+      // Insert after the last import line.
+      const importMatches = [...next.matchAll(/^import .*$/gm)];
+      if (importMatches.length > 0) {
+        const last = importMatches[importMatches.length - 1];
+        const insertAt = (last.index ?? 0) + last[0].length;
+        next = `${next.slice(0, insertAt)}\nimport tsconfigPaths from \"vite-tsconfig-paths\";${next.slice(insertAt)}`;
+      } else {
+        next = `import tsconfigPaths from \"vite-tsconfig-paths\";\n${next}`;
+      }
     }
   }
 
