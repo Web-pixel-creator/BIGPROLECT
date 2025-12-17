@@ -39,6 +39,116 @@ function parseCookies(cookieHeader: string): Record<string, string> {
   return cookies;
 }
 
+function normalizePathForMatch(path: string): string {
+  return (path || '').replace(/\\/g, '/');
+}
+
+function getMessageTextContent(message: Messages[number] | undefined): string {
+  if (!message) return '';
+
+  const content: any = (message as any).content;
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((item) => item && item.type === 'text' && typeof item.text === 'string')
+      .map((item) => item.text)
+      .join('');
+  }
+
+  return '';
+}
+
+function heuristicSelectContextFiles(args: {
+  files: FileMap;
+  filePaths: string[];
+  userPrompt: string;
+  maxFiles: number;
+}): FileMap {
+  const { files, filePaths, userPrompt, maxFiles } = args;
+
+  const workDirPrefix = `${normalizePathForMatch(WORK_DIR).replace(/\/+$/g, '')}/`;
+  const normalizedFullPaths = filePaths.map(normalizePathForMatch);
+
+  const pickFullByEndsWith = (suffixes: string[]): string | undefined => {
+    for (const suffix of suffixes) {
+      const target = `${workDirPrefix}${suffix}`.toLowerCase();
+      const found = normalizedFullPaths.find((p) => p.toLowerCase() === target);
+      if (found) return found;
+    }
+    return undefined;
+  };
+
+  const pickFullByNameIncludes = (needles: string[]): string | undefined => {
+    const lowerNeedles = needles.map((n) => n.toLowerCase());
+    const found = normalizedFullPaths.find((p) => {
+      const fileName = p.split('/').pop() ?? p;
+      const lowerName = fileName.toLowerCase();
+      return lowerNeedles.some((n) => lowerName.includes(n));
+    });
+    return found;
+  };
+
+  const picked = new Set<string>();
+  const add = (fullPath: string | undefined) => {
+    if (!fullPath) return;
+    if (picked.size >= maxFiles) return;
+    picked.add(fullPath);
+  };
+
+  // Always-valuable project files
+  add(pickFullByEndsWith(['package.json']));
+  add(pickFullByEndsWith(['src/App.tsx', 'src/app.tsx', 'src/main.tsx']));
+  add(pickFullByEndsWith(['src/lib/utils.ts']));
+  if (/\b(css|tailwind|style|стил|цвет|theme)\b/i.test(userPrompt)) {
+    add(pickFullByEndsWith(['src/index.css', 'src/App.css']));
+    add(pickFullByEndsWith(['tailwind.config.ts', 'tailwind.config.js', 'postcss.config.js', 'postcss.config.cjs']));
+  }
+  if (/\b(vite|alias|tsconfig|path)\b/i.test(userPrompt)) {
+    add(pickFullByEndsWith(['vite.config.ts', 'vite.config.js', 'tsconfig.json']));
+  }
+
+  // Section-driven component files (best-effort)
+  const wantsHeader = /\b(header|navbar|nav|menu|top\s*bar|шапк|меню|навигац)\b/i.test(userPrompt);
+  const wantsFooter = /\bfooter|подвал\b/i.test(userPrompt);
+  const wantsProducts = /\b(product|products|catalog|grid|bestseller|товар|каталог|сетк|карточк)\b/i.test(userPrompt);
+  const wantsCategories = /\b(category|categories|seating|tables|storage|категор)\b/i.test(userPrompt);
+
+  if (wantsHeader) {
+    add(pickFullByNameIncludes(['header', 'navbar', 'nav']));
+  }
+  if (wantsFooter) {
+    add(pickFullByNameIncludes(['footer']));
+  }
+  if (wantsProducts) {
+    add(pickFullByNameIncludes(['product', 'grid', 'bestseller']));
+  }
+  if (wantsCategories) {
+    add(pickFullByNameIncludes(['category', 'categories']));
+  }
+
+  // Fallback: include a few TS/TSX files from src if we still have budget.
+  if (picked.size === 0) {
+    for (const fullPath of normalizedFullPaths) {
+      if (picked.size >= maxFiles) break;
+      if (!fullPath.includes('/src/')) continue;
+      if (!/\.(tsx|ts)$/.test(fullPath)) continue;
+      picked.add(fullPath);
+    }
+  }
+
+  const result: FileMap = {};
+  for (const fullPath of picked) {
+    const rel = fullPath.toLowerCase().startsWith(workDirPrefix.toLowerCase())
+      ? fullPath.slice(workDirPrefix.length)
+      : fullPath;
+    const dirent = files[fullPath] ?? files[`${WORK_DIR}/${rel}`];
+    if (!dirent) continue;
+    result[rel] = dirent;
+  }
+
+  return result;
+}
+
 async function chatAction({ context, request }: ActionFunctionArgs) {
   const streamRecovery = new StreamRecoveryManager({
     timeout: 45000,
@@ -101,110 +211,157 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
         const processedMessages = await mcpService.processToolInvocations(messages, dataStream);
 
+        const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
+        const selectedMeta = lastUserMessage ? extractPropertiesFromMessage(lastUserMessage) : undefined;
+        const selectedProvider = selectedMeta?.provider;
+        const selectedModel = selectedMeta?.model;
+        const isGoogleProvider =
+          (selectedProvider || '').toLowerCase() === 'google' || Boolean(selectedModel && /gemini/i.test(selectedModel));
+
         if (processedMessages.length > 3) {
           messageSliceId = processedMessages.length - 3;
         }
 
         if (filePaths.length > 0 && contextOptimization) {
-          logger.debug('Generating Chat Summary');
-          dataStream.writeData({
-            type: 'progress',
-            label: 'summary',
-            status: 'in-progress',
-            order: progressCounter++,
-            message: 'Analysing Request',
-          } satisfies ProgressAnnotation);
+          // Google is particularly sensitive to RPM/TPM quotas. Summary + context-selection are extra LLM calls
+          // that often cause the *second* user prompt to hit rate limits. For Google, use a fast heuristic
+          // selector and skip summary/context LLM calls to keep a single LLM request per user prompt.
+          if (isGoogleProvider) {
+            logger.debug('Skipping createSummary/selectContext for Google (heuristic context selection)');
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'in-progress',
+              order: progressCounter++,
+              message: 'Selecting Relevant Files',
+            } satisfies ProgressAnnotation);
 
-          // Create a summary of the chat
-          console.log(`Messages count: ${processedMessages.length}`);
+            const promptText = getMessageTextContent(lastUserMessage);
+            filteredFiles = heuristicSelectContextFiles({
+              files,
+              filePaths,
+              userPrompt: promptText,
+              maxFiles: 4,
+            });
 
-          summary = await createSummary({
-            messages: [...processedMessages],
-            env: context.cloudflare?.env,
-            apiKeys,
-            providerSettings,
-            promptId,
-            contextOptimization,
-            onFinish(resp) {
-              if (resp.usage) {
-                logger.debug('createSummary token usage', JSON.stringify(resp.usage));
-                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-              }
-            },
-          });
-          dataStream.writeData({
-            type: 'progress',
-            label: 'summary',
-            status: 'complete',
-            order: progressCounter++,
-            message: 'Analysis Complete',
-          } satisfies ProgressAnnotation);
+            const contextKeys = Object.keys(filteredFiles || {});
+            if (contextKeys.length) {
+              logger.debug(`heuristic files in context : ${JSON.stringify(contextKeys)}`);
 
-          dataStream.writeMessageAnnotation({
-            type: 'chatSummary',
-            summary,
-            chatId: processedMessages.slice(-1)?.[0]?.id,
-          } as ContextAnnotation);
+              dataStream.writeMessageAnnotation({
+                type: 'codeContext',
+                files: contextKeys,
+              } as ContextAnnotation);
+            }
 
-          // Update context buffer
-          logger.debug('Updating Context Buffer');
-          dataStream.writeData({
-            type: 'progress',
-            label: 'context',
-            status: 'in-progress',
-            order: progressCounter++,
-            message: 'Determining Files to Read',
-          } satisfies ProgressAnnotation);
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Code Files Selected',
+            } satisfies ProgressAnnotation);
+          } else {
+            logger.debug('Generating Chat Summary');
+            dataStream.writeData({
+              type: 'progress',
+              label: 'summary',
+              status: 'in-progress',
+              order: progressCounter++,
+              message: 'Analysing Request',
+            } satisfies ProgressAnnotation);
 
-          // Select context files
-          console.log(`Messages count: ${processedMessages.length}`);
-          filteredFiles = await selectContext({
-            messages: [...processedMessages],
-            env: context.cloudflare?.env,
-            apiKeys,
-            files,
-            providerSettings,
-            promptId,
-            contextOptimization,
-            summary,
-            onFinish(resp) {
-              if (resp.usage) {
-                logger.debug('selectContext token usage', JSON.stringify(resp.usage));
-                cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-              }
-            },
-          });
+            // Create a summary of the chat
+            console.log(`Messages count: ${processedMessages.length}`);
 
-          if (filteredFiles) {
-            logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
+            summary = await createSummary({
+              messages: [...processedMessages],
+              env: context.cloudflare?.env,
+              apiKeys,
+              providerSettings,
+              promptId,
+              contextOptimization,
+              onFinish(resp) {
+                if (resp.usage) {
+                  logger.debug('createSummary token usage', JSON.stringify(resp.usage));
+                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                }
+              },
+            });
+            dataStream.writeData({
+              type: 'progress',
+              label: 'summary',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Analysis Complete',
+            } satisfies ProgressAnnotation);
+
+            dataStream.writeMessageAnnotation({
+              type: 'chatSummary',
+              summary,
+              chatId: processedMessages.slice(-1)?.[0]?.id,
+            } as ContextAnnotation);
+
+            // Update context buffer
+            logger.debug('Updating Context Buffer');
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'in-progress',
+              order: progressCounter++,
+              message: 'Determining Files to Read',
+            } satisfies ProgressAnnotation);
+
+            // Select context files
+            console.log(`Messages count: ${processedMessages.length}`);
+            filteredFiles = await selectContext({
+              messages: [...processedMessages],
+              env: context.cloudflare?.env,
+              apiKeys,
+              files,
+              providerSettings,
+              promptId,
+              contextOptimization,
+              summary,
+              onFinish(resp) {
+                if (resp.usage) {
+                  logger.debug('selectContext token usage', JSON.stringify(resp.usage));
+                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                }
+              },
+            });
+
+            if (filteredFiles) {
+              logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
+            }
+
+            dataStream.writeMessageAnnotation({
+              type: 'codeContext',
+              files: Object.keys(filteredFiles).map((key) => {
+                let path = key;
+
+                if (path.startsWith(WORK_DIR)) {
+                  path = path.replace(WORK_DIR, '');
+                }
+
+                return path;
+              }),
+            } as ContextAnnotation);
+
+            dataStream.writeData({
+              type: 'progress',
+              label: 'context',
+              status: 'complete',
+              order: progressCounter++,
+              message: 'Code Files Selected',
+            } satisfies ProgressAnnotation);
+
+            // logger.debug('Code Files Selected');
           }
-
-          dataStream.writeMessageAnnotation({
-            type: 'codeContext',
-            files: Object.keys(filteredFiles).map((key) => {
-              let path = key;
-
-              if (path.startsWith(WORK_DIR)) {
-                path = path.replace(WORK_DIR, '');
-              }
-
-              return path;
-            }),
-          } as ContextAnnotation);
-
-          dataStream.writeData({
-            type: 'progress',
-            label: 'context',
-            status: 'complete',
-            order: progressCounter++,
-            message: 'Code Files Selected',
-          } satisfies ProgressAnnotation);
-
-          // logger.debug('Code Files Selected');
         }
 
         const options: StreamingOptions = {

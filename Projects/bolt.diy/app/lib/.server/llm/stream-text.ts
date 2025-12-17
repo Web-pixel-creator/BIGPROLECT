@@ -350,9 +350,10 @@ export async function streamText(props: {
     const userPrompt = lastUserMessage?.content ?? '';
     const effectRecipes = buildEffectRecipesPromptSection(userPrompt, {
       maxEffects: 4,
-      includeCode: true,
-      maxCodeChars: 12_000,
-      maxTotalCodeChars: 24_000,
+      // Google tends to rate-limit more aggressively; keep prompt smaller by avoiding inlining effect code.
+      includeCode: !isGoogleProvider,
+      maxCodeChars: isGoogleProvider ? 4_000 : 12_000,
+      maxTotalCodeChars: isGoogleProvider ? 8_000 : 24_000,
     });
 
     if (effectRecipes) {
@@ -413,7 +414,11 @@ export async function streamText(props: {
   // }
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
-    const codeContext = createFilesContextCapped(contextFiles, { maxTotalChars: 40_000, maxFileChars: 12_000 });
+    const codeContext = createFilesContextCapped(contextFiles, {
+      // Keep Google input smaller to reduce token-limit and quota issues.
+      maxTotalChars: isGoogleProvider ? 20_000 : 40_000,
+      maxFileChars: isGoogleProvider ? 8_000 : 12_000,
+    });
 
     systemPrompt = `${systemPrompt}
 

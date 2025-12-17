@@ -281,6 +281,8 @@ export class ActionRunner {
       const enhancedError = this.#createEnhancedShellError(action.content, resp?.exitCode, resp?.output);
       throw new ActionCommandError(enhancedError.title, enhancedError.details);
     }
+
+    await this.#maybePostflightProject(action.content);
   }
 
   async #runStartAction(action: ActionState) {
@@ -360,6 +362,31 @@ export class ActionRunner {
       }
     } catch (error) {
       logger.debug('Preflight failed:', error);
+    }
+  }
+
+  async #maybePostflightProject(command: string) {
+    // Commands like `pnpm dlx shadcn ...` can write files directly inside the WebContainer and bypass
+    // our per-file sanitizer. Run a postflight pass to normalize imports/URLs and ensure deps.
+    const isShadcnCommand = /\bshadcn\b/i.test(command) || /\b@21st-dev\/cli\b/i.test(command);
+    if (!isShadcnCommand) return;
+
+    try {
+      const webcontainer = await this.#webcontainer;
+      const result = await preflightViteReactBaseline(webcontainer);
+
+      // If deps changed, install immediately so the running preview doesn't white-screen on missing packages.
+      if (result.isViteReact && (result.packageJsonChanged || result.addedDependencies.length > 0)) {
+        const installProcess = await webcontainer.spawn('npm', ['install']);
+        installProcess.output.pipeTo(
+          new WritableStream({
+            write() {},
+          }),
+        );
+        await installProcess.exit;
+      }
+    } catch (error) {
+      logger.debug('Postflight failed:', error);
     }
   }
 
