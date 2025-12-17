@@ -1,4 +1,4 @@
-import { BaseProvider } from '~/lib/modules/llm/base-provider';
+﻿import { BaseProvider } from '~/lib/modules/llm/base-provider';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { IProviderSetting } from '~/types/model';
 import type { LanguageModelV1 } from 'ai';
@@ -50,6 +50,20 @@ export default class GoogleProvider extends BaseProvider {
       maxTokenAllowed: 1000000,
       maxCompletionTokens: 8192,
     },
+
+    /*
+     * Gemini 2.0 Flash Thinking - Reasoning model with chain-of-thought
+     * Better at following complex instructions
+     * 1M context, 8K output limit
+     */
+    {
+      name: 'gemini-2.0-flash-thinking-exp-1219',
+      label: 'Gemini 2.0 Flash Thinking',
+      provider: 'Google',
+      maxTokenAllowed: 1000000,
+      maxCompletionTokens: 8192,
+    },
+
 
     /*
      * Gemini 1.5 Pro: 2M context, 8K output limit
@@ -110,13 +124,13 @@ export default class GoogleProvider extends BaseProvider {
     // Filter out models with very low token limits and experimental/unstable models
     const data = res.models.filter((model: any) => {
       const hasGoodTokenLimit = (model.outputTokenLimit || 0) > 8000;
-      const isStable = !model.name.includes('exp') || model.name.includes('flash-exp') || model.name.includes('2.5');
+      const isStable = !model.name.includes('exp') || model.name.includes('flash-exp') || model.name.includes('thinking-exp') || model.name.includes('2.5');
       const isGemini = model.name.includes('gemini');
 
       return hasGoodTokenLimit && isStable && isGemini;
     });
 
-    return data.map((m: any) => {
+    const models = data.map((m: any) => {
       const modelName = m.name.replace('models/', '');
 
       // Get accurate context window from Google API
@@ -158,6 +172,20 @@ export default class GoogleProvider extends BaseProvider {
         maxCompletionTokens: completionTokens,
       };
     });
+
+    // Always add Gemini 2.0 Flash Thinking if not already in list
+    const hasThinking = models.some((m: any) => m.name.includes('thinking'));
+    if (!hasThinking) {
+      models.push({
+        name: 'gemini-2.0-flash-thinking-exp-1219',
+        label: 'Gemini 2.0 Flash Thinking (1M context)',
+        provider: this.name,
+        maxTokenAllowed: 1000000,
+        maxCompletionTokens: 8192,
+      });
+    }
+
+    return models;
   }
 
   getModelInstance(options: {
@@ -187,3 +215,4 @@ export default class GoogleProvider extends BaseProvider {
     return google(model);
   }
 }
+

@@ -17,6 +17,65 @@ export function cn(...inputs: ClassValue[]) {
 `,
   },
   {
+    name: 'index.css',
+    path: 'src/index.css',
+    content: `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+`,
+  },
+  {
+    name: 'main.tsx',
+    path: 'src/main.tsx',
+    content: `import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+`,
+  },
+  {
+    name: 'App.tsx',
+    path: 'src/App.tsx',
+    content: `import React from "react";
+
+// Minimal neutral shell so LLM fills real sections instead of preset SaaS UI.
+// Add your sections inside the main tag below.
+export default function App() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900">
+      <main className="max-w-7xl mx-auto px-6 py-16 space-y-12">
+        {/* Navigation */}
+        {/* Hero */}
+        {/* Content sections go here */}
+      </main>
+    </div>
+  );
+}
+`,
+  },
+  {
     name: 'button.tsx',
     path: 'src/components/ui/button.tsx',
     content: `import * as React from "react";

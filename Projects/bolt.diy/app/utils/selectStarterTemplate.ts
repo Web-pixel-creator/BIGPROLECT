@@ -151,6 +151,7 @@ const parseSelectedTemplate = (llmOutput: string): { template: string; title: st
 
 export const selectStarterTemplate = async (options: { message: string; model: string; provider: ProviderInfo }) => {
   const { message, model, provider } = options;
+  const wantsShadcn = /\bshadcn\b/i.test(message) || message.toLowerCase().includes('shadcn/ui');
 
   const heuristic = heuristicSelectStarterTemplate(message);
   if (heuristic) {
@@ -184,14 +185,19 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     }
 
     const { text } = respJson;
-    const selectedTemplate = parseSelectedTemplate(text);
+    let selectedTemplate = parseSelectedTemplate(text);
+
+    // Safety: если пользователь НЕ просил shadcn, но LLM выбрал шаблон с shadcn — подменяем на Vite React
+    if (selectedTemplate && !wantsShadcn && selectedTemplate.template.toLowerCase().includes('shadcn')) {
+      selectedTemplate = { template: 'Vite React', title: titleFromPrompt(message) };
+    }
 
     if (selectedTemplate) {
       return selectedTemplate;
-    } else {
-      console.log('No template selected, using blank template');
-      return { template: 'blank', title: '' };
     }
+
+    console.log('No template selected, using blank template');
+    return { template: 'blank', title: '' };
   } catch (error) {
     console.error('Error selecting starter template:', error);
     return { template: 'blank', title: '' };
@@ -249,6 +255,15 @@ export async function getTemplates(templateName: string, title?: string) {
   // exclude    .bolt
   filteredFiles = filteredFiles.filter((x) => x.path.startsWith('.bolt') == false);
 
+  // If it's a Vite+React template (non-shadcn), drop any pre-bundled src/*
+  // so we don't import preset UIs like "BoltApp". Baseline will add neutral files.
+  const templateTags = template.tags ?? [];
+  const isViteReactTemplate = templateTags.includes('vite') && templateTags.includes('react');
+  const isShadcnTemplate = template.name.toLowerCase().includes('shadcn');
+  if (isViteReactTemplate && !isShadcnTemplate) {
+    filteredFiles = filteredFiles.filter((x) => !x.path.replace(/\\/g, '/').startsWith('src/'));
+  }
+
   // check for ignore file in .bolt folder
   const templateIgnoreFile = files.find((x) => x.path.startsWith('.bolt') && x.name == 'ignore');
 
@@ -269,8 +284,6 @@ export async function getTemplates(templateName: string, title?: string) {
     filesToImport.ignoreFile = ignoredFiles;
   }
 
-  const templateTags = template.tags ?? [];
-  const isViteReactTemplate = templateTags.includes('vite') && templateTags.includes('react');
   if (isViteReactTemplate) {
     filesToImport.files = applyWebTemplateBaseline(filesToImport.files);
   }
