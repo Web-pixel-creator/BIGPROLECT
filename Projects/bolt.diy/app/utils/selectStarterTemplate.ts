@@ -64,7 +64,7 @@ Important: Provide only the selection tags in your response, no additional text.
 MOST IMPORTANT: YOU DONT HAVE TIME TO THINK JUST START RESPONDING BASED ON HUNCH 
 `;
 
-const templates: Template[] = STARTER_TEMPLATES.filter((t) => !t.name.includes('shadcn'));
+const templates: Template[] = STARTER_TEMPLATES.filter((t) => !t.name.toLowerCase().includes('shadcn'));
 
 function titleFromPrompt(message: string): string {
   const raw = (message || '').trim();
@@ -83,6 +83,7 @@ function heuristicSelectStarterTemplate(message: string): { template: string; ti
   if (!raw) return null;
 
   const lower = raw.toLowerCase();
+  const wantsShadcn = /\bshadcn\b/.test(lower) || lower.includes('shadcn/ui');
 
   // Simple scripts
   if (
@@ -117,15 +118,15 @@ function heuristicSelectStarterTemplate(message: string): { template: string; ti
     return { template: 'Qwik Typescript', title: titleFromPrompt(raw) };
   }
 
-  // Default for UI/website/design requests: prefer the shadcn-ready Vite template
-  // (Tailwind + @ alias + ui-kit) to reduce preview failures from missing baseline files.
+  // Default for UI/website/design requests: prefer Vite React.
+  // Use shadcn templates ONLY when the user explicitly asks for shadcn.
   if (
     /\b(website|landing|web app|ui|design|frontend|react|vite|tailwind|shadcn|e-?commerce)\b/.test(lower) ||
     /(лендинг|сайт|дизайн|интерфейс|магазин|интернет[\\s-]магазин|витрина|каталог)/.test(lower) ||
     /\[style:\s*[^\]]+\]/i.test(raw) ||
     /\[design:\s*[^\]]+\]/i.test(raw)
   ) {
-    return { template: 'Vite Shadcn', title: titleFromPrompt(raw) };
+    return { template: wantsShadcn ? 'Vite Shadcn' : 'Vite React', title: titleFromPrompt(raw) };
   }
 
   return null;

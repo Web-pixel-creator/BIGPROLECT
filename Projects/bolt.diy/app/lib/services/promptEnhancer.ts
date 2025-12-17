@@ -668,7 +668,7 @@ function hasUserSpecifiedColors(prompt: string): boolean {
   const hexPattern = /#[0-9A-Fa-f]{6}/g;
   const matches = prompt.match(hexPattern);
 
-  return matches !== null && matches.length >= 2;
+  return matches !== null && matches.length >= 1;
 }
 
 /**
@@ -678,7 +678,7 @@ function extractUserColors(prompt: string): Record<string, string> | null {
   const hexPattern = /#[0-9A-Fa-f]{6}/g;
   const matches = prompt.match(hexPattern);
 
-  if (!matches || matches.length < 2) {
+  if (!matches || matches.length < 1) {
     return null;
   }
 
@@ -708,17 +708,23 @@ function extractUserColors(prompt: string): Record<string, string> | null {
     }
   });
 
-  // If we couldn't identify by context, assign by order
-  if (!colors.dark && matches[0]) {
-    colors.dark = matches[0];
-  }
+  // If we couldn't identify by context, assign by order (or assume single HEX is the light background).
+  if (matches.length === 1) {
+    if (!colors.dark && !colors.light && matches[0]) {
+      colors.light = matches[0];
+    }
+  } else {
+    if (!colors.dark && matches[0]) {
+      colors.dark = matches[0];
+    }
 
-  if (!colors.light && matches[1]) {
-    colors.light = matches[1];
-  }
+    if (!colors.light && matches[1]) {
+      colors.light = matches[1];
+    }
 
-  if (!colors.accent && matches[2]) {
-    colors.accent = matches[2];
+    if (!colors.accent && matches[2]) {
+      colors.accent = matches[2];
+    }
   }
 
   return Object.keys(colors).length > 0 ? colors : null;
@@ -884,7 +890,7 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
     features: ['feature', 'функци', 'services', 'услуг', 'offerings', 'benefits', 'преимущества'],
     gallery: ['gallery', 'галерея', 'portfolio', 'портфолио', 'photos', 'фото', 'images', 'work', 'projects'],
     testimonials: ['testimonial', 'отзыв', 'review', 'client', 'клиент', 'feedback', 'quote'],
-    pricing: ['pricing', 'price', 'цен', 'тариф', 'план', 'cost', 'subscription'],
+    pricing: ['pricing', 'тариф', 'план', 'cost', 'subscription', 'billing', 'plans'],
     cta: ['cta', 'call to action', 'inquiry', 'contact', 'связ', 'заявк', 'book', 'get started', 'sign up'],
     faq: ['faq', 'вопрос', 'question', 'answer', 'help'],
     footer: ['footer', 'подвал', 'bottom', 'copyright'],
@@ -1009,52 +1015,9 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
     }
   }
 
-  const pickSome = (urls: string[], max: number) => {
-    const unique = [...new Set(urls)];
-    for (let index = unique.length - 1; index > 0; index -= 1) {
-      const swap = Math.floor(Math.random() * (index + 1));
-      [unique[index], unique[swap]] = [unique[swap], unique[index]];
-    }
-    return unique.slice(0, Math.min(max, unique.length));
-  };
-
-  const buildImageSuggestions = () => {
-    const blocks: string[] = [];
-
-    const addList = (title: string, urls: string[]) => {
-      if (!urls || urls.length === 0) return;
-      blocks.push(`${title}:\n${urls.map((url) => `- ${url}`).join('\n')}`);
-    };
-
-    if (mentionedSections.includes('hero') && Array.isArray((images as any).hero)) {
-      addList('HERO IMAGES', pickSome((images as any).hero, 3));
-    }
-
-    if (mentionedSections.includes('gallery') && Array.isArray((images as any).gallery)) {
-      addList('GALLERY IMAGES', pickSome((images as any).gallery, 6));
-    }
-
-    if (mentionedSections.includes('products') && Array.isArray((images as any).products)) {
-      addList('PRODUCT IMAGES', pickSome((images as any).products, 8));
-    }
-
-    if (mentionedSections.includes('categories') && (images as any).categories && typeof (images as any).categories === 'object') {
-      const categories = (images as any).categories as Record<string, string[]>;
-      const categoryBlocks = Object.entries(categories)
-        .map(([name, urls]) => `${name.toUpperCase()}:\n${pickSome(urls, 3).map((url) => `- ${url}`).join('\n')}`)
-        .join('\n\n');
-
-      if (categoryBlocks) {
-        blocks.push(`CATEGORY IMAGES:\n${categoryBlocks}`);
-      }
-    }
-
-    if (blocks.length === 0) return '';
-
-    return `\nIMAGES\n- Use ONLY the URLs listed below. DO NOT invent new image URLs.\n- If you need more images, repeat from the lists.\n- For <img>, set crossOrigin=\"anonymous\" and add loading=\"lazy\".\n- Avoid Picsum and local /images/* placeholders (may break in WebContainer/COEP).\n\n${blocks.join('\n\n')}`;
-  };
-
-  const imageSuggestions = buildImageSuggestions();
+  // Don't inline big image URL lists into the prompt. It's noisy for users and WebContainer may block
+  // external images anyway (and our sanitizer will enforce safe placeholders/proxies).
+  const imageSuggestions = '';
 
   const enhancedPrompt = `${userPrompt}
 ${layoutSuggestions ? `\n${layoutSuggestions}` : ''}
