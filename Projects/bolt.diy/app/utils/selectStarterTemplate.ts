@@ -255,12 +255,11 @@ export async function getTemplates(templateName: string, title?: string) {
   // exclude    .bolt
   filteredFiles = filteredFiles.filter((x) => x.path.startsWith('.bolt') == false);
 
-  // If it's a Vite+React template (non-shadcn), drop any pre-bundled src/*
+  // If it's a Vite+React template, drop any pre-bundled src/*
   // so we don't import preset UIs like "BoltApp". Baseline will add neutral files.
   const templateTags = template.tags ?? [];
   const isViteReactTemplate = templateTags.includes('vite') && templateTags.includes('react');
-  const isShadcnTemplate = template.name.toLowerCase().includes('shadcn');
-  if (isViteReactTemplate && !isShadcnTemplate) {
+  if (isViteReactTemplate) {
     filteredFiles = filteredFiles.filter((x) => !x.path.replace(/\\/g, '/').startsWith('src/'));
   }
 
