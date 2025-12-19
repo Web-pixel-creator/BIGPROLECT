@@ -417,9 +417,10 @@ export const ChatImpl = memo(
 
       let finalMessageContent = messageContent;
       let displayMessageContent = messageContent; // What user sees in chat
+      const isDesignPrompt = shouldEnhancePrompt(messageContent);
 
       // Enhance prompt with design system if it's a design/website request.
-      if (shouldEnhancePrompt(messageContent)) {
+      if (isDesignPrompt) {
         const enhanced = enhancePromptWithDesignSystem(messageContent);
         finalMessageContent = enhanced.enhancedPrompt;
         // Show enhanced prompt to user so they can see what was sent
@@ -446,7 +447,7 @@ export const ChatImpl = memo(
       if (!chatStarted) {
         setFakeLoading(true);
 
-        if (autoSelectTemplate) {
+        if (autoSelectTemplate && !isDesignPrompt) {
           const { template, title } = await selectStarterTemplate({
             message: finalMessageContent,
             model,

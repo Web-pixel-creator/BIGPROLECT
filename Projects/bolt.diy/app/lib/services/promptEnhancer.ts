@@ -4,8 +4,7 @@
  * before sending to LLM
  */
 
-// Theme detection keywords
-// Порядок важен: сначала узкие темы, затем общий ecommerce
+// Theme detection keywords (EN + RU)
 const THEME_KEYWORDS = {
   furniture: [
     'furniture',
@@ -18,24 +17,75 @@ const THEME_KEYWORDS = {
     'cabinet',
     'furnishing',
     'home decor',
-    'мебель',
-    'диван',
-    'кресло',
-    'стул',
-    'стулья',
-    'стол',
-    'столы',
-    'шкаф',
-    'комод',
-    'стеллаж',
-    'хранение',
-    'интерьер',
-    'декор',
+    '??????',
+    '?????',
+    '??????',
+    '????',
+    '????',
+    '????',
+    '?????',
+    '?????',
+    '????????',
+    '????????',
+    '???????',
+    '???????',
   ],
-  fashion: ['fashion', 'clothing', 'apparel', 'shoes', 'accessories', 'lookbook', 'мода', 'одежда', 'обувь', 'аксессуар', 'лукбук'],
-  beauty: ['beauty', 'cosmetics', 'makeup', 'skincare', 'fragrance', 'косметика', 'макияж', 'уход', 'парфюм', 'салон'],
-  electronics: ['electronics', 'gadget', 'phone', 'laptop', 'smart home', 'camera', 'электроника', 'гаджет', 'гаджеты', 'смартфон', 'телефон', 'ноутбук', 'планшет', 'техника'],
-  food: ['food', 'grocery', 'beverage', 'coffee', 'tea', 'snack', 'bakery', 'еда', 'кофе', 'чай', 'доставка', 'ресторан', 'кафе', 'меню'],
+  fashion: [
+    'fashion',
+    'clothing',
+    'apparel',
+    'shoes',
+    'accessories',
+    'lookbook',
+    '????',
+    '??????',
+    '?????',
+    '??????????',
+    '??????',
+    '?????',
+  ],
+  beauty: [
+    'beauty',
+    'cosmetics',
+    'makeup',
+    'skincare',
+    'fragrance',
+    '?????????',
+    '??????',
+    '????',
+    '??????',
+  ],
+  electronics: [
+    'electronics',
+    'gadget',
+    'phone',
+    'laptop',
+    'smart home',
+    'camera',
+    '???????????',
+    '??????',
+    '????????',
+    '???????',
+    '???????',
+    '????? ???',
+    '??????',
+  ],
+  food: [
+    'food',
+    'grocery',
+    'beverage',
+    'coffee',
+    'tea',
+    'snack',
+    'bakery',
+    '???',
+    '????????',
+    '???????',
+    '????',
+    '???',
+    '???????? ???',
+    '???????',
+  ],
   ecommerce: [
     'e-commerce',
     'ecommerce',
@@ -44,26 +94,170 @@ const THEME_KEYWORDS = {
     'product',
     'cart',
     'checkout',
-    'интернет-магазин',
-    'магазин',
-    'товары',
-    'товар',
-    'каталог',
-    'витрина',
-    'корзина',
-    'корзин',
-    'оплата',
-    'заказ',
+    '???????',
+    '???????? ???????',
+    '?????',
+    '??????',
+    '???????',
+    '??????????',
+    '???????',
+    '???????',
+    '?????',
   ],
-  photography: ['photography', 'photographer', 'photo shoot', 'portfolio', 'gallery', 'freelance', 'creative', 'visual', 'squarespace'],
-  industrial: ['industrial', 'energy', 'oil', 'gas', 'power', 'refinery', 'pipeline', 'manufacturing', 'factory'],
-  hotel: ['hotel', 'hospitality', 'resort', 'boutique', 'spa', 'accommodation', 'booking'],
-  tech: ['tech', 'saas', 'startup', 'software', 'app', 'platform', 'dashboard', 'analytics'],
-  medical: ['medical', 'healthcare', 'hospital', 'clinic', 'health', 'doctor', 'patient'],
-  restaurant: ['restaurant', 'food', 'cafe', 'dining', 'menu', 'culinary', 'chef'],
-  realestate: ['real estate', 'property', 'apartment', 'house', 'home', 'realty', 'housing'],
-  finance: ['finance', 'bank', 'investment', 'trading', 'crypto', 'fintech', 'money'],
-  education: ['education', 'school', 'university', 'learning', 'course', 'academy', 'training'],
+  photography: [
+    'photography',
+    'photographer',
+    'photo shoot',
+    'portfolio',
+    'gallery',
+    'freelance',
+    'creative',
+    'visual',
+    'squarespace',
+    '??????????',
+    '????????',
+    '??????????',
+    '??????????',
+    '?????????',
+    '???????',
+    '??????',
+    '??????',
+    '??????????',
+  ],
+  industrial: [
+    'industrial',
+    'energy',
+    'oil',
+    'gas',
+    'power',
+    'refinery',
+    'pipeline',
+    'manufacturing',
+    'factory',
+    '????????????',
+    '??????????????',
+    '??????????',
+    '?????',
+    '???',
+    '?????',
+    '????????????',
+    '???????????',
+    '??????????????',
+    '???????',
+  ],
+  hotel: [
+    'hotel',
+    'hospitality',
+    'resort',
+    'boutique',
+    'spa',
+    'accommodation',
+    'booking',
+    '?????',
+    '?????????',
+    '??????',
+    '???',
+    '?????',
+    '????????????',
+    '??????????',
+  ],
+  tech: [
+    'tech',
+    'saas',
+    'startup',
+    'software',
+    'app',
+    'platform',
+    'dashboard',
+    'analytics',
+    '???',
+    '??????????',
+    '????',
+    '???????',
+    '??????????',
+    '?????????',
+    '???????',
+    '?????????',
+  ],
+  medical: [
+    'medical',
+    'healthcare',
+    'hospital',
+    'clinic',
+    'health',
+    'doctor',
+    'patient',
+    '????????',
+    '???????????',
+    '???????',
+    '????????',
+    '???????????????',
+    '???????',
+    '????',
+  ],
+  restaurant: [
+    'restaurant',
+    'food',
+    'cafe',
+    'dining',
+    'menu',
+    'culinary',
+    'chef',
+    '????????',
+    '????',
+    '????',
+    '?????',
+    '???',
+    '???',
+  ],
+  realestate: [
+    'real estate',
+    'property',
+    'apartment',
+    'house',
+    'home',
+    'realty',
+    'housing',
+    '????????????',
+    '???????',
+    '???????',
+    '????????',
+    '???',
+    '??????',
+    '???????',
+  ],
+  finance: [
+    'finance',
+    'bank',
+    'investment',
+    'trading',
+    'crypto',
+    'fintech',
+    'money',
+    '???????',
+    '????',
+    '??????????',
+    '??????',
+    '??????',
+    '?????',
+  ],
+  education: [
+    'education',
+    'school',
+    'university',
+    'learning',
+    'course',
+    'academy',
+    'training',
+    '???????????',
+    '?????',
+    '???????????',
+    '????????',
+    '????',
+    '????????',
+    '?????? ????',
+    '??????-????',
+  ],
 };
 
 // Color word to HEX mapping - comprehensive dictionary
@@ -81,6 +275,16 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   onyx: { hex: '#0f0f0f', type: 'dark' },
   ebony: { hex: '#111111', type: 'dark' },
   slate: { hex: '#1e293b', type: 'dark' },
+  '??????': { hex: '#000000', type: 'dark' },
+  '??????': { hex: '#000000', type: 'dark' },
+  '???????? ??????': { hex: '#0a0a0a', type: 'dark' },
+  '???????? ??????': { hex: '#0a0a0a', type: 'dark' },
+  '??????': { hex: '#1a1a1a', type: 'dark' },
+  '??????': { hex: '#1a1a1a', type: 'dark' },
+  '?????-?????': { hex: '#1a1a1a', type: 'dark' },
+  '?????-?????': { hex: '#1a1a1a', type: 'dark' },
+  '????????': { hex: '#111113', type: 'dark' },
+  '??????????': { hex: '#111113', type: 'dark' },
   'тёмный': { hex: '#0a0a0a', type: 'dark' },
   'темный': { hex: '#0a0a0a', type: 'dark' },
   'чёрный': { hex: '#000000', type: 'dark' },
@@ -107,6 +311,17 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   linen: { hex: '#FAF0E6', type: 'light' },
   seashell: { hex: '#FFF5EE', type: 'light' },
   alabaster: { hex: '#F2F0EB', type: 'light' },
+  '?????': { hex: '#ffffff', type: 'light' },
+  '????????': { hex: '#FDF5E6', type: 'light' },
+  '??????': { hex: '#F4F3EF', type: 'light' },
+  '???????? ?????': { hex: '#F4F3EF', type: 'light' },
+  '????????': { hex: '#FDF8F5', type: 'light' },
+  '???????': { hex: '#F5F5DC', type: 'light' },
+  '?????? ?????': { hex: '#FDF8F5', type: 'light' },
+  '?????? ?????': { hex: '#FDF8F5', type: 'light' },
+  '???????': { hex: '#ffffff', type: 'light' },
+  '??????-?????': { hex: '#f8fafc', type: 'light' },
+  '?????? ?????': { hex: '#f8fafc', type: 'light' },
   'белый': { hex: '#ffffff', type: 'light' },
   'кремовый': { hex: '#FDF5E6', type: 'light' },
   'молочный': { hex: '#FDF8F5', type: 'light' },
@@ -126,6 +341,11 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   mustard: { hex: '#FFDB58', type: 'accent' },
   honey: { hex: '#EB9605', type: 'accent' },
   copper: { hex: '#B87333', type: 'accent' },
+  '??????': { hex: '#C9A66B', type: 'accent' },
+  '???????': { hex: '#C9A66B', type: 'accent' },
+  '????????': { hex: '#F59E0B', type: 'accent' },
+  '?????????': { hex: '#CD7F32', type: 'accent' },
+  '??????': { hex: '#B87333', type: 'accent' },
   'золото': { hex: '#C9A66B', type: 'accent' },
   'золотой': { hex: '#C9A66B', type: 'accent' },
   'янтарный': { hex: '#F59E0B', type: 'accent' },
@@ -141,6 +361,9 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   'sky blue': { hex: '#0ea5e9', type: 'accent' },
   azure: { hex: '#007FFF', type: 'accent' },
   cobalt: { hex: '#0047AB', type: 'accent' },
+  '?????': { hex: '#3b82f6', type: 'accent' },
+  '???????': { hex: '#0ea5e9', type: 'accent' },
+  '?????????': { hex: '#14b8a6', type: 'accent' },
 
   // Accent colors - Green family
   green: { hex: '#22c55e', type: 'accent' },
@@ -149,6 +372,10 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   sage: { hex: '#9DC183', type: 'accent' },
   olive: { hex: '#808000', type: 'accent' },
   forest: { hex: '#228B22', type: 'accent' },
+  '???????': { hex: '#22c55e', type: 'accent' },
+  '???????': { hex: '#22c55e', type: 'accent' },
+  '??????????': { hex: '#059669', type: 'accent' },
+  '?????????': { hex: '#808000', type: 'accent' },
 
   // Accent colors - Red/Orange family
   red: { hex: '#dc2626', type: 'accent' },
@@ -159,6 +386,10 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   orange: { hex: '#f97316', type: 'accent' },
   tangerine: { hex: '#FF9966', type: 'accent' },
   rust: { hex: '#B7410E', type: 'accent' },
+  '???????': { hex: '#dc2626', type: 'accent' },
+  '?????????': { hex: '#f97316', type: 'accent' },
+  '????????': { hex: '#800020', type: 'accent' },
+  '??????????': { hex: '#FF7F50', type: 'accent' },
 
   // Accent colors - Purple/Pink family
   purple: { hex: '#8b5cf6', type: 'accent' },
@@ -170,6 +401,10 @@ const COLOR_WORDS_TO_HEX: Record<string, { hex: string; type: 'dark' | 'light' |
   rose: { hex: '#f43f5e', type: 'accent' },
   fuchsia: { hex: '#d946ef', type: 'accent' },
   plum: { hex: '#DDA0DD', type: 'accent' },
+  '??????????': { hex: '#8b5cf6', type: 'accent' },
+  '?????????': { hex: '#d946ef', type: 'accent' },
+  '???????': { hex: '#ec4899', type: 'accent' },
+  '??????????': { hex: '#E6E6FA', type: 'accent' },
 };
 
 // Color palettes for each theme
@@ -308,337 +543,127 @@ const THEME_PALETTES = {
 const THEME_IMAGES = {
   photography: {
     hero: [
-      'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1518098268026-4e89f1a2cd8e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
     ],
   },
   industrial: {
     hero: [
-      'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80',
     ],
   },
   hotel: {
     hero: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=800&q=80',
     ],
   },
   tech: {
     hero: [
-      'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80',
     ],
   },
   medical: {
     hero: [
-      'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1551190822-a9333d879b1f?auto=format&fit=crop&w=800&q=80',
     ],
   },
   restaurant: {
     hero: [
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
     ],
   },
   realestate: {
     hero: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1600573472550-8090b5e0745e?auto=format&fit=crop&w=800&q=80',
     ],
   },
   finance: {
     hero: [
-      'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80',
     ],
   },
   education: {
     hero: [
-      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80',
     ],
   },
   furniture: {
     hero: [
-      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
     ],
     categories: {
       seating: [
-        'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=800&q=80',
       ],
       tables: [
-        'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
       ],
       storage: [
-        'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80',
       ],
     },
     products: [
-      'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=600&q=80',
     ],
   },
   fashion: {
     hero: [
-      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
     ],
     products: [
-      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80',
     ],
   },
   beauty: {
     hero: [
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80',
     ],
     products: [
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1506617420156-8e4536971650?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80',
     ],
   },
   electronics: {
     hero: [
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1555617980-94f6c9f4fd79?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1555617980-94f6c9f4fd79?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1555617980-94f6c9f4fd79?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80',
     ],
     products: [
-      'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1510557880182-3eec1bc61b39?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1555617980-94f6c9f4fd79?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1512499617640-c2f999098c01?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1526178613552-2b45c6c302f0?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
     ],
   },
   food: {
     hero: [
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80',
     ],
     products: [
-      'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=600&q=80',
     ],
   },
   ecommerce: {
     hero: [
-      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
     ],
     // Furniture category images (seating, tables, storage)
     categories: {
       seating: [
-        'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=800&q=80',
       ],
       tables: [
-        'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80',
       ],
       storage: [
-        'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80',
       ],
     },
     products: [
-      'https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1523419400524-f66163c0c519?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1519710169767-0f7f0c63cfbe?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1616628182501-8f67e6f13e0a?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=600&q=80',
     ],
   },
   default: {
     hero: [
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1920&q=80',
-      'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1920&q=80',
     ],
     gallery: [
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
     ],
   },
 };
@@ -651,13 +676,33 @@ function detectTheme(prompt: string): string {
 
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
     for (const keyword of keywords) {
-      if (lowerPrompt.includes(keyword)) {
+      if (matchesKeyword(lowerPrompt, keyword)) {
         return theme;
       }
     }
   }
 
   return 'default';
+}
+
+function extractBrandName(prompt: string): string | null {
+  const patterns = [
+    /(?:called|named|brand(?: website)?|website called)\s+["“”'«»]?([\p{L}\p{N}&\-\s]{2,60})["“”'»]?/iu,
+    /(?:названи[её]|бренд|под названием|называется)\s+["“”'«»]?([\p{L}\p{N}&\-\s]{2,60})["“”'»]?/iu,
+  ];
+
+  for (const pattern of patterns) {
+    const match = prompt.match(pattern);
+    if (match?.[1]) {
+      const trimmed = match[1].trim();
+      const cleaned = trimmed.split(/[\n,.]/)[0].trim();
+      if (cleaned.length >= 2) {
+        return cleaned.replace(/\s{2,}/g, ' ');
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -727,7 +772,17 @@ function extractUserColors(prompt: string): Record<string, string> | null {
     }
   }
 
-  return Object.keys(colors).length > 0 ? colors : null;
+  return Object.keys(colors).length ? colors : null;
+}
+
+function matchesWord(haystack: string, needle: string): boolean {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'iu');
+  return pattern.test(haystack);
+}
+
+function matchesKeyword(haystack: string, needle: string): boolean {
+  return needle.includes(' ') ? haystack.includes(needle) : matchesWord(haystack, needle);
 }
 
 /**
@@ -741,7 +796,7 @@ function extractColorsFromWords(prompt: string): Record<string, string> {
   const sortedColorWords = Object.keys(COLOR_WORDS_TO_HEX).sort((a, b) => b.length - a.length);
 
   for (const colorWord of sortedColorWords) {
-    if (lowerPrompt.includes(colorWord)) {
+    if (matchesKeyword(lowerPrompt, colorWord)) {
       const colorInfo = COLOR_WORDS_TO_HEX[colorWord];
 
       // Only set if not already found (longer matches take priority)
@@ -764,7 +819,7 @@ function extractColorsFromWords(prompt: string): Record<string, string> {
 function hasColorWords(prompt: string): boolean {
   const lowerPrompt = prompt.toLowerCase();
 
-  return Object.keys(COLOR_WORDS_TO_HEX).some((colorWord) => lowerPrompt.includes(colorWord));
+  return Object.keys(COLOR_WORDS_TO_HEX).some((colorWord) => matchesKeyword(lowerPrompt, colorWord));
 }
 
 export interface EnhancedPrompt {
@@ -782,6 +837,7 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
   const detectedTheme = detectTheme(userPrompt);
   const palette = THEME_PALETTES[detectedTheme as keyof typeof THEME_PALETTES] || THEME_PALETTES.default;
   const images = THEME_IMAGES[detectedTheme as keyof typeof THEME_IMAGES] || THEME_IMAGES.default;
+  const brandName = extractBrandName(userPrompt);
 
   // Check if user already specified colors (priority: HEX codes > color words > theme defaults)
   let finalColors = { ...palette };
@@ -828,23 +884,25 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
       'purple',
       'violet',
       'pink',
-      'золото',
-      'золотой',
-      'янтарный',
-      'бронзовый',
-      'медный',
-      'синий',
-      'голубой',
-      'бирюзовый',
-      'зелёный',
-      'зеленый',
-      'красный',
-      'оранжевый',
-      'фиолетовый',
-      'розовый',
+      '??????',
+      '???????',
+      '????????',
+      '?????????',
+      '??????',
+      '?????',
+      '???????',
+      '?????????',
+      '???????',
+      '???????',
+      '??????????',
+      '???????',
+      '?????????',
+      '??????????',
+      '?????????',
+      '???????',
     ];
     const lowerPrompt = userPrompt.toLowerCase();
-    const hasExplicitAccent = accentKeywords.some(keyword => lowerPrompt.includes(keyword));
+    const hasExplicitAccent = accentKeywords.some((keyword) => matchesKeyword(lowerPrompt, keyword));
     
     if (wordColors.accent && hasExplicitAccent && !hasUserSpecifiedColors(userPrompt)) {
       finalColors.accent = wordColors.accent;
@@ -853,60 +911,221 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
 
   // Check if user specified specific layouts
   const lowerPrompt = userPrompt.toLowerCase();
-  const hasSpecificLayout =
-    lowerPrompt.includes('слева') ||
-    lowerPrompt.includes('справа') ||
-    lowerPrompt.includes('левая') ||
-    lowerPrompt.includes('правая') ||
-    lowerPrompt.includes('две колонки') ||
-    lowerPrompt.includes('2 колонки') ||
-    lowerPrompt.includes('двухколоноч') ||
-    lowerPrompt.includes('картинка слева') ||
-    lowerPrompt.includes('картинка справа') ||
-    lowerPrompt.includes('текст слева') ||
-    lowerPrompt.includes('текст справа') ||
-    lowerPrompt.includes('left') ||
-    lowerPrompt.includes('right') ||
-    lowerPrompt.includes('split') ||
-    lowerPrompt.includes('two column') ||
-    lowerPrompt.includes('two-column') ||
-    lowerPrompt.includes('image on') ||
-    lowerPrompt.includes('text on') ||
-    lowerPrompt.includes('шапка с') ||
-    lowerPrompt.includes('grid') ||
-    lowerPrompt.includes('сетка') ||
-    lowerPrompt.includes('carousel') ||
-    lowerPrompt.includes('карусель') ||
-    lowerPrompt.includes('slider') ||
-    lowerPrompt.includes('слайдер');
+  const layoutKeywords = [
+    'слева',
+    'справа',
+    'лево',
+    'право',
+    'две колонки',
+    '2 колонки',
+    '2-колонки',
+    'двухколоноч',
+    'двухколон',
+    'split',
+    'left',
+    'right',
+    'two column',
+    'two-column',
+    'image on',
+    'text on',
+    'grid',
+    'сетка',
+    'carousel',
+    'карусел',
+    'slider',
+    'слайдер',
+    'full-width',
+    'full width',
+  ];
+  const hasSpecificLayout = layoutKeywords.some((keyword) => matchesKeyword(lowerPrompt, keyword));
+
 
   // Helper to pick random item
   const pickRandom = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
   // Detect which sections user mentioned in prompt
   const sectionKeywords: Record<string, string[]> = {
-    navigation: ['navigation', 'navbar', 'menu', 'top nav', 'top navigation', 'header menu', 'меню', 'навигация', 'пункты меню', 'верхнее меню'],
-    hero: ['hero', 'шапка', 'header', 'banner', 'главный', 'intro', 'landing'],
-    features: ['feature', 'функци', 'services', 'услуг', 'offerings', 'benefits', 'преимущества'],
-    gallery: ['gallery', 'галерея', 'portfolio', 'портфолио', 'photos', 'фото', 'images', 'work', 'projects'],
-    testimonials: ['testimonial', 'отзыв', 'review', 'client', 'клиент', 'feedback', 'quote'],
-    pricing: ['pricing', 'тариф', 'план', 'cost', 'subscription', 'billing', 'plans'],
-    cta: ['cta', 'call to action', 'inquiry', 'contact', 'связ', 'заявк', 'book', 'get started', 'sign up'],
-    faq: ['faq', 'вопрос', 'question', 'answer', 'help'],
-    footer: ['footer', 'подвал', 'bottom', 'copyright'],
-    about: ['about', 'о нас', 'о компании', 'story', 'история', 'mission'],
-    team: ['team', 'команд', 'staff', 'people', 'сотрудник'],
-    contact: ['contact', 'контакт', 'form', 'форма', 'reach', 'address', 'адрес'],
-    blog: ['blog', 'блог', 'news', 'новост', 'article', 'статья', 'post'],
-    logo: ['logo', 'лого', 'client', 'partner', 'партнер', 'brand'],
-    products: ['product', 'продукт', 'товар', 'bestseller', 'item', 'catalog', 'каталог', 'shop', 'магазин'],
-    categories: ['category', 'категори', 'collection', 'коллекци', 'seating', 'tables', 'storage'],
+    navigation: [
+      'navigation',
+      'navbar',
+      'menu',
+      'top nav',
+      'top navigation',
+      'header menu',
+      '?????????',
+      '????',
+      '??????? ????',
+      '????????????? ??????',
+      '?????',
+      '????? ????',
+    ],
+    hero: [
+      'hero',
+      'header',
+      'banner',
+      'intro',
+      'landing',
+      '????',
+      '?????',
+      '?????',
+      '??????',
+      '?????? ?????',
+    ],
+    features: [
+      'feature',
+      'services',
+      'offerings',
+      'benefits',
+      '????',
+      '????????????',
+      '???????????',
+      '??????',
+      '??????',
+      '???????',
+    ],
+    gallery: [
+      'gallery',
+      'portfolio',
+      'photos',
+      'images',
+      'work',
+      'projects',
+      '???????',
+      '?????????',
+      '????',
+      '????????',
+      '??????',
+      '???????',
+    ],
+    testimonials: [
+      'testimonial',
+      'review',
+      'client',
+      'feedback',
+      'quote',
+      '??????',
+      '????????????',
+      '???????',
+      '?????',
+      '???????',
+    ],
+    pricing: [
+      'pricing',
+      'cost',
+      'subscription',
+      'billing',
+      'plans',
+      '????',
+      '??????',
+      '?????',
+      '?????????',
+      '????????',
+    ],
+    cta: [
+      'cta',
+      'call to action',
+      'inquiry',
+      'contact',
+      'book',
+      'get started',
+      'sign up',
+      '??????',
+      '??????',
+      '?????????',
+      '?????????????',
+      '????????????',
+    ],
+    faq: [
+      'faq',
+      'question',
+      'answer',
+      'help',
+      '?????? ???????',
+      '???????',
+      '??????-?????',
+    ],
+    footer: [
+      'footer',
+      'bottom',
+      'copyright',
+      '?????',
+      '??????',
+      '??? ????????',
+    ],
+    about: [
+      'about',
+      'story',
+      'mission',
+      '? ???',
+      '? ????????',
+      '???????',
+      '??????',
+    ],
+    team: [
+      'team',
+      'staff',
+      'people',
+      '???????',
+      '??????????',
+      '????????',
+    ],
+    contact: [
+      'contact',
+      'form',
+      'reach',
+      'address',
+      '????????',
+      '?????',
+      '?????',
+    ],
+    blog: [
+      'blog',
+      'news',
+      'article',
+      'post',
+      '????',
+      '???????',
+      '??????',
+      '?????',
+    ],
+    logo: [
+      'logo',
+      'client',
+      'partner',
+      'brand',
+      '????????',
+      '???????',
+      '????????',
+      '??????',
+    ],
+    products: [
+      'product',
+      'bestseller',
+      'item',
+      'catalog',
+      'shop',
+      '??????',
+      '???????????',
+      '???????',
+      '???????',
+      '???????????',
+    ],
+    categories: [
+      'category',
+      'collection',
+      'seating',
+      'tables',
+      'storage',
+      '?????????',
+      '?????????',
+      '???????',
+    ],
   };
 
   // Find which sections are mentioned
   const mentionedSections: string[] = [];
   for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    if (keywords.some(kw => lowerPrompt.includes(kw))) {
+    if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
       mentionedSections.push(section);
     }
   }
@@ -1002,25 +1221,55 @@ export function enhancePromptWithDesignSystem(userPrompt: string): EnhancedPromp
     ],
   };
 
+  const sectionLabels: Record<string, string> = {
+    navigation: 'Navigation',
+    hero: 'Hero',
+    features: 'Features',
+    gallery: 'Gallery',
+    testimonials: 'Testimonials',
+    pricing: 'Pricing',
+    cta: 'CTA',
+    faq: 'FAQ',
+    footer: 'Footer',
+    about: 'About',
+    team: 'Team',
+    contact: 'Contact',
+    blog: 'Blog',
+    logo: 'Logo',
+    products: 'Products',
+    categories: 'Categories',
+  };
+
   // Generate layouts only for mentioned sections
   let layoutSuggestions = '';
   if (!hasSpecificLayout && mentionedSections.length > 0) {
     const layouts = mentionedSections
-      .filter(section => sectionLayouts[section])
-      .map(section => `- ${section.charAt(0).toUpperCase() + section.slice(1)}: ${pickRandom(sectionLayouts[section])}`)
+      .filter((section) => sectionLayouts[section])
+      .map(
+        (section) => `- ${section.charAt(0).toUpperCase() + section.slice(1)}: ${pickRandom(sectionLayouts[section])}`,
+      )
       .join('\n');
-    
+
     if (layouts) {
       layoutSuggestions = `\nSECTION LAYOUTS (use these styles):\n${layouts}`;
     }
   }
 
+  const sectionChecklist =
+    mentionedSections.length > 0
+      ? `\nSECTIONS (must include all): ${mentionedSections
+          .map((section) => sectionLabels[section] ?? section)
+          .join(', ')}`
+      : '';
+
   // Don't inline big image URL lists into the prompt. It's noisy for users and WebContainer may block
   // external images anyway (and our sanitizer will enforce safe placeholders/proxies).
   const imageSuggestions = '';
+  const brandLine = brandName ? `\nBRAND NAME (use exactly): ${brandName}` : '';
+  const templateGuard = '\nIMPORTANT: Do not use any generic/default template. Follow the prompt exactly.';
 
   const enhancedPrompt = `${userPrompt}
-${layoutSuggestions ? `\n${layoutSuggestions}` : ''}
+${brandLine}${sectionChecklist}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imageSuggestions ? `\n${imageSuggestions}` : ''}`;
 
   return {
@@ -1037,34 +1286,35 @@ ${layoutSuggestions ? `\n${layoutSuggestions}` : ''}
  */
 export function shouldEnhancePrompt(prompt: string): boolean {
   const designKeywords = [
-  'website',
-  'landing',
-  'page',
-  'layout',
-  'design',
-  'ui',
-  'interface',
-  'hero',
-  'section',
-  'create',
-  'build',
-  'make',
-  'generate',
-  '????',
-  '???????',
-  '????????',
-  '??????',
-  '?????????',
-  '?????',
-  '??????',
-  '??????',
-  '??????',
-  '??????????',
-  '???????',
-  '?????',
-];
+    'website',
+    'landing',
+    'page',
+    'layout',
+    'design',
+    'ui',
+    'interface',
+    'hero',
+    'section',
+    'create',
+    'build',
+    'make',
+    'generate',
+    '????',
+    '???????',
+    '????????',
+    '?????',
+    '??????',
+    '?????????',
+    '?????',
+    '?????',
+    '??????',
+    '??????',
+    '??????',
+    '??????????',
+    '???????',
+  ];
 
   const lowerPrompt = prompt.toLowerCase();
 
-  return designKeywords.some((keyword) => lowerPrompt.includes(keyword));
+  return designKeywords.some((keyword) => matchesKeyword(lowerPrompt, keyword));
 }

@@ -25,6 +25,11 @@ STRICT MODE:
 - NO TRUNCATION.
 - ALWAYS use <boltArtifact> and <boltAction>.
 
+FORBIDDEN IMPORTS:
+- "lucide-react/dist"
+- "next/image"
+- "react-router-dom"
+
 The year is 2025.
 
 <section_compliance>
