@@ -423,14 +423,14 @@ export const ChatImpl = memo(
         const enhanced = enhancePromptWithDesignSystem(messageContent);
         finalMessageContent = enhanced.enhancedPrompt;
         // Show enhanced prompt to user so they can see what was sent
-        displayMessageContent = [
+        /* displayMessageContent = [
           messageContent,
           '',
           '[Улучшенный промпт]',
           `- Тема: ${enhanced.detectedTheme}`,
           `- Цвета: ${enhanced.colors.dark}, ${enhanced.colors.light}, ${enhanced.colors.accent}`,
           `- Изображения: hero=${enhanced.images.hero.length}, gallery=${enhanced.images.gallery.length}`,
-        ].join('\n');
+        ].join('\n'); */
         console.log('Prompt enhanced for theme:', enhanced.detectedTheme);
       }
 
@@ -438,8 +438,7 @@ export const ChatImpl = memo(
         console.log('Selected Element:', selectedElement);
 
         const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
-        finalMessageContent = finalMessageContent + elementInfo;
-        displayMessageContent = displayMessageContent + elementInfo;
+        finalMessageContent = `${finalMessageContent}\n\n${elementInfo}`;
       }
 
       runAnimation();
@@ -467,7 +466,8 @@ export const ChatImpl = memo(
 
             if (temResp) {
               const { assistantMessage, userMessage } = temResp;
-              const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+              const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+              const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
 
               setMessages([
                 {
@@ -475,6 +475,7 @@ export const ChatImpl = memo(
                   role: 'user',
                   content: userMessageText,
                   parts: createMessageParts(userMessageText, imageDataList),
+                  annotations: [{ type: 'llmPrompt', value: llmMessageText }],
                 },
                 {
                   id: `2-${new Date().getTime()}`,
@@ -512,7 +513,8 @@ export const ChatImpl = memo(
         }
 
         // If autoSelectTemplate is disabled or template selection failed, proceed with normal message
-        const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+        const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
         const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
 
         setMessages([
@@ -522,6 +524,7 @@ export const ChatImpl = memo(
             content: userMessageText,
             parts: createMessageParts(userMessageText, imageDataList),
             experimental_attachments: attachments,
+            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
           },
         ]);
         reload(attachments ? { experimental_attachments: attachments } : undefined);
@@ -549,7 +552,8 @@ export const ChatImpl = memo(
 
       if (modifiedFiles !== undefined) {
         const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
+        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
 
         const attachmentOptions =
           uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
@@ -559,13 +563,15 @@ export const ChatImpl = memo(
             role: 'user',
             content: messageText,
             parts: createMessageParts(messageText, imageDataList),
+            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
           },
           attachmentOptions,
         );
 
         workbenchStore.resetAllFileModifications();
       } else {
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
 
         const attachmentOptions =
           uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
@@ -575,6 +581,7 @@ export const ChatImpl = memo(
             role: 'user',
             content: messageText,
             parts: createMessageParts(messageText, imageDataList),
+            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
           },
           attachmentOptions,
         );

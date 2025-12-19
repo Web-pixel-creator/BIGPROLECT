@@ -266,12 +266,16 @@ export async function streamText(props: {
       currentModel = model;
       currentProvider = provider;
       newMessage.content = sanitizeText(content);
+
+      // Important: `convertToCoreMessages` prioritizes `message.parts` over `message.content` for user messages.
+      // We intentionally strip UI parts here so the LLM receives the server-sanitized content (incl. llmPrompt annotation).
+      delete (newMessage as any).parts;
     } else if (message.role == 'assistant') {
       newMessage.content = sanitizeText(message.content);
     }
 
     // Sanitize all text parts in parts array, if present
-    if (Array.isArray(message.parts)) {
+    if (message.role !== 'user' && Array.isArray(message.parts)) {
       newMessage.parts = message.parts.map((part) =>
         part.type === 'text' ? { ...part, text: sanitizeText(part.text) } : part,
       );
