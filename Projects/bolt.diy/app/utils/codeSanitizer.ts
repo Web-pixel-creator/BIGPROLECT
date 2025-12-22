@@ -231,6 +231,8 @@ function sanitizeRouter(code: string, warnings: string[]) {
 
 function sanitizeImages(code: string, warnings: string[]) {
   let next = code;
+  const proxyPrefix = '/__image_proxy__?url=';
+  const proxyMarker = '/__image_proxy__?url=';
 
   // Some generated projects reference non-existent local assets like /images/hero.jpg.
   const beforeLocalHero = next;
@@ -242,27 +244,46 @@ function sanitizeImages(code: string, warnings: string[]) {
     warnings.push('Rewrote /images/hero.(jpg|png) to /images/hero.svg');
   }
 
-  // WebContainer preview runs with COEP/COOP which can block many cross-origin images.
-  // Replace common external placeholder/image hosts with local SVG placeholders for stability.
   const beforeExternal = next;
-  // Handle both absolute, protocol-relative (`//host/...`) and scheme-less (`host/...`) forms.
-  next = next.replace(/(?:https?:\/\/|\/\/)?(?:www\.)?picsum\.photos\/[^\s'")`}]*/gi, '/images/placeholder.svg');
-  next = next.replace(/(?:https?:\/\/|\/\/)?images\.unsplash\.com\/[^\s'")`}]*/gi, '/images/placeholder.svg');
-  next = next.replace(/(?:https?:\/\/|\/\/)?placehold\.co\/[^\s'")`}]*/gi, '/images/placeholder.svg');
-  next = next.replace(/(?:https?:\/\/|\/\/)?via\.placeholder\.com\/[^\s'")`}]*/gi, '/images/placeholder.svg');
+  const toProxy = (url: string) => `${proxyPrefix}${encodeURIComponent(url)}`;
+  const shouldProxy = (url: string) => url && !url.includes(proxyMarker);
 
-  // Catch other external image URLs with common image extensions.
-  next = next.replace(
-    /https?:\/\/[^\s'"`)}]+?\.(?:png|jpe?g|webp|gif|svg)(?:\?[^\s'"`)}]*)?/gi,
-    '/images/placeholder.svg',
-  );
-  next = next.replace(
-    /\/\/[^\s'"`)}]+?\.(?:png|jpe?g|webp|gif|svg)(?:\?[^\s'"`)}]*)?/gi,
-    '/images/placeholder.svg',
-  );
+  // JSX/HTML src="https://..."
+  next = next.replace(/(\bsrc\s*=\s*["'])(https?:\/\/[^"'`}\s]+)(["'])/gi, (full, start, url, end) => {
+    if (!shouldProxy(url)) return full;
+    return `${start}${toProxy(url)}${end}`;
+  });
+
+  // JSX/HTML src={'https://...'}
+  next = next.replace(/(\bsrc\s*=\s*\{\s*["'])(https?:\/\/[^"'`}\s]+)(["']\s*\})/gi, (full, start, url, end) => {
+    if (!shouldProxy(url)) return full;
+    return `${start}${toProxy(url)}${end}`;
+  });
+
+  // CSS url("https://...")
+  next = next.replace(/url\(\s*(['"]?)(https?:\/\/[^'")\s]+)\1\s*\)/gi, (full, quote, url) => {
+    if (!shouldProxy(url)) return full;
+    return `url('${toProxy(url)}')`;
+  });
+
+  const beforeLiteralUrls = next;
+  const knownImageHosts =
+    /^(https?:\/\/(?:images\.unsplash\.com|source\.unsplash\.com|images\.pexels\.com|picsum\.photos|placehold\.co|via\.placeholder\.com|cdn\.pixabay\.com))/i;
+  const imageExtension = /\.(?:png|jpe?g|webp|gif|avif|svg)(?:\?.*)?$/i;
+
+  // String literals holding image URLs (arrays/config objects/etc).
+  next = next.replace(/(['"`])((?:https?:\/\/)[^'"`\s]+)(\1)/gi, (full, quote, url, end) => {
+    if (!shouldProxy(url)) return full;
+    if (!knownImageHosts.test(url) && !imageExtension.test(url)) return full;
+    return `${quote}${toProxy(url)}${end}`;
+  });
+
+  if (next !== beforeLiteralUrls) {
+    warnings.push('Rewrote external image URL string literals to /__image_proxy__');
+  }
 
   if (next !== beforeExternal) {
-    warnings.push('Rewrote external image URLs to local /images/placeholder.svg for preview stability');
+    warnings.push('Rewrote external image URLs to /__image_proxy__ for WebContainer');
   }
 
   return next;

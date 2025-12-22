@@ -48,6 +48,7 @@ export async function preflightViteReactBaseline(webcontainer: WebContainer): Pr
   const baselineFilesAdded = await ensureBaselineFiles(webcontainer);
   await ensureTsconfigAlias(webcontainer);
   await ensureViteConfigAlias(webcontainer);
+  await ensureViteImageProxy(webcontainer);
   const { packageJsonChanged: baselinePkgChanged, addedDependencies: baselineDepsAdded } = await ensureBaselinePackageJson(
     webcontainer,
     pkgText,
@@ -158,6 +159,85 @@ async function ensureViteConfigAlias(webcontainer: WebContainer): Promise<boolea
 
   if (next.includes('plugins: [') && !next.includes('tsconfigPaths()')) {
     next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}tsconfigPaths(), `);
+  }
+
+  if (next === original) return false;
+
+  const sanitized = sanitizeGeneratedFile(viteConfigPath, next);
+  await webcontainer.fs.writeFile(viteConfigPath, sanitized.content);
+  return true;
+}
+
+async function ensureViteImageProxy(webcontainer: WebContainer): Promise<boolean> {
+  const viteConfigPath = await findFirstExistingFile(webcontainer, [
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+  ]);
+  if (!viteConfigPath) return false;
+
+  const original = await readTextFile(webcontainer, viteConfigPath);
+  if (!original) return false;
+  if (original.includes('__image_proxy__') || original.includes('imageProxyPlugin')) {
+    return false;
+  }
+
+  let next = original;
+  const isCommonJs = /\bmodule\.exports\b/.test(next) || (/\brequire\(/.test(next) && !/\bexport\s+default\b/.test(next));
+
+  const pluginMarker = 'imageProxyPlugin';
+  const pluginImpl = `
+
+function imageProxyPlugin() {
+  return {
+    name: 'image-proxy',
+    configureServer(server) {
+      server.middlewares.use('/__image_proxy__', async (req, res) => {
+        try {
+          const url = new URL(req.url ?? '', 'http://localhost');
+          const target = url.searchParams.get('url');
+          if (!target) {
+            res.statusCode = 400;
+            res.end('Missing url');
+            return;
+          }
+
+          const response = await fetch(target);
+          if (!response.ok) {
+            res.statusCode = response.status;
+            res.end();
+            return;
+          }
+
+          const buffer = new Uint8Array(await response.arrayBuffer());
+          res.setHeader('Content-Type', response.headers.get('content-type') ?? 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.end(buffer);
+        } catch {
+          res.statusCode = 500;
+          res.end('Proxy error');
+        }
+      });
+    },
+  };
+}
+`;
+
+  if (isCommonJs) {
+    if (!next.includes(pluginMarker)) {
+      next = `${next}\n${pluginImpl}`;
+    }
+  } else {
+    if (!next.includes(pluginMarker)) {
+      next = `${next}\n${pluginImpl}`;
+    }
+  }
+
+  if (next.includes('plugins: [') && !next.includes('imageProxyPlugin()')) {
+    next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}imageProxyPlugin(), `);
+  } else if (!next.includes('plugins: [') && next.includes('defineConfig')) {
+    next = next.replace(/defineConfig\s*\(\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
   }
 
   if (next === original) return false;

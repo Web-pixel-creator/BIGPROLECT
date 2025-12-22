@@ -6,6 +6,149 @@ export type TemplateFile = {
 
 export const WEB_BASELINE_FILES: TemplateFile[] = [
   {
+    name: 'package.json',
+    path: 'package.json',
+    content: `{
+  "name": "bolt-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
+`,
+  },
+  {
+    name: 'vite.config.ts',
+    path: 'vite.config.ts',
+    content: `import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+export default defineConfig({
+  plugins: [react(), tsconfigPaths()],
+});
+`,
+  },
+  {
+    name: 'tailwind.config.js',
+    path: 'tailwind.config.js',
+    content: `/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+`,
+  },
+  {
+    name: 'postcss.config.js',
+    path: 'postcss.config.js',
+    content: `export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+`,
+  },
+  {
+    name: 'index.html',
+    path: 'index.html',
+    content: `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bolt Project</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+`,
+  },
+  {
+    name: 'tsconfig.json',
+    path: 'tsconfig.json',
+    content: `{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+`,
+  },
+  {
+    name: 'tsconfig.app.json',
+    path: 'tsconfig.app.json',
+    content: `{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}
+`,
+  },
+  {
+    name: 'tsconfig.node.json',
+    path: 'tsconfig.node.json',
+    content: `{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+`,
+  },
+  {
+    name: 'vite-env.d.ts',
+    path: 'vite-env.d.ts',
+    content: `/// <reference types="vite/client" />
+`,
+  },
+  {
     name: 'utils.ts',
     path: 'src/lib/utils.ts',
     content: `import { clsx, type ClassValue } from "clsx";
@@ -328,6 +471,7 @@ export function applyWebTemplateBaseline(templateFiles: TemplateFile[]): Templat
   ensurePackageJsonDeps(nextFiles);
   ensureTsconfigPaths(nextFiles);
   ensureViteConfigPathsPlugin(nextFiles);
+  ensureViteConfigImageProxyPlugin(nextFiles);
 
   return nextFiles;
 }
@@ -439,6 +583,69 @@ function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
 
   if (next.includes('plugins: [') && !next.includes('tsconfigPaths()')) {
     next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}tsconfigPaths(), `);
+  }
+
+  if (next !== original) {
+    files[viteConfigIndex] = { ...files[viteConfigIndex], content: next };
+  }
+}
+
+function ensureViteConfigImageProxyPlugin(files: TemplateFile[]) {
+  const viteConfigIndex = files.findIndex((file) => /^vite\.config\.(ts|mts|js|mjs)$/.test(file.path));
+  if (viteConfigIndex === -1) return;
+
+  const original = files[viteConfigIndex].content;
+  if (original.includes('__image_proxy__') || original.includes('imageProxyPlugin')) {
+    return;
+  }
+
+  let next = original;
+
+  const pluginImpl = `
+
+function imageProxyPlugin() {
+  return {
+    name: 'image-proxy',
+    configureServer(server) {
+      server.middlewares.use('/__image_proxy__', async (req, res) => {
+        try {
+          const url = new URL(req.url ?? '', 'http://localhost');
+          const target = url.searchParams.get('url');
+          if (!target) {
+            res.statusCode = 400;
+            res.end('Missing url');
+            return;
+          }
+
+          const response = await fetch(target);
+          if (!response.ok) {
+            res.statusCode = response.status;
+            res.end();
+            return;
+          }
+
+          const buffer = new Uint8Array(await response.arrayBuffer());
+          res.setHeader('Content-Type', response.headers.get('content-type') ?? 'image/jpeg');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.end(buffer);
+        } catch {
+          res.statusCode = 500;
+          res.end('Proxy error');
+        }
+      });
+    },
+  };
+}
+`;
+
+  if (!next.includes('imageProxyPlugin')) {
+    next = `${next}\n${pluginImpl}`;
+  }
+
+  if (next.includes('plugins: [') && !next.includes('imageProxyPlugin()')) {
+    next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}imageProxyPlugin(), `);
+  } else if (!next.includes('plugins: [') && next.includes('defineConfig')) {
+    next = next.replace(/defineConfig\s*\(\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
   }
 
   if (next !== original) {

@@ -421,18 +421,15 @@ export const ChatImpl = memo(
 
       // Enhance prompt with design system if it's a design/website request.
       if (isDesignPrompt) {
-        const enhanced = enhancePromptWithDesignSystem(messageContent);
+        const enhanced = await enhancePromptWithDesignSystem(messageContent);
         finalMessageContent = enhanced.enhancedPrompt;
-        // Show enhanced prompt to user so they can see what was sent
-        /* displayMessageContent = [
-          messageContent,
-          '',
-          '[Улучшенный промпт]',
-          `- Тема: ${enhanced.detectedTheme}`,
-          `- Цвета: ${enhanced.colors.dark}, ${enhanced.colors.light}, ${enhanced.colors.accent}`,
-          `- Изображения: hero=${enhanced.images.hero.length}, gallery=${enhanced.images.gallery.length}`,
-        ].join('\n'); */
-        console.log('Prompt enhanced for theme:', enhanced.detectedTheme);
+        displayMessageContent = enhanced.displayPrompt ?? messageContent;
+        console.log('=== PROMPT ENHANCER DEBUG ===');
+        console.log('Theme:', enhanced.detectedTheme);
+        console.log('Images:', JSON.stringify(enhanced.images, null, 2));
+        console.log('Image prompt:', enhanced.imagePrompt);
+        console.log('Enhanced prompt (first 800 chars):', enhanced.enhancedPrompt?.substring(0, 800));
+        console.log('=============================');
       }
 
       if (selectedElement) {
