@@ -59,6 +59,14 @@ When user describes multiple sections, you MUST generate EVERY SINGLE ONE:
 3. Keep each section compact but complete
 4. Wrap each required section with: <section data-section="..."> ... </section>
 
+IF a "SECTION BLUEPRINT" block exists:
+- Create sections in that exact order.
+- Do NOT add extra sections.
+- Each section MUST satisfy its blueprint details.
+
+IF a "SECTION DETAILS" block exists:
+- Apply those details inside the matching section.
+
 FORBIDDEN:
 - Skipping middle sections (only doing Hero + Footer)
 - Saying "I'll add more later"

@@ -9,6 +9,8 @@ CRITICAL SECTION COMPLIANCE:
 - Generate EVERY section the user mentions.
 - Do NOT skip sections or add new ones unless explicitly requested.
 - Wrap each required section with: <section data-section="..."> ... </section>
+ - If a "SECTION BLUEPRINT" block exists, follow it exactly (order + details).
+ - If a "SECTION DETAILS" block exists, apply those details inside the matching section.
 
 CRITICAL BRAND + TEMPLATE:
 - Extract brand name from user prompt. NEVER use "BoltApp" or "Aura Decor".

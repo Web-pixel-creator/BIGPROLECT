@@ -714,17 +714,11 @@ const IMAGE_SIZES = {
 
 
 const MAX_IMAGE_COUNTS = {
-
-  hero: 2,
-
-  gallery: 4,
-
-  product: 6,
-
-  category: 3,
-
-  editorial: 2,
-
+  hero: 1,
+  gallery: 3,
+  product: 4,
+  category: 1,
+  editorial: 1,
 } as const;
 
 
@@ -1087,49 +1081,27 @@ function buildImageSearchQueries(theme: string, sections: string[]): ImageSearch
 
 
   if (include('hero')) {
-
-    result.hero = pickList(queries.hero, 2);
-
+    result.hero = pickList(queries.hero, MAX_IMAGE_COUNTS.hero);
   }
-
-
 
   if (include('gallery')) {
-
-    result.gallery = pickList(queries.gallery, 4);
-
+    result.gallery = pickList(queries.gallery, MAX_IMAGE_COUNTS.gallery);
   }
-
-
 
   if (include('products')) {
-
-    result.products = pickList(queries.products, 4);
-
+    result.products = pickList(queries.products, MAX_IMAGE_COUNTS.product);
   }
-
-
 
   if (include('editorial')) {
-
-    result.editorial = pickList(queries.editorial, 2);
-
+    result.editorial = pickList(queries.editorial, MAX_IMAGE_COUNTS.editorial);
   }
 
-
-
   if (include('categories') && queries.categories) {
-
     result.categories = {
-
-      seating: pickList(queries.categories.seating, 2),
-
-      tables: pickList(queries.categories.tables, 2),
-
-      storage: pickList(queries.categories.storage, 2),
-
+      seating: pickList(queries.categories.seating, MAX_IMAGE_COUNTS.category),
+      tables: pickList(queries.categories.tables, MAX_IMAGE_COUNTS.category),
+      storage: pickList(queries.categories.storage, MAX_IMAGE_COUNTS.category),
     };
-
   }
 
 
@@ -1919,45 +1891,25 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
   };
 
   if (include('hero')) {
-
-    pushLine('HERO', limitList(images.hero, 2));
-
+    pushLine('HERO', limitList(images.hero, MAX_IMAGE_COUNTS.hero));
   }
-
-
 
   if (include('gallery')) {
-
-    pushLine('GALLERY', limitList(images.gallery, 4));
-
+    pushLine('GALLERY', limitList(images.gallery, MAX_IMAGE_COUNTS.gallery));
   }
-
-
 
   if (include('products')) {
-
-    pushLine('PRODUCTS', limitList(images.products ?? [], 6));
-
+    pushLine('PRODUCTS', limitList(images.products ?? [], MAX_IMAGE_COUNTS.product));
   }
-
-
 
   if (include('categories') && images.categories) {
-
-    pushLine('CATEGORIES (Seating)', limitList(images.categories.seating, 2));
-
-    pushLine('CATEGORIES (Tables)', limitList(images.categories.tables, 2));
-
-    pushLine('CATEGORIES (Storage)', limitList(images.categories.storage, 2));
-
+    pushLine('CATEGORIES (Seating)', limitList(images.categories.seating, MAX_IMAGE_COUNTS.category));
+    pushLine('CATEGORIES (Tables)', limitList(images.categories.tables, MAX_IMAGE_COUNTS.category));
+    pushLine('CATEGORIES (Storage)', limitList(images.categories.storage, MAX_IMAGE_COUNTS.category));
   }
 
-
-
   if (include('editorial')) {
-
-    pushLine('EDITORIAL', limitList(images.editorial ?? [], 2));
-
+    pushLine('EDITORIAL', limitList(images.editorial ?? [], MAX_IMAGE_COUNTS.editorial));
   }
 
 
@@ -1995,6 +1947,22 @@ function buildSectionDetailsBlock(
   });
 
   return `\nSECTION DETAILS (follow exactly):\n${lines.join('\n')}`;
+}
+
+function buildSectionBlueprint(
+  order: string[],
+  details: Record<string, string[]>,
+  sectionLabels: Record<string, string>,
+): string {
+  if (order.length === 0) return '';
+  const lines = order.map((section, index) => {
+    const label = sectionLabels[section] ?? section;
+    const uniqueItems = Array.from(new Set(details[section] ?? [])).slice(0, 3);
+    const detailText = uniqueItems.length > 0 ? ` - ${uniqueItems.join('; ')}` : '';
+    return `${index + 1}. ${label}${detailText}`;
+  });
+
+  return `\nSECTION BLUEPRINT (follow exactly):\n${lines.join('\n')}`;
 }
 
 
@@ -2478,6 +2446,8 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     }
   }
 
+  images = proxyImageSet(normalizeImageSet(images));
+
 
 
   // Section layout variants
@@ -2798,6 +2768,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     mentionedSections.length > 0 ? `\nSECTION COUNT: ${mentionedSections.length}` : '';
 
   const sectionDetailsBlock = buildSectionDetailsBlock(sectionSpecs.details, sectionLabels);
+  const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, sectionLabels);
 
   const requirements = extractRequirementLines(userPrompt).slice(0, 20);
   const requirementsBlock =
@@ -2821,7 +2792,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
 
   const enhancedPrompt = `${userPrompt}
-${brandLine}${sectionChecklist}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
+${brandLine}${sectionBlueprint}${sectionChecklist}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imagePrompt}`;
 
   const shortSectionsLine =
