@@ -51,6 +51,7 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   next = sanitizeImages(next, warnings);
 
   if (ext === '.css' || ext === '.scss') {
+    next = sanitizeCssSyntaxErrors(next, warnings);
     next = sanitizeTailwindShadcnTokensInCss(next, warnings);
   }
 
@@ -364,6 +365,91 @@ function sanitizeTailwindShadcnTokensInCss(code: string, warnings: string[]) {
 
   if (next !== before) {
     warnings.push('Rewrote shadcn Tailwind tokens in CSS to stable neutral defaults');
+  }
+
+  return next;
+}
+
+/**
+ * Fix common CSS syntax errors from AI generation, such as truncated property values.
+ * Examples: "margin;" → "margin: 0;", "padding;" → "padding: 0;"
+ */
+function sanitizeCssSyntaxErrors(code: string, warnings: string[]) {
+  const before = code;
+  let next = code;
+
+  // Fix truncated CSS properties (property name followed by ; without value)
+  // Common cases: margin;, padding;, width;, height;, etc.
+  const truncatedPropertyFixes: Array<[RegExp, string]> = [
+    // Spacing properties - default to 0
+    [/\bmargin\s*;/gi, 'margin: 0;'],
+    [/\bpadding\s*;/gi, 'padding: 0;'],
+    [/\bgap\s*;/gi, 'gap: 0;'],
+
+    // Sizing properties - default to auto
+    [/\bwidth\s*;/gi, 'width: auto;'],
+    [/\bheight\s*;/gi, 'height: auto;'],
+    [/\bmin-width\s*;/gi, 'min-width: 0;'],
+    [/\bmin-height\s*;/gi, 'min-height: 0;'],
+    [/\bmax-width\s*;/gi, 'max-width: none;'],
+    [/\bmax-height\s*;/gi, 'max-height: none;'],
+
+    // Color properties - default to inherit
+    [/\bcolor\s*;/gi, 'color: inherit;'],
+    [/\bbackground-color\s*;/gi, 'background-color: transparent;'],
+    [/\bbackground\s*;/gi, 'background: transparent;'],
+    [/\bborder-color\s*;/gi, 'border-color: currentColor;'],
+
+    // Border properties - default to none
+    [/\bborder\s*;/gi, 'border: none;'],
+    [/\bborder-width\s*;/gi, 'border-width: 0;'],
+    [/\bborder-radius\s*;/gi, 'border-radius: 0;'],
+    [/\boutline\s*;/gi, 'outline: none;'],
+
+    // Font properties - default to inherit
+    [/\bfont-size\s*;/gi, 'font-size: inherit;'],
+    [/\bfont-weight\s*;/gi, 'font-weight: inherit;'],
+    [/\bfont-family\s*;/gi, 'font-family: inherit;'],
+    [/\bline-height\s*;/gi, 'line-height: inherit;'],
+
+    // Display/layout - default to block/initial
+    [/\bdisplay\s*;/gi, 'display: block;'],
+    [/\bposition\s*;/gi, 'position: static;'],
+    [/\boverflow\s*;/gi, 'overflow: visible;'],
+    [/\bz-index\s*;/gi, 'z-index: auto;'],
+
+    // Flex properties
+    [/\bflex\s*;/gi, 'flex: 0 1 auto;'],
+    [/\bflex-direction\s*;/gi, 'flex-direction: row;'],
+    [/\bjustify-content\s*;/gi, 'justify-content: flex-start;'],
+    [/\balign-items\s*;/gi, 'align-items: stretch;'],
+
+    // Other common properties
+    [/\btop\s*;/gi, 'top: auto;'],
+    [/\bright\s*;/gi, 'right: auto;'],
+    [/\bbottom\s*;/gi, 'bottom: auto;'],
+    [/\bleft\s*;/gi, 'left: auto;'],
+    [/\bopacity\s*;/gi, 'opacity: 1;'],
+    [/\btransform\s*;/gi, 'transform: none;'],
+    [/\btransition\s*;/gi, 'transition: none;'],
+    [/\bbox-shadow\s*;/gi, 'box-shadow: none;'],
+    [/\btext-align\s*;/gi, 'text-align: left;'],
+    [/\btext-decoration\s*;/gi, 'text-decoration: none;'],
+    [/\bcursor\s*;/gi, 'cursor: auto;'],
+  ];
+
+  for (const [pattern, replacement] of truncatedPropertyFixes) {
+    next = next.replace(pattern, replacement);
+  }
+
+  // Fix double semicolons
+  next = next.replace(/;;+/g, ';');
+
+  // Fix empty rule blocks (common when AI truncates)
+  next = next.replace(/\{\s*\}/g, '{ }');
+
+  if (next !== before) {
+    warnings.push('Fixed truncated or malformed CSS properties (AI generation error)');
   }
 
   return next;

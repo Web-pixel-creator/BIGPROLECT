@@ -46,7 +46,7 @@ FILE ORDER IS CRITICAL - FOLLOW EXACTLY:
 6. src/lib/utils.ts
 7. src/main.tsx
 8. src/App.tsx
-9. src/index.css
+9. src/index.css (use EXACT template below, DO NOT modify unless adding custom styles!)
 10. <boltAction type="shell">npm install && npm run dev</boltAction> (LAST!)
 
 IF YOU DON'T CREATE package.json FIRST, THE PROJECT WILL FAIL!
@@ -88,6 +88,28 @@ REQUIRED package.json:
     "vite": "^5.0.0"
   }
 }
+REQUIRED index.css (COPY EXACTLY - do not modify base styles!):
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+WARNING: CSS properties MUST have values! WRONG: "margin;" RIGHT: "margin: 0;"
 </critical_rules>
 
 <images_rule>
