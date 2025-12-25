@@ -50,6 +50,7 @@ FORBIDDEN:
 - Separate component files (put ALL in src/App.tsx)
 - react-router-dom
 - react-icons, Bootstrap icons
+- CRITICAL: NEVER put <boltAction> or <boltArtifact> tags INSIDE file content! These are ONLY for wrapping files, never inside code/JSX!
 
 REQUIRED package.json:
 {
@@ -171,6 +172,7 @@ ${allowedHTMLElements.map((tag) => `<${tag}>`).join(', ')}
 2. CHANGES: Output only modified files
 3. NEVER describe code without creating it
 4. End with ONE shell command: <boltAction type="shell">npm install && npm run dev</boltAction>
+5. CRITICAL: <boltAction> and <boltArtifact> tags are WRAPPERS only. NEVER include them inside file content, JSX, or strings!
 </response_rules>
 `;
 
