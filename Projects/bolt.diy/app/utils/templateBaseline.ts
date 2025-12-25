@@ -646,6 +646,10 @@ function imageProxyPlugin() {
     next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}imageProxyPlugin(), `);
   } else if (!next.includes('plugins: [') && next.includes('defineConfig')) {
     next = next.replace(/defineConfig\s*\(\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
+  } else if (!next.includes('plugins: [') && /export\s+default\s*\{/.test(next)) {
+    next = next.replace(/export\s+default\s*\{/, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
+  } else if (!next.includes('plugins: [') && /module\.exports\s*=\s*\{/.test(next)) {
+    next = next.replace(/module\.exports\s*=\s*\{/, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
   }
 
   if (next !== original) {

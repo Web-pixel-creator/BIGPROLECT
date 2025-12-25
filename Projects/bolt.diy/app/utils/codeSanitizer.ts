@@ -36,6 +36,10 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   const warnings: string[] = [];
   let next = content;
 
+  if (/^vite\.config\./i.test(relativePath)) {
+    next = sanitizeViteConfigPlugins(next, warnings);
+  }
+
   if (ext === '.tsx' || ext === '.jsx') {
     next = sanitizeJsxComments(next, warnings);
   }
@@ -246,7 +250,25 @@ function sanitizeImages(code: string, warnings: string[]) {
 
   const beforeExternal = next;
   const toProxy = (url: string) => `${proxyPrefix}${encodeURIComponent(url)}`;
-  const shouldProxy = (url: string) => url && !url.includes(proxyMarker);
+  const shouldProxy = (url: string) =>
+    url &&
+    !url.includes(proxyMarker) &&
+    !url.startsWith('data:') &&
+    !url.startsWith('blob:');
+
+  const proxySrcSet = (value: string) => {
+    const entries = value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const [url, ...rest] = entry.split(/\s+/);
+        if (!url || !shouldProxy(url)) return entry;
+        return [toProxy(url), ...rest].join(' ');
+      });
+
+    return entries.join(', ');
+  };
 
   // JSX/HTML src="https://..."
   next = next.replace(/(\bsrc\s*=\s*["'])(https?:\/\/[^"'`}\s]+)(["'])/gi, (full, start, url, end) => {
@@ -256,6 +278,33 @@ function sanitizeImages(code: string, warnings: string[]) {
 
   // JSX/HTML src={'https://...'}
   next = next.replace(/(\bsrc\s*=\s*\{\s*["'])(https?:\/\/[^"'`}\s]+)(["']\s*\})/gi, (full, start, url, end) => {
+    if (!shouldProxy(url)) return full;
+    return `${start}${toProxy(url)}${end}`;
+  });
+
+  // srcset / srcSet attributes
+  next = next.replace(/(\bsrcset\s*=\s*["'])([^"']+)(["'])/gi, (full, start, value, end) => {
+    const proxied = proxySrcSet(value);
+    return proxied ? `${start}${proxied}${end}` : full;
+  });
+
+  next = next.replace(/(\bsrcSet\s*=\s*\{\s*["'])([^"']+)(["']\s*\})/gi, (full, start, value, end) => {
+    const proxied = proxySrcSet(value);
+    return proxied ? `${start}${proxied}${end}` : full;
+  });
+
+  // data-src / data-srcset / poster (often used by lazy loaders)
+  next = next.replace(/(\bdata-src\s*=\s*["'])(https?:\/\/[^"'`}\s]+)(["'])/gi, (full, start, url, end) => {
+    if (!shouldProxy(url)) return full;
+    return `${start}${toProxy(url)}${end}`;
+  });
+
+  next = next.replace(/(\bdata-srcset\s*=\s*["'])([^"']+)(["'])/gi, (full, start, value, end) => {
+    const proxied = proxySrcSet(value);
+    return proxied ? `${start}${proxied}${end}` : full;
+  });
+
+  next = next.replace(/(\bposter\s*=\s*["'])(https?:\/\/[^"'`}\s]+)(["'])/gi, (full, start, url, end) => {
     if (!shouldProxy(url)) return full;
     return `${start}${toProxy(url)}${end}`;
   });
@@ -317,6 +366,38 @@ function sanitizeTailwindShadcnTokensInCss(code: string, warnings: string[]) {
     warnings.push('Rewrote shadcn Tailwind tokens in CSS to stable neutral defaults');
   }
 
+  return next;
+}
+
+function sanitizeViteConfigPlugins(code: string, warnings: string[]) {
+  const pluginRegex = /plugins\s*:\s*\[[^\]]*\]\s*,?/g;
+  const matches = [...code.matchAll(pluginRegex)];
+
+  if (matches.length <= 1) return code;
+
+  const extractPlugins = (block: string) => {
+    const innerMatch = block.match(/plugins\s*:\s*\[([\s\S]*?)\]/);
+    const inner = innerMatch ? innerMatch[1] : '';
+    return inner
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  };
+
+  const combined = Array.from(new Set(matches.flatMap((match) => extractPlugins(match[0]))));
+  if (combined.length === 0) return code;
+
+  const combinedBlock = `plugins: [${combined.join(', ')}]`;
+  let first = true;
+  const next = code.replace(pluginRegex, () => {
+    if (first) {
+      first = false;
+      return combinedBlock;
+    }
+    return '';
+  });
+
+  warnings.push('Merged duplicate Vite plugins arrays');
   return next;
 }
 

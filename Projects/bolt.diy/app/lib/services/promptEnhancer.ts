@@ -1298,29 +1298,21 @@ async function fetchImageSetFromApi(
  */
 
 function detectTheme(prompt: string): string {
-
+  console.log('[detectTheme] Input prompt:', prompt.substring(0, 300));
   const lowerPrompt = prompt.toLowerCase();
-
-
+  console.log('[detectTheme] Lower prompt:', lowerPrompt.substring(0, 200));
 
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
-
     for (const keyword of keywords) {
-
       if (matchesKeyword(lowerPrompt, keyword)) {
-
+        console.log('[detectTheme] MATCHED theme:', theme, 'keyword:', keyword);
         return theme;
-
       }
-
     }
-
   }
 
-
-
+  console.log('[detectTheme] NO THEME MATCHED - returning default');
   return 'default';
-
 }
 
 
@@ -1557,21 +1549,29 @@ function extractUserColors(prompt: string): Record<string, string> | null {
 
 
 function matchesWord(haystack: string, needle: string): boolean {
-
   const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
   const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'iu');
-
-  return pattern.test(haystack);
-
+  const result = pattern.test(haystack);
+  // Debug for hero keyword
+  if (needle === 'hero' || needle === 'full-width') {
+    console.log('[matchesWord] DEBUG:', { haystack: haystack.substring(0, 50), needle, pattern: pattern.source, result });
+  }
+  return result;
 }
 
-
-
 function matchesKeyword(haystack: string, needle: string): boolean {
-
-  return needle.includes(' ') ? haystack.includes(needle) : matchesWord(haystack, needle);
-
+  const hasSpace = needle.includes(' ');
+  const result = hasSpace ? haystack.includes(needle) : matchesWord(haystack, needle);
+  // Debug for products and categories keywords
+  if (needle === 'products' || needle === 'carousel' || needle === 'grid' || needle === 'shop') {
+    console.log('[matchesKeyword] DEBUG:', {
+      haystack: haystack.substring(0, 80),
+      needle,
+      hasSpace,
+      result
+    });
+  }
+  return result;
 }
 
 
@@ -1739,25 +1739,61 @@ type SectionSpecs = {
 
 function inferSectionKey(text: string, sectionKeywords: Record<string, string[]>): string | null {
   const lower = text.toLowerCase();
+  console.log('[inferSectionKey] Checking text:', { original: text, lower, keywordSectionsCount: Object.keys(sectionKeywords).length });
+
+  // Check hero specifically for debugging
+  const heroKeywords = sectionKeywords['hero'];
+  if (heroKeywords) {
+    console.log('[inferSectionKey] Hero keywords sample:', heroKeywords.slice(0, 5));
+    for (const kw of heroKeywords.slice(0, 5)) {
+      const matches = matchesKeyword(lower, kw);
+      console.log('[inferSectionKey] Testing hero keyword:', { kw, matches });
+      if (matches) break;
+    }
+  }
+
   for (const [section, keywords] of Object.entries(sectionKeywords)) {
     if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
+      console.log('[inferSectionKey] MATCHED:', { text, section, lower });
       return section;
     }
   }
+  console.log('[inferSectionKey] NO MATCH:', { text, lower });
   return null;
 }
 
+// NEW: Find ALL sections matching in a text, not just the first one
+function inferAllSections(text: string, sectionKeywords: Record<string, string[]>): string[] {
+  const lower = text.toLowerCase();
+  const found: string[] = [];
+
+  for (const [section, keywords] of Object.entries(sectionKeywords)) {
+    if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
+      console.log('[inferAllSections] MATCHED:', { section, text: text.substring(0, 50) });
+      found.push(section);
+    }
+  }
+
+  console.log('[inferAllSections] Found sections:', found);
+  return found;
+}
+
 function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, string[]>): SectionSpecs {
+  console.log('[extractSectionSpecs] Parsing prompt:', prompt.substring(0, 200));
+
   const lines = prompt
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+
+  console.log('[extractSectionSpecs] Found lines:', lines.length, lines);
 
   const order: string[] = [];
   const details: Record<string, string[]> = {};
   let currentSection: string | null = null;
 
   const pushSection = (section: string) => {
+    console.log('[extractSectionSpecs] Pushing section:', section);
     if (!order.includes(section)) {
       order.push(section);
     }
@@ -1772,6 +1808,7 @@ function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, str
     const headingText = parts[0]?.trim() ?? trimmed;
     const detailText = parts.length > 1 ? parts.slice(1).join(': ').trim() : '';
     const key = inferSectionKey(headingText, sectionKeywords);
+    console.log('[extractSectionSpecs] parseHeading:', { rawText, headingText, key });
     return key ? { key, detail: detailText } : null;
   };
 
@@ -1779,12 +1816,22 @@ function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, str
     const bulletMatch = line.match(/^[-*]\s+(.*)$/) || line.match(/^\d+\.\s+(.*)$/);
     const rawLine = bulletMatch ? bulletMatch[1].trim() : line;
 
+    const hasColon = rawLine.includes(':');
     const headingCandidate =
-      (!bulletMatch && (rawLine.endsWith(':') || rawLine.includes(':'))) ||
-      (bulletMatch && rawLine.endsWith(':'));
+      (!bulletMatch && (rawLine.endsWith(':') || hasColon)) ||
+      (bulletMatch && hasColon);
+
+    console.log('[extractSectionSpecs] LINE:', {
+      line: line.substring(0, 60),
+      bulletMatch: !!bulletMatch,
+      rawLine: rawLine.substring(0, 60),
+      hasColon,
+      headingCandidate
+    });
 
     if (headingCandidate) {
       const parsed = parseHeading(rawLine);
+      console.log('[extractSectionSpecs] parseHeading result:', parsed);
       if (parsed) {
         currentSection = parsed.key;
         pushSection(parsed.key);
@@ -1795,16 +1842,22 @@ function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, str
       }
     }
 
-    const inferred = inferSectionKey(rawLine, sectionKeywords);
-    if (inferred) {
-      currentSection = inferred;
-      pushSection(inferred);
+    // If not a heading, try to infer ALL sections from the whole line
+    console.log('[extractSectionSpecs] Trying inferAllSections for:', rawLine.substring(0, 60));
+    const inferredSections = inferAllSections(rawLine, sectionKeywords);
+    console.log('[extractSectionSpecs] inferAllSections result:', inferredSections);
+    if (inferredSections.length > 0) {
+      // Push ALL found sections
+      for (const inferredSection of inferredSections) {
+        pushSection(inferredSection);
+      }
+      currentSection = inferredSections[inferredSections.length - 1];
       if (bulletMatch) {
-        details[inferred].push(rawLine);
+        details[inferredSections[0]].push(rawLine);
       } else if (rawLine !== rawLine.replace(/:$/, '').trim()) {
         const detailText = rawLine.replace(/^[^:]+:\s*/, '').trim();
         if (detailText) {
-          details[inferred].push(detailText);
+          details[inferredSections[0]].push(detailText);
         }
       }
       continue;
@@ -1884,10 +1937,11 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
   const include = (section: string) => mentionedSections.includes(section);
 
   const pushLine = (label: string, urls?: string[]) => {
-    if (urls && urls.length > 0) {
-      console.log(`[buildImageSuggestions] Adding ${label}:`, urls.length, 'images');
-      lines.push(`${label}: ${urls.join(' | ')}`);
-    }
+    if (!urls || urls.length === 0) return;
+    const proxied = urls.filter(Boolean).map((url) => proxyImageUrl(url));
+    if (proxied.length === 0) return;
+    console.log(`[buildImageSuggestions] Adding ${label}:`, proxied.length, 'images');
+    lines.push(`${label}: ${proxied.join(' | ')}`);
   };
 
   if (include('hero')) {
@@ -2355,34 +2409,51 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     products: [
       'products',
       'product grid',
+      'product listing',
+      'product cards',
       'vinyl cards',
       'album cards',
+      'record cards',
       'bestsellers',
       'catalog',
       'items',
+      'shop',
+      'store items',
+      'records',
+      'grid',
+      'listing',
       'товары',
       'продукты',
       'каталог',
       'витрина',
       'карточки товаров',
+      'пластинки',
     ],
     categories: [
       'categories',
       'category cards',
+      'category carousel',
       'collections',
       'genres',
       'genre',
       'genre carousel',
+      'music genres',
       'carousel',
+      'slider',
+      'horizontal scroll',
+      'filter buttons',
+      'filter tags',
       'tags',
       'pills',
       'chips',
+      'rounded tags',
       'категории',
       'категории товаров',
       'коллекции',
       'жанры',
       'теги',
       'плашки',
+      'фильтры',
     ],
     editorial: [
       'editorial',
@@ -2409,22 +2480,21 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Find which sections are mentioned
   const sectionSpecs = extractSectionSpecs(userPrompt, sectionKeywords);
+  console.log('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
   const orderedSections =
     sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(userPrompt, sectionKeywords);
+  console.log('[promptEnhancer] orderedSections:', orderedSections);
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
 
-  if (mentionedSections.length === 0) {
-
-    for (const [section, keywords] of Object.entries(sectionKeywords)) {
-
+  // ALWAYS scan for additional sections that weren't found by extractSectionSpecs
+  // This ensures keywords like "carousel" and "products" are caught even in simple prompts
+  for (const [section, keywords] of Object.entries(sectionKeywords)) {
+    if (!mentionedSections.includes(section)) {
       if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
-
+        console.log('[promptEnhancer] Fallback found section:', section);
         mentionedSections.push(section);
-
       }
-
     }
-
   }
 
   console.log('[promptEnhancer] Detected theme:', detectedTheme);
@@ -2757,6 +2827,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
         .join(', ')}`
       : '';
 
+  const sectionContract =
+    mentionedSections.length > 0
+      ? `\nSECTION CONTRACT:\n- Render exactly ${mentionedSections.length} sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.`
+      : '';
+
   const sectionOrderLine =
     mentionedSections.length > 0
       ? `\nSECTION ORDER (render in this order): ${mentionedSections
@@ -2792,13 +2867,17 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
 
   const enhancedPrompt = `${userPrompt}
-${brandLine}${sectionBlueprint}${sectionChecklist}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
+${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imagePrompt}`;
 
+  console.log('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
+  console.log('[promptEnhancer] sectionSpecs.order was:', JSON.stringify(sectionSpecs.order));
+  console.log('[promptEnhancer] orderedSections was:', JSON.stringify(orderedSections));
   const shortSectionsLine =
     mentionedSections.length > 0
       ? `\nSections: ${mentionedSections.map((section) => sectionLabels[section] ?? section).join(', ')}`
       : '';
+  console.log('[promptEnhancer] shortSectionsLine result:', shortSectionsLine);
   const displayPrompt = `${userPrompt}${shortSectionsLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 

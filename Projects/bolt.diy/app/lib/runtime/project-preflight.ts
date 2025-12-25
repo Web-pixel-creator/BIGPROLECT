@@ -234,10 +234,16 @@ function imageProxyPlugin() {
     }
   }
 
-  if (next.includes('plugins: [') && !next.includes('imageProxyPlugin()')) {
+  const hasPluginsArray = /plugins\s*:\s*\[/.test(next);
+
+  if (hasPluginsArray && !next.includes('imageProxyPlugin()')) {
     next = next.replace(/plugins\s*:\s*\[/, (match) => `${match}imageProxyPlugin(), `);
-  } else if (!next.includes('plugins: [') && next.includes('defineConfig')) {
+  } else if (/defineConfig\s*\(\s*\{/.test(next)) {
     next = next.replace(/defineConfig\s*\(\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
+  } else if (/export\s+default\s*\{/.test(next)) {
+    next = next.replace(/export\s+default\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
+  } else if (/module\.exports\s*=\s*\{/.test(next)) {
+    next = next.replace(/module\.exports\s*=\s*\{/g, (match) => `${match}\n  plugins: [imageProxyPlugin()],`);
   }
 
   if (next === original) return false;

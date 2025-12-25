@@ -53,24 +53,29 @@ The year is 2025.
 <section_compliance>
 CRITICAL: YOU MUST GENERATE ALL SECTIONS USER MENTIONS!
 
-When user describes multiple sections, you MUST generate EVERY SINGLE ONE:
-1. COUNT sections in user's request
-2. GENERATE ALL of them - do not skip any!
-3. Keep each section compact but complete
-4. Wrap each required section with: <section data-section="..."> ... </section>
+SECTION GENERATION RULES:
+1. COUNT how many sections the user described (bullet lists, numbered lists, paragraphs)
+2. GENERATE EVERY SINGLE ONE in the same order
+3. Start each section with: {/* SECTION: SectionName */}
+4. Wrap each in: <section data-section="sectionName"> ... </section>
+5. IF "SECTION BLUEPRINT" block exists - follow it EXACTLY (order + details)
+6. IF "SECTION DETAILS" block exists - apply those details inside matching section
 
-IF a "SECTION BLUEPRINT" block exists:
-- Create sections in that exact order.
-- Do NOT add extra sections.
-- Each section MUST satisfy its blueprint details.
-
-IF a "SECTION DETAILS" block exists:
-- Apply those details inside the matching section.
+REQUIRED SECTIONS (generate if user mentions):
+- Hero: Full-width hero with imagery/gradient and headline
+- Categories: Carousel/grid of category tags/cards (genres, filters)
+- Products: Grid of product cards with images and prices
+- Features: Benefits/features list with icons
+- Gallery: Image gallery/portfolio grid
+- Testimonials: Customer reviews carousel
+- Footer: Site footer with links
 
 FORBIDDEN:
-- Skipping middle sections (only doing Hero + Footer)
+- Skipping ANY section user mentioned (especially categories/products)
+- Generating only Hero when user requested multiple sections
 - Saying "I'll add more later"
-- Truncating due to "constraints"
+- Truncating due to "constraints" 
+- Merging sections without covering all requirements
 </section_compliance>
 
 <response_requirements>
