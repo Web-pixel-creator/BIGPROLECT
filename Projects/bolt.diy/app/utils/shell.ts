@@ -265,10 +265,11 @@ export class BoltShell {
 
   onQRCodeDetected?: (qrCode: string) => void;
 
-  async waitTillOscCode(waitCode: string) {
+  async waitTillOscCode(waitCode: string, timeoutMs: number = 120000) {
     let fullOutput = '';
     let exitCode: number = 0;
     let buffer = ''; // <-- Add a buffer to accumulate output
+    let timedOut = false;
 
     if (!this.#outputStream) {
       return { output: fullOutput, exitCode };
@@ -279,41 +280,66 @@ export class BoltShell {
     // Regex for Expo URL
     const expoUrlRegex = /(exp:\/\/[^\s]+)/;
 
-    while (true) {
-      const { value, done } = await tappedStream.read();
+    // Create timeout promise
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        timedOut = true;
+        reject(new Error(`Shell command timeout after ${timeoutMs / 1000}s waiting for ${waitCode}`));
+      }, timeoutMs);
+    });
 
-      if (done) {
-        break;
+    const readLoop = async () => {
+      while (true) {
+        if (timedOut) {
+          break;
+        }
+
+        const { value, done } = await tappedStream.read();
+
+        if (done) {
+          break;
+        }
+
+        const text = value || '';
+        fullOutput += text;
+        buffer += text; // <-- Accumulate in buffer
+
+        // Extract Expo URL from buffer and set store
+        const expoUrlMatch = buffer.match(expoUrlRegex);
+
+        if (expoUrlMatch) {
+          // Remove any trailing ANSI escape codes or non-printable characters
+          const cleanUrl = expoUrlMatch[1]
+            .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
+            .replace(/[^\x20-\x7E]+$/g, '');
+          expoUrlAtom.set(cleanUrl);
+
+          // Remove everything up to and including the URL from the buffer to avoid duplicate matches
+          buffer = buffer.slice(buffer.indexOf(expoUrlMatch[1]) + expoUrlMatch[1].length);
+        }
+
+        // Check if command completion signal with exit code
+        const [, osc, , , code] = text.match(/\x1b\]654;([^\x07=]+)=?((-?\d+):(\d+))?\x07/) || [];
+
+        if (osc === 'exit') {
+          exitCode = parseInt(code, 10);
+        }
+
+        if (osc === waitCode) {
+          break;
+        }
       }
+    };
 
-      const text = value || '';
-      fullOutput += text;
-      buffer += text; // <-- Accumulate in buffer
-
-      // Extract Expo URL from buffer and set store
-      const expoUrlMatch = buffer.match(expoUrlRegex);
-
-      if (expoUrlMatch) {
-        // Remove any trailing ANSI escape codes or non-printable characters
-        const cleanUrl = expoUrlMatch[1]
-          .replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '')
-          .replace(/[^\x20-\x7E]+$/g, '');
-        expoUrlAtom.set(cleanUrl);
-
-        // Remove everything up to and including the URL from the buffer to avoid duplicate matches
-        buffer = buffer.slice(buffer.indexOf(expoUrlMatch[1]) + expoUrlMatch[1].length);
+    try {
+      // Race between read loop and timeout
+      await Promise.race([readLoop(), timeoutPromise]);
+    } catch (error) {
+      if (timedOut) {
+        console.warn(`[BoltShell] Command timed out after ${timeoutMs / 1000}s`);
+        return { output: fullOutput + '\n\n[TIMEOUT: Command exceeded time limit]', exitCode: -1 };
       }
-
-      // Check if command completion signal with exit code
-      const [, osc, , , code] = text.match(/\x1b\]654;([^\x07=]+)=?((-?\d+):(\d+))?\x07/) || [];
-
-      if (osc === 'exit') {
-        exitCode = parseInt(code, 10);
-      }
-
-      if (osc === waitCode) {
-        break;
-      }
+      throw error;
     }
 
     return { output: fullOutput, exitCode };

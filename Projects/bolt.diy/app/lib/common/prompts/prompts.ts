@@ -33,7 +33,7 @@ CRITICAL RULES:
 2. CONTENT: Match user's industry/theme EXACTLY.
 3. IMAGES: If "IMAGES:" block exists, use ONLY those URLs. Otherwise use CSS gradients.
 4. SECTIONS: Generate ALL sections user describes. Do NOT skip any.
-5. SHELL: Generate EXACTLY ONE shell command at the end: npm install && npm run dev
+5. SHELL: Generate EXACTLY ONE shell command at the end: npm install --legacy-peer-deps && npm run dev
 6. TAGS: <boltAction> tags WRAP files; they NEVER go inside code!
 
 <critical_rules>
@@ -44,10 +44,10 @@ FILE ORDER IS CRITICAL - FOLLOW EXACTLY:
 4. postcss.config.js
 5. index.html
 6. src/lib/utils.ts
-7. src/main.tsx
+7. src/main.tsx (DO NOT MODIFY - use exact standard React entry point!)
 8. src/App.tsx
 9. src/index.css (use EXACT template below, DO NOT modify unless adding custom styles!)
-10. <boltAction type="shell">npm install && npm run dev</boltAction> (LAST!)
+10. <boltAction type="shell">npm install --legacy-peer-deps && npm run dev</boltAction> (LAST!)
 
 IF YOU DON'T CREATE package.json FIRST, THE PROJECT WILL FAIL!
 
@@ -186,7 +186,7 @@ RESPONSE STRUCTURE (FOLLOW EXACTLY):
    Then other files: vite.config.ts, tailwind.config.js, etc.
    
    LAST ACTION (shell command):
-   <boltAction type="shell">npm install && npm run dev</boltAction>
+   <boltAction type="shell">npm install --legacy-peer-deps && npm run dev</boltAction>
 
 </boltArtifact>
 </artifact_format>
@@ -206,7 +206,7 @@ ${allowedHTMLElements.map((tag) => `<${tag}>`).join(', ')}
 1. NEW projects: Brief plan, then <boltArtifact> with all files
 2. CHANGES: Output only modified files
 3. NEVER describe code without creating it
-4. End with ONE shell command: <boltAction type="shell">npm install && npm run dev</boltAction>
+4. End with ONE shell command: <boltAction type="shell">npm install --legacy-peer-deps && npm run dev</boltAction>
 5. CRITICAL: <boltAction> and <boltArtifact> tags are WRAPPERS only. NEVER include them inside file content, JSX, or strings!
 </response_rules>
 `;

@@ -41,6 +41,7 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   }
 
   if (ext === '.tsx' || ext === '.jsx') {
+    next = sanitizeJsxSyntaxErrors(next, warnings);
     next = sanitizeJsxComments(next, warnings);
   }
 
@@ -56,6 +57,238 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   }
 
   return { content: next, changed: next !== content, warnings };
+}
+
+/**
+ * Fix common JSX syntax errors from AI generation, such as truncated attributes.
+ * Examples:
+ *   - className="flex gap-2            <a href= → className="flex gap-2"><a href=
+ *   - <div className="text-sm<boltAction → <div className="text-sm">
+ */
+function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
+  const before = code;
+  let next = code;
+
+  // DEBUG: Log when sanitizer runs
+  console.log('[CodeSanitizer] Running JSX syntax fixer...');
+
+  // Fix 1: Truncated className with embedded tag (className="...  <tag)
+  // Pattern: className="...whitespace...<tagName
+  // This catches cases like: className="flex gap-y-2            <a href=
+  const truncatedClassWithTag = /(\bclassName\s*=\s*["'])([^"']*?)(\s{2,})(<[a-zA-Z])/g;
+  next = next.replace(truncatedClassWithTag, (match, start, classValue, _ws, tag) => {
+    const quote = start.slice(-1);
+    // Close the className properly and keep the tag
+    return `${start}${classValue.trim()}${quote}>${tag}`;
+  });
+
+  // Fix 2: Detect and fix className that contains < character (invalid)
+  // Pattern: className="...<anything
+  const classWithBracket = /(\bclassName\s*=\s*["'])([^"']*?)(<[^"']*)(["'])/g;
+  next = next.replace(classWithBracket, (match, start, validPart, invalidPart, quote) => {
+    // Keep only valid part before < and close properly
+    return `${start}${validPart.trim()}${quote}>${invalidPart}`;
+  });
+
+  // Fix 3: Unclosed string attributes that span to next line with a tag
+  // Pattern: attr="value\n            <tag
+  const unclosedAttrWithNewlineTag = /(\b(?:className|style|href|src|alt|title|id|name)\s*=\s*["'])([^"'\n]*?)(\n\s*)(<[a-zA-Z])/g;
+  next = next.replace(unclosedAttrWithNewlineTag, (match, start, value, newline, tag) => {
+    const quote = start.slice(-1);
+    return `${start}${value.trim()}${quote}>${newline}${tag}`;
+  });
+
+  // Fix 4: boltAction/boltArtifact tags embedded in attributes (from previous bug)
+  const boltTagsInAttr = /(\bclassName\s*=\s*["'][^"']*)(<\/?bolt(?:Action|Artifact)[^>]*>)([^"']*["'])/gi;
+  next = next.replace(boltTagsInAttr, (match, before, boltTag, after) => {
+    // Remove the bolt tag from inside attribute
+    return before + after;
+  });
+
+  // Fix 5: Double less-than in attributes (AI generation error)
+  const doubleLessThan = /(\bclassName\s*=\s*["'][^"']*)(<<)/g;
+  next = next.replace(doubleLessThan, '$1<');
+
+  // Fix 6: Missing closing > before content
+  // Pattern: <div className="..." some text (missing >)
+  const missingClosingBracket = /(<[a-zA-Z][a-zA-Z0-9]*(?:\s+[a-zA-Z][a-zA-Z0-9-]*\s*=\s*(?:"[^"]*"|'[^']*'|\{[^}]*\}))*\s*)((?:[A-Z][a-z]|[a-z]{2,})\s)/g;
+  next = next.replace(missingClosingBracket, (match, tag, content) => {
+    // Check if tag is already closed
+    if (tag.trim().endsWith('>')) return match;
+    return `${tag.trim()}>${content}`;
+  });
+
+  // Fix 7: Broken component names where AI splits the name
+  // Pattern: <A>pp /> or <R>eactDOM - AI truncates component name after first letter
+  // Fix common broken patterns
+  const brokenComponentPatterns: Array<[RegExp, string]> = [
+    // React components
+    [/<A>pp\s*\/>/g, '<App />'],
+    [/<A>pp>/g, '<App>'],
+    [/<\/A>pp>/g, '</App>'],
+    [/<R>eact\./g, '<React.'],
+    [/<R>eactDOM/g, '<ReactDOM'],
+
+    // Common HTML tags broken in middle
+    [/<secti>on/gi, '<section'],
+    [/<\/secti>on>/gi, '</section>'],
+    [/<head>er/gi, '<header'],
+    [/<\/head>er>/gi, '</header>'],
+    [/<foot>er/gi, '<footer'],
+    [/<\/foot>er>/gi, '</footer>'],
+    [/<nav>igation/gi, '<navigation'],
+    [/<art>icle/gi, '<article'],
+    [/<\/art>icle>/gi, '</article>'],
+    [/<mai>n/gi, '<main'],
+    [/<\/mai>n>/gi, '</main>'],
+    [/<asi>de/gi, '<aside'],
+    [/<\/asi>de>/gi, '</aside>'],
+    [/<for>m/gi, '<form'],
+    [/<\/for>m>/gi, '</form>'],
+    [/<tab>le/gi, '<table'],
+    [/<\/tab>le>/gi, '</table>'],
+    [/<tex>tarea/gi, '<textarea'],
+    [/<\/tex>tarea>/gi, '</textarea>'],
+
+    // Single letter breaks
+    [/<d>iv/g, '<div'],
+    [/<\/d>iv>/g, '</div>'],
+    [/<s>pan/g, '<span'],
+    [/<\/s>pan>/g, '</span>'],
+    [/<b>utton/g, '<button'],
+    [/<\/b>utton>/g, '</button>'],
+    [/<i>nput/g, '<input'],
+    [/<i>mg/g, '<img'],
+    [/<a>\s+href/g, '<a href'],
+    [/<h>1/g, '<h1'],
+    [/<h>2/g, '<h2'],
+    [/<h>3/g, '<h3'],
+    [/<h>4/g, '<h4'],
+    [/<h>5/g, '<h5'],
+    [/<h>6/g, '<h6'],
+    [/<p>aragraph/gi, '<paragraph'],
+    [/<l>i/g, '<li'],
+    [/<\/l>i>/g, '</li>'],
+    [/<u>l/g, '<ul'],
+    [/<\/u>l>/g, '</ul>'],
+    [/<o>l/g, '<ol'],
+    [/<\/o>l>/g, '</ol>'],
+
+    // motion components (framer-motion)
+    [/<moti>on\./gi, '<motion.'],
+    [/<\/moti>on\./gi, '</motion.'],
+
+    // Common lucide-react icons broken in middle
+    [/<ShoppingCa>rt/g, '<ShoppingCart'],
+    [/<Searc>h/g, '<Search'],
+    [/<Hea>rt/g, '<Heart'],
+    [/<Use>r/g, '<User'],
+    [/<Men>u/g, '<Menu'],
+    [/<Arro>w/g, '<Arrow'],
+    [/<ArrowRig>ht/g, '<ArrowRight'],
+    [/<ArrowLef>t/g, '<ArrowLeft'],
+    [/<ArrowU>p/g, '<ArrowUp'],
+    [/<ArrowDow>n/g, '<ArrowDown'],
+    [/<ChevronRig>ht/g, '<ChevronRight'],
+    [/<ChevronLef>t/g, '<ChevronLeft'],
+    [/<ChevronU>p/g, '<ChevronUp'],
+    [/<ChevronDow>n/g, '<ChevronDown'],
+    [/<Chec>k/g, '<Check'],
+    [/<Clos>e/g, '<Close'],
+    [/<Sta>r/g, '<Star'],
+    [/<Plu>s/g, '<Plus'],
+    [/<Minu>s/g, '<Minus'],
+    [/<Phon>e/g, '<Phone'],
+    [/<Mai>l/g, '<Mail'],
+    [/<Faceboo>k/g, '<Facebook'],
+    [/<Instagra>m/g, '<Instagram'],
+    [/<Twitte>r/g, '<Twitter'],
+    [/<YouTub>e/g, '<YouTube'],
+    [/<LinkedI>n/g, '<LinkedIn'],
+    [/<GitHu>b/g, '<GitHub'],
+  ];
+
+  for (const [pattern, replacement] of brokenComponentPatterns) {
+    next = next.replace(pattern, replacement);
+  }
+
+  // Fix 8: Generic pattern for single uppercase letter followed by >lowercase
+  // Catches: <A>ny, <B>utton, <C>omponent, etc.
+  const genericBrokenTag = /<([A-Z])>([a-z]+)(\s|>|\/)/g;
+  next = next.replace(genericBrokenTag, (match, firstLetter, rest, ending) => {
+    return `<${firstLetter}${rest}${ending}`;
+  });
+
+  // Fix 8b: PascalCase components broken in middle (e.g., <ShoppingCa>rt -> <ShoppingCart)
+  // Pattern: <UppercaseLowercase...>lowercase followed by space, >, / or attributes
+  const pascalCaseBrokenTag = /<([A-Z][a-zA-Z]{1,20})>([a-z][a-zA-Z]{0,15})(\s|>|\/)/g;
+  next = next.replace(pascalCaseBrokenTag, (match, prefix, suffix, ending) => {
+    console.log(`[CodeSanitizer] Fixed broken PascalCase: <${prefix}>${suffix} -> <${prefix}${suffix}`);
+    return `<${prefix}${suffix}${ending}`;
+  });
+
+  // Fix 9: Same for closing tags </A>pp> -> </App>
+  const genericBrokenClosingTag = /<\/([A-Z])>([a-z]+)>/g;
+  next = next.replace(genericBrokenClosingTag, (match, firstLetter, rest) => {
+    return `</${firstLetter}${rest}>`;
+  });
+
+  // Fix 9b: Closing PascalCase tags broken in middle (</ShoppingCa>rt> -> </ShoppingCart>)
+  const pascalCaseBrokenClosingTag = /<\/([A-Z][a-zA-Z]{1,20})>([a-z][a-zA-Z]{0,15})>/g;
+  next = next.replace(pascalCaseBrokenClosingTag, (match, prefix, suffix) => {
+    return `</${prefix}${suffix}>`;
+  });
+
+  // Fix 10: Universal pattern for any lowercase tag broken in middle
+  // Catches: <secti>on, <head>er, <foot>er, <arti>cle, etc.
+  // Pattern: <lowercase letters>any lowercase letters followed by space, >, / or attribute
+  // Changed {2,6} to {1,6} to also catch single-letter breaks like <n>av
+  const genericBrokenLowercaseTag = /<([a-z]{1,6})>([a-z]{1,10})(\s|>|\/|$)/gi;
+  next = next.replace(genericBrokenLowercaseTag, (match, prefix, suffix, ending) => {
+    // Reconstruct the tag name
+    return `<${prefix}${suffix}${ending}`;
+  });
+
+  // Fix 11: Same for closing lowercase tags </secti>on> -> </section>
+  const genericBrokenLowercaseClosingTag = /<\/([a-z]{1,6})>([a-z]{1,10})>/gi;
+  next = next.replace(genericBrokenLowercaseClosingTag, (match, prefix, suffix) => {
+    return `</${prefix}${suffix}>`;
+  });
+
+  // Fix 12: Specific single-letter broken tags that are very common
+  const singleLetterBrokenTags: Array<[RegExp, string]> = [
+    [/<n>av/gi, '<nav'],
+    [/<\/n>av>/gi, '</nav>'],
+    [/<a>rticle/gi, '<article'],
+    [/<\/a>rticle>/gi, '</article>'],
+    [/<s>ection/gi, '<section'],
+    [/<\/s>ection>/gi, '</section>'],
+    [/<h>eader/gi, '<header'],
+    [/<\/h>eader>/gi, '</header>'],
+    [/<f>ooter/gi, '<footer'],
+    [/<\/f>ooter>/gi, '</footer>'],
+    [/<m>ain/gi, '<main'],
+    [/<\/m>ain>/gi, '</main>'],
+    [/<a>side/gi, '<aside'],
+    [/<\/a>side>/gi, '</aside>'],
+    [/<f>orm/gi, '<form'],
+    [/<\/f>orm>/gi, '</form>'],
+    [/<t>able/gi, '<table'],
+    [/<\/t>able>/gi, '</table>'],
+  ];
+
+  for (const [pattern, replacement] of singleLetterBrokenTags) {
+    next = next.replace(pattern, replacement);
+  }
+
+  if (next !== before) {
+    warnings.push('Fixed truncated or malformed JSX attributes (AI generation error)');
+    console.log('[CodeSanitizer] JSX FIXED! Changes were made to the code.');
+    // Log a snippet of what was changed
+    console.log('[CodeSanitizer] Before length:', before.length, 'After length:', next.length);
+  }
+
+  return next;
 }
 
 function sanitizeJsxComments(code: string, warnings: string[]) {
@@ -106,36 +339,68 @@ function sanitizeLucide(code: string, warnings: string[]) {
     warnings.push('Rewrote lucide-react/dist import to lucide-react');
   }
 
-  // House is frequently hallucinated; lucide-react uses Home.
-  // CirclePlay can be missing in older lucide-react versions; PlayCircle is widely available.
-  // If the file imports these from lucide-react, replace and adjust usages conservatively.
-  let replacedHouseImport = false;
-  let replacedCirclePlayImport = false;
+  // Map of hallucinated/non-existent lucide icons to their valid replacements
+  // AI often generates imports for icons that don't exist in lucide-react
+  const invalidIconReplacements: Record<string, string> = {
+    'House': 'Home',
+    'CirclePlay': 'PlayCircle',
+    'Discord': 'MessageCircle',      // Discord icon doesn't exist, use MessageCircle
+    'PayPal': 'CreditCard',           // PayPal doesn't exist
+    'Visa': 'CreditCard',             // Visa doesn't exist  
+    'Mastercard': 'CreditCard',       // Mastercard doesn't exist
+    'Paypal': 'CreditCard',           // Various capitalizations
+    'Telegram': 'Send',               // Telegram doesn't exist
+    'WhatsApp': 'MessageCircle',      // WhatsApp doesn't exist
+    'Whatsapp': 'MessageCircle',
+    'TikTok': 'Music',                // TikTok doesn't exist
+    'Tiktok': 'Music',
+    'Pinterest': 'Pin',               // Pinterest doesn't exist
+    'Spotify': 'Music',               // Spotify doesn't exist
+    'Apple': 'Smartphone',            // Apple doesn't exist
+    'Google': 'Globe',                // Google doesn't exist
+    'Amazon': 'Package',              // Amazon doesn't exist
+    'Stripe': 'CreditCard',           // Stripe doesn't exist
+    'Venmo': 'Wallet',                // Venmo doesn't exist
+    'Amex': 'CreditCard',             // Amex doesn't exist
+    'ApplePay': 'Wallet',             // ApplePay doesn't exist
+    'GooglePay': 'Wallet',            // GooglePay doesn't exist
+    'Audiophile': 'Headphones',       // Audiophile doesn't exist (from Vinyl Vault prompt)
+    'Vinyl': 'Disc',                  // Vinyl doesn't exist
+    'Record': 'Disc',                 // Record doesn't exist
+    'Album': 'Disc',                  // Album doesn't exist
+  };
+
+  const replacedIcons: string[] = [];
+
   next = next.replace(
     /import\s+\{([\s\S]*?)\}\s+from\s+['"]lucide-react['"]\s*;?/g,
     (full, specifiers: string) => {
-      const hasHouse = /\bHouse\b/.test(specifiers);
-      const hasCirclePlay = /\bCirclePlay\b/.test(specifiers);
-      if (!hasHouse && !hasCirclePlay) return full;
-
       const parts = specifiers
         .split(',')
         .map((part) => part.trim())
         .filter(Boolean);
 
+      let hasReplacement = false;
       const mapped = parts.map((part) => {
-        if (/^House(\s+as\s+.+)?$/.test(part) || /^House\s+as\s+/.test(part)) {
-          replacedHouseImport = true;
-          return part.replace(/^House\b/, 'Home');
-        }
-        if (/^CirclePlay(\s+as\s+.+)?$/.test(part) || /^CirclePlay\s+as\s+/.test(part)) {
-          replacedCirclePlayImport = true;
-          return part.replace(/^CirclePlay\b/, 'PlayCircle');
+        // Extract the icon name (handle "IconName" or "IconName as alias")
+        const match = part.match(/^(\w+)(\s+as\s+.+)?$/);
+        if (!match) return part;
+
+        const iconName = match[1];
+        const alias = match[2] || '';
+
+        if (invalidIconReplacements[iconName]) {
+          hasReplacement = true;
+          const replacement = invalidIconReplacements[iconName];
+          replacedIcons.push(`${iconName} → ${replacement}`);
+          return replacement + alias;
         }
         return part;
       });
 
-      // De-duplicate (House -> Home can create duplicates)
+      if (!hasReplacement) return full;
+
+      // De-duplicate
       const deduped: string[] = [];
       const seen = new Set<string>();
       for (const part of mapped) {
@@ -145,26 +410,24 @@ function sanitizeLucide(code: string, warnings: string[]) {
         deduped.push(part);
       }
 
-      if (hasHouse) {
-        warnings.push('Replaced lucide icon House -> Home');
-      }
-      if (hasCirclePlay) {
-        warnings.push('Replaced lucide icon CirclePlay -> PlayCircle');
-      }
       return `import { ${deduped.join(', ')} } from "lucide-react";`;
     },
   );
 
-  if (replacedHouseImport) {
-    next = next.replace(/<\s*House\b/g, '<Home');
-    next = next.replace(/<\/\s*House\b/g, '</Home');
-    next = next.replace(/\bHouse\b/g, 'Home');
+  // Also replace usages in JSX
+  for (const [invalid, valid] of Object.entries(invalidIconReplacements)) {
+    if (next.includes(`<${invalid}`)) {
+      next = next.replace(new RegExp(`<${invalid}\\b`, 'g'), `<${valid}`);
+      next = next.replace(new RegExp(`</${invalid}>`, 'g'), `</${valid}>`);
+      if (!replacedIcons.includes(`${invalid} → ${valid}`)) {
+        replacedIcons.push(`${invalid} → ${valid} (JSX usage)`);
+      }
+    }
   }
 
-  if (replacedCirclePlayImport) {
-    next = next.replace(/<\s*CirclePlay\b/g, '<PlayCircle');
-    next = next.replace(/<\/\s*CirclePlay\b/g, '</PlayCircle');
-    next = next.replace(/\bCirclePlay\b/g, 'PlayCircle');
+  if (replacedIcons.length > 0) {
+    warnings.push(`Replaced non-existent lucide icons: ${replacedIcons.join(', ')}`);
+    console.log(`[CodeSanitizer] Replaced lucide icons: ${replacedIcons.join(', ')}`);
   }
 
   // Some LLMs hallucinate `import { Lucide } from "lucide-react"`, but `Lucide` is not a valid export.

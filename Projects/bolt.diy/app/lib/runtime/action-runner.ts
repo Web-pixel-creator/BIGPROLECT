@@ -352,8 +352,31 @@ export class ActionRunner {
             }),
           );
 
-          const exitCode = await installProcess.exit;
-          if (exitCode !== 0) {
+          // Add timeout to prevent infinite hang (3 minutes)
+          const INSTALL_TIMEOUT_MS = 180000;
+          let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+          const timeoutPromise = new Promise<number>((resolve) => {
+            timeoutId = setTimeout(() => {
+              logger.warn('Preflight npm install timeout - killing process');
+              try {
+                installProcess.kill();
+              } catch {
+                // Process may already be dead
+              }
+              resolve(-1);
+            }, INSTALL_TIMEOUT_MS);
+          });
+
+          const exitCode = await Promise.race([installProcess.exit, timeoutPromise]);
+
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
+          if (exitCode === -1) {
+            logger.warn('Preflight npm install timed out after 3 minutes');
+          } else if (exitCode !== 0) {
             logger.debug('Preflight npm install failed:', output);
           } else {
             logger.debug('Preflight npm install completed');
@@ -380,10 +403,31 @@ export class ActionRunner {
         const installProcess = await webcontainer.spawn('npm', ['install']);
         installProcess.output.pipeTo(
           new WritableStream({
-            write() {},
+            write() { },
           }),
         );
-        await installProcess.exit;
+
+        // Add timeout to prevent infinite hang (3 minutes)
+        const INSTALL_TIMEOUT_MS = 180000;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        const timeoutPromise = new Promise<number>((resolve) => {
+          timeoutId = setTimeout(() => {
+            logger.warn('Postflight npm install timeout - killing process');
+            try {
+              installProcess.kill();
+            } catch {
+              // Process may already be dead
+            }
+            resolve(-1);
+          }, INSTALL_TIMEOUT_MS);
+        });
+
+        await Promise.race([installProcess.exit, timeoutPromise]);
+
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
       }
     } catch (error) {
       logger.debug('Postflight failed:', error);
