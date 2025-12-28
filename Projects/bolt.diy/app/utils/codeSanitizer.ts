@@ -41,8 +41,12 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   }
 
   if (ext === '.tsx' || ext === '.jsx') {
+    next = sanitizeBoltTags(next, warnings); // Remove leaked boltAction/boltArtifact tags FIRST
     next = sanitizeJsxSyntaxErrors(next, warnings);
     next = sanitizeJsxComments(next, warnings);
+  } else {
+    // Also sanitize other file types in case boltAction leaks into them
+    next = sanitizeBoltTags(next, warnings);
   }
 
   next = sanitizeImportPaths(next, relativePath, warnings);
@@ -57,6 +61,54 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   }
 
   return { content: next, changed: next !== content, warnings };
+}
+
+/**
+ * Remove leaked boltAction/boltArtifact tags from file content.
+ * AI sometimes embeds these internal control tags inside the generated code.
+ * Examples:
+ *   - <span<boltActi>on type="file" filePath="..."> → <span>
+ *   - <boltAction type="file">...</boltAction> → (removed)
+ *   - <boltArtifact>...</boltArtifact> → (removed)
+ */
+function sanitizeBoltTags(code: string, warnings: string[]): string {
+  const before = code;
+  let next = code;
+
+  // Pattern 1: Full boltAction tags with content - remove entirely
+  next = next.replace(/<boltAction[^>]*>[\s\S]*?<\/boltAction>/gi, '');
+
+  // Pattern 2: Full boltArtifact tags with content - remove entirely
+  next = next.replace(/<boltArtifact[^>]*>[\s\S]*?<\/boltArtifact>/gi, '');
+
+  // Pattern 3: Broken boltAction tags (like <boltActi>on) - remove the fragment
+  next = next.replace(/<boltActi>on[^>]*>/gi, '');
+  next = next.replace(/<\/boltActi>on>/gi, '');
+  next = next.replace(/<boltArti>fact[^>]*>/gi, '');
+  next = next.replace(/<\/boltArti>fact>/gi, '');
+
+  // Pattern 4: Opening boltAction/boltArtifact tags without closing (orphaned)
+  next = next.replace(/<boltAction[^>]*>/gi, '');
+  next = next.replace(/<\/boltAction>/gi, '');
+  next = next.replace(/<boltArtifact[^>]*>/gi, '');
+  next = next.replace(/<\/boltArtifact>/gi, '');
+
+  // Pattern 5: Tag embedded inside another tag (like <span<boltActi...)
+  // Remove the boltActi... part and close the parent tag properly
+  next = next.replace(/(<[a-zA-Z][a-zA-Z0-9]*)<boltActi[^>]*>on[^>]*>/gi, '$1>');
+  next = next.replace(/(<[a-zA-Z][a-zA-Z0-9]*)<boltAction[^>]*>/gi, '$1>');
+  next = next.replace(/(<[a-zA-Z][a-zA-Z0-9]*)<boltArtifact[^>]*>/gi, '$1>');
+
+  // Pattern 6: Any remaining fragments
+  next = next.replace(/\sboltAction[^>]*>/gi, '>');
+  next = next.replace(/\sboltArtifact[^>]*>/gi, '>');
+
+  if (next !== before) {
+    warnings.push('Removed leaked boltAction/boltArtifact tags from file content');
+    console.log('[CodeSanitizer] Removed boltAction/boltArtifact tags from content');
+  }
+
+  return next;
 }
 
 /**
@@ -280,6 +332,25 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   for (const [pattern, replacement] of singleLetterBrokenTags) {
     next = next.replace(pattern, replacement);
   }
+
+  // Fix 13: Orphaned opening tags - AI starts a tag but doesn't finish it
+  // Pattern: <span followed by newline and another <tag (missing >)
+  // Example: <span\n<span className=... → <span />\n<span className=...
+  const orphanedOpeningTag = /(<[a-zA-Z][a-zA-Z0-9]*)(\s*\n\s*)(<[a-zA-Z])/g;
+  next = next.replace(orphanedOpeningTag, (match, orphan, whitespace, nextTag) => {
+    // Check if the orphan tag has any attributes started
+    if (orphan.includes(' ') || orphan.includes('=')) {
+      // Has attributes but incomplete - close with >
+      return `${orphan}>${whitespace}${nextTag}`;
+    }
+    // Just the tag name - make it self-closing
+    return `${orphan} />${whitespace}${nextTag}`;
+  });
+
+  // Fix 14: Tag with space but no closing - <span followed by whitespace then <
+  // Pattern: <span       <div  (multiple spaces instead of >)
+  const tagWithTrailingSpaces = /(<[a-zA-Z][a-zA-Z0-9]*)\s{2,}(<[a-zA-Z])/g;
+  next = next.replace(tagWithTrailingSpaces, '$1 />$2');
 
   if (next !== before) {
     warnings.push('Fixed truncated or malformed JSX attributes (AI generation error)');

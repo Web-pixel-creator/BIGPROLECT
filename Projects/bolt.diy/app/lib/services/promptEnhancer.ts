@@ -695,7 +695,7 @@ type ImageSearchCounts = {
 const IMAGE_PROXY_PREFIX = '/__image_proxy__?url=';
 const IMAGE_SEARCH_ENDPOINT = '/api/image-search';
 const imageCache = new Map<string, { expiresAt: number; data: ImageSet }>();
-const IMAGE_CACHE_TTL_MS = 10 * 60 * 1000;
+const IMAGE_CACHE_TTL_MS = 0; // Disabled - always get fresh images for each prompt
 
 const IMAGE_SIZES = {
 
@@ -972,9 +972,10 @@ function buildImageUrl(query: string, size: keyof typeof IMAGE_SIZES): string {
   const [width, height] = sizeStr.split('x').map(Number);
 
   // Use Unsplash Source as a fallback when API keys are missing.
-  // Always proxy through WebContainer to avoid COEP/CORS issues.
+  // Add random seed to get different images each time (not cached)
   const safeQuery = encodeURIComponent(query);
-  const url = `https://source.unsplash.com/${width}x${height}/?${safeQuery}`;
+  const randomSeed = Math.random().toString(36).substring(2, 10) + Date.now();
+  const url = `https://source.unsplash.com/${width}x${height}/?${safeQuery}&sig=${randomSeed}`;
 
   return `${IMAGE_PROXY_PREFIX}${encodeURIComponent(url)}`;
 }
@@ -1245,6 +1246,9 @@ async function fetchImageSetFromApi(
   queries: ImageSearchQueries,
   counts: ImageSearchCounts,
 ): Promise<ImageSet | null> {
+  // Clear cache to ensure fresh images for every prompt
+  imageCache.clear();
+
   const cacheKey = JSON.stringify({ theme, queries, counts });
   const cached = imageCache.get(cacheKey);
 
