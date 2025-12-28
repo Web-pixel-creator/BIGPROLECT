@@ -109,6 +109,9 @@ export class ImportExportService {
           // Event logs
           isEventLogsEnabled: this._safeGetItem('isEventLogsEnabled'),
 
+          // Auto-fix JSX validation
+          autoFixValidationEnabled: this._safeGetItem('autoFixValidationEnabled'),
+
           // Energy saver settings
           energySaverMode: this._safeGetItem('energySaverMode'),
           autoEnergySaver: this._safeGetItem('autoEnergySaver'),

@@ -62,6 +62,8 @@ FORBIDDEN:
 - Separate component files (put ALL in src/App.tsx)
 - react-router-dom
 - react-icons, Bootstrap icons
+- Inline style strings or arrays (no style="..." or style={[...]})
+- Invalid JSX (unclosed tags, mismatched nesting, or <li> inside non-list elements)
 - Markdown (\`\`\`tsx, \`\`\`js) inside file content - file content is RAW code only!
 - <boltAction>/<boltArtifact> tags inside code - these WRAP files, not go inside!
 
@@ -110,12 +112,15 @@ body {
 }
 
 WARNING: CSS properties MUST have values! WRONG: "margin;" RIGHT: "margin: 0;"
+WARNING: React style prop must be an object (e.g., style={{ ... }}), never a string or array.
+WARNING: JSX must be valid and well-formed; close every tag and keep list items as direct children of <ul>/<ol>.
 </critical_rules>
 
 <images_rule>
 IF "IMAGES:" block exists:
 - Use ONLY those /__image_proxy__ URLs
 - <img src="/__image_proxy__?url=..." loading="lazy" />
+- If "IMAGE COUNTS (minimum)" line exists, meet or exceed those counts per section (use distinct URLs from IMAGES).
 - Do NOT use CSS gradients/placeholders instead of required images
 
 IF NO "IMAGES:" block:
@@ -131,8 +136,10 @@ SECTION GENERATION RULES:
 2. GENERATE EVERY SINGLE ONE in the same order.
 3. Start each section with: {/* SECTION: SectionName */}
 4. Wrap each in: <section data-section="sectionName"> ... </section>
-5. If a "SECTION BLUEPRINT" block exists, follow it EXACTLY (order + details).
+4a. data-section value MUST be the lowercase key from SECTION ORDER/BLUEPRINT (e.g., "hero", "products", "footer").
+5. If a "SECTION ORDER" or "SECTION BLUEPRINT" block exists, follow it EXACTLY (order + details).
 6. If a "SECTION DETAILS" block exists, apply those details inside the matching section.
+7. Do NOT add extra sections not listed in SECTION ORDER/BLUEPRINT.
 
 REQUIRED SECTIONS (generate if mentioned):
 - Hero: Full-width hero with imagery/gradient

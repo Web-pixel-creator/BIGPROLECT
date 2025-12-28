@@ -12,10 +12,16 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
   const { description, content, source } = alert;
 
   const isPreview = source === 'preview';
-  const title = isPreview ? 'Preview Error' : 'Terminal Error';
+  const isValidation = source === 'validation';
+  const title = isPreview ? 'Preview Error' : isValidation ? 'JSX Validation Error' : 'Terminal Error';
   const message = isPreview
     ? 'We encountered an error while running the preview. Would you like Bolt to analyze and help resolve this issue?'
-    : 'We encountered an error while running terminal commands. Would you like Bolt to analyze and help resolve this issue?';
+    : isValidation
+      ? 'The generated code contains invalid JSX. Would you like Bolt to fix it?'
+      : 'We encountered an error while running terminal commands. Would you like Bolt to analyze and help resolve this issue?';
+  const fallbackLanguage = isPreview ? 'js' : isValidation ? 'tsx' : 'sh';
+  const fallbackPrompt = `*Fix this ${isPreview ? 'preview' : isValidation ? 'JSX' : 'terminal'} error* \n\`\`\`${fallbackLanguage}\n${content}\n\`\`\`\n`;
+  const promptToSend = alert.autoFix?.message ?? fallbackPrompt;
 
   return (
     <AnimatePresence>
@@ -69,11 +75,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
             >
               <div className={classNames(' flex gap-2')}>
                 <button
-                  onClick={() =>
-                    postMessage(
-                      `*Fix this ${isPreview ? 'preview' : 'terminal'} error* \n\`\`\`${isPreview ? 'js' : 'sh'}\n${content}\n\`\`\`\n`,
-                    )
-                  }
+                  onClick={() => postMessage(promptToSend)}
                   className={classNames(
                     `px-2 py-1.5 rounded-md text-sm font-medium`,
                     'bg-bolt-elements-button-primary-background',
@@ -84,7 +86,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                   )}
                 >
                   <div className="i-ph:chat-circle-duotone"></div>
-                  Ask Bolt
+                  {isValidation ? 'Fix JSX' : 'Ask Bolt'}
                 </button>
                 <button
                   onClick={clearAlert}

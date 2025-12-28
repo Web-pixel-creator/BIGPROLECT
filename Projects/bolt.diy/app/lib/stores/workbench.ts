@@ -18,6 +18,7 @@ import { description } from '~/lib/persistence';
 import Cookies from 'js-cookie';
 import { createSampler } from '~/utils/sampler';
 import type { ActionAlert, DeployAlert, SupabaseAlert } from '~/types/actions';
+import type { SectionContract } from '~/types/section-contract';
 
 const { saveAs } = fileSaver;
 
@@ -27,6 +28,7 @@ export interface ArtifactState {
   type?: string;
   closed: boolean;
   runner: ActionRunner;
+  sectionContract?: SectionContract;
 }
 
 export type ArtifactUpdateState = Pick<ArtifactState, 'title' | 'closed'>;
@@ -55,6 +57,8 @@ export class WorkbenchStore {
     import.meta.hot?.data.supabaseAlert ?? atom<SupabaseAlert | undefined>(undefined);
   deployAlert: WritableAtom<DeployAlert | undefined> =
     import.meta.hot?.data.deployAlert ?? atom<DeployAlert | undefined>(undefined);
+  pendingSectionContract: WritableAtom<SectionContract | undefined> =
+    import.meta.hot?.data.pendingSectionContract ?? atom<SectionContract | undefined>(undefined);
   modifiedFiles = new Set<string>();
   artifactIdList: string[] = [];
   #globalExecutionQueue = Promise.resolve();
@@ -67,6 +71,7 @@ export class WorkbenchStore {
       import.meta.hot.data.actionAlert = this.actionAlert;
       import.meta.hot.data.supabaseAlert = this.supabaseAlert;
       import.meta.hot.data.deployAlert = this.deployAlert;
+      import.meta.hot.data.pendingSectionContract = this.pendingSectionContract;
 
       // Ensure binary files are properly preserved across hot reloads
       const filesMap = this.files.get();
@@ -135,6 +140,14 @@ export class WorkbenchStore {
 
   clearDeployAlert() {
     this.deployAlert.set(undefined);
+  }
+
+  setPendingSectionContract(contract?: SectionContract) {
+    this.pendingSectionContract.set(contract);
+  }
+
+  clearPendingSectionContract() {
+    this.pendingSectionContract.set(undefined);
   }
 
   toggleTerminal(value?: boolean) {
@@ -592,11 +605,14 @@ export class WorkbenchStore {
       this.artifactIdList.push(id);
     }
 
+    const pendingContract = this.pendingSectionContract.get();
+
     this.artifacts.setKey(id, {
       id,
       title,
       closed: false,
       type,
+      sectionContract: pendingContract,
       runner: new ActionRunner(
         webcontainer,
         () => this.boltTerminal,
@@ -621,6 +637,7 @@ export class WorkbenchStore {
 
           this.deployAlert.set(alert);
         },
+        pendingContract,
       ),
     });
   }

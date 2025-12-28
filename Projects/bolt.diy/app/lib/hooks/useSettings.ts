@@ -7,6 +7,7 @@ import {
   latestBranchStore,
   autoSelectStarterTemplate,
   enableContextOptimizationStore,
+  autoFixValidationStore,
   tabConfigurationStore,
   resetTabConfiguration as resetTabConfig,
   updateProviderSettings as updateProviderSettingsStore,
@@ -14,6 +15,7 @@ import {
   updateAutoSelectTemplate,
   updateContextOptimization,
   updateEventLogs,
+  updateAutoFixValidation,
   updatePromptId,
 } from '~/lib/stores/settings';
 import { useCallback, useEffect, useState } from 'react';
@@ -58,6 +60,8 @@ export interface UseSettingsReturn {
   setAutoSelectTemplate: (enabled: boolean) => void;
   contextOptimizationEnabled: boolean;
   enableContextOptimization: (enabled: boolean) => void;
+  autoFixValidationEnabled: boolean;
+  enableAutoFixValidation: (enabled: boolean) => void;
 
   // Tab configuration
   tabConfiguration: TabWindowConfig;
@@ -78,6 +82,7 @@ export function useSettings(): UseSettingsReturn {
   const autoSelectTemplate = useStore(autoSelectStarterTemplate);
   const [activeProviders, setActiveProviders] = useState<ProviderInfo[]>([]);
   const contextOptimizationEnabled = useStore(enableContextOptimizationStore);
+  const autoFixValidationEnabled = useStore(autoFixValidationStore);
   const tabConfiguration = useStore(tabConfigurationStore);
   const [settings, setSettings] = useState<Settings>(() => {
     const storedSettings = getLocalStorage('settings');
@@ -143,6 +148,11 @@ export function useSettings(): UseSettingsReturn {
     logStore.logSystem(`Context optimization ${enabled ? 'enabled' : 'disabled'}`);
   }, []);
 
+  const enableAutoFixValidation = useCallback((enabled: boolean) => {
+    updateAutoFixValidation(enabled);
+    logStore.logSystem(`Auto-fix JSX validation ${enabled ? 'enabled' : 'disabled'}`);
+  }, []);
+
   const setTheme = useCallback(
     (theme: Settings['theme']) => {
       saveSettings({ theme });
@@ -197,6 +207,8 @@ export function useSettings(): UseSettingsReturn {
     setAutoSelectTemplate,
     contextOptimizationEnabled,
     enableContextOptimization,
+    autoFixValidationEnabled,
+    enableAutoFixValidation,
     setTheme,
     setLanguage,
     setNotifications,

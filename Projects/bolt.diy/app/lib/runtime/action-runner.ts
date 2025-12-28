@@ -2,14 +2,109 @@ import type { WebContainer } from '@webcontainer/api';
 import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
+import type { SectionContract } from '~/types/section-contract';
 import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
+import { validateTsx } from '~/utils/tsxValidator';
 import { unreachable } from '~/utils/unreachable';
 import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
 import type { BoltShell } from '~/utils/shell';
 
 const logger = createScopedLogger('ActionRunner');
+
+const ALLOWED_SECTION_ROOTS = ['src/', 'app/', 'components/'];
+
+const SECTION_ALIASES: Record<string, string[]> = {
+  navigation: ['nav', 'navbar', 'header', 'topbar', 'top-bar'],
+  hero: ['hero', 'hero-section', 'hero-banner', 'banner', 'intro'],
+  features: ['features', 'feature-list', 'highlights'],
+  gallery: ['gallery', 'portfolio', 'showcase'],
+  testimonials: ['testimonials', 'reviews', 'quotes'],
+  pricing: ['pricing', 'plans', 'tiers'],
+  cta: ['cta', 'call-to-action', 'calltoaction'],
+  faq: ['faq', 'questions', 'qna'],
+  footer: ['footer', 'site-footer'],
+  about: ['about', 'story', 'our-story'],
+  team: ['team', 'people', 'staff'],
+  contact: ['contact', 'contact-us', 'get-in-touch', 'form'],
+  blog: ['blog', 'news', 'articles'],
+  logo: ['logo', 'logos', 'partners', 'clients'],
+  products: ['products', 'product', 'product-grid', 'catalog', 'shop', 'listing'],
+  categories: ['categories', 'category', 'genres', 'genre', 'filters', 'tags'],
+  editorial: ['editorial', 'story-section', 'magazine'],
+  newsletter: ['newsletter', 'subscribe', 'email-signup'],
+};
+
+const DATA_SECTION_REGEX = /data-section\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?/g;
+const SECTION_BLOCK_REGEX = /<section\b[^>]*data-section\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?[^>]*>([\s\S]*?)<\/section>/gi;
+const IMG_SRC_REGEX = /<img\b[^>]*\bsrc\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?[^>]*>/gi;
+
+const normalizeSectionValue = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+const isAllowedSectionRoot = (normalizedPath: string) =>
+  ALLOWED_SECTION_ROOTS.some((root) => normalizedPath.startsWith(root));
+
+const extractDataSectionValues = (content: string): string[] => {
+  const values: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = DATA_SECTION_REGEX.exec(content)) !== null) {
+    if (match[1]) {
+      values.push(match[1]);
+    }
+  }
+
+  return values;
+};
+
+const findExpectedSectionKey = (actualValue: string, expectedKeys: string[]): string | null => {
+  const normalizedActual = normalizeSectionValue(actualValue);
+
+  for (const expectedKey of expectedKeys) {
+    const candidates = [expectedKey, ...(SECTION_ALIASES[expectedKey] ?? [])].map(normalizeSectionValue);
+    if (candidates.includes(normalizedActual)) {
+      return expectedKey;
+    }
+  }
+
+  return null;
+};
+
+const extractSectionBlocks = (content: string, expectedKeys: string[]): Map<string, string> => {
+  const blocks = new Map<string, string>();
+  let match: RegExpExecArray | null;
+
+  while ((match = SECTION_BLOCK_REGEX.exec(content)) !== null) {
+    const rawValue = match[1] ?? '';
+    const blockContent = match[2] ?? '';
+    const matchedKey = findExpectedSectionKey(rawValue, expectedKeys) ?? normalizeSectionValue(rawValue);
+    if (matchedKey && !blocks.has(matchedKey)) {
+      blocks.set(matchedKey, blockContent);
+    }
+  }
+
+  return blocks;
+};
+
+const extractImageSources = (content: string): string[] => {
+  const sources: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = IMG_SRC_REGEX.exec(content)) !== null) {
+    if (match[1]) {
+      sources.push(match[1].replace(/&amp;/g, '&'));
+    }
+  }
+
+  return sources;
+};
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
 
@@ -69,6 +164,9 @@ export class ActionRunner {
   #webcontainer: Promise<WebContainer>;
   #currentExecutionPromise: Promise<void> = Promise.resolve();
   #shellTerminal: () => BoltShell;
+  #autoFixAttempts = new Map<string, number>();
+  #autoFixSectionAttempts = new Map<string, number>();
+  #sectionContract?: SectionContract;
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
   onAlert?: (alert: ActionAlert) => void;
@@ -82,12 +180,14 @@ export class ActionRunner {
     onAlert?: (alert: ActionAlert) => void,
     onSupabaseAlert?: (alert: SupabaseAlert) => void,
     onDeployAlert?: (alert: DeployAlert) => void,
+    sectionContract?: SectionContract,
   ) {
     this.#webcontainer = webcontainerPromise;
     this.#shellTerminal = getShellTerminal;
     this.onAlert = onAlert;
     this.onSupabaseAlert = onSupabaseAlert;
     this.onDeployAlert = onDeployAlert;
+    this.#sectionContract = sectionContract;
   }
 
   addAction(data: ActionCallbackData) {
@@ -475,6 +575,11 @@ export class ActionRunner {
 
       await webcontainer.fs.writeFile(relativePath, contentToWrite);
       logger.debug(`File written ${relativePath}`);
+
+      if (typeof contentToWrite === 'string') {
+        const jsxOk = await this.#maybeValidateGeneratedJsx(relativePath, contentToWrite);
+        await this.#maybeValidateSectionContract(relativePath, contentToWrite, jsxOk);
+      }
     } catch (error) {
       logger.error('Failed to write file\n\n', error);
     }
@@ -484,6 +589,218 @@ export class ActionRunner {
     const actions = this.actions.get();
 
     this.actions.setKey(id, { ...actions[id], ...newState });
+  }
+
+  async #maybeValidateGeneratedJsx(relativePath: string, content: string): Promise<boolean> {
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+    if (normalizedPath.startsWith('.history/')) {
+      return true;
+    }
+
+    const ext = nodePath.extname(normalizedPath).toLowerCase();
+    if (ext !== '.tsx' && ext !== '.jsx') {
+      return true;
+    }
+
+    if (!isAllowedSectionRoot(normalizedPath)) {
+      return true;
+    }
+
+    try {
+      const result = await validateTsx(content, normalizedPath);
+      if (result.ok) {
+        this.#autoFixAttempts.delete(normalizedPath);
+        return true;
+      }
+
+      const { error } = result;
+      const attempts = this.#autoFixAttempts.get(normalizedPath) ?? 0;
+      const location = `${error.line}:${error.column}`;
+      const snippet = error.snippet ? `\n\nSnippet:\n${error.snippet}` : '';
+      const contentSummary = `File: ${normalizedPath}\nError: ${error.message}\nLocation: ${location}${snippet}`;
+      const autoFixKey = `${normalizedPath}:${error.message}:${location}`;
+
+      this.onAlert?.({
+        type: 'validation',
+        title: 'Invalid JSX Generated',
+        description: `${normalizedPath}: ${error.message} (line ${error.line}, column ${error.column})`,
+        content: contentSummary,
+        source: 'validation',
+        autoFix:
+          attempts < 1
+            ? {
+                key: autoFixKey,
+                message:
+                  `Fix the JSX/TSX parse error in ${normalizedPath}.\n` +
+                  `Error: ${error.message}\n` +
+                  `Location: ${location}${snippet}\n\n` +
+                  `Please update the file so it compiles without JSX syntax errors.`,
+              }
+            : undefined,
+      });
+
+      if (attempts < 1) {
+        this.#autoFixAttempts.set(normalizedPath, attempts + 1);
+      }
+      return false;
+    } catch (error) {
+      logger.debug('JSX validation failed:', error);
+      return true;
+    }
+  }
+
+  async #maybeValidateSectionContract(relativePath: string, content: string, jsxOk: boolean) {
+    if (!jsxOk) {
+      return;
+    }
+
+    const normalizedPath = relativePath.replace(/\\/g, '/');
+    if (normalizedPath.startsWith('.history/')) {
+      return;
+    }
+
+    const ext = nodePath.extname(normalizedPath).toLowerCase();
+    if (ext !== '.tsx' && ext !== '.jsx') {
+      return;
+    }
+
+    if (!isAllowedSectionRoot(normalizedPath)) {
+      return;
+    }
+
+    const sectionContract = this.#sectionContract;
+    if (!sectionContract || sectionContract.order.length === 0) {
+      return;
+    }
+
+    const expectedKeys = sectionContract.order.map(normalizeSectionValue);
+    const expectedLabels = sectionContract.labels ?? {};
+    const labelFor = (key: string) => expectedLabels[key] ?? key;
+
+    const dataSections = extractDataSectionValues(content);
+    const actualMatched: string[] = [];
+    const extras: string[] = [];
+
+    for (const value of dataSections) {
+      const matchedKey = findExpectedSectionKey(value, expectedKeys);
+      if (matchedKey) {
+        if (!actualMatched.includes(matchedKey)) {
+          actualMatched.push(matchedKey);
+        }
+      } else {
+        extras.push(value);
+      }
+    }
+
+    const missing = expectedKeys.filter((key) => !actualMatched.includes(key));
+    const outOfOrder: string[] = [];
+    let lastIndex = -1;
+
+    for (const key of expectedKeys) {
+      const index = actualMatched.indexOf(key);
+      if (index === -1) {
+        continue;
+      }
+      if (index < lastIndex) {
+        outOfOrder.push(key);
+      } else {
+        lastIndex = index;
+      }
+    }
+
+    const imageRequired = (sectionContract.imageSections ?? []).map(normalizeSectionValue);
+    const imageMinCounts = sectionContract.imageMinCounts ?? {};
+    const imageCountFailures: string[] = [];
+    const imageMap = sectionContract.imageMap ?? {};
+    const allowedImageUrls = new Set(Object.values(imageMap).flat());
+    const invalidImageUrls = new Set<string>();
+
+    if (imageRequired.length > 0) {
+      const sectionBlocks = extractSectionBlocks(content, expectedKeys);
+      for (const key of imageRequired) {
+        if (missing.includes(key)) {
+          continue;
+        }
+        const block = sectionBlocks.get(key) ?? '';
+        const requiredCount = imageMinCounts[key] ?? 1;
+        const imgCount = (block.match(/<img\b/gi) ?? []).length;
+        if (imgCount < requiredCount) {
+          imageCountFailures.push(`${labelFor(key)} (${imgCount}/${requiredCount})`);
+        }
+      }
+    }
+
+    if (allowedImageUrls.size > 0) {
+      const sources = extractImageSources(content);
+      for (const source of sources) {
+        if (!allowedImageUrls.has(source)) {
+          invalidImageUrls.add(source);
+        }
+      }
+    }
+
+    if (
+      missing.length === 0 &&
+      outOfOrder.length === 0 &&
+      imageCountFailures.length === 0 &&
+      invalidImageUrls.size === 0
+    ) {
+      const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
+      this.#autoFixSectionAttempts.delete(contractKey);
+      return;
+    }
+
+    const expectedOrderLabel = expectedKeys.map(labelFor).join(' -> ');
+    const actualOrderLabel = actualMatched.length > 0 ? actualMatched.map(labelFor).join(' -> ') : 'None';
+    const missingLabel = missing.length > 0 ? missing.map(labelFor).join(', ') : 'None';
+    const outOfOrderLabel = outOfOrder.length > 0 ? outOfOrder.map(labelFor).join(', ') : 'None';
+    const extrasLabel = extras.length > 0 ? extras.join(', ') : 'None';
+    const imageCountLabel = imageCountFailures.length > 0 ? imageCountFailures.join(', ') : 'None';
+    const invalidImageList = Array.from(invalidImageUrls);
+    const invalidImageLabel = invalidImageList.length > 0 ? invalidImageList.slice(0, 5).join(', ') : 'None';
+
+    const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
+    const attempts = this.#autoFixSectionAttempts.get(contractKey) ?? 0;
+    const autoFixKey = `${contractKey}:${missing.join('|')}:${outOfOrder.join('|')}:${imageCountFailures.join('|')}:${invalidImageList.join('|')}`;
+
+    const contentSummary = [
+      `File: ${normalizedPath}`,
+      `Expected order: ${expectedOrderLabel}`,
+      `Actual order: ${actualOrderLabel}`,
+      `Missing sections: ${missingLabel}`,
+      `Out-of-order sections: ${outOfOrderLabel}`,
+      `Unknown sections: ${extrasLabel}`,
+      `Image counts below minimum: ${imageCountLabel}`,
+      `Images not in IMAGES list: ${invalidImageLabel}`,
+    ].join('\n');
+
+    this.onAlert?.({
+      type: 'validation',
+      title: 'Section Contract Mismatch',
+      description: `${normalizedPath}: missing or out-of-order sections`,
+      content: contentSummary,
+      source: 'validation',
+      autoFix:
+        attempts < 1
+          ? {
+              key: autoFixKey,
+              message:
+                `Fix the section contract in ${normalizedPath}.\n` +
+                `Expected order: ${expectedOrderLabel}\n` +
+                `Actual order: ${actualOrderLabel}\n` +
+                `Missing sections: ${missingLabel}\n` +
+                `Out-of-order sections: ${outOfOrderLabel}\n` +
+                `Unknown sections: ${extrasLabel}\n` +
+                `Image counts below minimum: ${imageCountLabel}\n` +
+                `Images not in IMAGES list: ${invalidImageLabel}\n\n` +
+                `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
+            }
+          : undefined,
+    });
+
+    if (attempts < 1) {
+      this.#autoFixSectionAttempts.set(contractKey, attempts + 1);
+    }
   }
 
   async getFileHistory(filePath: string): Promise<FileHistory | null> {

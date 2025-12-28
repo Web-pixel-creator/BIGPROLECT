@@ -101,7 +101,7 @@ export const ChatImpl = memo(
       (project) => project.id === supabaseConn.selectedProjectId,
     );
     const supabaseAlert = useStore(workbenchStore.supabaseAlert);
-    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled } = useSettings();
+    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled, autoFixValidationEnabled } = useSettings();
     const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
@@ -117,6 +117,7 @@ export const ChatImpl = memo(
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
+    const autoFixKeysRef = useRef<Set<string>>(new Set());
 
     const {
       messages,
@@ -154,11 +155,13 @@ export const ChatImpl = memo(
       sendExtraMessageFields: true,
       onError: (e) => {
         setFakeLoading(false);
+        workbenchStore.clearPendingSectionContract();
         handleError(e, 'chat');
       },
       onFinish: (message, response) => {
         const usage = response.usage;
         setData(undefined);
+        workbenchStore.clearPendingSectionContract();
 
         if (usage) {
           console.log('Token usage:', usage);
@@ -223,6 +226,7 @@ export const ChatImpl = memo(
       stop();
       chatStore.setKey('aborted', true);
       workbenchStore.abortAllActions();
+      workbenchStore.clearPendingSectionContract();
 
       logStore.logProvider('Chat response aborted', {
         component: 'Chat',
@@ -424,12 +428,19 @@ export const ChatImpl = memo(
         const enhanced = await enhancePromptWithDesignSystem(messageContent);
         finalMessageContent = enhanced.enhancedPrompt;
         displayMessageContent = enhanced.displayPrompt ?? messageContent;
+        if (enhanced.sectionContract?.order?.length) {
+          workbenchStore.setPendingSectionContract(enhanced.sectionContract);
+        } else {
+          workbenchStore.clearPendingSectionContract();
+        }
         console.log('=== PROMPT ENHANCER DEBUG ===');
         console.log('Theme:', enhanced.detectedTheme);
         console.log('Images:', JSON.stringify(enhanced.images, null, 2));
         console.log('Image prompt:', enhanced.imagePrompt);
         console.log('Enhanced prompt (first 800 chars):', enhanced.enhancedPrompt?.substring(0, 800));
         console.log('=============================');
+      } else {
+        workbenchStore.clearPendingSectionContract();
       }
 
       if (selectedElement) {
@@ -595,6 +606,20 @@ export const ChatImpl = memo(
 
       textareaRef.current?.blur();
     };
+
+    useEffect(() => {
+      const autoFix = actionAlert?.autoFix;
+      if (!autoFix || !autoFixValidationEnabled || isLoading || fakeLoading) {
+        return;
+      }
+
+      if (autoFixKeysRef.current.has(autoFix.key)) {
+        return;
+      }
+
+      autoFixKeysRef.current.add(autoFix.key);
+      sendMessage({} as React.UIEvent, autoFix.message);
+    }, [actionAlert, isLoading, fakeLoading, sendMessage]);
 
     /**
      * Handles the change event for the textarea and updates the input state.

@@ -45,8 +45,9 @@ type ImageSearchPayload = {
 };
 
 const logger = createScopedLogger('api.image-search');
-const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_TTL_MS = 0;
 const cache = new Map<string, { expiresAt: number; data: ImageSet }>();
+const shouldCache = CACHE_TTL_MS > 0;
 
 const MAX_COUNTS = {
   hero: 2,
@@ -95,18 +96,21 @@ const buildSourceFallback = (query: string, count: number, width: number) => {
   if (!query) return [];
   const height = Math.round(width * 0.6);
   return Array.from({ length: count }, (_value, index) => {
-    const seed = index + 1;
+    const seed = Date.now() + Math.floor(Math.random() * 10000) + index;
     return `https://source.unsplash.com/${width}x${height}/?${encodeURIComponent(query)}&sig=${seed}`;
   });
 };
 
-async function fetchUnsplash(query: string, count: number, orientation: string, accessKey?: string) {
+const pickRandomPage = (max: number = 5) => Math.floor(Math.random() * max) + 1;
+
+async function fetchUnsplash(query: string, count: number, orientation: string, page: number, accessKey?: string) {
   if (!accessKey) return [];
   const url = new URL('https://api.unsplash.com/search/photos');
   url.searchParams.set('query', query);
   url.searchParams.set('per_page', String(count));
   url.searchParams.set('orientation', orientation);
   url.searchParams.set('content_filter', 'high');
+  url.searchParams.set('page', String(page));
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -121,12 +125,13 @@ async function fetchUnsplash(query: string, count: number, orientation: string, 
     .filter((value): value is string => Boolean(value));
 }
 
-async function fetchPexels(query: string, count: number, orientation: string, apiKey?: string) {
+async function fetchPexels(query: string, count: number, orientation: string, page: number, apiKey?: string) {
   if (!apiKey) return [];
   const url = new URL('https://api.pexels.com/v1/search');
   url.searchParams.set('query', query);
   url.searchParams.set('per_page', String(count));
   url.searchParams.set('orientation', orientation);
+  url.searchParams.set('page', String(page));
 
   const response = await fetch(url.toString(), {
     headers: {
@@ -149,10 +154,11 @@ async function searchImages(
   fallbackWidth: number,
 ) {
   if (!query) return [];
+  const page = pickRandomPage();
   const unsplashKey = getEnvVar(context, 'UNSPLASH_ACCESS_KEY');
   const pexelsKey = getEnvVar(context, 'PEXELS_API_KEY');
 
-  const unsplashResults = await fetchUnsplash(query, count, orientation, unsplashKey).catch((error) => {
+  const unsplashResults = await fetchUnsplash(query, count, orientation, page, unsplashKey).catch((error) => {
     logger.warn('Unsplash fetch failed', error);
     return [];
   });
@@ -160,7 +166,7 @@ async function searchImages(
   if (unsplashResults.length >= count) return unsplashResults.slice(0, count);
 
   const remaining = count - unsplashResults.length;
-  const pexelsResults = await fetchPexels(query, remaining, orientation, pexelsKey).catch((error) => {
+  const pexelsResults = await fetchPexels(query, remaining, orientation, page, pexelsKey).catch((error) => {
     logger.warn('Pexels fetch failed', error);
     return [];
   });
@@ -198,7 +204,7 @@ export async function action({ context, request }: ActionFunctionArgs) {
   const queries = payload.queries ?? {};
   const counts = payload.counts ?? {};
   const cacheKey = buildCacheKey({ theme: payload.theme, queries, counts });
-  const cached = cache.get(cacheKey);
+  const cached = shouldCache ? cache.get(cacheKey) : undefined;
 
   if (cached && cached.expiresAt > Date.now()) {
     logger.info('Returning cached images');
@@ -245,6 +251,8 @@ export async function action({ context, request }: ActionFunctionArgs) {
     },
   };
 
-  cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data });
+  if (shouldCache) {
+    cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data });
+  }
   return json(data);
 }

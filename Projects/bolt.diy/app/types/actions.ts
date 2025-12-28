@@ -39,7 +39,11 @@ export interface ActionAlert {
   title: string;
   description: string;
   content: string;
-  source?: 'terminal' | 'preview'; // Add source to differentiate between terminal and preview errors
+  source?: 'terminal' | 'preview' | 'validation';
+  autoFix?: {
+    key: string;
+    message: string;
+  };
 }
 
 export interface SupabaseAlert {

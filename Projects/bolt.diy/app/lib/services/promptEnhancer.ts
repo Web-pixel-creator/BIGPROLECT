@@ -6,9 +6,9 @@
 
  * before sending to LLM
 
- */
+*/
 
-
+import type { SectionContract } from '~/types/section-contract';
 
 // Theme detection keywords (EN)
 
@@ -721,6 +721,13 @@ const MAX_IMAGE_COUNTS = {
   editorial: 1,
 } as const;
 
+const SECTION_IMAGE_MIN_COUNTS: Record<string, number> = {
+  hero: 1,
+  gallery: 2,
+  products: 3,
+  editorial: 1,
+};
+
 
 
 const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
@@ -986,6 +993,56 @@ function limitList(list: string[], max: number): string[] {
 
   return list.slice(0, max);
 
+}
+
+function mergeImageLists(primary: string[] | undefined, fallback: string[] | undefined, max: number): string[] {
+  const merged: string[] = [];
+  const seen = new Set<string>();
+
+  const pushUnique = (value: string) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    merged.push(value);
+  };
+
+  (primary ?? []).forEach(pushUnique);
+  (fallback ?? []).forEach(pushUnique);
+
+  return limitList(merged, max);
+}
+
+function mergeImageSets(primary: ImageSet, fallback: ImageSet): ImageSet {
+  const normalizedPrimary = normalizeImageSet(primary);
+  const normalizedFallback = normalizeImageSet(fallback);
+
+  const merged: ImageSet = {
+    hero: mergeImageLists(normalizedPrimary.hero, normalizedFallback.hero, MAX_IMAGE_COUNTS.hero),
+    gallery: mergeImageLists(normalizedPrimary.gallery, normalizedFallback.gallery, MAX_IMAGE_COUNTS.gallery),
+    products: mergeImageLists(normalizedPrimary.products, normalizedFallback.products, MAX_IMAGE_COUNTS.product),
+    editorial: mergeImageLists(normalizedPrimary.editorial, normalizedFallback.editorial, MAX_IMAGE_COUNTS.editorial),
+  };
+
+  if (normalizedPrimary.categories || normalizedFallback.categories) {
+    merged.categories = {
+      seating: mergeImageLists(
+        normalizedPrimary.categories?.seating,
+        normalizedFallback.categories?.seating,
+        MAX_IMAGE_COUNTS.category,
+      ),
+      tables: mergeImageLists(
+        normalizedPrimary.categories?.tables,
+        normalizedFallback.categories?.tables,
+        MAX_IMAGE_COUNTS.category,
+      ),
+      storage: mergeImageLists(
+        normalizedPrimary.categories?.storage,
+        normalizedFallback.categories?.storage,
+        MAX_IMAGE_COUNTS.category,
+      ),
+    };
+  }
+
+  return merged;
 }
 
 
@@ -1294,6 +1351,8 @@ async function fetchImageSetFromApi(
 }
 
 
+
+ 
 
 /**
 
@@ -1795,6 +1854,8 @@ function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, str
   const order: string[] = [];
   const details: Record<string, string[]> = {};
   let currentSection: string | null = null;
+  let footerLocked = false;
+  const explicitSectionCue = /\b(section|block|area|раздел|секция|блок)\b/i;
 
   const pushSection = (section: string) => {
     console.log('[extractSectionSpecs] Pushing section:', section);
@@ -1837,13 +1898,34 @@ function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, str
       const parsed = parseHeading(rawLine);
       console.log('[extractSectionSpecs] parseHeading result:', parsed);
       if (parsed) {
+        if (footerLocked && parsed.key !== 'footer' && !explicitSectionCue.test(rawLine)) {
+          pushSection('footer');
+          if (parsed.detail) {
+            details.footer.push(parsed.detail);
+          } else {
+            details.footer.push(rawLine);
+          }
+          continue;
+        }
+        if (footerLocked && parsed.key !== 'footer' && explicitSectionCue.test(rawLine)) {
+          footerLocked = false;
+        }
         currentSection = parsed.key;
         pushSection(parsed.key);
+        if (parsed.key === 'footer') {
+          footerLocked = true;
+        }
         if (parsed.detail) {
           details[parsed.key].push(parsed.detail);
         }
         continue;
       }
+    }
+
+    if (footerLocked) {
+      pushSection('footer');
+      details.footer.push(rawLine);
+      continue;
     }
 
     // If not a heading, try to infer ALL sections from the whole line
@@ -1970,6 +2052,12 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
     pushLine('EDITORIAL', limitList(images.editorial ?? [], MAX_IMAGE_COUNTS.editorial));
   }
 
+  const countHints: string[] = [];
+  if (include('hero')) countHints.push(`HERO>=${SECTION_IMAGE_MIN_COUNTS.hero ?? 1}`);
+  if (include('gallery')) countHints.push(`GALLERY>=${SECTION_IMAGE_MIN_COUNTS.gallery ?? 1}`);
+  if (include('products')) countHints.push(`PRODUCTS>=${SECTION_IMAGE_MIN_COUNTS.products ?? 1}`);
+  if (include('editorial')) countHints.push(`EDITORIAL>=${SECTION_IMAGE_MIN_COUNTS.editorial ?? 1}`);
+
 
 
   if (lines.length === 0) {
@@ -1984,6 +2072,7 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
     'IMAGES:',
     '(Use these exact proxied URLs. Do NOT invent URLs.)',
     ...lines,
+    ...(countHints.length > 0 ? [`IMAGE COUNTS (minimum): ${countHints.join(', ')}`] : []),
     'IMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.',
     'Do NOT replace image sections with gradients/placeholders when IMAGES block exists.',
     'Add loading="lazy" to all <img> tags.',
@@ -2041,6 +2130,8 @@ export interface EnhancedPrompt {
 
   images: ImageSet;
 
+  sectionContract?: SectionContract;
+
 }
 
 
@@ -2057,7 +2148,8 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   const palette = THEME_PALETTES[detectedTheme as keyof typeof THEME_PALETTES] || THEME_PALETTES.default;
 
-  let images = buildImageSet(detectedTheme);
+  const fallbackImages = buildImageSet(detectedTheme);
+  let images = fallbackImages;
   console.log('[promptEnhancer] Initial buildImageSet result:', {
     theme: detectedTheme,
     heroCount: images.hero?.length,
@@ -2420,12 +2512,6 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
       'record cards',
       'bestsellers',
       'catalog',
-      'items',
-      'shop',
-      'store items',
-      'records',
-      'grid',
-      'listing',
       'товары',
       'продукты',
       'каталог',
@@ -2490,13 +2576,14 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   console.log('[promptEnhancer] orderedSections:', orderedSections);
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
 
-  // ALWAYS scan for additional sections that weren't found by extractSectionSpecs
-  // This ensures keywords like "carousel" and "products" are caught even in simple prompts
-  for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    if (!mentionedSections.includes(section)) {
-      if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
-        console.log('[promptEnhancer] Fallback found section:', section);
-        mentionedSections.push(section);
+  if (mentionedSections.length === 0) {
+    // Fallback scan when section extraction found nothing.
+    for (const [section, keywords] of Object.entries(sectionKeywords)) {
+      if (!mentionedSections.includes(section)) {
+        if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
+          console.log('[promptEnhancer] Fallback found section:', section);
+          mentionedSections.push(section);
+        }
       }
     }
   }
@@ -2515,7 +2602,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     console.log('[promptEnhancer] API returned images:', apiImages ? 'yes' : 'no');
 
     if (apiImages) {
-      images = apiImages;
+      images = mergeImageSets(apiImages, fallbackImages);
       console.log('[promptEnhancer] Using API images, hero count:', images.hero?.length);
     }
   }
@@ -2893,6 +2980,44 @@ ${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrd
     mentionedSections: mentionedSections,
   });
 
+  const imageSectionKeys = wantsImages(userPrompt, mentionedSections)
+    ? mentionedSections.filter((section) => ['hero', 'gallery', 'products', 'editorial'].includes(section))
+    : [];
+
+  const imageMap: Record<string, string[]> = {};
+  if (images.hero?.length && imageSectionKeys.includes('hero')) {
+    imageMap.hero = limitList(images.hero, MAX_IMAGE_COUNTS.hero);
+  }
+  if (images.gallery?.length && imageSectionKeys.includes('gallery')) {
+    imageMap.gallery = limitList(images.gallery, MAX_IMAGE_COUNTS.gallery);
+  }
+  if (images.products?.length && imageSectionKeys.includes('products')) {
+    imageMap.products = limitList(images.products, MAX_IMAGE_COUNTS.product);
+  }
+  if (images.editorial?.length && imageSectionKeys.includes('editorial')) {
+    imageMap.editorial = limitList(images.editorial, MAX_IMAGE_COUNTS.editorial);
+  }
+
+  const imageMinCounts: Record<string, number> = {};
+  for (const section of imageSectionKeys) {
+    const desired = SECTION_IMAGE_MIN_COUNTS[section] ?? 1;
+    const available = imageMap[section]?.length ?? 0;
+    if (available > 0) {
+      imageMinCounts[section] = Math.min(desired, available);
+    }
+  }
+
+  const sectionContractData: SectionContract | undefined =
+    mentionedSections.length > 0
+      ? {
+          order: mentionedSections,
+          labels: sectionLabels,
+          imageSections: imageSectionKeys,
+          imageMap,
+          imageMinCounts,
+        }
+      : undefined;
+
   return {
 
     originalPrompt: userPrompt,
@@ -2907,6 +3032,8 @@ ${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrd
     colors: finalColors,
 
     images,
+
+    sectionContract: sectionContractData,
 
   };
 

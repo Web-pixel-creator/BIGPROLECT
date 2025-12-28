@@ -110,10 +110,12 @@ export default function FeaturesTab() {
     autoSelectTemplate,
     isLatestBranch,
     contextOptimizationEnabled,
+    autoFixValidationEnabled,
     eventLogs,
     setAutoSelectTemplate,
     enableLatestBranch,
     enableContextOptimization,
+    enableAutoFixValidation,
     setEventLogs,
     setPromptId,
     promptId,
@@ -140,6 +142,10 @@ export default function FeaturesTab() {
 
     if (eventLogs === undefined) {
       setEventLogs(true); // Default: ON - Enable event logging
+    }
+
+    if (autoFixValidationEnabled === undefined) {
+      enableAutoFixValidation(true); // Default: ON - Auto-fix JSX validation errors
     }
   }, []); // Only run once on component mount
 
@@ -170,11 +176,17 @@ export default function FeaturesTab() {
           break;
         }
 
+        case 'autoFixValidation': {
+          enableAutoFixValidation(enabled);
+          toast.success(`Auto-fix JSX validation ${enabled ? 'enabled' : 'disabled'}`);
+          break;
+        }
+
         default:
           break;
       }
     },
-    [enableLatestBranch, setAutoSelectTemplate, enableContextOptimization, setEventLogs],
+    [enableLatestBranch, setAutoSelectTemplate, enableContextOptimization, setEventLogs, enableAutoFixValidation],
   );
 
   const features = {
@@ -210,6 +222,14 @@ export default function FeaturesTab() {
         icon: 'i-ph:list-bullets',
         enabled: eventLogs,
         tooltip: 'Enabled by default to record detailed logs of system events and user actions',
+      },
+      {
+        id: 'autoFixValidation',
+        title: 'Auto-fix JSX Validation',
+        description: 'Automatically ask Bolt to fix JSX/TSX parse errors',
+        icon: 'i-ph:wrench',
+        enabled: autoFixValidationEnabled,
+        tooltip: 'Enabled by default to recover from invalid JSX in generated code',
       },
     ],
     beta: [],
