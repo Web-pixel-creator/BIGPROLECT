@@ -1,4 +1,4 @@
-import type { SelectionResult } from './smartComponentSelector.ts';
+import type { SelectionResult } from './smartComponentSelector.server';
 
 export class StructuredPromptBuilder {
   build(selection: SelectionResult, userRequest: string): string {

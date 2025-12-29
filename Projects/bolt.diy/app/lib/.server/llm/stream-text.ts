@@ -11,7 +11,7 @@ import { extractPropertiesFromMessage } from './utils';
 import { discussPrompt } from '~/lib/common/prompts/discuss-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
 import { buildEffectRecipesPromptSection } from '~/lib/services/effectRecipes';
-import { SmartComponentSelector, type UserIntent } from '~/lib/services/smartComponentSelector';
+import { SmartComponentSelector, type UserIntent } from '~/lib/services/smartComponentSelector.server';
 import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
 
 export type Messages = Message[];

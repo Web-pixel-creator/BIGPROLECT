@@ -1,7 +1,7 @@
 import { createScopedLogger } from '../../utils/logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import { BOLT_ROOT, buildIndex, type ComponentMeta } from './component-index';
+import { BOLT_ROOT, buildIndex, type ComponentMeta } from './component-index.server';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;

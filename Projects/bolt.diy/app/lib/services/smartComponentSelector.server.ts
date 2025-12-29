@@ -1,4 +1,4 @@
-import { BOLT_ROOT, buildIndex, type ComponentIndex, type ComponentMeta } from './component-index';
+import { BOLT_ROOT, buildIndex, type ComponentIndex, type ComponentMeta } from './component-index.server';
 import effectsRegistry from '~/lib/constants/effects-registry.json';
 
 export type UserIntent = {
