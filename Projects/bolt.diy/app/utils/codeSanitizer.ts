@@ -352,7 +352,28 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const tagWithTrailingSpaces = /(<[a-zA-Z][a-zA-Z0-9]*)\s{2,}(<[a-zA-Z])/g;
   next = next.replace(tagWithTrailingSpaces, '$1 />$2');
 
-  // Fix 15: Missing space between tag name and first attribute
+  // Fix 15: Mismatched closing tags - often caused by "stuttering" or merging lines
+  // Example: <h4 className="..."></div>><div>  -->  <h4 className="..."></h4><div>
+  // We'll replace the immediate mismatch with a self-closing of the first tag, or just close it correctly if we can guess.
+  // For safety, let's turn <tag ...></div> into <tag ... /></div>
+  const mismatchedClosingDiv = /(<([a-zA-Z][a-zA-Z0-9]*)[^>]*>)<\/div>/g;
+  next = next.replace(mismatchedClosingDiv, (match, openTag, tagName) => {
+    if (tagName.toLowerCase() === 'div') return match; // Normal div closing
+    return `${openTag.replace(/>$/, ' />')}</div>`; // Close the original tag, keep the div close
+  });
+
+  // Fix 16: The specific garbage pattern reported: "></div>><div>"
+  // This often appears when the AI gets confused between closing a div and starting a new section
+  next = next.replace(/"> <\/div>><div>/g, '"></div><div>');
+  next = next.replace(/"> <\/div>>/g, '"></div>');
+  next = next.replace(/"> <\/div>>/g, '"></div>'); // Handle potential variations
+
+  // Fix 17: "Stuttered" lines where a tag starts but is interrupted by a div close
+  // Pattern: <h4 ...></div>><div>
+  next = next.replace(/(<[a-zA-Z0-9]+[^>]+)> <\/div>>/g, '$1 />');
+  next = next.replace(/(<[a-zA-Z0-9]+[^>]+)> <\/div>/g, '$1 />');
+
+  // Fix 18: Missing space between tag name and first attribute
   // Pattern: <spanclassName="..." -> <span className="..."
   const missingSpaceBetweenTagAndAttr =
     /<([A-Za-z][A-Za-z0-9._-]*)(className|class|style|id|href|src|alt|title|role|type|value|name|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+|on[A-Z][A-Za-z]+)=/g;

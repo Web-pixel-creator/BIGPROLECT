@@ -9,6 +9,7 @@
 */
 
 import type { SectionContract } from '~/types/section-contract';
+import { buildIndex } from '~/lib/services/component-index';
 
 // Theme detection keywords (EN)
 
@@ -774,22 +775,25 @@ const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
   vinyl: {
 
     hero: [
-      'vintage record player',
-      'vinyl record collection',
-      'turntable close up',
-      'analog hi-fi setup',
-      'record player studio',
+      'vintage record player warm light',
+      'vinyl record collection shelves',
+      'neon record store exterior night',
+      'dj mixing deck colorful lights',
+      'person holding vinyl record cover',
+      'abstract spinning vinyl long exposure',
+      'retro listening station headphones',
+      'modern minimalist turntable',
     ],
 
     gallery: [
-      'vinyl records',
-      'record store',
-      'album covers',
-      'analog audio',
-      'dj turntable',
-      'record sleeves',
-      'vinyl crate',
-      'listening room',
+      'vinyl records crate',
+      'record store interior',
+      'album covers wall',
+      'analog audio cables',
+      'dj turntable hands',
+      'record sleeves stack',
+      'vinyl cleaning brush',
+      'audiophile listening room',
     ],
 
     products: [
@@ -1045,15 +1049,21 @@ function normalizeQuery(query: string): string {
 
 
 
+
+
+
+
+
 function buildImageUrl(query: string, size: keyof typeof IMAGE_SIZES): string {
   const sizeStr = IMAGE_SIZES[size];
   const [width, height] = sizeStr.split('x').map(Number);
 
-  // Use Unsplash Source as a fallback when API keys are missing.
-  // Add random seed to get different images each time (not cached)
+  // Use Pollinations AI for reliable, unique AI generation
   const safeQuery = encodeURIComponent(query);
-  const randomSeed = Math.random().toString(36).substring(2, 10) + Date.now();
-  const url = `https://source.unsplash.com/${width}x${height}/?${safeQuery}&sig=${randomSeed}`;
+  const randomSeed = Math.floor(Math.random() * 1000000) + Date.now();
+
+  // Format: https://image.pollinations.ai/prompt/{prompt}?width={width}&height={height}&nologo=true&seed={seed}
+  const url = `https://image.pollinations.ai/prompt/${safeQuery}?width=${width}&height=${height}&nologo=true&seed=${randomSeed}`;
 
   return `${IMAGE_PROXY_PREFIX}${encodeURIComponent(url)}`;
 }
@@ -1544,7 +1554,7 @@ async function fetchImageSetFromApi(
 
 
 
- 
+
 
 /**
 
@@ -3242,6 +3252,35 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     : '';
   console.log('[promptEnhancer] imageSuggestions result:', imageSuggestions?.substring(0, 200));
   const imagePrompt = imageSuggestions ? `\n${imageSuggestions}` : '';
+
+  // --- Dynamic Component Suggestions ---
+  let componentSuggestions = '';
+  try {
+    const registry = buildIndex();
+    // Simple logic: find components that match the detected theme or section keywords
+    const relevant = registry.components.filter(c => {
+      const text = (c.name + ' ' + c.category + ' ' + (c.tags?.join(' ') || '')).toLowerCase();
+      // Only suggest high-quality visual components
+      const isVisual = text.includes('card') || text.includes('grid') || text.includes('hero') || text.includes('text') || text.includes('button') || text.includes('nav');
+      if (!isVisual) return false;
+
+      // Allow any high-quality component, but boost theme matches
+      return true;
+    });
+
+    if (relevant.length > 0) {
+      // Pick 3 random distinct components to suggest
+      const suggestions = shuffleList(relevant).slice(0, 3);
+      componentSuggestions = `
+SUGGESTED LIBRARY COMPONENTS (You MUST use these if applicable):
+${suggestions.map(c => `- ${c.name} (from ${c.source}): ${c.description}. Use for: ${c.category} or similar sections.`).join('\n')}
+`;
+      console.log('[promptEnhancer] Injected component suggestions:', suggestions.map(s => s.name));
+    }
+  } catch (e) {
+    console.warn('[promptEnhancer] Failed to get component suggestions:', e);
+  }
+
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
@@ -3249,8 +3288,9 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
 
   const enhancedPrompt = `${userPrompt}
-${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}${variationLine}
-[Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imagePrompt}`;
+${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${componentSuggestions}${templateGuard}${variationLine}
+${imagePrompt ? `\nIMAGES:\n${imagePrompt}` : ''}
+[Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   console.log('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
   console.log('[promptEnhancer] sectionSpecs.order was:', JSON.stringify(sectionSpecs.order));
@@ -3301,12 +3341,12 @@ ${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrd
   const sectionContractData: SectionContract | undefined =
     mentionedSections.length > 0
       ? {
-          order: mentionedSections,
-          labels: sectionLabels,
-          imageSections: imageSectionKeys,
-          imageMap,
-          imageMinCounts,
-        }
+        order: mentionedSections,
+        labels: sectionLabels,
+        imageSections: imageSectionKeys,
+        imageMap,
+        imageMinCounts,
+      }
       : undefined;
 
   return {

@@ -96,8 +96,11 @@ const buildSourceFallback = (query: string, count: number, width: number) => {
   if (!query) return [];
   const height = Math.round(width * 0.6);
   return Array.from({ length: count }, (_value, index) => {
+    // Pollinations.ai provides AI-generated images
     const seed = Date.now() + Math.floor(Math.random() * 10000) + index;
-    return `https://source.unsplash.com/${width}x${height}/?${encodeURIComponent(query)}&sig=${seed}`;
+    // Format: https://image.pollinations.ai/prompt/{prompt}?width={width}&height={height}&nologo=true&seed={seed}
+    const encodedQuery = encodeURIComponent(query);
+    return `https://image.pollinations.ai/prompt/${encodedQuery}?width=${width}&height=${height}&nologo=true&seed=${seed}`;
   });
 };
 
@@ -187,7 +190,7 @@ function normalizeList(values?: string[]) {
 
 export async function action({ context, request }: ActionFunctionArgs) {
   logger.info('=== IMAGE SEARCH API CALLED ===');
-  
+
   let payload: ImageSearchPayload;
   try {
     payload = (await request.json()) as ImageSearchPayload;

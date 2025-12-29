@@ -3,6 +3,7 @@ import type { ITerminal } from '~/types/terminal';
 import { withResolvers } from './promises';
 import { atom } from 'nanostores';
 import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
+import { analyzeError, healFile } from '~/lib/services/self-healer';
 
 export async function newShellProcess(webcontainer: WebContainer, terminal: ITerminal) {
   const args: string[] = [];
@@ -118,12 +119,13 @@ export class BoltShell {
     this.#terminal = terminal;
 
     // Use all three streams from tee: one for terminal, one for command execution, one for Expo URL detection
-    const { process, commandStream, expoUrlStream } = await this.newBoltShellProcess(webcontainer, terminal);
+    const { process, commandStream, expoUrlStream, errorStream } = await this.newBoltShellProcess(webcontainer, terminal);
     this.#process = process;
     this.#outputStream = commandStream.getReader();
 
     // Start background Expo URL watcher immediately
     this._watchExpoUrlInBackground(expoUrlStream);
+    this._watchErrorsInBackground(errorStream);
 
     await this.waitTillOscCode('interactive');
     this.#initialized?.();
@@ -141,9 +143,10 @@ export class BoltShell {
     const input = process.input.getWriter();
     this.#shellInputStream = input;
 
-    // Tee the output so we can have three independent readers
+    // Tee the output so we can have three independent readers: command, expo, and error watcher
     const [streamA, streamB] = process.output.tee();
-    const [streamC, streamD] = streamB.tee();
+    const [streamC, streamTemp] = streamB.tee();
+    const [streamD, streamError] = streamTemp.tee();
 
     const jshReady = withResolvers<void>();
     let isInteractive = false;
@@ -173,7 +176,7 @@ export class BoltShell {
     await jshReady.promise;
 
     // Return all streams for use in init
-    return { process, terminalStream: streamA, commandStream: streamC, expoUrlStream: streamD };
+    return { process, terminalStream: streamA, commandStream: streamC, expoUrlStream: streamD, errorStream: streamError };
   }
 
   // Dedicated background watcher for Expo URL
@@ -203,6 +206,41 @@ export class BoltShell {
 
       if (buffer.length > 2048) {
         buffer = buffer.slice(-2048);
+      }
+    }
+  }
+
+  // Dedicated background watcher for Build Errors (Self-Healing)
+  private async _watchErrorsInBackground(stream: ReadableStream<string>) {
+    const reader = stream.getReader();
+    let buffer = '';
+
+    while (true) {
+      try {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          console.log('[BoltShell] Error watcher stream closed');
+          break;
+        }
+
+        const text = value || '';
+        buffer += text;
+
+        if (buffer.length > 5000) {
+          buffer = buffer.slice(-2000);
+        }
+
+        const errorInfo = analyzeError(buffer);
+
+        if (errorInfo && this.#webcontainer) {
+          await healFile(this.#webcontainer, errorInfo.file, errorInfo.type);
+          buffer = '';
+        }
+
+      } catch (err) {
+        console.error('[BoltShell] Error watcher failed:', err);
+        break;
       }
     }
   }
