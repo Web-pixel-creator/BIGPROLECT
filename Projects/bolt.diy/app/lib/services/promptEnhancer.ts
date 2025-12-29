@@ -696,6 +696,9 @@ const IMAGE_PROXY_PREFIX = '/__image_proxy__?url=';
 const IMAGE_SEARCH_ENDPOINT = '/api/image-search';
 const imageCache = new Map<string, { expiresAt: number; data: ImageSet }>();
 const IMAGE_CACHE_TTL_MS = 0; // Disabled - always get fresh images for each prompt
+const RECENT_IMAGE_LIMIT = 180;
+const recentImageQueue: string[] = [];
+const recentImageSet = new Set<string>();
 
 const IMAGE_SIZES = {
 
@@ -716,7 +719,7 @@ const IMAGE_SIZES = {
 const MAX_IMAGE_COUNTS = {
   hero: 1,
   gallery: 3,
-  product: 4,
+  product: 6,
   category: 1,
   editorial: 1,
 } as const;
@@ -724,7 +727,7 @@ const MAX_IMAGE_COUNTS = {
 const SECTION_IMAGE_MIN_COUNTS: Record<string, number> = {
   hero: 1,
   gallery: 2,
-  products: 3,
+  products: 4,
   editorial: 1,
 };
 
@@ -770,23 +773,46 @@ const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
 
   vinyl: {
 
-    hero: ['vintage record player', 'vinyl record collection', 'turntable close up'],
+    hero: [
+      'vintage record player',
+      'vinyl record collection',
+      'turntable close up',
+      'analog hi-fi setup',
+      'record player studio',
+    ],
 
-    gallery: ['vinyl records', 'record store', 'album covers', 'analog audio', 'dj turntable'],
+    gallery: [
+      'vinyl records',
+      'record store',
+      'album covers',
+      'analog audio',
+      'dj turntable',
+      'record sleeves',
+      'vinyl crate',
+      'listening room',
+    ],
 
-    products: ['vinyl record album', 'record sleeve mockup', 'vinyl record stack', 'album cover art', 'turntable accessory'],
+    products: [
+      'vinyl record album',
+      'record sleeve mockup',
+      'vinyl record stack',
+      'album cover art',
+      'turntable accessory',
+      'colored vinyl record',
+      'gatefold album cover',
+    ],
 
     categories: {
 
-      seating: ['jazz vinyl record', 'jazz album cover'],
+      seating: ['jazz vinyl record', 'jazz album cover', 'blue note jazz'],
 
-      tables: ['rock vinyl record', 'rock album cover'],
+      tables: ['rock vinyl record', 'rock album cover', 'classic rock vinyl'],
 
-      storage: ['classical vinyl record', 'electronic album cover'],
+      storage: ['classical vinyl record', 'electronic album cover', 'synthwave vinyl'],
 
     },
 
-    editorial: ['record store interior', 'vinyl collector'],
+    editorial: ['record store interior', 'vinyl collector', 'record shop counter'],
 
   },
 
@@ -956,6 +982,51 @@ const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
 
 };
 
+const THEME_ART_DIRECTIONS: Record<string, string[]> = {
+  vinyl: [
+    'Archival record shop catalog',
+    'Noir lounge listening room',
+    'Record label press kit',
+    'Collector desk with handwritten notes',
+  ],
+  default: ['Editorial showcase', 'Boutique showroom', 'Modern museum gallery', 'Studio catalog spread'],
+};
+
+const THEME_SIGNATURE_MOVES: Record<string, string[]> = {
+  vinyl: [
+    'Use angled album sleeves that overlap in the product grid',
+    'Add thin gold pinline dividers and micro-label badges',
+    'Introduce a subtle groove texture layer behind sections',
+    'Use a diagonal split or stepped edge between hero and products',
+    'Add circular record motifs as background shapes',
+  ],
+  default: [
+    'Use layered cards with staggered heights',
+    'Break the grid with one oversized feature card',
+    'Use a subtle pattern layer behind key sections',
+  ],
+};
+
+const GLOBAL_SIGNATURE_MOVES = [
+  'Add an asymmetric grid or off-center alignment',
+  'Use a split layout with overlapping media and text',
+  'Include a distinctive callout banner or ribbon',
+  'Use a bold typographic lockup with mixed weights',
+];
+
+const THEME_LAYOUT_ARCHETYPES: Record<string, string[]> = {
+  vinyl: [
+    'Diagonal split hero + horizontal genre tag belt + staggered product grid + multi-row footer',
+    'Centered hero card over image + angled product sleeves grid + newsletter bar + deep footer',
+    'Split hero with floating record + sidebar filters + crate-style product gallery + stacked footer',
+  ],
+  default: [
+    'Split hero + bento feature grid + stacked cards + multi-row footer',
+    'Centered hero + staggered grid + banner CTA + column footer',
+    'Full-bleed hero + modular sections + layered cards + slim footer',
+  ],
+};
+
 
 
 function normalizeQuery(query: string): string {
@@ -985,6 +1056,21 @@ function buildImageUrl(query: string, size: keyof typeof IMAGE_SIZES): string {
   const url = `https://source.unsplash.com/${width}x${height}/?${safeQuery}&sig=${randomSeed}`;
 
   return `${IMAGE_PROXY_PREFIX}${encodeURIComponent(url)}`;
+}
+
+function shuffleList<T>(list: T[]): T[] {
+  const next = [...list];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+}
+
+function pickRandomUnique<T>(list: T[], count: number): T[] {
+  if (count <= 0) return [];
+  const unique = Array.from(new Set(list));
+  return shuffleList(unique).slice(0, Math.min(count, unique.length));
 }
 
 
@@ -1045,13 +1131,74 @@ function mergeImageSets(primary: ImageSet, fallback: ImageSet): ImageSet {
   return merged;
 }
 
+function rememberRecentImage(url: string) {
+  if (!url) return;
+  if (recentImageSet.has(url)) return;
+
+  recentImageSet.add(url);
+  recentImageQueue.push(url);
+
+  if (recentImageQueue.length > RECENT_IMAGE_LIMIT) {
+    const removed = recentImageQueue.shift();
+    if (removed) {
+      recentImageSet.delete(removed);
+    }
+  }
+}
+
+function recordRecentImages(images: ImageSet) {
+  images.hero.forEach(rememberRecentImage);
+  images.gallery.forEach(rememberRecentImage);
+  images.products?.forEach(rememberRecentImage);
+  images.editorial?.forEach(rememberRecentImage);
+
+  if (images.categories) {
+    images.categories.seating.forEach(rememberRecentImage);
+    images.categories.tables.forEach(rememberRecentImage);
+    images.categories.storage.forEach(rememberRecentImage);
+  }
+}
+
+function filterRecentImageList(list: string[], minKeep: number): string[] {
+  if (list.length === 0) return list;
+  const filtered = list.filter((url) => !recentImageSet.has(url));
+  const threshold = Math.min(minKeep, list.length);
+  return filtered.length >= threshold ? filtered : list;
+}
+
+function filterRecentImages(images: ImageSet): ImageSet {
+  const filtered: ImageSet = {
+    hero: filterRecentImageList(images.hero, SECTION_IMAGE_MIN_COUNTS.hero ?? 1),
+    gallery: filterRecentImageList(images.gallery, SECTION_IMAGE_MIN_COUNTS.gallery ?? 1),
+  };
+
+  if (images.products) {
+    filtered.products = filterRecentImageList(images.products, SECTION_IMAGE_MIN_COUNTS.products ?? 1);
+  }
+
+  if (images.editorial) {
+    filtered.editorial = filterRecentImageList(images.editorial, SECTION_IMAGE_MIN_COUNTS.editorial ?? 1);
+  }
+
+  if (images.categories) {
+    filtered.categories = {
+      seating: filterRecentImageList(images.categories.seating, 1),
+      tables: filterRecentImageList(images.categories.tables, 1),
+      storage: filterRecentImageList(images.categories.storage, 1),
+    };
+  }
+
+  return filtered;
+}
+
 
 
 function buildImageUrls(queries: string[] | undefined, size: keyof typeof IMAGE_SIZES): string[] {
 
   if (!queries || queries.length === 0) return [];
 
-  const urls = queries.map((query) => buildImageUrl(query, size));
+  const uniqueQueries = Array.from(new Set(queries)).filter(Boolean);
+  const urls = shuffleList(uniqueQueries).map((query) => buildImageUrl(query, size));
 
   const max = MAX_IMAGE_COUNTS[size as keyof typeof MAX_IMAGE_COUNTS] ?? urls.length;
 
@@ -1132,7 +1279,11 @@ function buildImageSearchQueries(theme: string, sections: string[]): ImageSearch
 
   const include = (section: string) => sections.includes(section);
 
-  const pickList = (values: string[] | undefined, max: number) => values?.slice(0, max);
+  const pickList = (values: string[] | undefined, max: number) => {
+    if (!values || values.length === 0) return undefined;
+    const unique = Array.from(new Set(values)).filter(Boolean);
+    return shuffleList(unique).slice(0, max);
+  };
 
   const result: ImageSearchQueries = {};
 
@@ -1294,6 +1445,47 @@ function proxyImageSet(images: ImageSet): ImageSet {
 
   return proxied;
 
+}
+
+function appendSeedToProxyUrl(url: string, seed: string): string {
+  if (!url || !seed) return url;
+  if (!url.startsWith(IMAGE_PROXY_PREFIX)) return url;
+
+  const encodedTarget = url.slice(IMAGE_PROXY_PREFIX.length);
+  let target: string;
+  try {
+    target = decodeURIComponent(encodedTarget);
+  } catch {
+    return url;
+  }
+
+  if (target.includes('boltSeed=')) return url;
+
+  const separator = target.includes('?') ? '&' : '?';
+  const seededTarget = `${target}${separator}boltSeed=${seed}`;
+  return `${IMAGE_PROXY_PREFIX}${encodeURIComponent(seededTarget)}`;
+}
+
+function applyImageSeed(images: ImageSet, seed: string): ImageSet {
+  if (!seed) return images;
+
+  const applyList = (list?: string[]) => (list ?? []).map((url) => appendSeedToProxyUrl(url, seed));
+  const seeded: ImageSet = {
+    hero: applyList(images.hero),
+    gallery: applyList(images.gallery),
+    products: applyList(images.products),
+    editorial: applyList(images.editorial),
+  };
+
+  if (images.categories) {
+    seeded.categories = {
+      seating: applyList(images.categories.seating),
+      tables: applyList(images.categories.tables),
+      storage: applyList(images.categories.storage),
+    };
+  }
+
+  return seeded;
 }
 
 
@@ -2096,6 +2288,72 @@ function buildSectionDetailsBlock(
   return `\nSECTION DETAILS (follow exactly):\n${lines.join('\n')}`;
 }
 
+function buildArtDirectionLine(theme: string): string {
+  const directions = THEME_ART_DIRECTIONS[theme] ?? THEME_ART_DIRECTIONS.default;
+  const pick = pickRandomUnique(directions, 1)[0];
+  return pick ? `\nART DIRECTION: ${pick}` : '';
+}
+
+function buildLayoutArchetypeLine(theme: string): string {
+  const archetypes = THEME_LAYOUT_ARCHETYPES[theme] ?? THEME_LAYOUT_ARCHETYPES.default;
+  const pick = pickRandomUnique(archetypes, 1)[0];
+  return pick ? `\nLAYOUT ARCHETYPE: ${pick}` : '';
+}
+
+function buildSignatureMovesBlock(theme: string): string {
+  const themeMoves = THEME_SIGNATURE_MOVES[theme] ?? THEME_SIGNATURE_MOVES.default;
+  const picks = pickRandomUnique([...themeMoves, ...GLOBAL_SIGNATURE_MOVES], 3);
+  return picks.length > 0 ? `\nSIGNATURE MOVES (must apply):\n- ${picks.join('\n- ')}` : '';
+}
+
+function buildSectionGuardrails(order: string[], details: Record<string, string[]>): string {
+  if (order.length === 0) return '';
+
+  const lines: string[] = [];
+
+  if (order.includes('navigation')) {
+    lines.push('- Navigation: Menu links use text-sm or text-base (14-16px). Avoid oversized headline typography.');
+  }
+
+  if (order.includes('products')) {
+    lines.push('- Products: Render at least 4 product cards using distinct images.');
+    const items = Array.from(new Set(details.products ?? [])).filter(Boolean);
+    if (items.length > 0) {
+      lines.push(`- Products: Each product card must include ALL of: ${items.join('; ')}`);
+    } else {
+      lines.push('- Products: Each card includes image, title, secondary text, price, and a clear CTA button.');
+    }
+  }
+
+  if (order.includes('footer')) {
+    const footerDetails = details.footer ?? [];
+    const footerText = footerDetails.join(' ').toLowerCase();
+    const wantsNewsletter = /newsletter|subscribe|collector|email|join the/.test(footerText);
+    const wantsColumns = /columns?|shop|about|support|connect/.test(footerText);
+    const wantsBottomBar = /bottom bar|copyright|payment|visa|mastercard|paypal|badge/.test(footerText);
+    const wantsUnderline = /underline|hover gold|gold underline/.test(footerText);
+    const wantsSocial = /social|instagram|youtube|discord|icons?/.test(footerText);
+
+    if (wantsNewsletter) {
+      lines.push('- Footer: Include a top newsletter row with headline, email input, submit button, and vinyl graphic.');
+    }
+    if (wantsColumns) {
+      lines.push('- Footer: Include a middle 4-column links grid (Shop/About/Support/Connect).');
+    }
+    if (wantsBottomBar) {
+      lines.push('- Footer: Include a bottom bar with copyright, payment method badges (text or lucide icons), and a badge.');
+    }
+    if (wantsUnderline) {
+      lines.push('- Footer: Links show gold underline on hover.');
+    }
+    if (wantsSocial) {
+      lines.push('- Footer: Social icons are cream, turn gold on hover with subtle rotation.');
+    }
+  }
+
+  return lines.length > 0 ? `\nSECTION GUARDRAILS (must follow):\n${lines.join('\n')}` : '';
+}
+
 function buildSectionBlueprint(
   order: string[],
   details: Record<string, string[]>,
@@ -2145,6 +2403,7 @@ export interface EnhancedPrompt {
 export async function enhancePromptWithDesignSystem(userPrompt: string): Promise<EnhancedPrompt> {
 
   const detectedTheme = detectTheme(userPrompt);
+  const variationSeed = Math.random().toString(36).slice(2, 8);
 
   const palette = THEME_PALETTES[detectedTheme as keyof typeof THEME_PALETTES] || THEME_PALETTES.default;
 
@@ -2448,6 +2707,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     footer: [
       'footer',
       'bottom',
+      'bottom bar',
       'site footer',
       'футер',
       'подвал',
@@ -2507,10 +2767,15 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
       'product grid',
       'product listing',
       'product cards',
+      'featured',
+      'featured records',
       'vinyl cards',
       'album cards',
       'record cards',
       'bestsellers',
+      'featured collection',
+      'records grid',
+      'album grid',
       'catalog',
       'товары',
       'продукты',
@@ -2588,6 +2853,22 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     }
   }
 
+  const navigationSignals = [
+    'menu',
+    'navigation',
+    'navbar',
+    'top bar',
+    'header',
+    'search icon',
+    'wishlist',
+    'cart',
+    'profile',
+  ];
+  const wantsNavigation = navigationSignals.some((signal) => matchesKeyword(lowerPrompt, signal));
+  if (wantsNavigation && !mentionedSections.includes('navigation')) {
+    mentionedSections.unshift('navigation');
+  }
+
   console.log('[promptEnhancer] Detected theme:', detectedTheme);
   console.log('[promptEnhancer] Mentioned sections:', mentionedSections);
   console.log('[promptEnhancer] Wants images:', wantsImages(userPrompt, mentionedSections));
@@ -2607,7 +2888,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     }
   }
 
-  images = proxyImageSet(normalizeImageSet(images));
+  images = normalizeImageSet(images);
+  images = filterRecentImages(images);
+  recordRecentImages(images);
+  images = proxyImageSet(images);
+  images = applyImageSeed(images, variationSeed);
 
 
 
@@ -2791,23 +3076,23 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
     products: [
 
-      '4-column product grid with hover actions',
+      'Angled album sleeves in a staggered grid with hover actions',
 
-      'Product cards with image + price row',
+      'Product cards with tilted cover + price row + condition badge',
 
-      'Compact product grid with quick view',
+      'Crate-style product grid with overlapping covers',
 
-      'Grid with filters sidebar',
+      'Grid with filters sidebar and spotlight card',
 
     ],
 
     categories: [
 
-      '3-category cards in a row',
+      'Horizontal genre tag belt with scroll',
 
-      'Image tiles with labels',
+      'Rounded pill carousel with gold outlines',
 
-      'Icon grid with category labels',
+      'Compact tag grid with hover glow',
 
     ],
 
@@ -2934,6 +3219,10 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     mentionedSections.length > 0 ? `\nSECTION COUNT: ${mentionedSections.length}` : '';
 
   const sectionDetailsBlock = buildSectionDetailsBlock(sectionSpecs.details, sectionLabels);
+  const sectionGuardrails = buildSectionGuardrails(mentionedSections, sectionSpecs.details);
+  const artDirectionLine = buildArtDirectionLine(detectedTheme);
+  const layoutArchetypeLine = buildLayoutArchetypeLine(detectedTheme);
+  const signatureMovesBlock = buildSignatureMovesBlock(detectedTheme);
   const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, sectionLabels);
 
   const requirements = extractRequirementLines(userPrompt).slice(0, 20);
@@ -2956,9 +3245,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
+  const variationLine =
+    `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
 
   const enhancedPrompt = `${userPrompt}
-${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}
+${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]${imagePrompt}`;
 
   console.log('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));

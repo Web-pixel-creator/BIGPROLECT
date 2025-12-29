@@ -352,6 +352,105 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const tagWithTrailingSpaces = /(<[a-zA-Z][a-zA-Z0-9]*)\s{2,}(<[a-zA-Z])/g;
   next = next.replace(tagWithTrailingSpaces, '$1 />$2');
 
+  // Fix 15: Missing space between tag name and first attribute
+  // Pattern: <spanclassName="..." -> <span className="..."
+  const missingSpaceBetweenTagAndAttr =
+    /<([A-Za-z][A-Za-z0-9._-]*)(className|class|style|id|href|src|alt|title|role|type|value|name|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+|on[A-Z][A-Za-z]+)=/g;
+  next = next.replace(missingSpaceBetweenTagAndAttr, '<$1 $2=');
+
+  // Fix 16: Tag duplicated after a missing attribute assignment
+  // Pattern: <Disc className<Disc ... -> <Disc ...
+  const duplicatedTagAfterAttr =
+    /<([A-Za-z][A-Za-z0-9._-]*)\s+(className|class|style|id|href|src|alt|title|role|type|value|name|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+)\s*<\1\b/g;
+  next = next.replace(duplicatedTagAfterAttr, '<$1');
+
+  // Fix 17: Duplicate "<" before a tag (e.g., <<motion.a ...)
+  const doubleOpenAngle = /<\s*<\s*([A-Za-z][A-Za-z0-9._-]*)/g;
+  next = next.replace(doubleOpenAngle, '<$1');
+
+  // Fix 18: Missing ">" right after tag name (e.g., <spanLive Chat</span>)
+  const missingTagCloseBeforeText = /<([A-Za-z][A-Za-z0-9._-]*)([A-Za-z0-9][^<]*?)<\/\1>/g;
+  next = next.replace(missingTagCloseBeforeText, (_match, tag, text) => `<${tag}>${text}</${tag}>`);
+
+  // Fix 19: Auto-close span before closing anchor/button when missing </span>
+  const spanCloseTargets = /<\/(motion\.[A-Za-z0-9_]+|a|button)>/;
+  const spanLines = next.split('\n');
+  let spanClosed = false;
+  for (let i = 0; i < spanLines.length; i += 1) {
+    const line = spanLines[i];
+    if (!line.includes('<span') || line.includes('</span>')) continue;
+    if (/<span\b[^>]*\/>/.test(line)) continue;
+    if (!spanCloseTargets.test(line)) continue;
+
+    spanLines[i] = line.replace(spanCloseTargets, '</span>$&');
+    spanClosed = true;
+  }
+
+  if (spanClosed) {
+    next = spanLines.join('\n');
+  }
+
+  // Fix 20: Unterminated image proxy string literals (common in long URLs).
+  const urlMarker = '__image_proxy__?url=';
+  const lines = next.split('\n');
+  let lineChanged = false;
+  const continuationPattern = /^[A-Za-z0-9%&=?.:_-]+/;
+  const MAX_LOOKAHEAD = 3;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const markerIndex = line.indexOf(urlMarker);
+    if (markerIndex === -1) continue;
+
+    const singleIndex = line.lastIndexOf("'", markerIndex);
+    const doubleIndex = line.lastIndexOf('"', markerIndex);
+    const quoteIndex = Math.max(singleIndex, doubleIndex);
+    if (quoteIndex === -1) continue;
+
+    const quoteChar = quoteIndex === singleIndex ? "'" : '"';
+    const closingIndex = line.indexOf(quoteChar, markerIndex + urlMarker.length);
+    if (closingIndex !== -1) continue;
+
+    let merged = line;
+    let endIndex = i;
+    let foundClosing = false;
+
+    for (let j = i + 1; j < lines.length && j <= i + MAX_LOOKAHEAD; j += 1) {
+      const nextLine = lines[j];
+      const trimmed = nextLine.trimStart();
+      const closePos = trimmed.indexOf(quoteChar);
+
+      if (closePos !== -1) {
+        merged += trimmed;
+        endIndex = j;
+        foundClosing = true;
+        break;
+      }
+
+      if (!continuationPattern.test(trimmed)) {
+        break;
+      }
+
+      merged += trimmed;
+      endIndex = j;
+    }
+
+    if (endIndex > i) {
+      lines.splice(i + 1, endIndex - i);
+    }
+
+    if (!foundClosing) {
+      merged = merged.replace(/(\s*,\s*)?$/, (match) => `${quoteChar}${match ?? ''}`);
+    }
+
+    lines[i] = merged;
+    lineChanged = true;
+  }
+
+  if (lineChanged) {
+    next = lines.join('\n');
+  }
+
   if (next !== before) {
     warnings.push('Fixed truncated or malformed JSX attributes (AI generation error)');
     console.log('[CodeSanitizer] JSX FIXED! Changes were made to the code.');

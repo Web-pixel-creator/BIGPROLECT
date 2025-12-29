@@ -711,6 +711,7 @@ export class ActionRunner {
     const imageRequired = (sectionContract.imageSections ?? []).map(normalizeSectionValue);
     const imageMinCounts = sectionContract.imageMinCounts ?? {};
     const imageCountFailures: string[] = [];
+    const imageDuplicateFailures: string[] = [];
     const imageMap = sectionContract.imageMap ?? {};
     const allowedImageUrls = new Set(Object.values(imageMap).flat());
     const invalidImageUrls = new Set<string>();
@@ -723,9 +724,16 @@ export class ActionRunner {
         }
         const block = sectionBlocks.get(key) ?? '';
         const requiredCount = imageMinCounts[key] ?? 1;
-        const imgCount = (block.match(/<img\b/gi) ?? []).length;
+        const sources = extractImageSources(block);
+        const imgCount = sources.length;
         if (imgCount < requiredCount) {
           imageCountFailures.push(`${labelFor(key)} (${imgCount}/${requiredCount})`);
+        }
+        if (imgCount > 1) {
+          const uniqueCount = new Set(sources).size;
+          if (uniqueCount < imgCount) {
+            imageDuplicateFailures.push(`${labelFor(key)} (${uniqueCount}/${imgCount} unique)`);
+          }
         }
       }
     }
@@ -743,6 +751,7 @@ export class ActionRunner {
       missing.length === 0 &&
       outOfOrder.length === 0 &&
       imageCountFailures.length === 0 &&
+      imageDuplicateFailures.length === 0 &&
       invalidImageUrls.size === 0
     ) {
       const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
@@ -756,12 +765,13 @@ export class ActionRunner {
     const outOfOrderLabel = outOfOrder.length > 0 ? outOfOrder.map(labelFor).join(', ') : 'None';
     const extrasLabel = extras.length > 0 ? extras.join(', ') : 'None';
     const imageCountLabel = imageCountFailures.length > 0 ? imageCountFailures.join(', ') : 'None';
+    const imageDuplicateLabel = imageDuplicateFailures.length > 0 ? imageDuplicateFailures.join(', ') : 'None';
     const invalidImageList = Array.from(invalidImageUrls);
     const invalidImageLabel = invalidImageList.length > 0 ? invalidImageList.slice(0, 5).join(', ') : 'None';
 
     const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
     const attempts = this.#autoFixSectionAttempts.get(contractKey) ?? 0;
-    const autoFixKey = `${contractKey}:${missing.join('|')}:${outOfOrder.join('|')}:${imageCountFailures.join('|')}:${invalidImageList.join('|')}`;
+    const autoFixKey = `${contractKey}:${missing.join('|')}:${outOfOrder.join('|')}:${imageCountFailures.join('|')}:${imageDuplicateFailures.join('|')}:${invalidImageList.join('|')}`;
 
     const contentSummary = [
       `File: ${normalizedPath}`,
@@ -771,6 +781,7 @@ export class ActionRunner {
       `Out-of-order sections: ${outOfOrderLabel}`,
       `Unknown sections: ${extrasLabel}`,
       `Image counts below minimum: ${imageCountLabel}`,
+      `Duplicate images in section: ${imageDuplicateLabel}`,
       `Images not in IMAGES list: ${invalidImageLabel}`,
     ].join('\n');
 
@@ -792,6 +803,7 @@ export class ActionRunner {
                 `Out-of-order sections: ${outOfOrderLabel}\n` +
                 `Unknown sections: ${extrasLabel}\n` +
                 `Image counts below minimum: ${imageCountLabel}\n` +
+                `Duplicate images in section: ${imageDuplicateLabel}\n` +
                 `Images not in IMAGES list: ${invalidImageLabel}\n\n` +
                 `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
             }

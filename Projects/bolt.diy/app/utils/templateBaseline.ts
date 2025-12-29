@@ -604,6 +604,14 @@ function ensureViteConfigImageProxyPlugin(files: TemplateFile[]) {
   const pluginImpl = `
 
 function imageProxyPlugin() {
+  const fallbackSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+  const sendFallback = (res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-store');
+    res.end(fallbackSvg);
+  };
+
   return {
     name: 'image-proxy',
     configureServer(server) {
@@ -612,15 +620,13 @@ function imageProxyPlugin() {
           const url = new URL(req.url ?? '', 'http://localhost');
           const target = url.searchParams.get('url');
           if (!target) {
-            res.statusCode = 400;
-            res.end('Missing url');
+            sendFallback(res);
             return;
           }
 
           const response = await fetch(target);
           if (!response.ok) {
-            res.statusCode = response.status;
-            res.end();
+            sendFallback(res);
             return;
           }
 
@@ -629,8 +635,7 @@ function imageProxyPlugin() {
           res.setHeader('Cache-Control', 'public, max-age=86400');
           res.end(buffer);
         } catch {
-          res.statusCode = 500;
-          res.end('Proxy error');
+          sendFallback(res);
         }
       });
     },

@@ -13,14 +13,15 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
 
   const isPreview = source === 'preview';
   const isValidation = source === 'validation';
-  const title = isPreview ? 'Preview Error' : isValidation ? 'JSX Validation Error' : 'Terminal Error';
+  const defaultTitle = isPreview ? 'Preview Error' : isValidation ? 'Validation Error' : 'Terminal Error';
+  const title = alert.title || defaultTitle;
   const message = isPreview
     ? 'We encountered an error while running the preview. Would you like Bolt to analyze and help resolve this issue?'
     : isValidation
-      ? 'The generated code contains invalid JSX. Would you like Bolt to fix it?'
+      ? 'We found validation issues in the generated code. Would you like Bolt to fix them?'
       : 'We encountered an error while running terminal commands. Would you like Bolt to analyze and help resolve this issue?';
   const fallbackLanguage = isPreview ? 'js' : isValidation ? 'tsx' : 'sh';
-  const fallbackPrompt = `*Fix this ${isPreview ? 'preview' : isValidation ? 'JSX' : 'terminal'} error* \n\`\`\`${fallbackLanguage}\n${content}\n\`\`\`\n`;
+  const fallbackPrompt = `*Fix this ${isPreview ? 'preview' : isValidation ? 'validation' : 'terminal'} error* \n\`\`\`${fallbackLanguage}\n${content}\n\`\`\`\n`;
   const promptToSend = alert.autoFix?.message ?? fallbackPrompt;
 
   return (
@@ -83,10 +84,10 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                     'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bolt-elements-button-danger-background',
                     'text-bolt-elements-button-primary-text',
                     'flex items-center gap-1.5',
-                  )}
+                  )} 
                 >
                   <div className="i-ph:chat-circle-duotone"></div>
-                  {isValidation ? 'Fix JSX' : 'Ask Bolt'}
+                  {isValidation ? 'Fix Issue' : 'Ask Bolt'}
                 </button>
                 <button
                   onClick={clearAlert}
