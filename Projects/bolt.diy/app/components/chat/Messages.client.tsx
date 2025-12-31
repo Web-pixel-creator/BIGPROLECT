@@ -2,6 +2,7 @@ import type { Message } from 'ai';
 import { Fragment } from 'react';
 import { classNames } from '~/utils/classNames';
 import { AssistantMessage } from './AssistantMessage';
+import { GenerationSummaryCard, type GenerationSummary } from './GenerationSummaryCard';
 import { UserMessage } from './UserMessage';
 import { useLocation } from '@remix-run/react';
 import { db, chatId } from '~/lib/persistence/useChatHistory';
@@ -17,6 +18,7 @@ interface MessagesProps {
   className?: string;
   isStreaming?: boolean;
   messages?: Message[];
+  generationSummary?: GenerationSummary | null;
   append?: (message: Message) => void;
   chatMode?: 'discuss' | 'build';
   setChatMode?: (mode: 'discuss' | 'build') => void;
@@ -27,7 +29,7 @@ interface MessagesProps {
 
 export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
   (props: MessagesProps, ref: ForwardedRef<HTMLDivElement> | undefined) => {
-    const { id, isStreaming = false, messages = [] } = props;
+    const { id, isStreaming = false, messages = [], generationSummary } = props;
     const location = useLocation();
 
     const handleRewind = (messageId: string) => {
@@ -71,6 +73,24 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
                 return <Fragment key={index} />;
               }
 
+              const shouldReplaceStreaming =
+                isStreaming && generationSummary && !isUserMessage && index === messages.length - 1;
+
+              if (shouldReplaceStreaming) {
+                return (
+                  <div
+                    key={index}
+                    className={classNames('flex gap-4 py-4 w-full', {
+                      'mt-2': !isFirst,
+                    })}
+                  >
+                    <div className="grid grid-col-1 w-full overflow-hidden">
+                      <GenerationSummaryCard summary={generationSummary} />
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={index}
@@ -107,7 +127,7 @@ export const Messages = forwardRef<HTMLDivElement, MessagesProps>(
               );
             })
           : null}
-        {isStreaming && (
+        {isStreaming && !generationSummary && (
           <Card className="mt-4 border-purple-500/20 bg-purple-500/5">
             <CardContent className="p-4 flex items-center justify-center">
               <div className="text-purple-400 i-svg-spinners:3-dots-fade text-3xl"></div>

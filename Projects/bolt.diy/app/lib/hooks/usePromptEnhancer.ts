@@ -8,6 +8,18 @@ export function usePromptEnhancer() {
   const [enhancingPrompt, setEnhancingPrompt] = useState(false);
   const [promptEnhanced, setPromptEnhanced] = useState(false);
 
+  const decodePromptValue = (value: string) => {
+    if (!value || !/%[0-9A-Fa-f]{2}/.test(value)) {
+      return value;
+    }
+
+    try {
+      return decodeURIComponent(value.replace(/\+/g, ' '));
+    } catch {
+      return value;
+    }
+  };
+
   const resetEnhancer = () => {
     setEnhancingPrompt(false);
     setPromptEnhanced(false);
@@ -49,8 +61,6 @@ export function usePromptEnhancer() {
       let _error;
 
       try {
-        setInput('');
-
         while (true) {
           const { value, done } = await reader.read();
 
@@ -59,25 +69,19 @@ export function usePromptEnhancer() {
           }
 
           _input += decoder.decode(value);
-
-          logger.trace('Set input', _input);
-
-          setInput(_input);
         }
       } catch (error) {
         _error = error;
-        setInput(originalInput);
+        logger.error(error);
       } finally {
-        if (_error) {
-          logger.error(_error);
-        }
-
         setEnhancingPrompt(false);
         setPromptEnhanced(true);
 
-        setTimeout(() => {
-          setInput(_input);
-        });
+        if (_error) {
+          setInput(originalInput);
+        } else {
+          setInput(decodePromptValue(_input));
+        }
       }
     }
   };

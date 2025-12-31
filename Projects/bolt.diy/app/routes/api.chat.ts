@@ -517,6 +517,15 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (
+          lowerErrorMessage.includes('invalid_type') &&
+          lowerErrorMessage.includes('candidates') &&
+          lowerErrorMessage.includes('content') &&
+          lowerErrorMessage.includes('parts')
+        ) {
+          return 'Custom error: The AI provider returned an empty response (missing content parts). Please retry or switch models.';
+        }
+
+        if (
           errorMessage.includes('API key') ||
           errorMessage.includes('unauthorized') ||
           errorMessage.includes('authentication')

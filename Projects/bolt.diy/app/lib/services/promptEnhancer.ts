@@ -9,6 +9,7 @@
 */
 
 import type { SectionContract } from '~/types/section-contract';
+import componentIndex from './component-index-cache.json';
 // buildIndex removed - server-only
 
 // Theme detection keywords (EN)
@@ -101,6 +102,17 @@ const THEME_KEYWORDS: Record<string, string[]> = {
     'menu',
     'delivery',
     'takeaway',
+    'recipe',
+    'recipes',
+    'meal',
+    'meal kit',
+    'meal-kit',
+    'meal prep',
+    'home cooking',
+    'cooking',
+    'cook',
+    'kitchen',
+    'ingredients',
   ],
   photography: [
     'photography',
@@ -216,7 +228,7 @@ const THEME_KEYWORDS_RU: Record<string, string[]> = {
   fashion: ["одежда", "мода", "обувь", "аксессуары", "бутик", "лукбук"],
   beauty: ["косметика", "уход", "красота", "парфюм", "макияж", "спа"],
   electronics: ["электроника", "гаджеты", "смартфон", "ноутбук", "техника", "умный дом"],
-  food: ["еда", "доставка", "ресторан", "кафе", "меню", "еда на вынос"],
+  food: ["???", "????????", "????????", "????", "????", "??? ?? ?????", "??????", "???????", "???????", "????????", "?????", "????? ???", "meal kit"],
   photography: ["фотограф", "фотосессия", "портфолио", "фотография", "галерея", "съёмка", "съемка"],
   industrial: ["промышленный", "энергетика", "нефть", "газ", "завод", "производство", "трубопровод", "электростанция"],
   hotel: ["отель", "гостиница", "курорт", "бутик-отель", "бронирование", "размещение"],
@@ -700,6 +712,115 @@ const IMAGE_CACHE_TTL_MS = 0; // Disabled - always get fresh images for each pro
 const RECENT_IMAGE_LIMIT = 180;
 const recentImageQueue: string[] = [];
 const recentImageSet = new Set<string>();
+type RegistryComponent = {
+  name: string;
+  description: string;
+  category: string;
+  source: string;
+  tags?: string[];
+};
+
+type ComponentIndex = {
+  components?: RegistryComponent[];
+};
+
+const COMPONENT_REGISTRY: RegistryComponent[] =
+  ((componentIndex as ComponentIndex).components ?? []).filter(Boolean);
+
+const SAFE_COMPONENT_IMPORTS = new Set([
+  'react',
+  'framer-motion',
+  'lucide-react',
+  'clsx',
+  'tailwind-merge',
+]);
+
+const IMPORT_RE = /import\s+[^;]*?from\s+['"]([^'"]+)['"]/g;
+
+function extractComponentImports(code: string): string[] {
+  if (!code) return [];
+  const imports: string[] = [];
+  let match: RegExpExecArray | null = null;
+  IMPORT_RE.lastIndex = 0;
+  while ((match = IMPORT_RE.exec(code))) {
+    imports.push(match[1]);
+  }
+  return imports;
+}
+
+function isSafeComponent(component: RegistryComponent): boolean {
+  const code = component.code || '';
+  if (!code) return false;
+  if (code.includes('next/') || code.includes('react-router-dom')) return false;
+
+  const imports = extractComponentImports(code);
+  for (const imp of imports) {
+    if (imp.startsWith('./') || imp.startsWith('../') || imp.startsWith('@/') || imp.startsWith('~/')) {
+      return false;
+    }
+    if (SAFE_COMPONENT_IMPORTS.has(imp) || imp.startsWith('react/')) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+const SAFE_COMPONENT_REGISTRY: RegistryComponent[] = COMPONENT_REGISTRY.filter((component) =>
+  isSafeComponent(component),
+);
+
+
+const RECENT_COMPONENT_LIMIT = 16;
+const recentComponentQueue: string[] = [];
+const recentComponentSet = new Set<string>();
+const recentSectionVariants = new Map<string, string>();
+
+const COMPONENT_SECTION_KEYWORDS: Record<string, string[]> = {
+  navigation: [
+    "navbar",
+    "nav",
+    "menu",
+    "header",
+  ],
+  hero: [
+    "hero",
+    "headline",
+    "banner",
+    "spotlight",
+    "aurora",
+    "beams",
+    "particles",
+    "text",
+  ],
+  categories: [
+    "carousel",
+    "tag",
+    "pill",
+    "chip",
+    "filter",
+    "tabs",
+  ],
+  products: [
+    "product",
+    "card",
+    "grid",
+    "bento",
+    "gallery",
+  ],
+  features: [
+    "feature",
+    "bento",
+    "grid",
+    "timeline",
+    "list",
+  ],
+  footer: [
+    "footer",
+    "newsletter",
+    "subscribe",
+  ],
+};
 
 const IMAGE_SIZES = {
 
@@ -720,7 +841,7 @@ const IMAGE_SIZES = {
 const MAX_IMAGE_COUNTS = {
   hero: 1,
   gallery: 3,
-  product: 6,
+  product: 4,
   category: 1,
   editorial: 1,
 } as const;
@@ -874,11 +995,29 @@ const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
 
   food: {
 
-    hero: ['restaurant interior', 'food photography', 'coffee bar'],
+    hero: [
+      'meal kit box on kitchen counter',
+      'home cooking ingredients on table',
+      'fresh meal kit delivery box',
+      'plated dinner warm light',
+      'recipe box with ingredients',
+    ],
 
-    gallery: ['food flat lay', 'coffee cup', 'bakery pastry', 'fresh ingredients'],
+    gallery: [
+      'meal kit unboxing',
+      'recipe card and ingredients',
+      'chopping vegetables home kitchen',
+      'hands cooking meal kit',
+      'fresh produce flat lay',
+    ],
 
-    products: ['coffee beans packaging', 'tea packaging', 'snack packaging', 'bottle mockup'],
+    products: [
+      'meal kit box packaging',
+      'recipe box packaging',
+      'spice kit packaging',
+      'sauce jar packaging',
+      'ingredient kit packaging',
+    ],
 
   },
 
@@ -993,6 +1132,12 @@ const THEME_ART_DIRECTIONS: Record<string, string[]> = {
     'Record label press kit',
     'Collector desk with handwritten notes',
   ],
+  food: [
+    'Warm home kitchen scene with natural light',
+    'Meal kit unboxing on a rustic table',
+    'Recipe card editorial with fresh ingredients',
+    'Farm-to-table pantry spread',
+  ],
   default: ['Editorial showcase', 'Boutique showroom', 'Modern museum gallery', 'Studio catalog spread'],
 };
 
@@ -1003,6 +1148,12 @@ const THEME_SIGNATURE_MOVES: Record<string, string[]> = {
     'Introduce a subtle groove texture layer behind sections',
     'Use a diagonal split or stepped edge between hero and products',
     'Add circular record motifs as background shapes',
+  ],
+  food: [
+    'Use recipe-card motifs for section headers',
+    'Add warm paper or linen texture behind sections',
+    'Use ingredient badges or spice-label pills',
+    'Introduce a soft apron-style ribbon for CTA highlights',
   ],
   default: [
     'Use layered cards with staggered heights',
@@ -1018,11 +1169,49 @@ const GLOBAL_SIGNATURE_MOVES = [
   'Use a bold typographic lockup with mixed weights',
 ];
 
+const THEME_EFFECT_IDS: Record<string, string[]> = {
+  vinyl: [
+    'grid-pattern',
+    'flickering-grid',
+    'aurora-text',
+    'warp-background',
+    'meteors',
+  ],
+  food: [
+    'aurora-text',
+    'warp-background',
+  ],
+  default: [
+    'grid-pattern',
+    'flickering-grid',
+    'aurora-text',
+    'warp-background',
+  ],
+};
+
+function pickEffectIds(theme: string, count: number): string[] {
+  const list = THEME_EFFECT_IDS[theme] ?? THEME_EFFECT_IDS.default;
+  return pickRandomUnique(list, count);
+}
+
+function buildEffectDirectiveBlock(theme: string): string {
+  const picks = pickEffectIds(theme, 2);
+  if (picks.length === 0) return '';
+  return `
+EFFECTS (apply in UI): ${picks.join(', ')}`;
+}
+
+
 const THEME_LAYOUT_ARCHETYPES: Record<string, string[]> = {
   vinyl: [
     'Diagonal split hero + horizontal genre tag belt + staggered product grid + multi-row footer',
     'Centered hero card over image + angled product sleeves grid + newsletter bar + deep footer',
     'Split hero with floating record + sidebar filters + crate-style product gallery + stacked footer',
+  ],
+  food: [
+    'Split hero with plated dish + ingredient highlights + unboxing gallery + CTA banner + multi-column footer',
+    'Centered hero with recipe tags + meal kit showcase grid + CTA bar + cozy footer',
+    'Full-bleed hero photo + step-by-step cards + pricing/plan CTA + layered footer',
   ],
   default: [
     'Split hero + bento feature grid + stacked cards + multi-row footer',
@@ -1058,15 +1247,13 @@ function buildImageUrl(query: string, size: keyof typeof IMAGE_SIZES): string {
   const sizeStr = IMAGE_SIZES[size];
   const [width, height] = sizeStr.split('x').map(Number);
 
-  // Use Pollinations AI for reliable, unique AI generation
-  const safeQuery = encodeURIComponent(query);
+  const safeQuery = encodeURIComponent(query).replace(/%2C/g, ',');
   const randomSeed = Math.floor(Math.random() * 1000000) + Date.now();
-
-  // Format: https://image.pollinations.ai/prompt/{prompt}?width={width}&height={height}&nologo=true&seed={seed}
-  const url = `https://image.pollinations.ai/prompt/${safeQuery}?width=${width}&height=${height}&nologo=true&seed=${randomSeed}`;
+  const url = `https://source.unsplash.com/${width}x${height}/?${safeQuery}&sig=${randomSeed}`;
 
   return `${IMAGE_PROXY_PREFIX}${encodeURIComponent(url)}`;
 }
+
 
 function shuffleList<T>(list: T[]): T[] {
   const next = [...list];
@@ -1202,6 +1389,244 @@ function filterRecentImages(images: ImageSet): ImageSet {
 }
 
 
+
+function rememberRecentComponent(name: string) {
+  const key = (name || "").trim().toLowerCase();
+  if (!key || recentComponentSet.has(key)) return;
+
+  recentComponentSet.add(key);
+  recentComponentQueue.push(key);
+
+  if (recentComponentQueue.length > RECENT_COMPONENT_LIMIT) {
+    const removed = recentComponentQueue.shift();
+    if (removed) {
+      recentComponentSet.delete(removed);
+    }
+  }
+}
+
+function pickNonRepeatingVariant(section: string, options: string[]): string {
+  if (!options || options.length === 0) return "";
+  const last = recentSectionVariants.get(section);
+  const filtered = last ? options.filter((option) => option !== last) : options;
+  const choice = pickRandomUnique(filtered.length > 0 ? filtered : options, 1)[0] ?? options[0];
+  if (choice) {
+    recentSectionVariants.set(section, choice);
+  }
+  return choice;
+}
+
+const HERO_FULL_WIDTH_VARIANTS = [
+  "Full-width hero with cinematic overlay and floating CTA card",
+  "Full-width hero with layered glass panel and angled media strip",
+  "Full-screen hero with minimal headline and ambient light haze",
+  "Full-width hero with split headline + tag rail overlay",
+];
+
+const HERO_SPLIT_VARIANTS = [
+  "Split hero: text left (40%), image right (60%) with vertical divider",
+  "Split hero: image left (60%), text right (40%) + stacked badges",
+  "Split hero with diagonal cut and floating stat card",
+];
+
+const HERO_GRID_VARIANTS = [
+  "Grid hero with 2x2 media mosaic and centered headline",
+  "Bento hero with large media tile + two supporting cards",
+  "Asymmetric grid hero with text tile and image tiles",
+];
+
+const HERO_TYPO_VARIANTS = [
+  "Typography hero with oversized serif headline and subtle background texture",
+  "Type-led hero with stacked lines and accent underline",
+  "Minimal typography hero with offset CTA bar",
+];
+
+const HERO_DEFAULT_VARIANTS = [
+  ...HERO_FULL_WIDTH_VARIANTS,
+  ...HERO_SPLIT_VARIANTS,
+  ...HERO_GRID_VARIANTS,
+  ...HERO_TYPO_VARIANTS,
+];
+
+const CATEGORY_VARIANTS = [
+  "Horizontal genre tag belt with scroll + gold outline",
+  "Rounded pill carousel with snap scrolling and hover glow",
+  "Compact tag grid with staggered sizes and overflow fade",
+];
+
+const PRODUCT_VARIANTS = [
+  "Crate-style product grid with overlapping covers",
+  "Angled album sleeves in a staggered grid with hover actions",
+  "Grid with spotlight featured card and secondary cards",
+  "Two-row masonry product grid with alternating sizes",
+];
+
+const FOOTER_VARIANTS = [
+  "Newsletter band on top, 4 columns center, bottom bar with payments and badge",
+  "Newsletter card inset + 4 columns + bottom bar with inline icons",
+  "Newsletter split row with graphic + 4 columns + bottom bar divider",
+];
+
+const NAV_VARIANTS = [
+  "Split nav: logo left, links center, utility icons right",
+  "Centered nav with logo above links + icon rail",
+  "Compact top bar with search expand + icons cluster",
+];
+
+const FEATURE_VARIANTS = [
+  "Bento feature grid with 4 tiles and micro-icons",
+  "Zigzag feature rows with alternating text/media",
+  "Card row with icon highlights and hover lift",
+  "Timeline-style feature steps with connecting line",
+];
+
+function resolveSectionVariantOptions(section: string, lowerPrompt: string): string[] {
+  if (section === "hero") {
+    if (/full[-\s]?width|full[-\s]?screen|full[-\s]?bleed/.test(lowerPrompt)) {
+      return HERO_FULL_WIDTH_VARIANTS;
+    }
+    if (/split|two[-\s]?column|two column/.test(lowerPrompt)) {
+      return HERO_SPLIT_VARIANTS;
+    }
+    if (/grid|masonry|bento/.test(lowerPrompt)) {
+      return HERO_GRID_VARIANTS;
+    }
+    if (/typography|type-heavy|typographic/.test(lowerPrompt)) {
+      return HERO_TYPO_VARIANTS;
+    }
+    return HERO_DEFAULT_VARIANTS;
+  }
+
+  if (section === "categories") return CATEGORY_VARIANTS;
+  if (section === "products") return PRODUCT_VARIANTS;
+  if (section === "footer") return FOOTER_VARIANTS;
+  if (section === "navigation") return NAV_VARIANTS;
+  if (section === "features") return FEATURE_VARIANTS;
+
+  return [];
+}
+
+function buildSectionVariantBlock(
+  mentionedSections: string[],
+  lowerPrompt: string,
+  sectionLabels: Record<string, string>,
+): string {
+  if (mentionedSections.length === 0) return "";
+
+  const lines = mentionedSections
+    .map((section) => {
+      const options = resolveSectionVariantOptions(section, lowerPrompt);
+      if (!options || options.length === 0) return "";
+      const pick = pickNonRepeatingVariant(section, options);
+      if (!pick) return "";
+      const label = sectionLabels[section] ?? section;
+      return `- ${label}: ${pick}`;
+    })
+    .filter(Boolean);
+
+  return lines.length > 0
+    ? `\nSECTION VARIANTS (must apply, keep user requirements):\n${lines.join("\n")}`
+    : "";
+}
+
+function componentText(component: RegistryComponent): string {
+  return [
+    component.name,
+    component.description,
+    component.category,
+    component.source,
+    ...(component.tags ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function componentScore(component: RegistryComponent, section: string, theme: string): number {
+  const text = componentText(component);
+  const keywords = COMPONENT_SECTION_KEYWORDS[section] ?? [];
+  let score = 0;
+
+  for (const keyword of keywords) {
+    if (text.includes(keyword)) score += 3;
+  }
+
+  if (score === 0) return 0;
+
+  if (theme && text.includes(theme.toLowerCase())) score += 2;
+
+  const source = (component.source || "").toLowerCase();
+  if (source.includes("magicui")) score += 2;
+  if (source.includes("aceternity")) score += 2;
+  if (source.includes("reactbits")) score += 1;
+  if (source.includes("shadcn")) score += 1;
+
+  if (text.includes("install") || text.includes("cli")) score -= 2;
+
+  return score;
+}
+
+function pickComponentForSection(section: string, theme: string): RegistryComponent | null {
+  if (SAFE_COMPONENT_REGISTRY.length === 0) return null;
+
+  const scored = SAFE_COMPONENT_REGISTRY
+    .map((component) => ({
+      component,
+      score: componentScore(component, section, theme),
+    }))
+    .filter((entry) => entry.score > 0);
+
+  if (scored.length === 0) return null;
+
+  const fresh = scored.filter(
+    (entry) => !recentComponentSet.has((entry.component.name || "").toLowerCase()),
+  );
+  const pool = fresh.length > 0 ? fresh : scored;
+
+  pool.sort((a, b) => b.score - a.score);
+  const shortlist = pool.slice(0, 8).map((entry) => entry.component);
+  const pick = pickRandomUnique(shortlist, 1)[0] ?? shortlist[0];
+
+  if (!pick) return null;
+  rememberRecentComponent(pick.name);
+  return pick;
+}
+
+function buildComponentDirectives(
+  mentionedSections: string[],
+  theme: string,
+  sectionLabels: Record<string, string>,
+): string {
+  if (SAFE_COMPONENT_REGISTRY.length === 0) return "";
+
+  const targetSections = mentionedSections.filter((section) => COMPONENT_SECTION_KEYWORDS[section]);
+  if (targetSections.length === 0) return "";
+
+  const max = Math.min(3, targetSections.length);
+  const chosenSections = pickRandomUnique(targetSections, max);
+  const lines: string[] = [];
+
+  for (const section of chosenSections) {
+    const component = pickComponentForSection(section, theme);
+    if (!component) continue;
+    const label = sectionLabels[section] ?? section;
+    const desc = (component.description || "").replace(/\s+/g, " ").trim();
+    const brief = desc.length > 100 ? `${desc.slice(0, 97)}...` : desc;
+    const source = component.source ? ` (${component.source})` : "";
+    const detail = brief ? ` \u2014 ${brief}` : "";
+    lines.push(`- ${label}: Use "${component.name}"${source}${detail}.`);
+  }
+
+  if (lines.length === 0) return "";
+
+  return [
+    "\nCOMPONENT DIRECTIVES (required):",
+    "- Implement 2-3 advanced components inspired by the registry below.",
+    "- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).",
+    "- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.",
+    ...lines,
+  ].join("\n");
+}
 
 function buildImageUrls(queries: string[] | undefined, size: keyof typeof IMAGE_SIZES): string[] {
 
@@ -2254,6 +2679,18 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
     pushLine('EDITORIAL', limitList(images.editorial ?? [], MAX_IMAGE_COUNTS.editorial));
   }
 
+  if (lines.length === 0) {
+    pushLine('HERO', limitList(images.hero, MAX_IMAGE_COUNTS.hero));
+    pushLine('GALLERY', limitList(images.gallery, MAX_IMAGE_COUNTS.gallery));
+    pushLine('PRODUCTS', limitList(images.products ?? [], MAX_IMAGE_COUNTS.product));
+    if (images.categories) {
+      pushLine('CATEGORIES (Seating)', limitList(images.categories.seating, MAX_IMAGE_COUNTS.category));
+      pushLine('CATEGORIES (Tables)', limitList(images.categories.tables, MAX_IMAGE_COUNTS.category));
+      pushLine('CATEGORIES (Storage)', limitList(images.categories.storage, MAX_IMAGE_COUNTS.category));
+    }
+    pushLine('EDITORIAL', limitList(images.editorial ?? [], MAX_IMAGE_COUNTS.editorial));
+  }
+
   const countHints: string[] = [];
   if (include('hero')) countHints.push(`HERO>=${SECTION_IMAGE_MIN_COUNTS.hero ?? 1}`);
   if (include('gallery')) countHints.push(`GALLERY>=${SECTION_IMAGE_MIN_COUNTS.gallery ?? 1}`);
@@ -2277,9 +2714,29 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
     ...(countHints.length > 0 ? [`IMAGE COUNTS (minimum): ${countHints.join(', ')}`] : []),
     'IMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.',
     'Do NOT replace image sections with gradients/placeholders when IMAGES block exists.',
+    'Do NOT use data:image placeholders or icon-only cards for image slots.',
     'Add loading="lazy" to all <img> tags.',
   ].join('\n');
 
+}
+
+function buildColorDirectiveBlock(colors: { dark: string; light: string; accent: string }): string {
+  if (!colors || (!colors.dark && !colors.light && !colors.accent)) {
+    return '';
+  }
+
+  return [
+    '\nCOLOR PALETTE (must use exact hex values):',
+    `- Dark: ${colors.dark}`,
+    `- Light: ${colors.light}`,
+    `- Accent: ${colors.accent}`,
+    'COLOR USAGE (strict):',
+    'Use Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].',
+    `- Backgrounds use ${colors.dark}.`,
+    `- Primary text uses ${colors.light}.`,
+    `- Accents/underlines/badges/prices/buttons use ${colors.accent}.`,
+    '- Do not introduce new dominant colors.',
+  ].join('\n');
 }
 
 function buildSectionDetailsBlock(
@@ -2325,8 +2782,13 @@ function buildSectionGuardrails(order: string[], details: Record<string, string[
     lines.push('- Navigation: Menu links use text-sm or text-base (14-16px). Avoid oversized headline typography.');
   }
 
+  if (order.includes('hero')) {
+    lines.push('- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).');
+  }
+
   if (order.includes('products')) {
     lines.push('- Products: Render at least 4 product cards using distinct images.');
+    lines.push('- Products: Each card must include a real <img> using URLs from the IMAGES block (no icons/placeholders).');
     const items = Array.from(new Set(details.products ?? [])).filter(Boolean);
     if (items.length > 0) {
       lines.push(`- Products: Each product card must include ALL of: ${items.join('; ')}`);
@@ -2403,6 +2865,38 @@ export interface EnhancedPrompt {
 }
 
 
+const LAYOUT_MARKER = 'CREATIVE DIRECTION (Unique Layout Strategy):';
+
+function splitPromptForEnhancer(prompt: string) {
+  let basePrompt = prompt;
+  let layoutBlock = '';
+
+  const markerIndex = prompt.indexOf(LAYOUT_MARKER);
+  if (markerIndex >= 0) {
+    basePrompt = prompt.slice(0, markerIndex);
+    layoutBlock = prompt.slice(markerIndex);
+  }
+
+  basePrompt = basePrompt
+    .replace(/\n?Sections:\s*[^\n]+/gi, '')
+    .replace(/\n?\[Style:[^\]]+\]\s*/gi, '')
+    .trim();
+
+  const styleCueRe = /(design style|style:|aesthetic|look and feel|tone|design theme|visual style|art direction)/i;
+  const hasStyleCue = styleCueRe.test(basePrompt);
+
+  if (hasStyleCue && layoutBlock) {
+    layoutBlock = layoutBlock.replace(/1\. AESTHETIC STYLE:[\s\S]*?2\. STRUCTURE:/, '2. STRUCTURE:');
+  }
+
+  return {
+    basePrompt: basePrompt || prompt.trim(),
+    layoutBlock: layoutBlock.trim(),
+  };
+}
+
+
+
 
 /**
 
@@ -2411,8 +2905,11 @@ export interface EnhancedPrompt {
  */
 
 export async function enhancePromptWithDesignSystem(userPrompt: string): Promise<EnhancedPrompt> {
+  const { basePrompt, layoutBlock } = splitPromptForEnhancer(userPrompt);
+  const analysisPrompt = basePrompt;
+  const promptWithLayout = layoutBlock ? `${analysisPrompt}\n\n${layoutBlock}` : analysisPrompt;
 
-  const detectedTheme = detectTheme(userPrompt);
+  const detectedTheme = detectTheme(analysisPrompt);
   const variationSeed = Math.random().toString(36).slice(2, 8);
 
   const palette = THEME_PALETTES[detectedTheme as keyof typeof THEME_PALETTES] || THEME_PALETTES.default;
@@ -2426,7 +2923,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     productsCount: images.products?.length,
   });
 
-  const brandName = extractBrandName(userPrompt) ?? generateBrandName(detectedTheme, userPrompt);
+  const brandName = extractBrandName(analysisPrompt) ?? generateBrandName(detectedTheme, analysisPrompt);
 
 
 
@@ -2438,9 +2935,9 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // First, try to extract HEX codes from prompt
 
-  if (hasUserSpecifiedColors(userPrompt)) {
+  if (hasUserSpecifiedColors(analysisPrompt)) {
 
-    const userColors = extractUserColors(userPrompt);
+    const userColors = extractUserColors(analysisPrompt);
 
 
 
@@ -2462,15 +2959,15 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Then, extract colors from color words (e.g., "cream", "black", "gold")
 
-  if (hasColorWords(userPrompt)) {
+  if (hasColorWords(analysisPrompt)) {
 
-    const wordColors = extractColorsFromWords(userPrompt);
+    const wordColors = extractColorsFromWords(analysisPrompt);
 
 
 
     // Only override dark/light if not already set by HEX codes
 
-    if (wordColors.dark && !hasUserSpecifiedColors(userPrompt)) {
+    if (wordColors.dark && !hasUserSpecifiedColors(analysisPrompt)) {
 
       finalColors.dark = wordColors.dark;
 
@@ -2478,7 +2975,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
 
 
-    if (wordColors.light && !hasUserSpecifiedColors(userPrompt)) {
+    if (wordColors.light && !hasUserSpecifiedColors(analysisPrompt)) {
 
       finalColors.light = wordColors.light;
 
@@ -2514,7 +3011,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
 
 
-    const lowerPrompt = userPrompt.toLowerCase();
+    const lowerPrompt = analysisPrompt.toLowerCase();
 
     const hasExplicitAccent = [...accentKeywords, ...accentMetaKeywords].some((keyword) =>
 
@@ -2524,7 +3021,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
 
 
-    if (wordColors.accent && hasExplicitAccent && !hasUserSpecifiedColors(userPrompt)) {
+    if (wordColors.accent && hasExplicitAccent && !hasUserSpecifiedColors(analysisPrompt)) {
 
       finalColors.accent = wordColors.accent;
 
@@ -2536,7 +3033,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Check if user specified specific layouts
 
-  const lowerPrompt = userPrompt.toLowerCase();
+  const lowerPrompt = analysisPrompt.toLowerCase();
 
   const layoutKeywords = [
     'split',
@@ -2661,12 +3158,17 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
       'work',
       'showcase',
       'media',
-      'галерея',
-      'портфолио',
-      'фото',
-      'изображения',
-      'работы',
-      'витрина',
+      'unboxing',
+      'meal kit',
+      'meal kit unboxing',
+      'recipe box',
+      'unbox',
+      '???????',
+      '?????????',
+      '????',
+      '???????????',
+      '??????',
+      '???????',
     ],
     testimonials: [
       'testimonials',
@@ -2844,10 +3346,10 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
 
   // Find which sections are mentioned
-  const sectionSpecs = extractSectionSpecs(userPrompt, sectionKeywords);
+  const sectionSpecs = extractSectionSpecs(analysisPrompt, sectionKeywords);
   console.log('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
   const orderedSections =
-    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(userPrompt, sectionKeywords);
+    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(analysisPrompt, sectionKeywords);
   console.log('[promptEnhancer] orderedSections:', orderedSections);
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
 
@@ -2881,9 +3383,9 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   console.log('[promptEnhancer] Detected theme:', detectedTheme);
   console.log('[promptEnhancer] Mentioned sections:', mentionedSections);
-  console.log('[promptEnhancer] Wants images:', wantsImages(userPrompt, mentionedSections));
+  console.log('[promptEnhancer] Wants images:', wantsImages(analysisPrompt, mentionedSections));
 
-  if (wantsImages(userPrompt, mentionedSections)) {
+  if (wantsImages(analysisPrompt, mentionedSections)) {
     const queries = buildImageSearchQueries(detectedTheme, mentionedSections);
     const counts = buildImageSearchCounts(mentionedSections);
     console.log('[promptEnhancer] Image queries:', JSON.stringify(queries));
@@ -3234,62 +3736,38 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const layoutArchetypeLine = buildLayoutArchetypeLine(detectedTheme);
   const signatureMovesBlock = buildSignatureMovesBlock(detectedTheme);
   const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, sectionLabels);
+  const effectDirectiveBlock = buildEffectDirectiveBlock(detectedTheme);
 
-  const requirements = extractRequirementLines(userPrompt).slice(0, 20);
+  const requirements = extractRequirementLines(analysisPrompt).slice(0, 20);
   const requirementsBlock =
     requirements.length > 0 ? `\nREQUIREMENTS (must implement):\n- ${requirements.join('\n- ')}` : '';
 
   console.log('[promptEnhancer] Before buildImageSuggestions:', {
     mentionedSections,
-    wantsImagesResult: wantsImages(userPrompt, mentionedSections),
+    wantsImagesResult: wantsImages(analysisPrompt, mentionedSections),
     imagesHero: images.hero?.slice(0, 1),
     imagesProducts: images.products?.slice(0, 1),
     imagesGallery: images.gallery?.slice(0, 1),
   });
 
-  const imageSuggestions = wantsImages(userPrompt, mentionedSections)
+  const imageSuggestions = wantsImages(analysisPrompt, mentionedSections)
     ? buildImageSuggestions(mentionedSections, images)
     : '';
   console.log('[promptEnhancer] imageSuggestions result:', imageSuggestions?.substring(0, 200));
   const imagePrompt = imageSuggestions ? `\n${imageSuggestions}` : '';
+  const colorDirectiveBlock = buildColorDirectiveBlock(finalColors);
 
-  // --- Dynamic Component Suggestions ---
-  let componentSuggestions = '';
-  try {
-    const registry = { components: [] }; // buildIndex disabled
-    // Simple logic: find components that match the detected theme or section keywords
-    const relevant = registry.components.filter(c => {
-      const text = (c.name + ' ' + c.category + ' ' + (c.tags?.join(' ') || '')).toLowerCase();
-      // Only suggest high-quality visual components
-      const isVisual = text.includes('card') || text.includes('grid') || text.includes('hero') || text.includes('text') || text.includes('button') || text.includes('nav');
-      if (!isVisual) return false;
-
-      // Allow any high-quality component, but boost theme matches
-      return true;
-    });
-
-    if (relevant.length > 0) {
-      // Pick 3 random distinct components to suggest
-      const suggestions = shuffleList(relevant).slice(0, 3);
-      componentSuggestions = `
-SUGGESTED LIBRARY COMPONENTS (You MUST use these if applicable):
-${suggestions.map(c => `- ${c.name} (from ${c.source}): ${c.description}. Use for: ${c.category} or similar sections.`).join('\n')}
-`;
-      console.log('[promptEnhancer] Injected component suggestions:', suggestions.map(s => s.name));
-    }
-  } catch (e) {
-    console.warn('[promptEnhancer] Failed to get component suggestions:', e);
-  }
-
+  const sectionVariantBlock = buildSectionVariantBlock(mentionedSections, lowerPrompt, sectionLabels);
+  const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, sectionLabels);
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
   const variationLine =
     `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
 
-  const enhancedPrompt = `${userPrompt}
-${brandLine}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${requirementsBlock}${layoutSuggestions ? `\n${layoutSuggestions}` : ''}${componentSuggestions}${templateGuard}${variationLine}
-${imagePrompt ? `\nIMAGES:\n${imagePrompt}` : ''}
+  const enhancedPrompt = `${promptWithLayout}
+${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${sectionVariantBlock}${requirementsBlock}${layoutSuggestions ? `
+${layoutSuggestions}` : ''}${effectDirectiveBlock}${componentDirectivesBlock}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   console.log('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
@@ -3300,8 +3778,8 @@ ${imagePrompt ? `\nIMAGES:\n${imagePrompt}` : ''}
       ? `\nSections: ${mentionedSections.map((section) => sectionLabels[section] ?? section).join(', ')}`
       : '';
   console.log('[promptEnhancer] shortSectionsLine result:', shortSectionsLine);
-  const displayPrompt = `${userPrompt}${shortSectionsLine}
-[Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
+  const displayPrompt = analysisPrompt;
+
 
 
   console.log('[promptEnhancer] FINAL RESULT:', {
@@ -3311,7 +3789,7 @@ ${imagePrompt ? `\nIMAGES:\n${imagePrompt}` : ''}
     mentionedSections: mentionedSections,
   });
 
-  const imageSectionKeys = wantsImages(userPrompt, mentionedSections)
+  const imageSectionKeys = wantsImages(analysisPrompt, mentionedSections)
     ? mentionedSections.filter((section) => ['hero', 'gallery', 'products', 'editorial'].includes(section))
     : [];
 
@@ -3351,7 +3829,7 @@ ${imagePrompt ? `\nIMAGES:\n${imagePrompt}` : ''}
 
   return {
 
-    originalPrompt: userPrompt,
+    originalPrompt: analysisPrompt,
 
     enhancedPrompt,
 

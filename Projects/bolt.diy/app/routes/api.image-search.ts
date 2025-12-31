@@ -78,8 +78,9 @@ const DEFAULT_COUNTS: Required<ImageSearchCounts> = {
 };
 
 const pickQuery = (queries?: string[]): string => {
-  if (!queries || queries.length === 0) return '';
-  return queries.find((value) => value.trim().length > 0) ?? '';
+  const list = (queries ?? []).map((value) => value.trim()).filter(Boolean);
+  if (list.length === 0) return '';
+  return list[Math.floor(Math.random() * list.length)];
 };
 
 const clampCount = (value: number | undefined, max: number): number => {
@@ -96,17 +97,38 @@ const buildSourceFallback = (query: string, count: number, width: number) => {
   if (!query) return [];
   const height = Math.round(width * 0.6);
   return Array.from({ length: count }, (_value, index) => {
-    // Pollinations.ai provides AI-generated images
     const seed = Date.now() + Math.floor(Math.random() * 10000) + index;
-    // Format: https://image.pollinations.ai/prompt/{prompt}?width={width}&height={height}&nologo=true&seed={seed}
-    const encodedQuery = encodeURIComponent(query);
-    return `https://image.pollinations.ai/prompt/${encodedQuery}?width=${width}&height=${height}&nologo=true&seed=${seed}`;
+    const encodedQuery = encodeURIComponent(query).replace(/%2C/g, ',');
+    return `https://source.unsplash.com/${width}x${height}/?${encodedQuery}&sig=${seed}`;
   });
 };
 
 const pickRandomPage = (max: number = 5) => Math.floor(Math.random() * max) + 1;
 
-async function fetchUnsplash(query: string, count: number, orientation: string, page: number, accessKey?: string) {
+async function fetchUnsplashRandom(query: string, count: number, orientation: string, accessKey?: string) {
+  if (!accessKey) return [];
+  const url = new URL('https://api.unsplash.com/photos/random');
+  url.searchParams.set('query', query);
+  url.searchParams.set('count', String(count));
+  url.searchParams.set('orientation', orientation);
+  url.searchParams.set('content_filter', 'high');
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Client-ID ${accessKey}`,
+      'Accept-Version': 'v1',
+    },
+  });
+
+  if (!response.ok) return [];
+  const data = (await response.json()) as
+    | { urls?: Record<string, string> }
+    | Array<{ urls?: Record<string, string> }>;
+  const items = Array.isArray(data) ? data : [data];
+  return items.map((item) => item.urls?.regular).filter((value): value is string => Boolean(value));
+}
+
+async function fetchUnsplashSearch(query: string, count: number, orientation: string, page: number, accessKey?: string) {
   if (!accessKey) return [];
   const url = new URL('https://api.unsplash.com/search/photos');
   url.searchParams.set('query', query);
@@ -118,6 +140,7 @@ async function fetchUnsplash(query: string, count: number, orientation: string, 
   const response = await fetch(url.toString(), {
     headers: {
       Authorization: `Client-ID ${accessKey}`,
+      'Accept-Version': 'v1',
     },
   });
 
@@ -161,21 +184,31 @@ async function searchImages(
   const unsplashKey = getEnvVar(context, 'UNSPLASH_ACCESS_KEY');
   const pexelsKey = getEnvVar(context, 'PEXELS_API_KEY');
 
-  const unsplashResults = await fetchUnsplash(query, count, orientation, page, unsplashKey).catch((error) => {
+  const unsplashRandom = await fetchUnsplashRandom(query, count, orientation, unsplashKey).catch((error) => {
     logger.warn('Unsplash fetch failed', error);
     return [];
   });
 
-  if (unsplashResults.length >= count) return unsplashResults.slice(0, count);
+  let combined = [...unsplashRandom];
+  if (combined.length < count) {
+    const remaining = count - combined.length;
+    const unsplashSearch = await fetchUnsplashSearch(query, remaining, orientation, page, unsplashKey).catch((error) => {
+      logger.warn('Unsplash search failed', error);
+      return [];
+    });
+    combined = [...combined, ...unsplashSearch];
+  }
 
-  const remaining = count - unsplashResults.length;
+  if (combined.length >= count) return combined.slice(0, count);
+
+  const remaining = count - combined.length;
   const pexelsResults = await fetchPexels(query, remaining, orientation, page, pexelsKey).catch((error) => {
     logger.warn('Pexels fetch failed', error);
     return [];
   });
 
-  const combined = [...unsplashResults, ...pexelsResults];
-  if (combined.length > 0) return combined.slice(0, count);
+  const withPexels = [...combined, ...pexelsResults];
+  if (withPexels.length > 0) return withPexels.slice(0, count);
 
   return buildSourceFallback(query, count, fallbackWidth);
 }
@@ -185,7 +218,17 @@ function buildCacheKey(payload: ImageSearchPayload) {
 }
 
 function normalizeList(values?: string[]) {
-  return (values ?? []).filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values ?? []) {
+    const trimmed = value?.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+  }
+
+  return out;
 }
 
 export async function action({ context, request }: ActionFunctionArgs) {

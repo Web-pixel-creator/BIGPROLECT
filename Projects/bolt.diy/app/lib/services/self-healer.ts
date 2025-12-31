@@ -26,7 +26,7 @@ export function analyzeError(logLine: string): { file: string; type: string } | 
     }
 
     // Pattern: Unclosed string or general syntax error that usually points to a file
-    if (logLine.includes('SyntaxError') || logLine.includes('Parse error')) {
+    if (logLine.includes('SyntaxError') || logLine.includes('Parse error') || logLine.includes('Unexpected token')) {
         const match = logLine.match(/(\/home\/project\/[\w\-\/]+\.(?:tsx|jsx|ts|js))/);
         if (match) {
             return { file: match[1], type: 'syntax-error' };

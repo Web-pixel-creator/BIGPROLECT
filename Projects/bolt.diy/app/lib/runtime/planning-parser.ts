@@ -18,20 +18,18 @@ export function parsePlanningBlock(content: string): { planning: PlanningData | 
     return { planning, cleanContent };
   }
 
-  // Try to find planning text before artifacts
-  const beforeArtifact = content.split(/<boltArtifact/)[0];
-  if (beforeArtifact && beforeArtifact.trim().length > 50) {
-    const potentialPlan = beforeArtifact.trim();
-    if (looksLikePlanningSection(potentialPlan)) {
-      planning = parseFreeFormPlanning(potentialPlan);
-      if (planning && hasEnoughPlanningData(planning)) {
-        cleanContent = content.slice(beforeArtifact.length).trim();
-        return { planning, cleanContent };
-      }
-    }
+  return { planning: null, cleanContent: content };
+}
+
+function hasExplicitPlanCue(text: string): boolean {
+  const head = text.slice(0, 400);
+  if (/\b(plan|steps|roadmap|outline|implementation plan)\b/i.test(head)) {
+    return true;
   }
 
-  return { planning: null, cleanContent: content };
+  const hasBullets = /(?:^|\n)\s*[-*]\s+\w+/.test(head);
+  const hasNumbered = /(?:^|\n)\s*\d+\.\s+\w+/.test(head);
+  return /\b(plan|steps|roadmap|outline)\b/i.test(text) && (hasBullets || hasNumbered);
 }
 
 function makePlanId(seed: string): string {

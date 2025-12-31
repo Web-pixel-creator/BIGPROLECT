@@ -191,7 +191,7 @@ export function buildEffectRecipesPromptSection(userPrompt: string, opts?: Effec
       const fitsBudget = normalized.length <= remainingCodeChars;
 
       if (fitsSingle && fitsBudget) {
-        lines.push(`\nCreate file: \`src/components/effects/${id}.tsx\``);
+        lines.push(`\nInline component in \`src/App.tsx\` (define a helper component above App).`);
         lines.push('```tsx');
         lines.push(normalized.trim());
         lines.push('```');

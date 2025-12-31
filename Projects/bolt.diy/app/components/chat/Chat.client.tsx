@@ -20,7 +20,7 @@ import { useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
-import { enhancePromptWithDesignSystem, shouldEnhancePrompt } from '~/lib/services/promptEnhancer';
+import { enhancePromptWithDesignSystem, shouldEnhancePrompt, type EnhancedPrompt } from '~/lib/services/promptEnhancer';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
 import { supabaseConnection } from '~/lib/stores/supabase';
@@ -29,8 +29,107 @@ import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
 import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
+import { createLayoutSeed, generateLayoutStrategy, getLayoutInstructions } from '~/lib/services/layout-mutator';
+import type { GenerationSummary } from './GenerationSummaryCard';
 
 const logger = createScopedLogger('Chat');
+
+const decodePromptValue = (value: string): string => {
+  if (!value || !/%[0-9A-Fa-f]{2}/.test(value)) {
+    return value;
+  }
+
+  try {
+    const decoded = decodeURIComponent(value.replace(/\+/g, ' '));
+    return decoded !== value ? decoded : value;
+  } catch {
+    return value;
+  }
+};
+
+const THEME_SUMMARIES: Record<
+  string,
+  { intro: string; colors: string; typography: string; animations: string }
+> = {
+  food: {
+    intro: 'a warm, appetizing meal kit homepage inspired by modern meal services.',
+    colors: 'Warm coral primary, sage green accent, cream backgrounds',
+    typography: 'Display serif headings with clean sans-serif body',
+    animations: 'Gentle fade-ins, hover lifts, smooth transitions',
+  },
+  vinyl: {
+    intro: 'a vintage vinyl marketplace with gold and cream accents on deep charcoal.',
+    colors: 'Deep charcoal base with gold and cream accents',
+    typography: 'Elegant display serif with condensed accents',
+    animations: 'Subtle glows, hover lifts, smooth transitions',
+  },
+  default: {
+    intro: 'a high-quality landing page tailored to the prompt.',
+    colors: 'Balanced palette aligned to the prompt',
+    typography: 'Strong display headings with clean body text',
+    animations: 'Gentle fade-ins, hover lifts, smooth transitions',
+  },
+};
+
+function extractBrandNameFromPrompt(prompt: string): string | null {
+  const match = prompt.match(/(?:called|named)\s+["'`“”]?([^"'`\n]{2,40})["'`“”]?/i);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  return null;
+}
+
+function extractSectionsFromPrompt(prompt: string): string[] {
+  const lines = prompt
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const sections = lines
+    .filter((line) => /^[-*]\s+/.test(line))
+    .map((line) => line.replace(/^[-*]\s+/, ''))
+    .filter((line) => !/^design style|^design system|^style:/i.test(line));
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const section of sections) {
+    const key = section.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(section);
+  }
+
+  return unique.slice(0, 8);
+}
+
+function buildGenerationSummary(prompt: string, enhanced?: EnhancedPrompt): GenerationSummary {
+  const theme = enhanced?.detectedTheme || 'default';
+  const themeSummary = THEME_SUMMARIES[theme] || THEME_SUMMARIES.default;
+  const brandName = extractBrandNameFromPrompt(prompt) || 'your project';
+
+  const colors = enhanced?.colors;
+  const colorLine = colors
+    ? `${themeSummary.colors} (${colors.dark}, ${colors.light}, ${colors.accent})`
+    : themeSummary.colors;
+
+  const sectionsFromContract =
+    enhanced?.sectionContract?.order?.map((section) => {
+      const labels = enhanced.sectionContract?.labels || {};
+      return labels[section] || section;
+    }) || [];
+
+  const sections = sectionsFromContract.length > 0 ? sectionsFromContract : extractSectionsFromPrompt(prompt);
+
+  return {
+    title: `Building ${brandName} - ${themeSummary.intro}`,
+    designSystem: {
+      colors: colorLine,
+      typography: themeSummary.typography,
+      animations: themeSummary.animations,
+    },
+    sections,
+  };
+}
 
 export function Chat() {
   renderLogger.trace('Chat');
@@ -116,6 +215,7 @@ export const ChatImpl = memo(
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+    const [generationSummary, setGenerationSummary] = useState<GenerationSummary | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
     const autoFixKeysRef = useRef<Set<string>>(new Set());
 
@@ -178,10 +278,11 @@ export const ChatImpl = memo(
         logger.debug('Finished streaming');
       },
       initialMessages,
-      initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',
+      initialInput: decodePromptValue(Cookies.get(PROMPT_COOKIE_KEY) || ''),
     });
     useEffect(() => {
-      const prompt = searchParams.get('prompt');
+      const rawPrompt = searchParams.get('prompt');
+      const prompt = rawPrompt ? decodePromptValue(rawPrompt) : '';
 
       // console.log(prompt, searchParams, model, provider);
 
@@ -203,6 +304,12 @@ export const ChatImpl = memo(
     useEffect(() => {
       chatStore.setKey('started', initialMessages.length > 0);
     }, []);
+
+    useEffect(() => {
+      if (!isLoading && !fakeLoading) {
+        setGenerationSummary(null);
+      }
+    }, [isLoading, fakeLoading]);
 
     useEffect(() => {
       processSampledMessages({
@@ -407,116 +514,146 @@ export const ChatImpl = memo(
       return attachments;
     };
 
-    const sendMessage = async (_event: React.UIEvent, messageInput?: string) => {
+    const sendMessage = async (_event: React.UIEvent, messageInput?: string): Promise<boolean> => {
       const messageContent = messageInput || input;
+      const originalInput = messageContent;
 
       if (!messageContent?.trim()) {
-        return;
+        return false;
       }
 
       if (isLoading) {
         abort();
-        return;
+        return false;
       }
 
-      let finalMessageContent = messageContent;
-      let displayMessageContent = messageContent; // What user sees in chat
-      const isDesignPrompt = shouldEnhancePrompt(messageContent);
+      try {
+        let finalMessageContent = messageContent;
+        let displayMessageContent = messageContent; // What user sees in chat
+        let summary: GenerationSummary | null = null;
+        const isDesignPrompt = shouldEnhancePrompt(messageContent);
 
-      // Enhance prompt with design system if it's a design/website request.
-      if (isDesignPrompt) {
-        const enhanced = await enhancePromptWithDesignSystem(messageContent);
-        finalMessageContent = enhanced.enhancedPrompt;
-        displayMessageContent = enhanced.displayPrompt ?? messageContent;
-        if (enhanced.sectionContract?.order?.length) {
-          workbenchStore.setPendingSectionContract(enhanced.sectionContract);
+        // Enhance prompt with design system if it's a design/website request.
+        if (isDesignPrompt) {
+          try {
+            // Inject Layout Mutation to guarantee uniqueness
+            const baseSeed = createLayoutSeed(messageContent);
+            const variation = Math.random() * 1000;
+            const layoutStrategy = generateLayoutStrategy(baseSeed + variation);
+            const layoutInstructions = getLayoutInstructions(layoutStrategy);
+
+            // Append instructions invisibly to the enhancer
+            const mutatedContent = `${messageContent}\n\n${layoutInstructions}`;
+
+            const enhanced = await enhancePromptWithDesignSystem(mutatedContent);
+            finalMessageContent = enhanced.enhancedPrompt;
+            displayMessageContent = enhanced.displayPrompt ?? messageContent;
+            summary = buildGenerationSummary(messageContent, enhanced);
+            if (enhanced.sectionContract?.order?.length) {
+              workbenchStore.setPendingSectionContract(enhanced.sectionContract);
+            } else {
+              workbenchStore.clearPendingSectionContract();
+            }
+            console.log('=== PROMPT ENHANCER DEBUG ===');
+            console.log('Theme:', enhanced.detectedTheme);
+            console.log('Images:', JSON.stringify(enhanced.images, null, 2));
+            console.log('Image prompt:', enhanced.imagePrompt);
+            console.log('Enhanced prompt (first 800 chars):', enhanced.enhancedPrompt?.substring(0, 800));
+            console.log('=============================');
+          } catch (enhanceError: any) {
+            logger.error('prompt enhancer failed', enhanceError);
+            workbenchStore.clearPendingSectionContract();
+            finalMessageContent = messageContent;
+            displayMessageContent = messageContent;
+            summary = buildGenerationSummary(messageContent);
+            const errorMessage =
+              typeof enhanceError?.message === 'string' && enhanceError.message.trim().length > 0
+                ? enhanceError.message.trim()
+                : 'Unknown error';
+            const shortMessage = errorMessage.length > 140 ? `${errorMessage.slice(0, 137)}...` : errorMessage;
+            toast.error(`Prompt enhancer failed (${shortMessage}). Using the original prompt.`);
+          }
         } else {
           workbenchStore.clearPendingSectionContract();
         }
-        console.log('=== PROMPT ENHANCER DEBUG ===');
-        console.log('Theme:', enhanced.detectedTheme);
-        console.log('Images:', JSON.stringify(enhanced.images, null, 2));
-        console.log('Image prompt:', enhanced.imagePrompt);
-        console.log('Enhanced prompt (first 800 chars):', enhanced.enhancedPrompt?.substring(0, 800));
-        console.log('=============================');
-      } else {
-        workbenchStore.clearPendingSectionContract();
-      }
 
-      if (selectedElement) {
-        console.log('Selected Element:', selectedElement);
+        setGenerationSummary(summary);
 
-        const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
-        finalMessageContent = `${finalMessageContent}\n\n${elementInfo}`;
-      }
+        if (selectedElement) {
+          console.log('Selected Element:', selectedElement);
 
-      runAnimation();
+          const elementInfo = `<div class=\"__boltSelectedElement__\" data-element='${JSON.stringify(selectedElement)}'>${JSON.stringify(`${selectedElement.displayText}`)}</div>`;
+          finalMessageContent = `${finalMessageContent}\n\n${elementInfo}`;
+        }
 
-      if (!chatStarted) {
-        setFakeLoading(true);
+        runAnimation();
 
-        if (autoSelectTemplate && !isDesignPrompt) {
-          const { template, title } = await selectStarterTemplate({
-            message: finalMessageContent,
-            model,
-            provider,
-          });
+        if (!chatStarted) {
+          setFakeLoading(true);
 
-          if (template !== 'blank') {
-            const temResp = await getTemplates(template, title).catch((e) => {
-              if (e.message.includes('rate limit')) {
-                toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
-              } else {
-                toast.warning('Failed to import starter template\n Continuing with blank template');
-              }
-
-              return null;
+          if (autoSelectTemplate && !isDesignPrompt) {
+            const { template, title } = await selectStarterTemplate({
+              message: finalMessageContent,
+              model,
+              provider,
             });
 
-            if (temResp) {
-              const { assistantMessage, userMessage } = temResp;
-              const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-              const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+            if (template !== 'blank') {
+              const temResp = await getTemplates(template, title).catch((e) => {
+                if (e.message.includes('rate limit')) {
+                  toast.warning('Rate limit exceeded. Skipping starter template\n Continuing with blank template');
+                } else {
+                  toast.warning('Failed to import starter template\n Continuing with blank template');
+                }
 
-              setMessages([
-                {
-                  id: `1-${new Date().getTime()}`,
-                  role: 'user',
-                  content: userMessageText,
-                  parts: createMessageParts(userMessageText, imageDataList),
-                  annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-                },
-                {
-                  id: `2-${new Date().getTime()}`,
-                  role: 'assistant',
-                  content: assistantMessage,
-                },
-                {
-                  id: `3-${new Date().getTime()}`,
-                  role: 'user',
-                  content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
-                  annotations: ['hidden'],
-                },
-              ]);
+                return null;
+              });
 
-              const reloadOptions =
-                uploadedFiles.length > 0
-                  ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
-                  : undefined;
+              if (temResp) {
+                const { assistantMessage, userMessage } = temResp;
+                const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+                const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
 
-              reload(reloadOptions);
-              setInput('');
-              Cookies.remove(PROMPT_COOKIE_KEY);
+                setMessages([
+                  {
+                    id: `1-${new Date().getTime()}`,
+                    role: 'user',
+                    content: userMessageText,
+                    parts: createMessageParts(userMessageText, imageDataList),
+                    annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+                  },
+                  {
+                    id: `2-${new Date().getTime()}`,
+                    role: 'assistant',
+                    content: assistantMessage,
+                  },
+                  {
+                    id: `3-${new Date().getTime()}`,
+                    role: 'user',
+                    content: `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userMessage}`,
+                    annotations: ['hidden'],
+                  },
+                ]);
 
-              setUploadedFiles([]);
-              setImageDataList([]);
+                const reloadOptions =
+                  uploadedFiles.length > 0
+                    ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+                    : undefined;
 
-              resetEnhancer();
+                reload(reloadOptions);
+                setInput('');
+                Cookies.remove(PROMPT_COOKIE_KEY);
 
-              textareaRef.current?.blur();
-              setFakeLoading(false);
+                setUploadedFiles([]);
+                setImageDataList([]);
 
-              return;
+                resetEnhancer();
+
+                textareaRef.current?.blur();
+                setFakeLoading(false);
+
+                return true;
+              }
             }
           }
         }
@@ -548,63 +685,66 @@ export const ChatImpl = memo(
 
         textareaRef.current?.blur();
 
-        return;
+        const modifiedFiles = workbenchStore.getModifiedFiles();
+
+        chatStore.setKey('aborted', false);
+
+        if (modifiedFiles !== undefined) {
+          const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+          const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+              annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+            },
+            attachmentOptions,
+          );
+
+          workbenchStore.resetAllFileModifications();
+        } else {
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+          const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+              annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+            },
+            attachmentOptions,
+          );
+        }
+
+        setInput('');
+        Cookies.remove(PROMPT_COOKIE_KEY);
+
+        setUploadedFiles([]);
+        setImageDataList([]);
+
+        resetEnhancer();
+
+        textareaRef.current?.blur();
+        return true;
+      } catch (sendError: any) {
+        logger.error('sendMessage failed', sendError);
+        setFakeLoading(false);
+        setInput(originalInput);
+        const rawMessage = sendError?.message || 'Failed to send message.';
+        const safeMessage = String(rawMessage).replace(/[^\x20-\x7E]+/g, ' ').trim();
+        toast.error(safeMessage || 'Failed to send message.');
+        return false;
       }
-
-      if (error != null) {
-        setMessages(messages.slice(0, -1));
-      }
-
-      const modifiedFiles = workbenchStore.getModifiedFiles();
-
-      chatStore.setKey('aborted', false);
-
-      if (modifiedFiles !== undefined) {
-        const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-          },
-          attachmentOptions,
-        );
-
-        workbenchStore.resetAllFileModifications();
-      } else {
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-          },
-          attachmentOptions,
-        );
-      }
-
-      setInput('');
-      Cookies.remove(PROMPT_COOKIE_KEY);
-
-      setUploadedFiles([]);
-      setImageDataList([]);
-
-      resetEnhancer();
-
-      textareaRef.current?.blur();
     };
 
     useEffect(() => {
@@ -670,6 +810,7 @@ export const ChatImpl = memo(
         onStreamingChange={(streaming) => {
           streamingState.set(streaming);
         }}
+        generationSummary={generationSummary}
         enhancingPrompt={enhancingPrompt}
         promptEnhanced={promptEnhanced}
         sendMessage={sendMessage}
@@ -679,6 +820,12 @@ export const ChatImpl = memo(
         setProvider={handleProviderChange}
         providerList={activeProviders}
         handleInputChange={(e) => {
+          const decodedValue = decodePromptValue(e.target.value);
+          if (decodedValue !== e.target.value) {
+            setInput(decodedValue);
+            debouncedCachePrompt({ target: { value: decodedValue } } as React.ChangeEvent<HTMLTextAreaElement>);
+            return;
+          }
           onTextareaChange(e);
           debouncedCachePrompt(e);
         }}

@@ -67,6 +67,13 @@ FORBIDDEN:
 - Markdown (\`\`\`tsx, \`\`\`js) inside file content - file content is RAW code only!
 - <boltAction>/<boltArtifact> tags inside code - these WRAP files, not go inside!
 
+3. ICONS: You have \`lucide-react\`. Use them generously to break up text.
+4. LAYOUT: Inspect the "CREATIVE DIRECTION" provided in the prompt.
+   - If the prompt suggests a "Grid Hero", do not build a centered text hero.
+   - If the prompt suggests "Sidebar", build a sidebar.
+5. ADVANCED COMPONENTS: You have access to a registry of "MagicUI", "Shadcn", "Aceternity", "KokonutUI", and "ReactBits" components.
+   - If fitting, implement complex UI like "Bento Grids", "Animated Lists", "Tracing Beams", or "Sparkles" by generating the code for them.
+   
 REQUIRED package.json:
 {
   "name": "project",

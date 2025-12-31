@@ -124,6 +124,20 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   // DEBUG: Log when sanitizer runs
   console.log('[CodeSanitizer] Running JSX syntax fixer...');
 
+  // Fix 0: Remove stray Markdown code fences that break TSX parsing.
+  const beforeFenceStrip = next;
+  next = next.replace(/^\s*```[a-zA-Z0-9_-]*\s*$/gm, '');
+  if (next !== beforeFenceStrip) {
+    warnings.push('Removed stray Markdown code fences from JSX content');
+  }
+
+  // Fix 0b: Remove inline Markdown fences that can terminate template literals.
+  const beforeInlineFenceStrip = next;
+  next = next.replace(/```[a-zA-Z0-9_-]*/g, '');
+  if (next !== beforeInlineFenceStrip) {
+    warnings.push('Removed inline Markdown code fences from JSX content');
+  }
+
   // Fix 1: Truncated className with embedded tag (className="...  <tag)
   // Pattern: className="...whitespace...<tagName
   // This catches cases like: className="flex gap-y-2            <a href=
@@ -150,6 +164,15 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     return `${start}${value.trim()}${quote}>${newline}${tag}`;
   });
 
+  // Fix 3b: backgroundImage: 'url('...')' (nested single quotes)
+  const beforeBackgroundImageQuotes = next;
+  next = next.replace(/(backgroundImage\s*:\s*)'url\('([^']+)'\)'/g, (_match, prefix, url) => {
+    return `${prefix}"url('${url}')"`;
+  });
+  if (next !== beforeBackgroundImageQuotes) {
+    warnings.push('Fixed backgroundImage url() quotes');
+  }
+
   // Fix 4: boltAction/boltArtifact tags embedded in attributes (from previous bug)
   const boltTagsInAttr = /(\bclassName\s*=\s*["'][^"']*)(<\/?bolt(?:Action|Artifact)[^>]*>)([^"']*["'])/gi;
   next = next.replace(boltTagsInAttr, (match, before, boltTag, after) => {
@@ -169,6 +192,48 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     if (tag.trim().endsWith('>')) return match;
     return `${tag.trim()}>${content}`;
   });
+
+  // Fix 6d: Incorrect motion.Slice tag (invalid component) -> motion.span
+  const beforeMotionSlice = next;
+  next = next.replace(/<\s*motion\.Slice\b/g, '<motion.span');
+  next = next.replace(/<\s*\/\s*motion\.Slice\s*>/g, '</motion.span>');
+  next = next.replace(/<\s*motion\.Span\b/g, '<motion.span');
+  next = next.replace(/<\s*\/\s*motion\.Span\s*>/g, '</motion.span>');
+  if (next !== beforeMotionSlice) {
+    warnings.push('Rewrote invalid motion.Slice/motion.Span tags to motion.span');
+  }
+
+  // Fix 6c: Ensure <input> is self-closed (void element in JSX)
+  const beforeInputSelfClose = next;
+  next = next.replace(/<input\b([^>]*?)>/gi, (match, attrs) => {
+    if (/\/\s*>$/.test(match)) return match;
+    return `<input${attrs} />`;
+  });
+  next = next.replace(/<\/input>/gi, '');
+  if (next !== beforeInputSelfClose) {
+    warnings.push('Self-closed <input> tags');
+  }
+
+  // Fix 6e: Merge or remove orphaned declarations (e.g. "const" on its own line)
+  const beforeLonelyDecl = next;
+  next = next.replace(/(^\s*(?:export\s+)?(?:const|let|var)\s*)\n\s*([A-Za-z_$][\w$]*)/gm, '$1 $2');
+  next = next.replace(/^\s*(?:export\s+)?(?:const|let|var|function|class)\s*$/gm, '');
+  if (next !== beforeLonelyDecl) {
+    warnings.push('Fixed orphaned declarations (const/let/var/function/class)');
+  }
+
+  // Fix 6b: Missing arrow after props destructuring
+  // Pattern: const Component = ({ ... return (
+  const missingArrowAfterProps =
+    /((?:export\s+)?const)\s+([A-Za-z0-9_]+)\s*=\s*\(\s*\{((?:(?!\}\)\s*=>)[\s\S])*)\n\s*return\s*\(/g;
+  const beforeMissingArrow = next;
+  next = next.replace(missingArrowAfterProps, (match, decl, name, props) => {
+    const cleanedProps = props.replace(/\}\s*$/, '');
+    return `${decl} ${name} = ({${cleanedProps}\n}) => (`;
+  });
+  if (next !== beforeMissingArrow) {
+    warnings.push('Fixed missing arrow function after props destructuring');
+  }
 
   // Fix 7: Broken component names where AI splits the name
   // Pattern: <A>pp /> or <R>eactDOM - AI truncates component name after first letter

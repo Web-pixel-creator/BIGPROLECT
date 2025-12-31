@@ -39,7 +39,7 @@ interface ChatBoxProps {
   TEXTAREA_MIN_HEIGHT: number;
   TEXTAREA_MAX_HEIGHT: number;
   isStreaming: boolean;
-  handleSendMessage: (event: React.UIEvent, messageInput?: string) => void;
+  handleSendMessage: (event: React.UIEvent, messageInput?: string) => void | Promise<void>;
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;

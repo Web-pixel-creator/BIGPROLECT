@@ -39,6 +39,42 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   ]);
 }
 
+function extractErrorText(error: any): string {
+  if (!error) return '';
+  if (typeof error === 'string') return error;
+  const message = typeof error.message === 'string' ? error.message : '';
+  const cause = typeof error.cause?.message === 'string' ? error.cause.message : '';
+  return `${message} ${cause}`.trim();
+}
+
+function isGeminiMissingPartsError(error: any): boolean {
+  const text = extractErrorText(error).toLowerCase();
+  return text.includes('invalid_type') && text.includes('candidates') && text.includes('content') && text.includes('parts');
+}
+
+function pickGoogleFallbackModel(current: string, models: Array<{ name: string }>): string | undefined {
+  const fallbackMap: Record<string, string[]> = {
+    'gemini-2.5-pro': ['gemini-1.5-pro', 'gemini-1.5-flash'],
+    'gemini-2.5-flash': ['gemini-2.0-flash', 'gemini-1.5-flash'],
+    'gemini-2.0-flash-thinking-exp-1219': ['gemini-2.0-flash', 'gemini-1.5-flash'],
+    'gemini-2.0-flash': ['gemini-1.5-flash'],
+    'gemini-1.5-pro': ['gemini-1.5-flash'],
+  };
+
+  const candidates = fallbackMap[current] || [];
+  for (const name of candidates) {
+    if (models.some((m) => m.name === name)) {
+      return name;
+    }
+  }
+  return undefined;
+}
+
+function capGoogleTokens(maxTokens: number, chatMode?: 'build' | 'discuss'): number {
+  const cap = chatMode === 'build' ? 8192 : 16384;
+  return Math.min(maxTokens, cap);
+}
+
 function getCompletionTokenLimit(modelDetails: any): number {
   // 1. If model specifies completion tokens, use that
   if (modelDetails.maxCompletionTokens && modelDetails.maxCompletionTokens > 0) {
@@ -353,11 +389,10 @@ export async function streamText(props: {
     const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
     const userPrompt = lastUserMessage?.content ?? '';
     const effectRecipes = buildEffectRecipesPromptSection(userPrompt, {
-      maxEffects: 4,
-      // Google tends to rate-limit more aggressively; keep prompt smaller by avoiding inlining effect code.
-      includeCode: !isGoogleProvider,
-      maxCodeChars: isGoogleProvider ? 4_000 : 12_000,
-      maxTotalCodeChars: isGoogleProvider ? 8_000 : 24_000,
+      maxEffects: isGoogleProvider ? 2 : 4,
+      includeCode: true,
+      maxCodeChars: isGoogleProvider ? 2_000 : 12_000,
+      maxTotalCodeChars: isGoogleProvider ? 4_000 : 24_000,
     });
 
     if (effectRecipes) {
@@ -515,6 +550,11 @@ export async function streamText(props: {
         )
       : options || {};
 
+  const adjustedOptions = { ...filteredOptions };
+  if (!isReasoning && chatMode === 'build' && typeof adjustedOptions.temperature !== 'number') {
+    adjustedOptions.temperature = 0.9;
+  }
+
   // DEBUG: Log filtered options
   logger.info(
     `DEBUG STREAM: Options filtering for model "${modelDetails.name}":`,
@@ -522,9 +562,9 @@ export async function streamText(props: {
       {
         isReasoning,
         originalOptions: options || {},
-        filteredOptions,
+        filteredOptions: adjustedOptions,
         originalOptionsKeys: options ? Object.keys(options) : [],
-        filteredOptionsKeys: Object.keys(filteredOptions),
+        filteredOptionsKeys: Object.keys(adjustedOptions),
         removedParams: options ? Object.keys(options).filter((key) => !(key in filteredOptions)) : [],
       },
       null,
@@ -532,21 +572,27 @@ export async function streamText(props: {
     ),
   );
 
-  const streamParams = {
-    model: provider.getModelInstance({
-      model: modelDetails.name,
-      serverEnv,
-      apiKeys,
-      providerSettings,
-    }),
+  const baseStreamParams = {
     system: chatMode === 'build' ? systemPrompt : discussPrompt(),
-    ...tokenParams,
     messages: convertToCoreMessages(processedMessages as any),
-    ...filteredOptions,
-
-    // Set temperature to 1 for reasoning models (required by OpenAI API)
-    ...(isReasoning ? { temperature: 1 } : {}),
+    ...adjustedOptions,
   };
+
+  const buildStreamParams = (modelName: string, maxTokens: number) => {
+    const reasoning = isReasoningModel(modelName);
+    return {
+      ...baseStreamParams,
+      model: provider.getModelInstance({
+        model: modelName,
+        serverEnv,
+        apiKeys,
+        providerSettings,
+      }),
+      ...(reasoning ? { maxCompletionTokens: maxTokens, temperature: 1 } : { maxTokens }),
+    };
+  };
+
+  const streamParams = buildStreamParams(modelDetails.name, safeMaxTokens);
 
   // DEBUG: Log final streaming parameters
   logger.info(
@@ -566,7 +612,42 @@ export async function streamText(props: {
     ),
   );
 
-  return await _streamText(streamParams);
+  try {
+    return await _streamText(streamParams);
+  } catch (error: any) {
+    let finalError = error;
+
+    if (isGoogleProvider && isGeminiMissingPartsError(finalError)) {
+      // Retry once on the same model for transient "missing parts" responses.
+      logger.warn('Gemini response missing parts; retrying once on the same model');
+      try {
+        return await _streamText(streamParams);
+      } catch (retryError: any) {
+        finalError = retryError;
+      }
+    }
+
+    if (isGoogleProvider && isGeminiMissingPartsError(finalError)) {
+      const availableModels = staticModels.length ? staticModels : provider.staticModels || [];
+      const fallbackName = pickGoogleFallbackModel(modelDetails.name, availableModels);
+
+      if (fallbackName) {
+        const fallbackDetails = availableModels.find((m) => m.name === fallbackName) || modelDetails;
+        let fallbackTokens = getCompletionTokenLimit(fallbackDetails);
+        fallbackTokens = Math.min(fallbackTokens, safeMaxTokens);
+        fallbackTokens = capGoogleTokens(fallbackTokens, chatMode);
+
+        logger.warn(
+          `Gemini response missing parts; retrying with fallback model ${fallbackName} (maxTokens=${fallbackTokens})`,
+        );
+
+        const fallbackParams = buildStreamParams(fallbackName, fallbackTokens);
+        return await _streamText(fallbackParams);
+      }
+    }
+
+    throw finalError;
+  }
 }
 
 // Component selection functions removed - component injection is disabled

@@ -31,6 +31,7 @@ import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
 import { useStore } from '@nanostores/react';
 import useViewport, { StickToBottom, useStickToBottomContext } from '~/lib/hooks';
 import { ChatBox } from './ChatBox';
+import type { GenerationSummary } from './GenerationSummaryCard';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
@@ -48,6 +49,7 @@ interface BaseChatProps {
   onStreamingChange?: (streaming: boolean) => void;
   messages?: Message[];
   description?: string;
+  generationSummary?: GenerationSummary | null;
   enhancingPrompt?: boolean;
   promptEnhanced?: boolean;
   input?: string;
@@ -57,7 +59,7 @@ interface BaseChatProps {
   setProvider?: (provider: ProviderInfo) => void;
   providerList?: ProviderInfo[];
   handleStop?: () => void;
-  sendMessage?: (event: React.UIEvent, messageInput?: string) => void;
+  sendMessage?: (event: React.UIEvent, messageInput?: string) => Promise<boolean> | boolean;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   enhancePrompt?: () => void;
   importChat?: (description: string, messages: Message[]) => Promise<void>;
@@ -113,6 +115,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       imageDataList = [],
       setImageDataList,
       messages,
+      generationSummary,
       actionAlert,
       clearAlert,
       deployAlert,
@@ -271,17 +274,30 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
-    const handleSendMessage = (event: React.UIEvent, messageInput?: string) => {
-      if (sendMessage) {
-        sendMessage(event, messageInput);
+    const handleSendMessage = async (event: React.UIEvent, messageInput?: string) => {
+      if (!sendMessage) {
+        return;
+      }
+
+      const fallbackValue = messageInput ?? input;
+      let sent = false;
+
+      try {
+        const result = await sendMessage(event, messageInput);
+        sent = typeof result === 'boolean' ? result : true;
+      } catch (error) {
+        console.error('sendMessage failed', error);
+        sent = false;
+      }
+
+      if (sent) {
         setSelectedElement?.(null);
 
         if (recognition) {
-          recognition.abort(); // Stop current recognition
-          setTranscript(''); // Clear transcript
+          recognition.abort();
+          setTranscript('');
           setIsListening(false);
 
-          // Clear the input by triggering handleInputChange with empty value
           if (handleInputChange) {
             const syntheticEvent = {
               target: { value: '' },
@@ -289,6 +305,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             handleInputChange(syntheticEvent);
           }
         }
+      } else if (fallbackValue && handleInputChange) {
+        const syntheticEvent = {
+          target: { value: fallbackValue },
+        } as React.ChangeEvent<HTMLTextAreaElement>;
+        handleInputChange(syntheticEvent);
       }
     };
 
@@ -385,6 +406,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         className="flex flex-col w-full flex-1 max-w-[640px] px-4 sm:px-5 pb-4 mx-auto z-1"
                         messages={messages}
                         isStreaming={isStreaming}
+                        generationSummary={generationSummary}
                         append={append}
                         chatMode={chatMode}
                         setChatMode={setChatMode}
