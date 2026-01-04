@@ -32,18 +32,27 @@ export function extractPropertiesFromMessage(message: Omit<Message, 'id'>): {
   const providerMatch = textContent.match(PROVIDER_REGEX);
 
   /*
-   * Extract model
-   * const modelMatch = message.content.match(MODEL_REGEX);
+   * Extract model and provider
    */
-  const model = modelMatch ? modelMatch[1] : DEFAULT_MODEL;
+  const model = modelMatch ? modelMatch[1].trim() : DEFAULT_MODEL;
+  let provider = providerMatch ? providerMatch[1].trim() : DEFAULT_PROVIDER.name;
 
-  /*
-   * Extract provider
-   * const providerMatch = message.content.match(PROVIDER_REGEX);
-   */
-  const provider = providerMatch ? providerMatch[1] : DEFAULT_PROVIDER.name;
+  // AGGRESSIVE INFERENCE: If the model name clearly belongs to a specific provider, force it.
+  const lowerModel = model.toLowerCase();
+  if (
+    lowerModel.includes('qwen') ||
+    lowerModel.includes('deepseek') ||
+    model.startsWith('Qwen/') ||
+    model.startsWith('deepseek-ai/') ||
+    model.startsWith('iic/')
+  ) {
+    // Only force if provider wasn't explicitly set to something else that is valid
+    if (provider === DEFAULT_PROVIDER.name || provider === 'Google') {
+      provider = 'ModelScope';
+    }
+  }
 
-  const cleanedContent = textContent.replace(MODEL_REGEX, '').replace(PROVIDER_REGEX, '');
+  const cleanedContent = textContent.replace(MODEL_REGEX, '').replace(PROVIDER_REGEX, '').trim();
 
   return { model, provider, content: cleanedContent };
 }

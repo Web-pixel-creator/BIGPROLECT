@@ -216,7 +216,12 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         const selectedProvider = selectedMeta?.provider;
         const selectedModel = selectedMeta?.model;
         const isGoogleProvider =
-          (selectedProvider || '').toLowerCase() === 'google' || Boolean(selectedModel && /gemini/i.test(selectedModel));
+          (selectedProvider || '').toLowerCase() === 'google' ||
+          Boolean(selectedModel && /gemini/i.test(selectedModel));
+
+        const isModelScopeProvider =
+          (selectedProvider || '').toLowerCase() === 'modelscope' ||
+          Boolean(selectedModel && (/qwen/i.test(selectedModel) || /deepseek/i.test(selectedModel) || selectedModel.startsWith('iic/')));
 
         if (processedMessages.length > 3) {
           messageSliceId = processedMessages.length - 3;
@@ -262,34 +267,29 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               message: 'Code Files Selected',
             } satisfies ProgressAnnotation);
           } else {
-            logger.debug('Generating Chat Summary');
-            dataStream.writeData({
-              type: 'progress',
-              label: 'summary',
-              status: 'in-progress',
-              order: progressCounter++,
-              message: 'Analysing Request',
-            } satisfies ProgressAnnotation);
-
-            // Create a summary of the chat
             console.log(`Messages count: ${processedMessages.length}`);
+            logger.info(`Extracting context using provider: ${selectedProvider}, model: ${selectedModel}`);
 
-            summary = await createSummary({
-              messages: [...processedMessages],
-              env: context.cloudflare?.env,
-              apiKeys,
-              providerSettings,
-              promptId,
-              contextOptimization,
-              onFinish(resp) {
-                if (resp.usage) {
-                  logger.debug('createSummary token usage', JSON.stringify(resp.usage));
-                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                }
-              },
-            });
+            try {
+              summary = await createSummary({
+                messages: [...processedMessages],
+                env: context.cloudflare?.env,
+                apiKeys,
+                providerSettings,
+                promptId,
+                contextOptimization,
+                onFinish(resp) {
+                  if (resp.usage) {
+                    logger.debug('createSummary token usage', JSON.stringify(resp.usage));
+                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                  }
+                },
+              });
+            } catch (err) {
+              logger.error('createSummary failed, skipping summary optimization:', err);
+            }
             dataStream.writeData({
               type: 'progress',
               label: 'summary',
@@ -316,24 +316,29 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             // Select context files
             console.log(`Messages count: ${processedMessages.length}`);
-            filteredFiles = await selectContext({
-              messages: [...processedMessages],
-              env: context.cloudflare?.env,
-              apiKeys,
-              files,
-              providerSettings,
-              promptId,
-              contextOptimization,
-              summary,
-              onFinish(resp) {
-                if (resp.usage) {
-                  logger.debug('selectContext token usage', JSON.stringify(resp.usage));
-                  cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
-                  cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
-                  cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
-                }
-              },
-            });
+            try {
+              filteredFiles = await selectContext({
+                messages: [...processedMessages],
+                env: context.cloudflare?.env,
+                apiKeys,
+                files,
+                providerSettings,
+                promptId,
+                contextOptimization,
+                summary: summary || '',
+                onFinish(resp) {
+                  if (resp.usage) {
+                    logger.debug('selectContext token usage', JSON.stringify(resp.usage));
+                    cumulativeUsage.completionTokens += resp.usage.completionTokens || 0;
+                    cumulativeUsage.promptTokens += resp.usage.promptTokens || 0;
+                    cumulativeUsage.totalTokens += resp.usage.totalTokens || 0;
+                  }
+                },
+              });
+            } catch (err) {
+              logger.error('selectContext failed, skipping file filtering optimization:', err);
+              filteredFiles = {}; // Fallback to no files or handle as needed
+            }
 
             if (filteredFiles) {
               logger.debug(`files in context : ${JSON.stringify(Object.keys(filteredFiles))}`);
@@ -439,18 +444,20 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               messageSliceId,
             });
 
-            result.mergeIntoDataStream(dataStream);
+            if (result) {
+              result.mergeIntoDataStream(dataStream);
 
-            (async () => {
-              for await (const part of result.fullStream) {
-                if (part.type === 'error') {
-                  const error: any = part.error;
-                  logger.error(`${error}`);
+              (async () => {
+                for await (const part of result.fullStream) {
+                  if (part.type === 'error') {
+                    const error: any = part.error;
+                    logger.error(`${error}`);
 
-                  return;
+                    return;
+                  }
                 }
-              }
-            })();
+              })();
+            }
 
             return;
           },
@@ -501,15 +508,22 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           }
           streamRecovery.stop();
         })();
-        result.mergeIntoDataStream(dataStream);
+        if (result) {
+          result.mergeIntoDataStream(dataStream);
+        }
       },
       onError: (error: any) => {
         // Provide more specific error messages for common issues
+        console.error('LLM Provider Error:', error);
         const errorMessage = error.message || 'Unknown error';
         const lowerErrorMessage = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
 
         if (errorMessage.includes('model') && errorMessage.includes('not found')) {
           return 'Custom error: Invalid model selected. Please check that the model name is correct and available.';
+        }
+
+        if (lowerErrorMessage.includes('alibaba cloud account')) {
+          return 'Custom error: Please bind your Alibaba Cloud account to use ModelScope inference. Visit https://modelscope.cn/my/overview to link your account.';
         }
 
         if (errorMessage.includes('Invalid JSON response')) {
@@ -526,9 +540,9 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (
-          errorMessage.includes('API key') ||
-          errorMessage.includes('unauthorized') ||
-          errorMessage.includes('authentication')
+          lowerErrorMessage.includes('api key') ||
+          lowerErrorMessage.includes('unauthorized') ||
+          lowerErrorMessage.includes('authentication')
         ) {
           return 'Custom error: Invalid or missing API key. Please check your API key configuration.';
         }
@@ -549,7 +563,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           return 'Custom error: Token limit exceeded. The conversation is too long for the selected model. Try using a model with larger context window or start a new conversation.';
         }
 
-        if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        if (lowerErrorMessage.includes('rate limit') || lowerErrorMessage.includes('429')) {
           return 'Custom error: API rate limit exceeded. Please wait a moment before trying again.';
         }
 

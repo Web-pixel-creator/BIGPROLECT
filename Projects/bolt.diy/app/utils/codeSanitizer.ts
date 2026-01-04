@@ -1,4 +1,5 @@
 import { path as nodePath } from './path';
+import { WEB_BASELINE_FILES } from './templateBaseline';
 
 type SanitizationResult = {
   content: string;
@@ -22,6 +23,33 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     return { content, changed: false, warnings: [] };
   }
 
+  const normalizedPath = relativePath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const warnings: string[] = [];
+  const baselineMain = WEB_BASELINE_FILES.find((file) => file.path === 'src/main.tsx')?.content;
+  const baselineIndexCss = WEB_BASELINE_FILES.find((file) => file.path === 'src/index.css')?.content;
+  if ((normalizedPath === 'src/main.tsx' || normalizedPath === 'src/main.jsx') && baselineMain) {
+    if (content.trim() !== baselineMain.trim()) {
+      warnings.push('Replaced src/main.tsx with baseline entry point');
+      return { content: baselineMain, changed: true, warnings };
+    }
+  }
+  if (normalizedPath === 'src/index.css' && baselineIndexCss) {
+    const normalizedContent = content.replace(/\r\n/g, '\n').trim();
+    const normalizedBaseline = baselineIndexCss.replace(/\r\n/g, '\n').trim();
+    const hasBaselinePrefix = normalizedContent.startsWith(normalizedBaseline);
+
+    if (!hasBaselinePrefix) {
+      warnings.push('Replaced src/index.css with baseline styles');
+      return { content: baselineIndexCss, changed: true, warnings };
+    }
+
+    const extraContent = normalizedContent.slice(normalizedBaseline.length);
+    if (extraContent.trim().length > 0 && !hasBalancedCssBraces(extraContent)) {
+      warnings.push('Removed malformed custom CSS after baseline');
+      return { content: baselineIndexCss, changed: true, warnings };
+    }
+  }
+
   const ext = nodePath.extname(relativePath).toLowerCase();
 
   if (relativePath.endsWith('package.json')) {
@@ -33,7 +61,6 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     return { content, changed: false, warnings: [] };
   }
 
-  const warnings: string[] = [];
   let next = content;
 
   if (/^vite\.config\./i.test(relativePath)) {
@@ -164,6 +191,28 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     return `${start}${value.trim()}${quote}>${newline}${tag}`;
   });
 
+  // Fix 3c: Attributes accidentally concatenated inside src/href values
+  // Pattern: src="...boltSeed=xyz   loading="lazy"
+  const beforeAttrSplit = next;
+  next = next.replace(
+    /\b(src|href)\s*=\s*"([^"]*?)\s+([a-zA-Z_:][\w:.-]*)=/g,
+    (_match, attr, value, nextAttr) => `${attr}="${value.trim()}" ${nextAttr}=`,
+  );
+  next = next.replace(
+    /\b(src|href)\s*=\s*'([^']*?)\s+([a-zA-Z_:][\w:.-]*)=/g,
+    (_match, attr, value, nextAttr) => `${attr}='${value.trim()}' ${nextAttr}=`,
+  );
+  if (next !== beforeAttrSplit) {
+    warnings.push('Split concatenated attributes inside src/href values');
+  }
+
+  // Fix 3d: Malformed data-* attribute missing "=" (e.g. data-cta")
+  const beforeDataAttrFix = next;
+  next = next.replace(/(\s)(data-[A-Za-z0-9_-]+)"/g, '$1$2=""');
+  if (next !== beforeDataAttrFix) {
+    warnings.push('Fixed malformed data-* attribute quotes');
+  }
+
   // Fix 3b: backgroundImage: 'url('...')' (nested single quotes)
   const beforeBackgroundImageQuotes = next;
   next = next.replace(/(backgroundImage\s*:\s*)'url\('([^']+)'\)'/g, (_match, prefix, url) => {
@@ -203,6 +252,47 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     warnings.push('Rewrote invalid motion.Slice/motion.Span tags to motion.span');
   }
 
+  // Fix 6d2: Fallback for non-standard Timeline component (prevents JSX mismatch crashes)
+  const beforeTimelineFallback = next;
+  next = next.replace(/<\s*Timeline\b/g, '<div');
+  next = next.replace(/<\s*\/\s*Timeline\s*>/g, '</div>');
+  if (next !== beforeTimelineFallback) {
+    warnings.push('Replaced Timeline component tags with div fallback');
+  }
+
+  // Fix 6d3: Fallback for TimelineItem component (avoid JSX closing tag errors)
+  const beforeTimelineItemFallback = next;
+  next = next.replace(/<\s*TimelineItem\b/g, '<div');
+  next = next.replace(/<\s*\/\s*TimelineItem\s*>/g, '</div>');
+  if (next !== beforeTimelineItemFallback) {
+    warnings.push('Replaced TimelineItem component tags with div fallback');
+  }
+
+  // Fix 6c0: Stray "required" text after input/textarea tags (/>required or >required)
+  const beforeRequiredAttr = next;
+  next = next.replace(/<(input|textarea)\b([^>]*?)\/>\s*required\b/gi, '<$1$2 required />');
+  next = next.replace(/<(input|textarea)\b([^>]*?)>\s*required\b/gi, '<$1$2 required>');
+  if (next !== beforeRequiredAttr) {
+    warnings.push('Moved stray required attribute text into input/textarea tags');
+  }
+
+  // Fix 6c0a: Stray boolean text before a self-closing tag (e.g. >last />)
+  const beforeTrailingBoolean = next;
+  next = next.replace(
+    /<([A-Za-z][A-Za-z0-9._-]*)([^>]*?)>\s*([A-Za-z0-9_-]+)\s*(\/>)/g,
+    '<$1$2 $3 $4',
+  );
+  if (next !== beforeTrailingBoolean) {
+    warnings.push('Moved stray boolean text into JSX attributes');
+  }
+
+  // Fix 6c0b: Duplicate self-closing sequences (e.g. "/> />")
+  const beforeDuplicateSelfClose = next;
+  next = next.replace(/\/>\s*\/>/g, '/>');
+  if (next !== beforeDuplicateSelfClose) {
+    warnings.push('Removed duplicate self-closing JSX tokens');
+  }
+
   // Fix 6c: Ensure <input> is self-closed (void element in JSX)
   const beforeInputSelfClose = next;
   next = next.replace(/<input\b([^>]*?)>/gi, (match, attrs) => {
@@ -220,6 +310,46 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   next = next.replace(/^\s*(?:export\s+)?(?:const|let|var|function|class)\s*$/gm, '');
   if (next !== beforeLonelyDecl) {
     warnings.push('Fixed orphaned declarations (const/let/var/function/class)');
+  }
+
+  // Fix 6e2: Stray "};" after destructured params before an arrow function.
+  const beforeArrowParamSemicolon = next;
+  const arrowLines = next.split('\n');
+  for (let i = 0; i < arrowLines.length; i += 1) {
+    if (!/^\s*}\s*;\s*$/.test(arrowLines[i])) continue;
+
+    let j = i + 1;
+    while (j < arrowLines.length && arrowLines[j].trim() === '') {
+      j += 1;
+    }
+
+    if (j >= arrowLines.length) continue;
+    if (/^\s*\}\)\s*=>/.test(arrowLines[j])) {
+      arrowLines.splice(i, 1);
+      i -= 1;
+      continue;
+    }
+    if (/^\s*\)\s*=>/.test(arrowLines[j])) {
+      arrowLines[i] = arrowLines[i].replace(/;\s*$/, '');
+    }
+  }
+  if (arrowLines.join('\n') !== next) {
+    next = arrowLines.join('\n');
+    warnings.push('Removed stray semicolons before arrow function params');
+  }
+
+  // Fix 6f: Missing closing brace in import list before "from"
+  const beforeImportBraceFix = next;
+  next = next.replace(
+    /(^\s*import\s*\{[^}\n]*?)\s+from\s+(['"][^'"]+['"]\s*;?)/gm,
+    (_match, importList, fromPart) => `${importList} } from ${fromPart}`,
+  );
+  next = next.replace(
+    /(^\s*import\s*\{[^}\n]*?)\s*\n(\s*from\s+['"][^'"]+['"]\s*;?)/gm,
+    (_match, importList, fromLine) => `${importList} }\n${fromLine}`,
+  );
+  if (next !== beforeImportBraceFix) {
+    warnings.push('Closed missing } in import list before from');
   }
 
   // Fix 6b: Missing arrow after props destructuring
@@ -477,7 +607,7 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   }
 
   // Fix 20: Unterminated image proxy string literals (common in long URLs).
-  const urlMarker = '__image_proxy__?url=';
+  const urlMarkers = ['__image_proxy__?url=', 'image_proxy?url='];
   const lines = next.split('\n');
   let lineChanged = false;
   const continuationPattern = /^[A-Za-z0-9%&=?.:_-]+/;
@@ -485,8 +615,12 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
-    const markerIndex = line.indexOf(urlMarker);
-    if (markerIndex === -1) continue;
+    const markerInfo = urlMarkers
+      .map((marker) => ({ marker, index: line.indexOf(marker) }))
+      .filter((entry) => entry.index !== -1)
+      .sort((a, b) => a.index - b.index)[0];
+    if (!markerInfo) continue;
+    const { marker, index: markerIndex } = markerInfo;
 
     const singleIndex = line.lastIndexOf("'", markerIndex);
     const doubleIndex = line.lastIndexOf('"', markerIndex);
@@ -494,7 +628,7 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     if (quoteIndex === -1) continue;
 
     const quoteChar = quoteIndex === singleIndex ? "'" : '"';
-    const closingIndex = line.indexOf(quoteChar, markerIndex + urlMarker.length);
+    const closingIndex = line.indexOf(quoteChar, markerIndex + marker.length);
     if (closingIndex !== -1) continue;
 
     let merged = line;
@@ -758,6 +892,13 @@ function sanitizeImages(code: string, warnings: string[]) {
   const proxyPrefix = '/__image_proxy__?url=';
   const proxyMarker = '/__image_proxy__?url=';
 
+  const beforeProxyNormalize = next;
+  next = next.replace(/\/image_proxy\?url=/g, '/__image_proxy__?url=');
+  next = next.replace(/(^|[^/])__image_proxy__\?url=/g, '$1/__image_proxy__?url=');
+  if (next !== beforeProxyNormalize) {
+    warnings.push('Normalized image proxy URLs to /__image_proxy__?url=');
+  }
+
   // Some generated projects reference non-existent local assets like /images/hero.jpg.
   const beforeLocalHero = next;
   next = next.replace(/(['"`])\/images\/hero\.(?:jpg|jpeg|png)\1/g, '$1/images/hero.svg$1');
@@ -967,11 +1108,106 @@ function sanitizeCssSyntaxErrors(code: string, warnings: string[]) {
   // Fix empty rule blocks (common when AI truncates)
   next = next.replace(/\{\s*\}/g, '{ }');
 
-  if (next !== before) {
+  const propertyFixApplied = next !== before;
+
+  // Strip JS-style single line comments that break PostCSS (keep protocol URLs)
+  const lines = next.split(/\r?\n/);
+  let cleanedLines = lines;
+  let removedLineComments = false;
+
+  cleanedLines = lines.map((line) => {
+    const commentIndex = line.indexOf('//');
+
+    if (commentIndex === -1) {
+      return line;
+    }
+
+    const beforeComment = line.slice(0, commentIndex);
+    const trimmed = beforeComment.trimEnd();
+
+    if (/(http:|https:|data:)$/.test(trimmed)) {
+      return line;
+    }
+
+    if (/url\([^)]*$/.test(trimmed)) {
+      return line;
+    }
+
+    removedLineComments = true;
+    return beforeComment.replace(/\s+$/, '');
+  });
+
+  if (removedLineComments) {
+    next = cleanedLines.join('\n');
+    warnings.push('Removed JS-style // comments from CSS');
+  }
+
+  // Close unbalanced block comments to avoid PostCSS parse errors
+  const openBlockComments = (next.match(/\/\*/g) ?? []).length;
+  const closeBlockComments = (next.match(/\*\//g) ?? []).length;
+
+  if (openBlockComments > closeBlockComments) {
+    next += '\n*/';
+    warnings.push('Closed unterminated CSS block comment');
+  }
+
+  if (propertyFixApplied) {
     warnings.push('Fixed truncated or malformed CSS properties (AI generation error)');
   }
 
   return next;
+}
+
+function hasBalancedCssBraces(css: string): boolean {
+  let depth = 0;
+  let inString: string | null = null;
+  let inComment = false;
+
+  for (let i = 0; i < css.length; i += 1) {
+    const ch = css[i];
+    const next = css[i + 1];
+
+    if (inComment) {
+      if (ch === '*' && next === '/') {
+        inComment = false;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (ch === '\\') {
+        i += 1;
+        continue;
+      }
+      if (ch === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (ch === '/' && next === '*') {
+      inComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = ch;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth < 0) {
+        return false;
+      }
+    }
+  }
+
+  return depth === 0 && !inComment && !inString;
 }
 
 function sanitizeViteConfigPlugins(code: string, warnings: string[]) {
@@ -1033,11 +1269,37 @@ function removeModuleImports(code: string, moduleName: string): string {
 function sanitizePackageJson(content: string): { content: string; warnings: string[] } {
   const warnings: string[] = [];
 
+  // Remove bad control characters that LLM sometimes generates
+  // eslint-disable-next-line no-control-regex
+  let cleanedContent = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+  // Remove any duplicated package.json content (LLM concatenation bug)
+  const packageJsonPattern = /\{\s*"name"\s*:\s*"[^"]*"/g;
+  const matches = cleanedContent.match(packageJsonPattern);
+  if (matches && matches.length > 1) {
+    // Multiple package.json starts detected - keep only the first complete one
+    const firstStart = cleanedContent.indexOf('{');
+    let braceCount = 0;
+    let endIndex = -1;
+    for (let i = firstStart; i < cleanedContent.length; i++) {
+      if (cleanedContent[i] === '{') braceCount++;
+      if (cleanedContent[i] === '}') braceCount--;
+      if (braceCount === 0) {
+        endIndex = i + 1;
+        break;
+      }
+    }
+    if (endIndex > 0) {
+      cleanedContent = cleanedContent.substring(firstStart, endIndex);
+      warnings.push('Removed duplicated package.json content');
+    }
+  }
+
   try {
-    const json = JSON.parse(content) as any;
+    const json = JSON.parse(cleanedContent) as any;
     const deps = (json.dependencies ?? {}) as Record<string, string>;
 
-    let changed = false;
+    let changed = cleanedContent !== content;
 
     for (const [dep, version] of Object.entries(DEFAULT_WEB_DEPS)) {
       const current = deps[dep];
@@ -1064,13 +1326,15 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
       return { content: JSON.stringify(json, null, 2) + '\n', warnings };
     }
 
-    return { content, warnings };
+    return { content: cleanedContent, warnings };
   } catch (_error) {
-    // If it's not valid JSON yet, don't touch it.
-    warnings.push('Skipped package.json sanitization (invalid JSON)');
-    return { content, warnings };
+    // If it's STILL not valid JSON after cleaning, skip it
+    warnings.push('Skipped package.json sanitization (invalid JSON after cleanup)');
+    // Return the cleaned content anyway (removed control chars)
+    return { content: cleanedContent, warnings };
   }
 }
+
 
 type Semver = { major: number; minor: number; patch: number };
 

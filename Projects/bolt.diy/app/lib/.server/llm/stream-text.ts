@@ -1,4 +1,4 @@
-﻿import { convertToCoreMessages, streamText as _streamText, type Message } from 'ai';
+﻿import { convertToCoreMessages, formatDataStreamPart, generateText, streamText as _streamText, type Message } from 'ai';
 import { MAX_TOKENS, PROVIDER_COMPLETION_LIMITS, isReasoningModel, type FileMap } from './constants';
 import { getSystemPrompt } from '~/lib/common/prompts/prompts';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, MODIFICATIONS_TAG_NAME, PROVIDER_LIST, WORK_DIR } from '~/utils/constants';
@@ -111,9 +111,9 @@ function estimateMessageChars(message: Omit<Message, 'id'>): number {
 
   const partsText = Array.isArray((message as any).parts)
     ? ((message as any).parts as any[])
-        .filter((part) => part && part.type === 'text' && typeof part.text === 'string')
-        .map((part) => part.text)
-        .join('')
+      .filter((part) => part && part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('')
     : '';
 
   return contentText.length + partsText.length;
@@ -357,7 +357,8 @@ export async function streamText(props: {
 
   // Cap Google output tokens to reduce rate-limit/quota spikes (Gemini 2.5 can advertise very large output limits).
   let safeMaxTokens = dynamicMaxTokens;
-  const isGoogleProvider = modelDetails?.provider === 'Google' || provider.name === 'Google';
+  const isGoogleProvider = (modelDetails?.provider || '').toLowerCase() === 'google' || provider.name.toLowerCase() === 'google';
+  const isModelScopeProvider = (modelDetails?.provider || '').toLowerCase() === 'modelscope' || provider.name.toLowerCase() === 'modelscope';
 
   if (isGoogleProvider) {
     const googleCap = chatMode === 'build' ? 8192 : 16384;
@@ -412,7 +413,7 @@ export async function streamText(props: {
       const userPrompt = lastUserMessage?.content ?? '';
       const intent = extractIntentFromPrompt(userPrompt);
       const selection = componentSelector.select(intent);
-
+ 
       // Avoid overwhelming context (rough guard by chars)
       let injection = promptBuilder.build(selection, userPrompt);
       const maxContextChars = 15_000; // Reduced from 80k to avoid token limits
@@ -425,7 +426,7 @@ export async function streamText(props: {
         };
         injection = promptBuilder.build(reduced, userPrompt);
       }
-
+ 
       if (injection.length > maxContextChars) {
         logger.warn(`Component injection skipped: too large (${injection.length} chars > ${maxContextChars})`);
       } else {
@@ -535,25 +536,26 @@ export async function streamText(props: {
   const filteredOptions =
     isReasoning && options
       ? Object.fromEntries(
-          Object.entries(options).filter(
-            ([key]) =>
-              ![
-                'temperature',
-                'topP',
-                'presencePenalty',
-                'frequencyPenalty',
-                'logprobs',
-                'topLogprobs',
-                'logitBias',
-              ].includes(key),
-          ),
-        )
+        Object.entries(options).filter(
+          ([key]) =>
+            ![
+              'temperature',
+              'topP',
+              'presencePenalty',
+              'frequencyPenalty',
+              'logprobs',
+              'topLogprobs',
+              'logitBias',
+            ].includes(key),
+        ),
+      )
       : options || {};
 
   const adjustedOptions = { ...filteredOptions };
   if (!isReasoning && chatMode === 'build' && typeof adjustedOptions.temperature !== 'number') {
     adjustedOptions.temperature = 0.9;
   }
+  const streamOnFinish = options?.onFinish;
 
   // DEBUG: Log filtered options
   logger.info(
