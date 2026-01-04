@@ -458,12 +458,16 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 const modelLower = modelId.toLowerCase();
                 if (modelLower.startsWith('iic/') || modelLower.startsWith('qwen/') || modelLower.startsWith('deepseek-ai/')) {
                   providerName = 'ModelScope';
+                } else if (modelLower.includes('mistral')) {
+                  providerName = 'Mistral';
                 } else if (modelId.includes('deepseek')) {
                   providerName = 'OpenRouter';
                 } else if (modelId.includes('llama')) {
                   providerName = 'Groq';
                 }
-                const providerInfo = props.providerList.find((p) => p.name === providerName);
+                const providerInfo =
+                  props.providerList.find((p) => p.name === providerName) ||
+                  (PROVIDER_LIST as ProviderInfo[]).find((p) => p.name === providerName);
                 if (providerInfo && props.setProvider) {
                   props.setProvider(providerInfo);
                 }

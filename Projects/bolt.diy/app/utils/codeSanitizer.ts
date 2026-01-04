@@ -27,6 +27,8 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   const warnings: string[] = [];
   const baselineMain = WEB_BASELINE_FILES.find((file) => file.path === 'src/main.tsx')?.content;
   const baselineIndexCss = WEB_BASELINE_FILES.find((file) => file.path === 'src/index.css')?.content;
+  const baselineViteConfig = WEB_BASELINE_FILES.find((file) => file.path === 'vite.config.ts')?.content;
+  const baselinePostcssConfig = WEB_BASELINE_FILES.find((file) => file.path === 'postcss.config.js')?.content;
   if ((normalizedPath === 'src/main.tsx' || normalizedPath === 'src/main.jsx') && baselineMain) {
     if (content.trim() !== baselineMain.trim()) {
       warnings.push('Replaced src/main.tsx with baseline entry point');
@@ -52,7 +54,7 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
 
   const ext = nodePath.extname(relativePath).toLowerCase();
 
-  if (relativePath.endsWith('package.json')) {
+  if (normalizedPath.endsWith('package.json')) {
     const result = sanitizePackageJson(content);
     return { content: result.content, changed: result.content !== content, warnings: result.warnings };
   }
@@ -63,11 +65,27 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
 
   let next = content;
 
-  if (/^vite\.config\./i.test(relativePath)) {
+  if (/^vite\.config\./i.test(normalizedPath)) {
+    next = deduplicateViteConfig(next, warnings);
     next = sanitizeViteConfigPlugins(next, warnings);
+    next = sanitizeViteConfigSyntax(next, warnings);
+    if (baselineViteConfig && !isLikelyValidViteConfig(next)) {
+      warnings.push('Replaced malformed vite.config with baseline config');
+      return { content: baselineViteConfig, changed: true, warnings };
+    }
   }
 
+  if (/^postcss\.config\./i.test(normalizedPath)) {
+    next = sanitizePostcssConfigSyntax(next, normalizedPath, warnings);
+    if (baselinePostcssConfig && !isLikelyValidPostcssConfig(next)) {
+      warnings.push('Replaced malformed postcss.config with baseline config');
+      return { content: baselinePostcssConfig, changed: true, warnings };
+    }
+  }
+
+
   if (ext === '.tsx' || ext === '.jsx') {
+    next = deduplicateTsxContent(next, warnings); // Fix LLM restart mid-generation
     next = sanitizeBoltTags(next, warnings); // Remove leaked boltAction/boltArtifact tags FIRST
     next = sanitizeJsxSyntaxErrors(next, warnings);
     next = sanitizeJsxComments(next, warnings);
@@ -148,9 +166,6 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const before = code;
   let next = code;
 
-  // DEBUG: Log when sanitizer runs
-  console.log('[CodeSanitizer] Running JSX syntax fixer...');
-
   // Fix 0: Remove stray Markdown code fences that break TSX parsing.
   const beforeFenceStrip = next;
   next = next.replace(/^\s*```[a-zA-Z0-9_-]*\s*$/gm, '');
@@ -211,6 +226,24 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   next = next.replace(/(\s)(data-[A-Za-z0-9_-]+)"/g, '$1$2=""');
   if (next !== beforeDataAttrFix) {
     warnings.push('Fixed malformed data-* attribute quotes');
+  }
+
+  // Fix 3e: Truncated JSX object literal in props with stray tag fragments (e.g. opacity</p>)
+  const beforeTruncatedPropObject = next;
+  const propLines = next.split('\n');
+  let truncatedPropFixed = false;
+  for (let i = 0; i < propLines.length; i += 1) {
+    const line = propLines[i];
+    if (!line.includes('={{')) continue;
+    if (line.includes('}}')) continue;
+    if (!/<\s*\/?[A-Za-z]/.test(line)) continue;
+
+    propLines[i] = line.replace(/(\b[A-Za-z0-9_]+\s*=\s*)\{\{[^<]*<.*$/, '$1{{}}');
+    truncatedPropFixed = true;
+  }
+  if (truncatedPropFixed) {
+    next = propLines.join('\n');
+    warnings.push('Repaired truncated JSX object literal with stray tag fragment');
   }
 
   // Fix 3b: backgroundImage: 'url('...')' (nested single quotes)
@@ -338,6 +371,42 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     warnings.push('Removed stray semicolons before arrow function params');
   }
 
+  // Fix 6e3: Remove duplicate arrow line "}) => (" after an arrow block.
+  const beforeDuplicateArrow = next;
+  const duplicateArrowLines = next.split('\n');
+  let duplicateArrowFixed = false;
+  for (let i = 0; i < duplicateArrowLines.length; i += 1) {
+    if (!/^\s*\}\)\s*=>\s*\(\s*$/.test(duplicateArrowLines[i])) {
+      continue;
+    }
+
+    let adjusted = false;
+    for (let j = i - 1; j >= 0; j -= 1) {
+      const prev = duplicateArrowLines[j];
+      if (prev.trim() === '') continue;
+
+      if (/=>\s*\{\s*$/.test(prev)) {
+        duplicateArrowLines[j] = prev.replace(/=>\s*\{\s*$/, '=> (');
+        adjusted = true;
+      } else if (/=>\s*\(\s*$/.test(prev)) {
+        adjusted = true;
+      }
+      break;
+    }
+
+    if (!adjusted) {
+      duplicateArrowLines[i] = duplicateArrowLines[i].replace(/\}\)\s*=>\s*\(/, 'return (');
+    } else {
+      duplicateArrowLines[i] = '';
+    }
+
+    duplicateArrowFixed = true;
+  }
+  if (duplicateArrowFixed) {
+    next = duplicateArrowLines.join('\n');
+    warnings.push('Fixed duplicate arrow function line after props destructuring');
+  }
+
   // Fix 6f: Missing closing brace in import list before "from"
   const beforeImportBraceFix = next;
   next = next.replace(
@@ -459,6 +528,14 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     next = next.replace(pattern, replacement);
   }
 
+  // Fix 7b: Truncated *Button component names (e.g. AnimatedSubscribeButt -> AnimatedSubscribeButton)
+  const beforeButtonTruncation = next;
+  next = next.replace(/<([A-Z][A-Za-z0-9_]*)Butt(?!on)(\b[^>]*)/g, '<$1Button$2');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9_]*)Butt(?!on)\s*>/g, '</$1Button>');
+  if (next !== beforeButtonTruncation) {
+    warnings.push('Expanded truncated *Butt component names to *Button');
+  }
+
   // Fix 8: Generic pattern for single uppercase letter followed by >lowercase
   // Catches: <A>ny, <B>utton, <C>omponent, etc.
   const genericBrokenTag = /<([A-Z])>([a-z]+)(\s|>|\/)/g;
@@ -470,7 +547,6 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   // Pattern: <UppercaseLowercase...>lowercase followed by space, >, / or attributes
   const pascalCaseBrokenTag = /<([A-Z][a-zA-Z]{1,20})>([a-z][a-zA-Z]{0,15})(\s|>|\/)/g;
   next = next.replace(pascalCaseBrokenTag, (match, prefix, suffix, ending) => {
-    console.log(`[CodeSanitizer] Fixed broken PascalCase: <${prefix}>${suffix} -> <${prefix}${suffix}`);
     return `<${prefix}${suffix}${ending}`;
   });
 
@@ -1210,6 +1286,386 @@ function hasBalancedCssBraces(css: string): boolean {
   return depth === 0 && !inComment && !inString;
 }
 
+function isLikelyValidViteConfig(code: string): boolean {
+  const trimmed = code.trim();
+  if (!trimmed) return false;
+
+  const hasExport =
+    /\bexport\s+default\b/.test(trimmed) ||
+    /\bmodule\.exports\s*=/.test(trimmed);
+
+  if (!hasExport) {
+    return false;
+  }
+
+  if (/(?:\]|\}|\))\s*\n\s*[A-Za-z_][A-Za-z0-9_-]*\s*:/.test(trimmed)) {
+    return false;
+  }
+
+  return hasBalancedJsDelimiters(trimmed);
+}
+
+function isLikelyValidPostcssConfig(code: string): boolean {
+  const trimmed = code.trim();
+  if (!trimmed) return false;
+
+  const withoutLeadingComments = trimmed.replace(
+    /^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)+/,
+    '',
+  );
+  const exportMatch = withoutLeadingComments.match(/\bexport\s+default\b|\bmodule\.exports\s*=/);
+
+  if (!exportMatch || exportMatch.index !== 0) {
+    return false;
+  }
+
+  if (!/\bplugins\s*:\s*\{/.test(withoutLeadingComments)) {
+    return false;
+  }
+
+  if (/(^|\n)\s*@(?:tailwind|apply|layer|import)\b/.test(withoutLeadingComments)) {
+    return false;
+  }
+
+  return hasBalancedJsDelimiters(withoutLeadingComments);
+}
+
+function sanitizePostcssConfigSyntax(code: string, normalizedPath: string, warnings: string[]): string {
+  const before = code;
+  let next = code;
+  const isCommonJs = /\.cjs$/i.test(normalizedPath);
+  let rewroteExport = false;
+
+  if (!isCommonJs && /^\s*module\.exports\s*=/m.test(next)) {
+    next = next.replace(/^\s*module\.exports\s*=\s*/gm, 'export default ');
+    rewroteExport = true;
+  } else if (isCommonJs && /^\s*export\s+default\b/m.test(next)) {
+    next = next.replace(/^\s*export\s+default\b/gm, 'module.exports =');
+    rewroteExport = true;
+  }
+
+  const postcssExportMatches = [...next.matchAll(/^\s*(?:module\.exports\s*=|export\s+default\b)/gm)];
+  if (postcssExportMatches.length > 1) {
+    const lastMatch = postcssExportMatches[postcssExportMatches.length - 1];
+    next = next.slice(lastMatch.index ?? 0).trimStart();
+    warnings.push('Removed duplicated postcss.config content (LLM restart detected)');
+  }
+
+  if (rewroteExport) {
+    warnings.push('Rewrote postcss.config export to match module type');
+  }
+
+  return next;
+}
+
+function hasBalancedJsDelimiters(code: string): boolean {
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  let parenDepth = 0;
+  let inString: string | null = null;
+  let inBlockComment = false;
+  let inLineComment = false;
+  let escaping = false;
+
+  for (let i = 0; i < code.length; i += 1) {
+    const ch = code[i];
+    const next = code[i + 1];
+
+    if (inLineComment) {
+      if (ch === '\n') {
+        inLineComment = false;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (ch === '*' && next === '/') {
+        inBlockComment = false;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaping = true;
+        continue;
+      }
+      if (ch === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (ch === '/' && next === '/') {
+      inLineComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '/' && next === '*') {
+      inBlockComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') {
+      inString = ch;
+      continue;
+    }
+
+    if (ch === '{') braceDepth += 1;
+    if (ch === '}') braceDepth -= 1;
+    if (ch === '[') bracketDepth += 1;
+    if (ch === ']') bracketDepth -= 1;
+    if (ch === '(') parenDepth += 1;
+    if (ch === ')') parenDepth -= 1;
+
+    if (braceDepth < 0 || bracketDepth < 0 || parenDepth < 0) {
+      return false;
+    }
+  }
+
+  return (
+    braceDepth === 0 &&
+    bracketDepth === 0 &&
+    parenDepth === 0 &&
+    !inString &&
+    !inBlockComment &&
+    !inLineComment
+  );
+}
+
+/**
+ * Deduplicate TSX/JSX content when LLM restarts generation mid-stream.
+ * This happens when Mistral or other LLMs generate part of a component,
+ * then restart and generate from imports again.
+ * 
+ * Pattern detected:
+ * - File has JSX closing tags (</Component>, </div>, etc.)
+ * - After that, import statements appear (which should be at the top)
+ * - We keep only the content from the last set of imports
+ * 
+ * Example broken content:
+ *   import React from 'react';
+ *   ... component code ...
+ *   </AuroraBackground>      <- first incomplete version ends
+ *   
+ *   import { useState } from 'react';  <- LLM restarted here!
+ *   ... complete component code ...
+ */
+function deduplicateTsxContent(code: string, warnings: string[]): string {
+  const before = code;
+
+  // Pattern 1: Import statement appears after a JSX closing tag
+  // This is a strong indicator that LLM restarted generation
+  // Match: </TagName> followed by whitespace and then import statement
+  const jsxCloseFollowedByImport = /<\/[A-Za-z][A-Za-z0-9._-]*>\s*\n[\s\n]*import\s+/g;
+  const matches = [...code.matchAll(jsxCloseFollowedByImport)];
+
+  if (matches.length > 0) {
+    // Find the last such pattern - this is where the final restart happened
+    const lastMatch = matches[matches.length - 1];
+    const matchEndIndex = lastMatch.index! + lastMatch[0].length;
+
+    // Find where the import statement starts (after the JSX close tag)
+    const afterJsxClose = code.substring(lastMatch.index!);
+    const importStart = afterJsxClose.search(/import\s+/);
+
+    if (importStart >= 0) {
+      const cutPoint = lastMatch.index! + importStart;
+      const result = code.substring(cutPoint).trimStart();
+
+      if (result !== before) {
+        warnings.push('Removed duplicated TSX content before imports (LLM restart detected)');
+        return result;
+      }
+    }
+  }
+
+  // Pattern 2: Multiple "import React" or "import { useState" at different positions
+  // This indicates the file was concatenated from multiple generation attempts
+  const reactImportPattern = /^import\s+(?:React|\{[^}]*(?:useState|useEffect|useRef)[^}]*\})\s+from\s+['"]react['"]/gm;
+  const reactImports = [...code.matchAll(reactImportPattern)];
+
+  if (reactImports.length > 1) {
+    // Multiple React imports found - keep from the last one
+    const lastImport = reactImports[reactImports.length - 1];
+    const result = code.substring(lastImport.index!);
+
+    if (result !== before) {
+      warnings.push('Removed duplicated React imports (LLM restart detected)');
+      return result;
+    }
+  }
+
+  // Pattern 3: "export default" or "export function" appearing twice
+  const exportPattern = /^export\s+(?:default|function\s+[A-Z])/gm;
+  const exports = [...code.matchAll(exportPattern)];
+
+  if (exports.length > 1) {
+    // Multiple exports - need to find where the second "file" starts
+    // Look for import statements before the last export
+    const lastExportIndex = exports[exports.length - 1].index!;
+    const beforeLastExport = code.substring(0, lastExportIndex);
+
+    // Find the last import block before this export
+    const importLines = beforeLastExport.split('\n');
+    let lastImportLineIndex = -1;
+
+    for (let i = importLines.length - 1; i >= 0; i--) {
+      if (importLines[i].trim().startsWith('import ')) {
+        // Found an import line - now find where this import block starts
+        for (let j = i; j >= 0; j--) {
+          const line = importLines[j].trim();
+          if (line.startsWith('import ') || line === '' || line.startsWith('//')) {
+            lastImportLineIndex = j;
+          } else {
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    if (lastImportLineIndex >= 0) {
+      // Skip empty lines at the start
+      while (lastImportLineIndex > 0 && importLines[lastImportLineIndex - 1].trim() === '') {
+        lastImportLineIndex--;
+      }
+
+      const cutPoint = importLines.slice(0, lastImportLineIndex).join('\n').length;
+      const result = code.substring(cutPoint).trimStart();
+
+      if (result !== before && result.startsWith('import')) {
+        warnings.push('Removed duplicated TSX export (LLM restart detected)');
+        return result;
+      }
+    }
+  }
+
+  return before;
+}
+
+/**
+ * Deduplicate file content when LLM restarts generation mid-stream.
+ * This happens when Mistral or other LLMs generate an incomplete first version,
+ * then restart and generate the complete version. We keep the last complete version.
+ * 
+ * Pattern detected:
+ * - File starts with `import ...` or `define...`
+ * - Mid-generation, same pattern appears again (restart)
+ * - Keep only the last occurrence of the complete file
+ */
+function deduplicateViteConfig(code: string, warnings: string[]): string {
+  const before = code;
+
+  // Pattern 1: Multiple "import { defineConfig" statements - keep last complete block
+  const defineConfigImport = /import\s*\{\s*defineConfig\s*\}/g;
+  const matches = [...code.matchAll(defineConfigImport)];
+
+  if (matches.length > 1) {
+    // Multiple defineConfig imports detected - LLM restarted generation
+    // Find the last occurrence and keep everything from there
+    const lastMatch = matches[matches.length - 1];
+    const lastIndex = lastMatch.index!;
+
+    // Look backwards to find the start of this complete file version
+    // Usually starts with 'import' at start of line
+    const beforeLast = code.substring(0, lastIndex);
+    const lines = beforeLast.split('\n');
+
+    // Find where the last complete version starts
+    // It should start with "import" on its own line
+    let cutPoint = lastIndex;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line === '' || line.startsWith('//')) {
+        continue;
+      }
+      // Found non-empty line before the duplicate import - cut here
+      cutPoint = lines.slice(0, i + 1).join('\n').length + 1; // +1 for newline
+      break;
+    }
+
+    // Keep only from the last complete version
+    const result = code.substring(cutPoint).trimStart();
+    if (result !== before) {
+      warnings.push('Removed duplicated vite.config content (LLM restart detected)');
+      return result;
+    }
+  }
+
+  // Pattern 2: Multiple "export default defineConfig" - keep last
+  const exportDefineConfig = /export\s+default\s+defineConfig\s*\(/g;
+  const exportMatches = [...code.matchAll(exportDefineConfig)];
+
+  if (exportMatches.length > 1) {
+    // Multiple exports - find last complete version
+    const lastExport = exportMatches[exportMatches.length - 1];
+    const lastExportIndex = lastExport.index!;
+
+    // Look for the corresponding import before this export
+    const sectionBeforeExport = code.substring(0, lastExportIndex);
+    const importMatches = [...sectionBeforeExport.matchAll(/import\s+/g)];
+
+    if (importMatches.length > 0) {
+      const lastImportBeforeExport = importMatches[importMatches.length - 1];
+
+      // Find start of line with this import
+      const beforeImport = code.substring(0, lastImportBeforeExport.index!);
+      const lastNewline = beforeImport.lastIndexOf('\n');
+      const cutPoint = lastNewline >= 0 ? lastNewline + 1 : 0;
+
+      const result = code.substring(cutPoint);
+      if (result !== before) {
+        warnings.push('Removed duplicated vite.config export (LLM restart detected)');
+        console.log('[CodeSanitizer] Removed duplicated vite.config export');
+        return result;
+      }
+    }
+  }
+
+  // Pattern 3: Generic duplicate detection - file contains same import line twice
+  const lines = code.split('\n');
+  const importLines = lines
+    .map((line, idx) => ({ line: line.trim(), idx }))
+    .filter(({ line }) => line.startsWith('import ') && line.includes('from'));
+
+  // Check for duplicate import lines
+  const seen = new Map<string, number>();
+  for (const { line, idx } of importLines) {
+    if (seen.has(line)) {
+      // Duplicate import found! Keep from the second occurrence
+      const prevIdx = seen.get(line)!;
+      // Find where the new "file" starts (likely a few lines before this duplicate)
+      let startIdx = idx;
+      for (let i = idx - 1; i > prevIdx; i--) {
+        const l = lines[i].trim();
+        if (l === '' || l.startsWith('//')) {
+          startIdx = i;
+        } else {
+          break;
+        }
+      }
+
+      const result = lines.slice(startIdx).join('\n').trimStart();
+      if (result !== before) {
+        warnings.push('Removed duplicated imports (LLM restart detected)');
+        console.log('[CodeSanitizer] Removed duplicated imports in vite.config');
+        return result;
+      }
+    }
+    seen.set(line, idx);
+  }
+
+  return before;
+}
+
 function sanitizeViteConfigPlugins(code: string, warnings: string[]) {
   const pluginRegex = /plugins\s*:\s*\[[^\]]*\]\s*,?/g;
   const matches = [...code.matchAll(pluginRegex)];
@@ -1240,6 +1696,67 @@ function sanitizeViteConfigPlugins(code: string, warnings: string[]) {
 
   warnings.push('Merged duplicate Vite plugins arrays');
   return next;
+}
+
+function sanitizeViteConfigSyntax(code: string, warnings: string[]) {
+  const before = code;
+  let next = code;
+
+  const beforePluginsComma = next;
+  next = next.replace(
+    /(plugins\s*:\s*\[[\s\S]*?\])(\s*\n\s*[A-Za-z_][A-Za-z0-9_-]*\s*:)/g,
+    (_match, pluginsBlock, nextProp) => {
+      if (pluginsBlock.trim().endsWith(',')) {
+        return `${pluginsBlock}${nextProp}`;
+      }
+
+      return `${pluginsBlock},${nextProp}`;
+    },
+  );
+  if (next !== beforePluginsComma) {
+    warnings.push('Added missing comma after Vite plugins array');
+  }
+
+  const lines = next.split('\n');
+  let changed = false;
+
+  for (let i = 0; i < lines.length - 1; i += 1) {
+    const line = lines[i];
+    if (!/^\s*[A-Za-z_][A-Za-z0-9_-]*\s*:/.test(line)) {
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (trimmed.endsWith(',') || trimmed.endsWith('{') || trimmed.endsWith('[')) {
+      continue;
+    }
+
+    let j = i + 1;
+    while (j < lines.length) {
+      const candidate = lines[j].trim();
+      if (candidate === '' || candidate.startsWith('//')) {
+        j += 1;
+        continue;
+      }
+      break;
+    }
+
+    if (j >= lines.length) {
+      continue;
+    }
+
+    if (/^\s*[A-Za-z_][A-Za-z0-9_-]*\s*:/.test(lines[j])) {
+      lines[i] = `${line},`;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    next = lines.join('\n');
+    warnings.push('Inserted missing commas between Vite config properties');
+  }
+
+  return next === before ? code : next;
 }
 
 function escapeRegExp(value: string): string {
@@ -1273,26 +1790,10 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
   // eslint-disable-next-line no-control-regex
   let cleanedContent = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
-  // Remove any duplicated package.json content (LLM concatenation bug)
-  const packageJsonPattern = /\{\s*"name"\s*:\s*"[^"]*"/g;
-  const matches = cleanedContent.match(packageJsonPattern);
-  if (matches && matches.length > 1) {
-    // Multiple package.json starts detected - keep only the first complete one
-    const firstStart = cleanedContent.indexOf('{');
-    let braceCount = 0;
-    let endIndex = -1;
-    for (let i = firstStart; i < cleanedContent.length; i++) {
-      if (cleanedContent[i] === '{') braceCount++;
-      if (cleanedContent[i] === '}') braceCount--;
-      if (braceCount === 0) {
-        endIndex = i + 1;
-        break;
-      }
-    }
-    if (endIndex > 0) {
-      cleanedContent = cleanedContent.substring(firstStart, endIndex);
-      warnings.push('Removed duplicated package.json content');
-    }
+  const recoveredJson = extractLastValidJsonBlock(cleanedContent);
+  if (recoveredJson && recoveredJson !== cleanedContent) {
+    cleanedContent = recoveredJson;
+    warnings.push('Recovered valid package.json from concatenated output');
   }
 
   try {
@@ -1333,6 +1834,81 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
     // Return the cleaned content anyway (removed control chars)
     return { content: cleanedContent, warnings };
   }
+}
+
+function extractLastValidJsonBlock(text: string): string | null {
+  const candidates: number[] = [];
+  const namePattern = /\{\s*"name"\s*:\s*"/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = namePattern.exec(text)) !== null) {
+    candidates.push(match.index);
+  }
+
+  if (candidates.length === 0) {
+    const firstBrace = text.indexOf('{');
+    if (firstBrace === -1) return null;
+    candidates.push(firstBrace);
+  }
+
+  for (let i = candidates.length - 1; i >= 0; i -= 1) {
+    const startIndex = candidates[i];
+    const block = sliceBalancedJsonObject(text, startIndex);
+    if (!block) continue;
+
+    try {
+      JSON.parse(block);
+      return block;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function sliceBalancedJsonObject(text: string, startIndex: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let i = startIndex; i < text.length; i += 1) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaping = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(startIndex, i + 1);
+      }
+      if (depth < 0) {
+        return null;
+      }
+    }
+  }
+
+  return null;
 }
 
 

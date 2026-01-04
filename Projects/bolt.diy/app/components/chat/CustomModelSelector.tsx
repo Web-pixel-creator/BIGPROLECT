@@ -11,6 +11,8 @@ import {
 const CUSTOM_MODELS = [
   { name: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { name: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
+  { name: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },
+  { name: 'mistral-small-latest', label: 'Mistral Small', provider: 'Mistral' },
   { name: 'iic/QwenLong-L1.5-30B-A3B', label: 'Qwen Long (Verified)', provider: 'ModelScope' },
   { name: 'Qwen/Qwen2.5-72B-Instruct', label: 'Qwen 2.5 (72B)', provider: 'ModelScope' },
   { name: 'deepseek-ai/DeepSeek-V3.2', label: 'DeepSeek V3.2', provider: 'ModelScope' },
