@@ -27,8 +27,10 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   const warnings: string[] = [];
   const baselineMain = WEB_BASELINE_FILES.find((file) => file.path === 'src/main.tsx')?.content;
   const baselineIndexCss = WEB_BASELINE_FILES.find((file) => file.path === 'src/index.css')?.content;
+  const baselineIndexHtml = WEB_BASELINE_FILES.find((file) => file.path === 'index.html')?.content;
   const baselineViteConfig = WEB_BASELINE_FILES.find((file) => file.path === 'vite.config.ts')?.content;
   const baselinePostcssConfig = WEB_BASELINE_FILES.find((file) => file.path === 'postcss.config.js')?.content;
+  const baselineTailwindConfig = WEB_BASELINE_FILES.find((file) => file.path === 'tailwind.config.js')?.content;
   if ((normalizedPath === 'src/main.tsx' || normalizedPath === 'src/main.jsx') && baselineMain) {
     if (content.trim() !== baselineMain.trim()) {
       warnings.push('Replaced src/main.tsx with baseline entry point');
@@ -46,9 +48,26 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     }
 
     const extraContent = normalizedContent.slice(normalizedBaseline.length);
+    const hasHtmlLikeTokens = /<\s*(?:!doctype|html|head|body|script|style|div|section|span|meta|link|img|svg|\/)/i.test(
+      extraContent,
+    );
+    const hasJsLikeTokens =
+      /(^|\n)\s*(?:export\s+default|module\.exports|import\s+(?:\{|type|\w)|const\s|let\s|function\s)/m.test(
+        extraContent,
+      );
+    if (hasHtmlLikeTokens || hasJsLikeTokens) {
+      warnings.push('Replaced src/index.css with baseline styles');
+      return { content: baselineIndexCss, changed: true, warnings };
+    }
     if (extraContent.trim().length > 0 && !hasBalancedCssBraces(extraContent)) {
       warnings.push('Removed malformed custom CSS after baseline');
       return { content: baselineIndexCss, changed: true, warnings };
+    }
+  }
+  if (normalizedPath === 'index.html' && baselineIndexHtml) {
+    const sanitizedHtml = sanitizeIndexHtml(content, baselineIndexHtml, warnings);
+    if (sanitizedHtml !== content) {
+      return { content: sanitizedHtml, changed: true, warnings };
     }
   }
 
@@ -65,6 +84,20 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
 
   let next = content;
 
+  if (normalizedPath === 'src/lib/utils.ts') {
+    const beforeUtils = next;
+    const hasFormatPrice =
+      /\bexport\s+function\s+formatPrice\b/.test(next) || /\bexport\s+const\s+formatPrice\b/.test(next);
+    if (!hasFormatPrice) {
+      next = `${next.trimEnd()}\n\nexport function formatPrice(value: number, currency: string = \"USD\", locale: string = \"en-US\") {\n  return new Intl.NumberFormat(locale, { style: \"currency\", currency }).format(value);\n}\n`;
+      warnings.push('Added missing formatPrice export to src/lib/utils.ts');
+    }
+
+    if (next !== beforeUtils) {
+      return { content: next, changed: true, warnings };
+    }
+  }
+
   if (/^vite\.config\./i.test(normalizedPath)) {
     next = deduplicateViteConfig(next, warnings);
     next = sanitizeViteConfigPlugins(next, warnings);
@@ -77,9 +110,43 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
 
   if (/^postcss\.config\./i.test(normalizedPath)) {
     next = sanitizePostcssConfigSyntax(next, normalizedPath, warnings);
+    const isCommonJsPostcss = /\.cjs$/i.test(normalizedPath);
+    if (!isCommonJsPostcss) {
+      const hasEsmExport = /^\s*export\s+default\b/m.test(next);
+      const hasCommonJsTokens = /\bmodule\./.test(next) || /\bexports\./.test(next) || /\brequire\(/.test(next);
+      if ((!hasEsmExport || hasCommonJsTokens) && baselinePostcssConfig) {
+        warnings.push('Replaced non-ESM postcss.config.js with baseline config');
+        return { content: baselinePostcssConfig, changed: true, warnings };
+      }
+      if (baselinePostcssConfig) {
+        const normalizedNext = normalizePostcssConfigForCompare(next);
+        const normalizedBaseline = normalizePostcssConfigForCompare(baselinePostcssConfig);
+        if (normalizedNext !== normalizedBaseline) {
+          warnings.push('Replaced postcss.config.js with baseline config');
+          return { content: baselinePostcssConfig, changed: true, warnings };
+        }
+      }
+    }
     if (baselinePostcssConfig && !isLikelyValidPostcssConfig(next)) {
       warnings.push('Replaced malformed postcss.config with baseline config');
       return { content: baselinePostcssConfig, changed: true, warnings };
+    }
+  }
+
+  if (/^tailwind\.config\./i.test(normalizedPath)) {
+    next = sanitizeTailwindConfigSyntax(next, normalizedPath, warnings);
+    const isCommonJsTailwind = /\.cjs$/i.test(normalizedPath);
+    if (!isCommonJsTailwind) {
+      const hasEsmExport = /^\s*export\s+default\b/m.test(next);
+      const hasCommonJsTokens = /\bmodule\./.test(next) || /\bexports\./.test(next) || /\brequire\(/.test(next);
+      if ((!hasEsmExport || hasCommonJsTokens) && baselineTailwindConfig) {
+        warnings.push('Replaced non-ESM tailwind.config.js with baseline config');
+        return { content: baselineTailwindConfig, changed: true, warnings };
+      }
+    }
+    if (baselineTailwindConfig && !isLikelyValidTailwindConfig(next)) {
+      warnings.push('Replaced malformed tailwind.config with baseline config');
+      return { content: baselineTailwindConfig, changed: true, warnings };
     }
   }
 
@@ -103,6 +170,32 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   if (ext === '.css' || ext === '.scss') {
     next = sanitizeCssSyntaxErrors(next, warnings);
     next = sanitizeTailwindShadcnTokensInCss(next, warnings);
+  }
+
+  if (ext === '.tsx' || ext === '.jsx') {
+    const beforeMergedAttrSafetyNet = next;
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)ButtclassNam\s*e\s*=/gi, '<$1Button className=');
+    next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)ButtclassNam\s*>/gi, '</$1Button>');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)ButtonClic\s*k\s*=/gi, '<$1Button onClick=');
+    next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)ButtonClic\s*>/gi, '</$1Button>');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)classNam\s*e\s*=/gi, '<$1 className=');
+    next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)classNam\s*>/gi, '</$1>');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)Clic\s*k\s*=/gi, '<$1 onClick=');
+    next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)Clic\s*>/gi, '</$1>');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)siz\s*e\s*=/gi, '<$1 size=');
+    next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)siz\s*>/gi, '</$1>');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*Button)>\s*Clic\s*k\s*=/g, '<$1 onClick=');
+    next = next.replace(/<([A-Z][A-Za-z0-9._-]*Button)>\s*classNam\s*e\s*=/g, '<$1 className=');
+    if (next !== beforeMergedAttrSafetyNet && !warnings.includes('Repaired split JSX attributes merged into tag names')) {
+      warnings.push('Repaired split JSX attributes merged into tag names');
+    }
+
+    const beforeButtSafetyNet = next;
+    next = next.replace(/<\s*\/\s*butt(\s|>)/gi, '</button$1');
+    next = next.replace(/<\s*butt(\s|\/|>)/gi, '<button$1');
+    if (next !== beforeButtSafetyNet && !warnings.includes('Fixed truncated <butt> tag names to <button>')) {
+      warnings.push('Fixed truncated <butt> tag names to <button>');
+    }
   }
 
   return { content: next, changed: next !== content, warnings };
@@ -165,6 +258,33 @@ function sanitizeBoltTags(code: string, warnings: string[]): string {
 function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const before = code;
   let next = code;
+
+  const beforeButtTagFix = next;
+  next = next.replace(/<\s*\/\s*butt(\s|>)/gi, '</button$1');
+  next = next.replace(/<\s*butt(\s|\/|>)/gi, '<button$1');
+  if (next !== beforeButtTagFix) {
+    warnings.push('Fixed truncated <butt> tag names to <button>');
+  }
+
+  const beforeSplitAttrInTagNames = next;
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)ButtclassNam\s*e\s*=/gi, '<$1Button className=');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)ButtclassNam\s*>/gi, '</$1Button>');
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)ButtonClic\s*k\s*=/gi, '<$1Button onClick=');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)ButtonClic\s*>/gi, '</$1Button>');
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)classNam\s*e\s*=/gi, '<$1 className=');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)classNam\s*>/gi, '</$1>');
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)Clic\s*k\s*=/gi, '<$1 onClick=');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)Clic\s*>/gi, '</$1>');
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*?)siz\s*e\s*=/gi, '<$1 size=');
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*?)siz\s*>/gi, '</$1>');
+
+  // Variant: the sanitizer may have inserted a premature ">" and left the tail as plain text.
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*Button)>\s*Clic\s*k\s*=/g, '<$1 onClick=');
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*Button)>\s*classNam\s*e\s*=/g, '<$1 className=');
+
+  if (next !== beforeSplitAttrInTagNames) {
+    warnings.push('Repaired split JSX attributes merged into tag names');
+  }
 
   // Fix 0: Remove stray Markdown code fences that break TSX parsing.
   const beforeFenceStrip = next;
@@ -309,6 +429,87 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     warnings.push('Moved stray required attribute text into input/textarea tags');
   }
 
+  // Fix 6c0a: Misplaced ">" before attributes in self-closing component tags
+  // Example: <AnimatedSubscribeButton>on text="Subscribe" className="..." />
+  const beforeMisplacedTagClose = next;
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*)([^>]*)>(?=[^<]*\/>)/g, '<$1$2 ');
+  next = next.replace(/<([a-z][A-Za-z0-9._-]*\.[A-Za-z0-9._-]+)([^>]*)>(?=[^<]*\/>)/g, '<$1$2 ');
+  if (next !== beforeMisplacedTagClose) {
+    warnings.push('Fixed misplaced ">" before JSX attributes in self-closing tags');
+  }
+
+  // Fix 6c0a1: Misplaced ">on" before attributes in component tags (e.g., <RippleButton>on className="...">)
+  const beforeMisplacedOnToken = next;
+  next = next.replace(
+    /<([A-Za-z][A-Za-z0-9._-]*)([^>]*)>\s*on\s+(?=(?:className|class|style|id|href|src|alt|title|role|type|value|name|text|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+|on[A-Z][A-Za-z]+)=)/g,
+    '<$1$2 ',
+  );
+  if (next !== beforeMisplacedOnToken) {
+    warnings.push('Fixed misplaced "on" token before JSX attributes');
+  }
+
+  // Fix 6c0a2: Stray "on" suffix appended to component tags (e.g. <RippleButtonon ...> ... </RippleButton>)
+  const beforeOnSuffixTagFix = next;
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*)on(\s[^>]*?)?>/g, (match, base, attrs) => {
+    const hasBaseClose = new RegExp(`</${escapeRegExp(base)}\\b`).test(next);
+    const hasOnClose = new RegExp(`</${escapeRegExp(base)}on\\b`).test(next);
+    if (hasBaseClose && !hasOnClose) {
+      return `<${base}${attrs ?? ''}>`;
+    }
+    return match;
+  });
+  next = next.replace(/<\/([A-Z][A-Za-z0-9._-]*)on\s*>/g, (match, base) => {
+    const hasBaseOpen = new RegExp(`<${escapeRegExp(base)}\\b`).test(next);
+    const hasOnOpen = new RegExp(`<${escapeRegExp(base)}on\\b`).test(next);
+    if (hasBaseOpen && !hasOnOpen) {
+      return `</${base}>`;
+    }
+    return match;
+  });
+  if (next !== beforeOnSuffixTagFix) {
+    warnings.push('Removed stray "on" suffix from JSX component tag names');
+  }
+
+  // Fix 6c0a3: Malformed blockquote tags (e.g., <blockquo>te ...)
+  const beforeBlockquoteFix = next;
+  next = next.replace(/<\s*blockquo>\s*te\b/gi, '<blockquote');
+  next = next.replace(/<\s*blockquo\s+te\b/gi, '<blockquote');
+  next = next.replace(/<\/\s*blockquo\s*te\s*>/gi, '</blockquote>');
+  if (next !== beforeBlockquoteFix) {
+    warnings.push('Fixed malformed blockquote tag names');
+  }
+
+  // Fix 6c0a6: Truncated <section> tag names (e.g., <secti ...> or </secti>)
+  const beforeSectionTagFix = next;
+  next = next.replace(/<\s*secti\b/gi, '<section');
+  next = next.replace(/<\/\s*secti\b/gi, '</section');
+  if (next !== beforeSectionTagFix) {
+    warnings.push('Fixed truncated <section> tag names');
+  }
+
+  // Fix 6c0a4: Component tag names split by spaces (e.g., <St ar ...> -> <Star ...>)
+  const beforeSplitComponentTags = next;
+  let mergedComponentTags = next;
+  const splitComponentTag = /<([A-Z][A-Za-z0-9]*)\s+([A-Za-z0-9]+)(?!\s*=)/g;
+  const splitClosingComponentTag = /<\/([A-Z][A-Za-z0-9]*)\s+([A-Za-z0-9]+)\s*>/g;
+  for (let pass = 0; pass < 3; pass += 1) {
+    const prev = mergedComponentTags;
+    mergedComponentTags = mergedComponentTags.replace(splitComponentTag, '<$1$2');
+    mergedComponentTags = mergedComponentTags.replace(splitClosingComponentTag, '</$1$2>');
+    if (mergedComponentTags === prev) break;
+  }
+  if (mergedComponentTags !== beforeSplitComponentTags) {
+    next = mergedComponentTags;
+    warnings.push('Merged split JSX component tag names');
+  }
+
+  // Fix 6c0a5: Missing space between component name and attribute (e.g., <AuroraTexttext="...">)
+  const beforeMissingComponentSpace = next;
+  next = next.replace(/<([A-Z][A-Za-z0-9._-]*)([a-z][A-Za-z0-9_-]*=)/g, '<$1 $2');
+  if (next !== beforeMissingComponentSpace) {
+    warnings.push('Inserted missing space between component name and attribute');
+  }
+
   // Fix 6c0a: Stray boolean text before a self-closing tag (e.g. >last />)
   const beforeTrailingBoolean = next;
   next = next.replace(
@@ -324,6 +525,20 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   next = next.replace(/\/>\s*\/>/g, '/>');
   if (next !== beforeDuplicateSelfClose) {
     warnings.push('Removed duplicate self-closing JSX tokens');
+  }
+
+  // Fix 6c0c: Stray "/>" inserted into arrow functions (e.g., "(e) = /> setState(...)")
+  const beforeBrokenArrowToken = next;
+  next = next.replace(/\)\s*=\s*\/>\s*/g, ') => ');
+  if (next !== beforeBrokenArrowToken) {
+    warnings.push('Fixed broken arrow function token in JSX attributes');
+  }
+
+  // Fix 6c0c1: Missing ">" in arrow functions (e.g., "(e) = handle..." -> "(e) => handle...")
+  const beforeMissingArrowToken = next;
+  next = next.replace(/\)\s*=\s*(?=[A-Za-z_(])/g, ') => ');
+  if (next !== beforeMissingArrowToken) {
+    warnings.push('Fixed missing arrow token in JSX attributes');
   }
 
   // Fix 6c: Ensure <input> is self-closed (void element in JSX)
@@ -343,6 +558,16 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   next = next.replace(/^\s*(?:export\s+)?(?:const|let|var|function|class)\s*$/gm, '');
   if (next !== beforeLonelyDecl) {
     warnings.push('Fixed orphaned declarations (const/let/var/function/class)');
+  }
+
+  // Fix 6e1: Orphaned assignment line before an import (e.g., "const Foo =" then "import ...")
+  const beforeOrphanedAssign = next;
+  next = next.replace(
+    /^\s*(?:export\s+)?(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*\n(\s*import\b)/gm,
+    '$1',
+  );
+  if (next !== beforeOrphanedAssign) {
+    warnings.push('Removed orphaned assignment lines before import statements');
   }
 
   // Fix 6e2: Stray "};" after destructured params before an arrow function.
@@ -405,6 +630,31 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   if (duplicateArrowFixed) {
     next = duplicateArrowLines.join('\n');
     warnings.push('Fixed duplicate arrow function line after props destructuring');
+  }
+
+  // Fix 6e4: Stray "}) => (" after statements - replace with "return (".
+  const beforeStrayArrowReturn = next;
+  const strayArrowLines = next.split('\n');
+  let strayArrowFixed = false;
+  for (let i = 0; i < strayArrowLines.length; i += 1) {
+    if (!/^\s*\}\)\s*=>\s*\(\s*$/.test(strayArrowLines[i])) continue;
+
+    let j = i - 1;
+    while (j >= 0 && strayArrowLines[j].trim() === '') {
+      j -= 1;
+    }
+
+    if (j < 0) continue;
+    const prev = strayArrowLines[j].trim();
+    if (!/[;}]$/.test(prev)) continue;
+
+    const indent = strayArrowLines[i].match(/^\s*/)?.[0] ?? '';
+    strayArrowLines[i] = `${indent}return (`;
+    strayArrowFixed = true;
+  }
+  if (strayArrowFixed) {
+    next = strayArrowLines.join('\n');
+    warnings.push('Replaced stray arrow line with return statement');
   }
 
   // Fix 6f: Missing closing brace in import list before "from"
@@ -647,7 +897,7 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   // Fix 18: Missing space between tag name and first attribute
   // Pattern: <spanclassName="..." -> <span className="..."
   const missingSpaceBetweenTagAndAttr =
-    /<([A-Za-z][A-Za-z0-9._-]*)(className|class|style|id|href|src|alt|title|role|type|value|name|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+|on[A-Z][A-Za-z]+)=/g;
+    /<([A-Za-z][A-Za-z0-9._-]*)(className|class|style|id|href|src|alt|title|role|type|value|name|text|placeholder|target|rel|tabIndex|aria-[A-Za-z0-9-]+|data-[A-Za-z0-9-]+|on[A-Z][A-Za-z]+)=/g;
   next = next.replace(missingSpaceBetweenTagAndAttr, '<$1 $2=');
 
   // Fix 16: Tag duplicated after a missing attribute assignment
@@ -1114,6 +1364,23 @@ function sanitizeCssSyntaxErrors(code: string, warnings: string[]) {
   const before = code;
   let next = code;
 
+  // Strip accidental JS/TS exports or imports injected into CSS files.
+  const cssLines = next.split(/\r?\n/);
+  let jsStartIndex = -1;
+
+  for (let i = 0; i < cssLines.length; i += 1) {
+    const line = cssLines[i];
+    if (/^\s*export\s+/.test(line) || /^\s*import\s+/.test(line) || /module\.exports/.test(line) || /\brequire\s*\(/.test(line)) {
+      jsStartIndex = i;
+      break;
+    }
+  }
+
+  if (jsStartIndex !== -1) {
+    next = cssLines.slice(0, jsStartIndex).join('\n');
+    warnings.push('Removed JS export/import block from CSS');
+  }
+
   // Fix truncated CSS properties (property name followed by ; without value)
   // Common cases: margin;, padding;, width;, height;, etc.
   const truncatedPropertyFixes: Array<[RegExp, string]> = [
@@ -1227,6 +1494,13 @@ function sanitizeCssSyntaxErrors(code: string, warnings: string[]) {
     warnings.push('Closed unterminated CSS block comment');
   }
 
+  const beforeBraceBalance = next;
+  const braceFix = closeUnbalancedCssBraces(next);
+  next = braceFix.content;
+  if (next !== beforeBraceBalance) {
+    warnings.push(...braceFix.warnings);
+  }
+
   if (propertyFixApplied) {
     warnings.push('Fixed truncated or malformed CSS properties (AI generation error)');
   }
@@ -1286,6 +1560,64 @@ function hasBalancedCssBraces(css: string): boolean {
   return depth === 0 && !inComment && !inString;
 }
 
+function closeUnbalancedCssBraces(css: string): { content: string; warnings: string[] } {
+  let depth = 0;
+  let inString: string | null = null;
+  let inComment = false;
+  const warnings: string[] = [];
+
+  for (let i = 0; i < css.length; i += 1) {
+    const ch = css[i];
+    const next = css[i + 1];
+
+    if (inComment) {
+      if (ch === '*' && next === '/') {
+        inComment = false;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (ch === '\\') {
+        i += 1;
+        continue;
+      }
+      if (ch === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (ch === '/' && next === '*') {
+      inComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = ch;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth < 0) {
+        return { content: css, warnings: [] };
+      }
+    }
+  }
+
+  if (depth > 0) {
+    warnings.push('Closed unbalanced CSS braces');
+    return { content: `${css}\n${'}'.repeat(depth)}`, warnings };
+  }
+
+  return { content: css, warnings: [] };
+}
+
 function isLikelyValidViteConfig(code: string): boolean {
   const trimmed = code.trim();
   if (!trimmed) return false;
@@ -1312,29 +1644,147 @@ function isLikelyValidPostcssConfig(code: string): boolean {
   const withoutLeadingComments = trimmed.replace(
     /^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)+/,
     '',
-  );
-  const exportMatch = withoutLeadingComments.match(/\bexport\s+default\b|\bmodule\.exports\s*=/);
+  ).trimStart();
+  const exportMatch = withoutLeadingComments.match(/^(?:export\s+default\b|module\.exports\s*=)/);
 
-  if (!exportMatch || exportMatch.index !== 0) {
+  if (!exportMatch) {
     return false;
   }
 
-  if (!/\bplugins\s*:\s*\{/.test(withoutLeadingComments)) {
+  const exportEndIndex = exportMatch[0].length;
+  const braceStart = withoutLeadingComments.indexOf('{', exportEndIndex);
+  if (braceStart === -1) {
     return false;
   }
 
-  if (/(^|\n)\s*@(?:tailwind|apply|layer|import)\b/.test(withoutLeadingComments)) {
+  const braceEnd = findMatchingBrace(withoutLeadingComments, braceStart);
+  if (braceEnd === -1) {
+    return false;
+  }
+
+  const configBlock = withoutLeadingComments.slice(0, braceEnd + 1);
+  if (!/\bplugins\s*:\s*\{/.test(configBlock)) {
+    return false;
+  }
+
+  if (/(^|\n)\s*@(?:tailwind|apply|layer|import)\b/.test(configBlock)) {
+    return false;
+  }
+
+  const trailing = stripJsComments(withoutLeadingComments.slice(braceEnd + 1));
+  if (trailing.replace(/[;\s]/g, '').length > 0) {
     return false;
   }
 
   return hasBalancedJsDelimiters(withoutLeadingComments);
 }
 
+function normalizePostcssConfigForCompare(code: string): string {
+  return stripJsComments(code).replace(/\s+/g, '').replace(/;+/g, '');
+}
+
+function isLikelyValidTailwindConfig(code: string): boolean {
+  const trimmed = code.trim();
+  if (!trimmed) return false;
+
+  const withoutLeadingComments = trimmed.replace(
+    /^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)+/, 
+    '',
+  ).trimStart();
+
+  const exportMatch = withoutLeadingComments.match(/^(?:export\s+default\b|module\.exports\s*=)/);
+  if (!exportMatch) {
+    return false;
+  }
+
+  const exportEndIndex = exportMatch[0].length;
+  const braceStart = withoutLeadingComments.indexOf('{', exportEndIndex);
+  if (braceStart === -1) {
+    return false;
+  }
+
+  const braceEnd = findMatchingBrace(withoutLeadingComments, braceStart);
+  if (braceEnd === -1) {
+    return false;
+  }
+
+  const configBlock = withoutLeadingComments.slice(0, braceEnd + 1);
+  if (!/\bcontent\s*:/.test(configBlock)) {
+    return false;
+  }
+
+  if (/(^|\n)\s*@(?:tailwind|apply|layer|import)\b/.test(configBlock)) {
+    return false;
+  }
+
+  return hasBalancedJsDelimiters(withoutLeadingComments);
+}
+
+function sanitizeTailwindConfigSyntax(code: string, normalizedPath: string, warnings: string[]): string {
+  const isCommonJs = /\.cjs$/i.test(normalizedPath);
+  let next = code.replace(/^\uFEFF/, '');
+
+  next = next.replace(/^\s*```[a-zA-Z]*\s*/gm, '').replace(/\s*```\s*$/gm, '');
+
+  const exportStartMatch = next.match(/^\s*(?:export\s+default\b|module\.exports\s*=)/m);
+  if (exportStartMatch && exportStartMatch.index !== undefined && exportStartMatch.index > 0) {
+    const leading = next.slice(0, exportStartMatch.index);
+    if (leading.trim().length > 0) {
+      warnings.push('Removed junk before tailwind.config export');
+    }
+    next = next.slice(exportStartMatch.index);
+  }
+
+  if (!isCommonJs && /^\s*module\.exports\s*=/m.test(next)) {
+    next = next.replace(/^\s*module\.exports\s*=\s*/gm, 'export default ');
+    warnings.push('Rewrote tailwind.config export to match module type');
+  } else if (isCommonJs && /^\s*export\s+default\b/m.test(next)) {
+    next = next.replace(/^\s*export\s+default\b/gm, 'module.exports =');
+    warnings.push('Rewrote tailwind.config export to match module type');
+  }
+
+  const exportMatches = [...next.matchAll(/^\s*(?:module\.exports\s*=|export\s+default\b)/gm)];
+  if (exportMatches.length > 1) {
+    const lastMatch = exportMatches[exportMatches.length - 1];
+    next = next.slice(lastMatch.index ?? 0).trimStart();
+    warnings.push('Removed duplicated tailwind.config content (LLM restart detected)');
+  }
+
+  const exportMatch = next.match(/^\s*(?:export\s+default\b|module\.exports\s*=)/m);
+  if (exportMatch && exportMatch.index !== undefined) {
+    const braceStart = next.indexOf('{', exportMatch.index + exportMatch[0].length);
+    if (braceStart !== -1) {
+      const braceEnd = findMatchingBrace(next, braceStart);
+      if (braceEnd !== -1) {
+        const trailing = stripJsComments(next.slice(braceEnd + 1));
+        if (trailing.replace(/[;\s]/g, '').length > 0) {
+          next = next.slice(0, braceEnd + 1).trimEnd();
+          warnings.push('Removed trailing junk after tailwind.config export');
+        }
+      }
+    }
+  }
+
+  const trimmed = next.trim();
+  return trimmed.length > 0 ? `${trimmed}\n` : next;
+}
+
 function sanitizePostcssConfigSyntax(code: string, normalizedPath: string, warnings: string[]): string {
   const before = code;
-  let next = code;
+  let next = code.replace(/^\uFEFF/, '');
   const isCommonJs = /\.cjs$/i.test(normalizedPath);
   let rewroteExport = false;
+
+  next = next.replace(/^\s*```[a-zA-Z]*\s*/gm, '').replace(/\s*```\s*$/gm, '');
+
+  const exportStartMatch = next.match(/^\s*(?:export\s+default\b|module\.exports\s*=)/m);
+  if (exportStartMatch && exportStartMatch.index !== undefined && exportStartMatch.index > 0) {
+    const leading = next.slice(0, exportStartMatch.index);
+    if (leading.trim().length > 0) {
+      warnings.push('Removed junk before postcss.config export');
+    }
+    next = next.slice(exportStartMatch.index);
+  }
 
   if (!isCommonJs && /^\s*module\.exports\s*=/m.test(next)) {
     next = next.replace(/^\s*module\.exports\s*=\s*/gm, 'export default ');
@@ -1342,6 +1792,11 @@ function sanitizePostcssConfigSyntax(code: string, normalizedPath: string, warni
   } else if (isCommonJs && /^\s*export\s+default\b/m.test(next)) {
     next = next.replace(/^\s*export\s+default\b/gm, 'module.exports =');
     rewroteExport = true;
+  }
+
+  if (!isCommonJs && /\bmodule\./.test(next)) {
+    next = next.replace(/^\s*module\.[^\n]*\n?/gm, '');
+    warnings.push('Removed CommonJS module usage from postcss.config');
   }
 
   const postcssExportMatches = [...next.matchAll(/^\s*(?:module\.exports\s*=|export\s+default\b)/gm)];
@@ -1355,7 +1810,109 @@ function sanitizePostcssConfigSyntax(code: string, normalizedPath: string, warni
     warnings.push('Rewrote postcss.config export to match module type');
   }
 
+  const postcssExportMatch = next.match(/^\s*(?:export\s+default\b|module\.exports\s*=)/m);
+  if (postcssExportMatch && postcssExportMatch.index !== undefined) {
+    const braceStart = next.indexOf('{', postcssExportMatch.index + postcssExportMatch[0].length);
+    if (braceStart !== -1) {
+      const braceEnd = findMatchingBrace(next, braceStart);
+      if (braceEnd !== -1) {
+        const trailing = stripJsComments(next.slice(braceEnd + 1));
+        if (trailing.replace(/[;\s]/g, '').length > 0) {
+          next = next.slice(0, braceEnd + 1).trimEnd();
+          warnings.push('Removed trailing junk after postcss.config export');
+        }
+      }
+    }
+  }
+
+  const trimmed = next.trim();
+  return trimmed.length > 0 ? `${trimmed}\n` : next;
+}
+
+function sanitizeIndexHtml(code: string, baseline: string, warnings: string[]): string {
+  if (!isLikelyValidIndexHtml(code)) {
+    warnings.push('Replaced malformed index.html with baseline');
+    return baseline;
+  }
+
+  const before = code;
+  let next = code;
+  next = next.replace(
+    /\n?\s*<script\b[^>]*\bsrc=["']https?:\/\/(?:cdn\.tailwindcss\.com|unpkg\.com\/tailwindcss(?:@[^"']+)?|cdnjs\.cloudflare\.com\/ajax\/libs\/tailwindcss\/[^"']+|cdn\.jsdelivr\.net\/npm\/tailwindcss(?:@[^"']+)?)\/[^"']*["'][^>]*>\s*<\/script>\s*/gi,
+    '\n',
+  );
+  next = next.replace(
+    /\n?\s*<link\b[^>]*\bhref=["']https?:\/\/(?:cdn\.tailwindcss\.com|unpkg\.com\/tailwindcss(?:@[^"']+)?|cdnjs\.cloudflare\.com\/ajax\/libs\/tailwindcss\/[^"']+|cdn\.jsdelivr\.net\/npm\/tailwindcss(?:@[^"']+)?)\/[^"']*["'][^>]*>\s*/gi,
+    '\n',
+  );
+
+  if (next !== before) {
+    warnings.push('Removed Tailwind CDN tags from index.html');
+  }
+
   return next;
+}
+
+function isLikelyValidIndexHtml(code: string): boolean {
+  const trimmed = code.trim();
+  if (!/^\s*<!doctype\s+html\b/i.test(trimmed)) {
+    return false;
+  }
+
+  const lower = trimmed.toLowerCase();
+  const doctypeIndex = lower.indexOf('<!doctype');
+  const htmlIndex = lower.indexOf('<html');
+  const bodyIndex = lower.indexOf('<body');
+
+  if (doctypeIndex !== 0 || htmlIndex === -1 || bodyIndex === -1) {
+    return false;
+  }
+
+  if (htmlIndex < doctypeIndex || bodyIndex < htmlIndex) {
+    return false;
+  }
+
+  if (lower.indexOf('<!doctype', bodyIndex) !== -1) {
+    return false;
+  }
+
+  if (lower.indexOf('<html', bodyIndex + 1) !== -1) {
+    return false;
+  }
+
+  const htmlOpenTags = trimmed.match(/<html\b[^>]*>/gi) ?? [];
+  const bodyOpenTags = trimmed.match(/<body\b[^>]*>/gi) ?? [];
+  if (htmlOpenTags.length !== 1 || bodyOpenTags.length !== 1) {
+    return false;
+  }
+
+  const htmlOpen = htmlOpenTags[0];
+  const bodyOpen = bodyOpenTags[0];
+  const htmlOpenInner = htmlOpen.slice(1);
+  const bodyOpenInner = bodyOpen.slice(1);
+  if (htmlOpen.length > 512 || bodyOpen.length > 1024) {
+    return false;
+  }
+
+  if (htmlOpenInner.includes('<') || bodyOpenInner.includes('<')) {
+    return false;
+  }
+
+  if (!hasBalancedAttributeQuotes(htmlOpen) || !hasBalancedAttributeQuotes(bodyOpen)) {
+    return false;
+  }
+
+  if (!lower.includes('</head>') || !lower.includes('</body>') || !lower.includes('</html>')) {
+    return false;
+  }
+
+  return true;
+}
+
+function hasBalancedAttributeQuotes(tag: string): boolean {
+  const doubleQuotes = (tag.match(/"/g) ?? []).length;
+  const singleQuotes = (tag.match(/'/g) ?? []).length;
+  return doubleQuotes % 2 === 0 && singleQuotes % 2 === 0;
 }
 
 function hasBalancedJsDelimiters(code: string): boolean {
@@ -1438,6 +1995,84 @@ function hasBalancedJsDelimiters(code: string): boolean {
     !inBlockComment &&
     !inLineComment
   );
+}
+
+function stripJsComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*\n/g, '\n');
+}
+
+function findMatchingBrace(code: string, startIndex: number): number {
+  let depth = 0;
+  let inString: string | null = null;
+  let inBlockComment = false;
+  let inLineComment = false;
+  let escaping = false;
+
+  for (let i = startIndex; i < code.length; i += 1) {
+    const ch = code[i];
+    const next = code[i + 1];
+
+    if (inLineComment) {
+      if (ch === '\n') {
+        inLineComment = false;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (ch === '*' && next === '/') {
+        inBlockComment = false;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaping = true;
+        continue;
+      }
+      if (ch === inString) {
+        inString = null;
+      }
+      continue;
+    }
+
+    if (ch === '/' && next === '/') {
+      inLineComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '/' && next === '*') {
+      inBlockComment = true;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') {
+      inString = ch;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return i;
+      }
+      if (depth < 0) {
+        return -1;
+      }
+    }
+  }
+
+  return -1;
 }
 
 /**
@@ -1783,6 +2418,19 @@ function removeModuleImports(code: string, moduleName: string): string {
   return next === before ? code : next;
 }
 
+const PACKAGE_NAME_RE = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isValidPackageName(name: string): boolean {
+  if (!name || typeof name !== 'string') return false;
+  if (name.length > 214) return false;
+  if (name.startsWith('.') || name.startsWith('_')) return false;
+  return PACKAGE_NAME_RE.test(name);
+}
+
 function sanitizePackageJson(content: string): { content: string; warnings: string[] } {
   const warnings: string[] = [];
 
@@ -1798,9 +2446,42 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
 
   try {
     const json = JSON.parse(cleanedContent) as any;
-    const deps = (json.dependencies ?? {}) as Record<string, string>;
+    const rawDeps = json.dependencies;
+    const rawDevDeps = json.devDependencies;
+    const deps = (isPlainObject(rawDeps) ? { ...rawDeps } : {}) as Record<string, unknown>;
+    const devDeps = (isPlainObject(rawDevDeps) ? { ...rawDevDeps } : {}) as Record<string, unknown>;
 
     let changed = cleanedContent !== content;
+
+    if (!isPlainObject(rawDeps)) {
+      if (rawDeps !== undefined) {
+        warnings.push('Reset dependencies in package.json (expected an object)');
+      }
+      changed = true;
+    }
+
+    if (!isPlainObject(rawDevDeps)) {
+      if (rawDevDeps !== undefined) {
+        warnings.push('Reset devDependencies in package.json (expected an object)');
+      }
+      changed = true;
+    }
+
+    for (const [dep, version] of Object.entries(deps)) {
+      if (!isValidPackageName(dep) || typeof version !== 'string' || /[\r\n]/.test(version)) {
+        delete deps[dep];
+        changed = true;
+        warnings.push(`Removed invalid dependency entry from package.json: ${dep}`);
+      }
+    }
+
+    for (const [dep, version] of Object.entries(devDeps)) {
+      if (!isValidPackageName(dep) || typeof version !== 'string' || /[\r\n]/.test(version)) {
+        delete devDeps[dep];
+        changed = true;
+        warnings.push(`Removed invalid devDependency entry from package.json: ${dep}`);
+      }
+    }
 
     for (const [dep, version] of Object.entries(DEFAULT_WEB_DEPS)) {
       const current = deps[dep];
@@ -1811,7 +2492,7 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
         continue;
       }
 
-      const currentSemver = extractSemver(current);
+      const currentSemver = typeof current === 'string' ? extractSemver(current) : null;
       const baselineSemver = extractSemver(version);
       if (!currentSemver || !baselineSemver) continue;
 
@@ -1824,14 +2505,19 @@ function sanitizePackageJson(content: string): { content: string; warnings: stri
 
     if (changed) {
       json.dependencies = deps;
+      json.devDependencies = devDeps;
       return { content: JSON.stringify(json, null, 2) + '\n', warnings };
     }
 
     return { content: cleanedContent, warnings };
   } catch (_error) {
-    // If it's STILL not valid JSON after cleaning, skip it
+    const baselinePackageJson = WEB_BASELINE_FILES.find((file) => file.path === 'package.json')?.content;
+    if (baselinePackageJson) {
+      warnings.push('Replaced invalid package.json with baseline content');
+      return { content: baselinePackageJson, warnings };
+    }
+
     warnings.push('Skipped package.json sanitization (invalid JSON after cleanup)');
-    // Return the cleaned content anyway (removed control chars)
     return { content: cleanedContent, warnings };
   }
 }
