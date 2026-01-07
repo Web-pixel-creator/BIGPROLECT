@@ -18,6 +18,95 @@ const DEFAULT_WEB_DEPS: Record<string, string> = {
   'tailwind-merge': '^2.6.0',
 };
 
+/**
+ * Remove LLM text responses that were accidentally inserted into code.
+ * This happens when LLM writes conversational text instead of code,
+ * or mixes prompt/response text with generated code.
+ */
+function removeLlmTextResponses(code: string, warnings: string[]): string {
+  const before = code;
+  let next = code;
+
+  // Pattern 1: Russian text responses (common in multilingual LLMs)
+  // "Пожалуйста, уточни:", "Название бренда", "Отрасль/тема", etc.
+  const russianTextPatterns = [
+    /\n\s*Пожалуйста[,:]?\s*[^\n]*\n/g,
+    /\n\s*\d+\.\s*(?:Название|Отрасль|Список|Есть ли)[^\n]*\n/g,
+    /\n\s*(?:например|например,)\s*[^\n]*\n/gi,
+  ];
+
+  for (const pattern of russianTextPatterns) {
+    next = next.replace(pattern, '\n');
+  }
+
+  // Pattern 2: English prompt-like text
+  const englishPromptPatterns = [
+    /\n\s*Please\s+(?:clarify|specify|provide|note)[^\n]*\n/gi,
+    /\n\s*\d+\.\s*(?:Brand name|Industry|Required sections|Is there)[^\n]*\n/gi,
+    /\n\s*(?:For example|e\.g\.|i\.e\.)[^\n]*\n/gi,
+  ];
+
+  for (const pattern of englishPromptPatterns) {
+    next = next.replace(pattern, '\n');
+  }
+
+  // Pattern 3: Lines that look like numbered lists (not in comments or strings)
+  // Remove lines like "1. Название бренда" that are not JSX
+  const numberedListInCode = /^(?!\s*\/\/)\s*\d+\.\s+[А-Яа-яЁё][^\n]{10,}\s*$/gm;
+  next = next.replace(numberedListInCode, '');
+
+  // Pattern 4: Remove blocks of consecutive non-code lines (Cyrillic text blocks)
+  // Look for 3+ consecutive lines that are mostly Cyrillic and not in JSX
+  const lines = next.split('\n');
+  const cleanedLines: string[] = [];
+  let consecutiveCyrillicLines = 0;
+  let cyrillicBuffer: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    // Check if line is mostly Cyrillic text (not in a string or JSX)
+    const hasCyrillic = /[А-Яа-яЁё]/.test(trimmed);
+    const looksLikeCode = /^(import|export|const|let|var|function|class|return|if|else|for|while|<|\{|\}|\/\/|\/\*)/.test(trimmed)
+      || trimmed.startsWith('"') || trimmed.startsWith("'") || trimmed.startsWith('`')
+      || trimmed.length === 0;
+
+    if (hasCyrillic && !looksLikeCode && trimmed.length > 20) {
+      consecutiveCyrillicLines++;
+      cyrillicBuffer.push(line);
+    } else {
+      // If we had 3+ consecutive Cyrillic lines, they were LLM text - skip them
+      if (consecutiveCyrillicLines >= 2) {
+        warnings.push(`Removed ${consecutiveCyrillicLines} lines of LLM text response`);
+        // Don't add cyrillicBuffer to cleanedLines
+      } else {
+        // Less than 3 lines - might be valid, add them back
+        cleanedLines.push(...cyrillicBuffer);
+      }
+      cleanedLines.push(line);
+      consecutiveCyrillicLines = 0;
+      cyrillicBuffer = [];
+    }
+  }
+
+  // Handle remaining buffer
+  if (consecutiveCyrillicLines >= 2) {
+    warnings.push(`Removed ${consecutiveCyrillicLines} lines of LLM text response at end`);
+  } else {
+    cleanedLines.push(...cyrillicBuffer);
+  }
+
+  next = cleanedLines.join('\n');
+
+  // Pattern 5: Clean up multiple blank lines
+  next = next.replace(/\n{3,}/g, '\n\n');
+
+  if (next !== before) {
+    warnings.push('Removed LLM text responses from code file');
+  }
+
+  return next;
+}
+
 export function sanitizeGeneratedFile(relativePath: string, content: string): SanitizationResult {
   if (typeof content !== 'string') {
     return { content, changed: false, warnings: [] };
@@ -171,15 +260,70 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   }
 
 
+
   if (ext === '.tsx' || ext === '.jsx') {
+    next = removeLlmTextResponses(next, warnings); // Remove LLM text responses inserted into code
     next = deduplicateTsxContent(next, warnings); // Fix LLM restart mid-generation
+    next = removeDuplicateDeclarations(next, warnings); // Remove duplicate function/const by name
     next = sanitizeBoltTags(next, warnings); // Remove leaked boltAction/boltArtifact tags FIRST
     next = hoistLateImportsInTsx(next, warnings);
     next = sanitizeJsxSyntaxErrors(next, warnings);
+    next = fixComponentTypos(next, warnings); // Fix typos like FadeTexte -> FadeText
     next = sanitizeJsxComments(next, warnings);
   } else {
     // Also sanitize other file types in case boltAction leaks into them
     next = sanitizeBoltTags(next, warnings);
+  }
+
+  // Universal fix for all .ts files: Remove garbage before first import
+  // This is critical for config files (vite.config.ts, etc.) that get corrupted by LLM restart
+  if (ext === '.ts' || ext === '.mts' || ext === '.cts') {
+    const beforeImportCleanup = next;
+
+    // Find the first import statement
+    const importMatch = next.match(/^import\s+/m);
+    if (importMatch && importMatch.index !== undefined && importMatch.index > 0) {
+      const beforeImport = next.substring(0, importMatch.index);
+
+      // Check if content before import is valid (comments, "use strict", empty lines)
+      const validPrefixPattern = /^(\s*\/\/[^\n]*\n|\s*\/\*[\s\S]*?\*\/\s*\n|\s*["']use strict["'];?\s*\n|\s*\n)*$/;
+
+      if (!validPrefixPattern.test(beforeImport)) {
+        // There's garbage before import - remove it
+        next = next.substring(importMatch.index);
+        warnings.push('Removed garbage before first import in .ts file');
+      }
+    }
+
+    // Also remove duplicate declarations in .ts files (not just .tsx)
+    next = removeDuplicateDeclarations(next, warnings);
+
+    // Fix truncated function declarations (like "return twMerge(clsx" without closing)
+    // This happens when LLM restarts mid-function and rewrites from export
+    const truncatedFunctionPattern = /return\s+\w+\s*\(\s*\w*\s*\n\s*\n\s*export\s+/g;
+    const truncatedMatch = next.match(truncatedFunctionPattern);
+    if (truncatedMatch) {
+      // Find where the truncated code ends and new function starts
+      const findMatch = next.match(/return\s+\w+\s*\(\s*\w*\s*\n\s*\n\s*(export\s+)/);
+      if (findMatch && findMatch.index !== undefined) {
+        // Find the beginning of the file until the truncated part
+        const truncStart = findMatch.index;
+        // Find the start of imports or beginning
+        const beforeTrunc = next.substring(0, truncStart);
+        const lastImportEnd = beforeTrunc.lastIndexOf(';');
+
+        if (lastImportEnd !== -1) {
+          // Keep only from after the last complete statement to the new export
+          const afterLastImport = next.substring(lastImportEnd + 1);
+          const newExportMatch = afterLastImport.match(/export\s+/);
+          if (newExportMatch && newExportMatch.index !== undefined) {
+            const cleanStart = lastImportEnd + 1 + newExportMatch.index;
+            next = next.substring(0, lastImportEnd + 1) + '\n\n' + next.substring(cleanStart);
+            warnings.push('Fixed truncated function by skipping to next export');
+          }
+        }
+      }
+    }
   }
 
   next = sanitizeImportPaths(next, relativePath, warnings);
@@ -217,9 +361,239 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     if (next !== beforeButtSafetyNet && !warnings.includes('Fixed truncated <butt> tag names to <button>')) {
       warnings.push('Fixed truncated <butt> tag names to <button>');
     }
+
+    // Fix: Remove utility functions that LLM accidentally embeds in component files
+    // Common patterns: cn(), formatPrice(), clsx(), twMerge() definitions
+    const beforeUtilsRemoval = next;
+
+    // Remove standalone cn function definition (should be in utils.ts, not App.tsx)
+    next = next.replace(/\n\s*export\s+function\s+cn\s*\([^)]*\)\s*\{[^}]*\}/g, '');
+
+    // Remove formatPrice function definition
+    next = next.replace(/\n\s*export\s+function\s+formatPrice\s*\([^)]*\)\s*\{[^}]*\}/g, '');
+
+    if (next !== beforeUtilsRemoval) {
+      warnings.push('Removed utility function definitions accidentally embedded in component file');
+    }
+
+    // Fix: Remove orphaned closing braces that don't match any opening
+    // This happens when LLM generates partial component code
+    const codeLines = next.split('\n');
+    let braceBalance = 0;
+    const cleanedLines: string[] = [];
+
+    for (const line of codeLines) {
+      const openCount = (line.match(/{/g) || []).length;
+      const closeCount = (line.match(/}/g) || []).length;
+
+      // If this line is just "};" and we're at balance 0, skip it
+      if (braceBalance === 0 && /^\s*\};\s*$/.test(line) && closeCount > openCount) {
+        warnings.push('Removed orphaned closing brace from component file');
+        continue; // Skip orphaned closing brace
+      }
+
+      braceBalance += openCount - closeCount;
+      cleanedLines.push(line);
+    }
+
+    if (cleanedLines.length !== codeLines.length) {
+      next = cleanedLines.join('\n');
+    }
   }
 
   return { content: next, changed: next !== content, warnings };
+}
+
+/**
+ * Remove duplicate function/const/class declarations by name.
+ * This handles cases where LLM generates the same component twice.
+ * 
+ * Detection: Find duplicate function/const declarations and keep only the first one.
+ */
+function removeDuplicateDeclarations(code: string, warnings: string[]): string {
+  let next = code;
+
+  // Track all top-level declarations
+  const declarations = new Map<string, { start: number; end: number }>();
+
+  // Pattern to match top-level function/const declarations
+  // Match: const Name = or function Name or export function Name or export const Name
+  const declPattern = /^(export\s+)?(const|function|class)\s+([A-Z][A-Za-z0-9_]*)/gm;
+
+  let match;
+  const duplicates: { name: string; start: number; end: number }[] = [];
+
+  // First pass: find all declarations and identify duplicates
+  const lines = next.split('\n');
+  let lineStart = 0;
+  const lineStarts: number[] = [];
+
+  for (const line of lines) {
+    lineStarts.push(lineStart);
+    lineStart += line.length + 1; // +1 for newline
+  }
+
+  while ((match = declPattern.exec(next)) !== null) {
+    const name = match[3];
+    const start = match.index;
+
+    if (declarations.has(name)) {
+      // Found duplicate! Mark for removal
+      // Find the end of this declaration (next top-level declaration or end of file)
+      const restOfCode = next.slice(start);
+
+      // Find the end - look for next top-level declaration
+      // Use a simpler heuristic: find the next line that starts with export/const/function at column 0
+      const endPattern = /\n(?=(?:export\s+)?(?:const|function|class)\s+[A-Z])/;
+      const endMatch = endPattern.exec(restOfCode);
+      const end = endMatch ? start + endMatch.index : next.length;
+
+      duplicates.push({ name, start, end });
+    } else {
+      declarations.set(name, { start, end: 0 }); // end will be calculated if needed
+    }
+  }
+
+  // Second pass: remove duplicates from end to start (to preserve indices)
+  if (duplicates.length > 0) {
+    duplicates.sort((a, b) => b.start - a.start); // Sort descending by start position
+
+    for (const dup of duplicates) {
+      next = next.slice(0, dup.start) + next.slice(dup.end);
+      warnings.push(`Removed duplicate declaration: ${dup.name}`);
+    }
+  }
+
+  // Also remove duplicate "export default" statements
+  const exportDefaults = [...next.matchAll(/^export\s+default\s+\w+;?\s*$/gm)];
+  if (exportDefaults.length > 1) {
+    // Keep only the last one
+    for (let i = 0; i < exportDefaults.length - 1; i++) {
+      const match = exportDefaults[i];
+      const start = match.index!;
+      const end = start + match[0].length;
+      next = next.slice(0, start) + next.slice(end);
+    }
+    warnings.push('Removed duplicate export default statements');
+  }
+
+  // Clean up multiple blank lines that may result
+  next = next.replace(/\n{3,}/g, '\n\n');
+
+  return next;
+}
+
+/**
+ * Calculate Levenshtein distance between two strings.
+ * Used for fuzzy matching component names.
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+/**
+ * Fix typos in component names (e.g., FadeTexte -> FadeText).
+ * This finds components that are used but not defined, and looks for
+ * similar defined components with 1-2 character difference.
+ */
+function fixComponentTypos(code: string, warnings: string[]): string {
+  let next = code;
+
+  // Step 1: Collect all defined component names (PascalCase)
+  const definedComponents = new Set<string>();
+
+  // Match: const ComponentName = or function ComponentName or export function ComponentName
+  const defPattern = /(?:const|function|class)\s+([A-Z][A-Za-z0-9_]*)/g;
+  let defMatch;
+  while ((defMatch = defPattern.exec(next)) !== null) {
+    definedComponents.add(defMatch[1]);
+  }
+
+  // Step 2: Find all used component names in JSX (both opening and in expressions)
+  // Match: <ComponentName or {ComponentName or <ComponentName>
+  const usedComponents = new Map<string, number[]>(); // name -> positions
+  const usagePattern = /<([A-Z][A-Za-z0-9_]*)\b/g;
+  let useMatch;
+
+  while ((useMatch = usagePattern.exec(next)) !== null) {
+    const name = useMatch[1];
+    if (!usedComponents.has(name)) {
+      usedComponents.set(name, []);
+    }
+    usedComponents.get(name)!.push(useMatch.index);
+  }
+
+  // Step 3: Find typos - used but not defined, with similar defined name
+  const typoFixes: { typo: string; correct: string }[] = [];
+
+  for (const [usedName] of usedComponents) {
+    if (definedComponents.has(usedName)) {
+      continue; // Component is defined, no typo
+    }
+
+    // Check if this might be a built-in HTML element or known component
+    const lowerName = usedName.toLowerCase();
+    if (['div', 'span', 'button', 'input', 'form', 'section', 'header', 'footer', 'nav', 'main', 'article', 'aside'].includes(lowerName)) {
+      continue;
+    }
+
+    // Find the closest defined component
+    let bestMatch = '';
+    let bestDistance = Infinity;
+
+    for (const definedName of definedComponents) {
+      const distance = levenshteinDistance(usedName, definedName);
+
+      // Only consider matches with distance 1-2 (typos, not completely different names)
+      if (distance <= 2 && distance < bestDistance) {
+        bestDistance = distance;
+        bestMatch = definedName;
+      }
+    }
+
+    if (bestMatch && bestDistance <= 2) {
+      typoFixes.push({ typo: usedName, correct: bestMatch });
+    }
+  }
+
+  // Step 4: Apply fixes
+  for (const fix of typoFixes) {
+    // Replace in JSX opening tags: <FadeTexte -> <FadeText
+    const openTagPattern = new RegExp(`<${fix.typo}(\\s|>|/)`, 'g');
+    next = next.replace(openTagPattern, `<${fix.correct}$1`);
+
+    // Replace in JSX closing tags: </FadeTexte> -> </FadeText>
+    const closeTagPattern = new RegExp(`</${fix.typo}(\\s*>)`, 'g');
+    next = next.replace(closeTagPattern, `</${fix.correct}$1`);
+
+    warnings.push(`Fixed component typo: ${fix.typo} -> ${fix.correct}`);
+  }
+
+  return next;
 }
 
 /**
@@ -755,14 +1129,29 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const beforeVoidSelfClose = next;
 
   for (const tag of voidElements) {
-    // Match opening void tags - use [\s\S]*? to handle multi-line attributes
-    // Check for self-closing inside the replace function
-    const openTagRegex = new RegExp(`<${tag}\\b([\\s\\S]*?)>`, 'gi');
-    next = next.replace(openTagRegex, (match, attrs) => {
+    // Match opening void tags with attributes
+    // SAFE: Using replacer function with context check to avoid breaking arrow functions
+    const openTagRegex = new RegExp(`(<${tag})(\\s+[^>]*)(>)`, 'gi');
+    next = next.replace(openTagRegex, (match, tagName, attrs, close, offset) => {
       // Skip if already self-closed
-      if (/\/\s*>$/.test(match)) return match;
+      if (/\/\s*$/.test(attrs)) return match;
+
+      // Safety check: don't insert /> where it would break arrow functions
+      const before = next.slice(Math.max(0, offset - 50), offset);
+      if (/\(\s*\w+\s*\)\s*=\s*$/.test(before)) return match; // (e) = pattern
+      if (/=\s*$/.test(before) && !/["']\s*$/.test(before)) return match; // attr= without quote
+
       // Make it self-closing
-      return `<${tag}${attrs} />`;
+      return `${tagName}${attrs} />`;
+    });
+
+    // Handle tags with no attributes: <tag>
+    const emptyTagRegex = new RegExp(`(<${tag})(\\s*)>(?!/)`, 'gi');
+    next = next.replace(emptyTagRegex, (match, tagName, ws, offset) => {
+      const before = next.slice(Math.max(0, offset - 30), offset);
+      if (/\(\s*\w+\s*\)\s*=\s*$/.test(before)) return match;
+      if (/=\s*$/.test(before) && !/["']\s*$/.test(before)) return match;
+      return `${tagName}${ws}/>`;
     });
 
     // Remove any erroneous closing tags for void elements
@@ -1274,6 +1663,247 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
 
   if (lineChanged) {
     next = lines.join('\n');
+  }
+
+  // FINAL PASS: Ensure ALL void elements are self-closed after all transformations
+  // This is critical because other fixes above may have inserted unclosed SVG/HTML tags
+  const finalVoidElements = [
+    // HTML void elements
+    'input', 'img', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr',
+    // SVG self-closing elements
+    'path', 'circle', 'rect', 'line', 'polygon', 'polyline', 'ellipse', 'use', 'stop', 'animate', 'animateTransform', 'animateMotion', 'mpath', 'set', 'image'
+  ];
+  const beforeFinalVoidFix = next;
+
+  for (const tag of finalVoidElements) {
+    // SAFE regex: Match only REAL HTML/SVG tags, not content inside JS expressions
+    // The tag must be at line start, after >, after whitespace, or after (
+    // Pattern: lookbehind for valid tag start context + <tagName + attributes + >
+    // Using a replacer function to validate each match
+    const tagPattern = new RegExp(
+      `(<${tag})` +           // Opening tag name
+      `(\\s+[^>]*)` +         // Required: space followed by attributes (no empty tags without space)
+      `(>)`,                  // Closing bracket (not self-closing variant />)
+      'gi'
+    );
+
+    next = next.replace(tagPattern, (match, tagStart, attrs, close, offset) => {
+      // Skip if already self-closed
+      if (/\/\s*$/.test(attrs)) return match;
+
+      // Safety check: make sure we're not inside a JS expression like onChange={(e) =>
+      // Look at what comes BEFORE this match
+      const before = next.slice(Math.max(0, offset - 50), offset);
+
+      // If we find an unclosed { or ( with arrow => pattern, skip
+      if (/\(\s*\w+\s*\)\s*=\s*$/.test(before)) {
+        return match; // This looks like (e) = and we don't want to add />
+      }
+
+      // If we find = right before <tag, this might be an attribute value
+      if (/=\s*$/.test(before) && !/["']\s*$/.test(before)) {
+        return match; // Skip: looks like attr=<tag
+      }
+
+      // Make it self-closing by replacing > with />
+      return `${tagStart}${attrs} />`;
+    });
+
+    // Handle tags with only whitespace (no attributes): <tag   >
+    const emptyTagRegex = new RegExp(`(<${tag})(\\s*)>(?!/)`, 'gi');
+    next = next.replace(emptyTagRegex, (match, tagName, ws, offset) => {
+      // Safety checks
+      const before = next.slice(Math.max(0, offset - 30), offset);
+      if (/\(\s*\w+\s*\)\s*=\s*$/.test(before)) return match;
+      if (/=\s*$/.test(before) && !/["']\s*$/.test(before)) return match;
+      return `${tagName}${ws}/>`;
+    });
+
+    // Remove erroneous closing tags for void elements
+    const closeTagRegex = new RegExp(`</${tag}\\s*>`, 'gi');
+    next = next.replace(closeTagRegex, '');
+  }
+
+  if (next !== beforeFinalVoidFix) {
+    warnings.push('FINAL PASS: Self-closed remaining void element tags');
+  }
+
+  // Fix adjacent JSX elements by wrapping in Fragment
+  // This happens when deduplication removes wrapper elements
+  const beforeFragmentFix = next;
+
+  // Find return statements with adjacent JSX elements
+  // Pattern: return (\n  <Tag1>...</Tag1>\n  <Tag2>...</Tag2>
+  // We need to wrap in <> ... </>
+  const returnPattern = /return\s*\(\s*\n(\s*)/g;
+  let returnMatch;
+
+  while ((returnMatch = returnPattern.exec(next)) !== null) {
+    const returnStart = returnMatch.index;
+    const indentation = returnMatch[1];
+    const afterReturn = next.substring(returnStart + returnMatch[0].length);
+
+    // Check if there are multiple top-level JSX elements
+    // Count opening and closing tags at the same indentation level
+    const lines = afterReturn.split('\n');
+    let depth = 0;
+    let elementCount = 0;
+    let foundFirstElement = false;
+    let isInsideJsx = false;
+
+    for (let i = 0; i < lines.length && i < 100; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // End of return statement
+      if (trimmed === ')' || trimmed === ');' || trimmed.startsWith(');')) {
+        break;
+      }
+
+      // Opening JSX tag
+      const openMatch = trimmed.match(/^<([A-Za-z][A-Za-z0-9.]*)\b(?!\/)(?![^>]*\/>)/);
+      if (openMatch) {
+        if (depth === 0) {
+          if (foundFirstElement) {
+            // Found second top-level element!
+            elementCount++;
+          } else {
+            foundFirstElement = true;
+            elementCount = 1;
+          }
+          isInsideJsx = true;
+        }
+        // Don't count self-closing tags
+        if (!trimmed.endsWith('/>') && !trimmed.includes('/>')) {
+          depth++;
+        }
+      }
+
+      // Self-closing tag at depth 0
+      if (depth === 0 && trimmed.match(/^<[A-Za-z][A-Za-z0-9.]*\b[^>]*\/>$/)) {
+        if (foundFirstElement) {
+          elementCount++;
+        } else {
+          foundFirstElement = true;
+          elementCount = 1;
+        }
+      }
+
+      // Closing JSX tag
+      const closeMatch = trimmed.match(/^<\/([A-Za-z][A-Za-z0-9.]*)>/);
+      if (closeMatch) {
+        depth--;
+        if (depth < 0) depth = 0;
+      }
+    }
+
+    // If we found multiple top-level elements, wrap in Fragment
+    if (elementCount > 1) {
+      // Insert <> after return ( and </> before )
+      const returnEnd = returnStart + returnMatch[0].length;
+
+      // Find the closing ) of return
+      let parenDepth = 1;
+      let closeParenPos = -1;
+      for (let i = returnEnd; i < next.length; i++) {
+        if (next[i] === '(') parenDepth++;
+        if (next[i] === ')') parenDepth--;
+        if (parenDepth === 0) {
+          closeParenPos = i;
+          break;
+        }
+      }
+
+      if (closeParenPos > 0) {
+        // Insert Fragment
+        next = next.slice(0, returnEnd) +
+          '<>\n' + indentation +
+          next.slice(returnEnd, closeParenPos) +
+          '\n' + indentation + '</>' +
+          next.slice(closeParenPos);
+
+        warnings.push('Wrapped adjacent JSX elements in Fragment');
+        break; // Only fix once per file
+      }
+    }
+  }
+
+  // Fix unterminated JSX - auto-close unclosed tags at end of file
+  // This happens when LLM truncates generation mid-JSX
+  const beforeAutoClose = next;
+
+  // Check if file seems truncated (ends abruptly without proper closing)
+  const trimmedEnd = next.trimEnd();
+  const autoCloseLastLines = trimmedEnd.split('\n').slice(-5);
+  const autoCloseLastLine = autoCloseLastLines[autoCloseLastLines.length - 1]?.trim() || '';
+
+  // If file ends with unclosed JSX element, try to close it
+  if (autoCloseLastLine.endsWith('</li>') ||
+    autoCloseLastLine.endsWith('</a>') ||
+    autoCloseLastLine.endsWith('</span>') ||
+    autoCloseLastLine.endsWith('</p>') ||
+    autoCloseLastLine.endsWith('</div>') ||
+    autoCloseLastLine.match(/<\/[a-zA-Z][a-zA-Z0-9]*>$/)) {
+
+    // Collect all open tags
+    const tagStack: string[] = [];
+    const openTagPattern = /<([a-zA-Z][a-zA-Z0-9.]*)\b(?![^>]*\/>)[^>]*>/g;
+    const closeTagPattern = /<\/([a-zA-Z][a-zA-Z0-9.]*)>/g;
+
+    let match;
+
+    // Find all opening tags
+    while ((match = openTagPattern.exec(next)) !== null) {
+      const tagName = match[1].toLowerCase();
+      // Skip self-closing and void elements
+      if (!match[0].includes('/>') && !['br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr', 'path', 'circle', 'rect', 'line', 'polygon', 'polyline', 'ellipse', 'use', 'stop'].includes(tagName)) {
+        tagStack.push(match[1]);
+      }
+    }
+
+    // Remove closed tags from stack
+    while ((match = closeTagPattern.exec(next)) !== null) {
+      const tagName = match[1];
+      const index = tagStack.lastIndexOf(tagName);
+      if (index !== -1) {
+        tagStack.splice(index, 1);
+      }
+    }
+
+    // If there are unclosed tags, close them
+    if (tagStack.length > 0) {
+      // Build closing tags in reverse order
+      const closingTags = tagStack.reverse().map(tag => `</${tag}>`).join('\n      ');
+
+      // Also need to close React component structure
+      let suffix = '\n      ' + closingTags;
+
+      // Check if we need to close return statement and function
+      const hasReturnOpen = next.includes('return (') || next.includes('return(');
+      const openParens = (next.match(/\(/g) || []).length;
+      const closeParens = (next.match(/\)/g) || []).length;
+      const openBraces = (next.match(/\{/g) || []).length;
+      const closeBraces = (next.match(/\}/g) || []).length;
+
+      // Add missing closing brackets
+      const missingParens = openParens - closeParens;
+      const missingBraces = openBraces - closeBraces;
+
+      if (missingParens > 0) {
+        suffix += '\n    ' + ')'.repeat(Math.min(missingParens, 3));
+      }
+      if (missingBraces > 0) {
+        suffix += '\n  ' + '}'.repeat(Math.min(missingBraces, 3));
+      }
+
+      // Add export default if missing
+      if (!next.includes('export default') && next.includes('function App')) {
+        suffix += '\n\nexport default App;';
+      }
+
+      next = next + suffix;
+      warnings.push('Auto-closed truncated JSX elements at end of file');
+    }
   }
 
   if (next !== before) {
@@ -2522,6 +3152,59 @@ function deduplicateTsxContent(code: string, warnings: string[]): string {
 
       if (result !== before) {
         warnings.push(`Reconstructed ${funcName} from broken function/arrow merge`);
+        return result;
+      }
+    }
+  }
+
+  // Pattern 7: "use client" or import statement appears inside JSX (mid-tag)
+  // This happens when LLM restarts generation INSIDE a JSX attribute
+  // Example: <a href="#"\n"use client";\nimport ...
+  // We keep everything from "use client" onwards
+  const useClientInsideJsx = /"use client";\s*\n\s*import\s+/;
+  const useClientMatch = code.match(useClientInsideJsx);
+
+  if (useClientMatch && useClientMatch.index !== undefined) {
+    // Find the position of "use client"
+    const useClientPos = code.indexOf('"use client"');
+
+    if (useClientPos > 0) {
+      // Check if this looks like it's inside JSX (there's an unclosed < before it)
+      const beforeUseClient = code.substring(0, useClientPos);
+      const lastOpenTag = beforeUseClient.lastIndexOf('<');
+      const lastCloseTag = beforeUseClient.lastIndexOf('>');
+
+      // If the last < comes after the last >, we're inside an unclosed tag
+      if (lastOpenTag > lastCloseTag) {
+        // LLM restarted inside JSX! Keep from "use client" onwards
+        const result = code.substring(useClientPos).trimStart();
+
+        if (result !== before && result.startsWith('"use client"')) {
+          warnings.push('Removed JSX content before LLM restart ("use client" detected mid-tag)');
+          return result;
+        }
+      }
+    }
+  }
+
+  // Pattern 8: import statement appears mid-file without proper context
+  // This catches cases where LLM restarts but doesn't use "use client"
+  // Look for pattern: className="..." or href="#" followed by newline and import
+  const attrFollowedByImport = /\b(?:className|href|src|alt|id|style)=["'][^"']*\n\s*import\s+/;
+  const attrImportMatch = code.match(attrFollowedByImport);
+
+  if (attrImportMatch && attrImportMatch.index !== undefined) {
+    // Find the import statement position
+    const matchPos = attrImportMatch.index;
+    const afterMatch = code.substring(matchPos);
+    const importPos = afterMatch.search(/import\s+/);
+
+    if (importPos >= 0) {
+      const absoluteImportPos = matchPos + importPos;
+      const result = code.substring(absoluteImportPos).trimStart();
+
+      if (result !== before && result.startsWith('import ')) {
+        warnings.push('Removed JSX content before LLM restart (import detected after attribute)');
         return result;
       }
     }
