@@ -78,24 +78,44 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     return { content: result.content, changed: result.content !== content, warnings: result.warnings };
   }
 
-  if (!CODE_EXTENSIONS.has(ext)) {
-    return { content, changed: false, warnings: [] };
-  }
-
   let next = content;
 
   if (normalizedPath === 'src/lib/utils.ts') {
-    const beforeUtils = next;
+    let utilsChanged = false;
+
+    const beforeUtilsImports = next;
+    const utilsLines = next.split(/\r?\n/).filter((line) => {
+      if (/^\s*import\s+\{\s*clsx\s*,\s*type\s+ClassValue\s*\}\s+from/.test(line)) return false;
+      if (/^\s*import\s+\{\s*twMerge\s*\}\s+from/.test(line)) return false;
+      if (/^\s*import\s+\{[^}]*\}\s+from\s+"?\s*$/.test(line)) return false; // unterminated import line
+      return true;
+    });
+    const canonicalImports = [
+      'import { clsx, type ClassValue } from "clsx";',
+      'import { twMerge } from "tailwind-merge";',
+      '',
+    ];
+    next = [...canonicalImports, ...utilsLines].join('\n');
+    if (next !== beforeUtilsImports) {
+      warnings.push('Fixed malformed imports in src/lib/utils.ts');
+      utilsChanged = true;
+    }
+
     const hasFormatPrice =
       /\bexport\s+function\s+formatPrice\b/.test(next) || /\bexport\s+const\s+formatPrice\b/.test(next);
     if (!hasFormatPrice) {
-      next = `${next.trimEnd()}\n\nexport function formatPrice(value: number, currency: string = \"USD\", locale: string = \"en-US\") {\n  return new Intl.NumberFormat(locale, { style: \"currency\", currency }).format(value);\n}\n`;
+      next = `${next.trimEnd()}\n\nexport function formatPrice(value: number, currency: string = "USD", locale: string = "en-US") {\n  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);\n}\n`;
       warnings.push('Added missing formatPrice export to src/lib/utils.ts');
+      utilsChanged = true;
     }
 
-    if (next !== beforeUtils) {
+    if (utilsChanged) {
       return { content: next, changed: true, warnings };
     }
+  }
+
+  if (!CODE_EXTENSIONS.has(ext)) {
+    return { content, changed: false, warnings: [] };
   }
 
   if (/^vite\.config\./i.test(normalizedPath)) {
@@ -154,6 +174,7 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   if (ext === '.tsx' || ext === '.jsx') {
     next = deduplicateTsxContent(next, warnings); // Fix LLM restart mid-generation
     next = sanitizeBoltTags(next, warnings); // Remove leaked boltAction/boltArtifact tags FIRST
+    next = hoistLateImportsInTsx(next, warnings);
     next = sanitizeJsxSyntaxErrors(next, warnings);
     next = sanitizeJsxComments(next, warnings);
   } else {
@@ -249,6 +270,124 @@ function sanitizeBoltTags(code: string, warnings: string[]): string {
   return next;
 }
 
+function hoistLateImportsInTsx(code: string, warnings: string[]): string {
+  const before = code;
+  const lines = code.split('\n');
+  const removed = new Array<boolean>(lines.length).fill(false);
+  const existingImports = new Set<string>();
+  const hoistedImports: string[] = [];
+
+  let inBlockComment = false;
+  let lastImportEnd = -1;
+  let insertAt = 0;
+
+  const consumeImportBlock = (startIndex: number): number => {
+    let end = startIndex;
+    for (let j = startIndex; j < lines.length; j += 1) {
+      end = j;
+      if (lines[j].includes(';')) break;
+      if (/\bfrom\s+['"][^'"]+['"]\s*;?\s*$/.test(lines[j])) break;
+      if (j - startIndex > 30) break;
+    }
+    return end;
+  };
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+
+    if (inBlockComment) {
+      insertAt = i + 1;
+      if (trimmed.includes('*/')) {
+        inBlockComment = false;
+      }
+      continue;
+    }
+
+    if (trimmed === '') {
+      insertAt = i + 1;
+      continue;
+    }
+    if (trimmed.startsWith('//')) {
+      insertAt = i + 1;
+      continue;
+    }
+    if (trimmed.startsWith('/*')) {
+      insertAt = i + 1;
+      if (!trimmed.includes('*/')) {
+        inBlockComment = true;
+      }
+      continue;
+    }
+    if (/^['"]use\s+(?:client|strict)['"];?\s*$/.test(trimmed)) {
+      insertAt = i + 1;
+      continue;
+    }
+
+    if (/^\s*import\b/.test(raw)) {
+      const end = consumeImportBlock(i);
+      const block = lines.slice(i, end + 1).join('\n').trim();
+      if (block) {
+        existingImports.add(block);
+      }
+      lastImportEnd = end;
+      insertAt = end + 1;
+      i = end;
+      continue;
+    }
+
+    break;
+  }
+
+  for (let i = insertAt; i < lines.length; i += 1) {
+    if (!/^\s*import\b/.test(lines[i])) continue;
+
+    const end = consumeImportBlock(i);
+    const block = lines.slice(i, end + 1).join('\n').trim();
+    if (block && !existingImports.has(block)) {
+      hoistedImports.push(block);
+      existingImports.add(block);
+    }
+    for (let j = i; j <= end; j += 1) {
+      removed[j] = true;
+    }
+    i = end;
+  }
+
+  if (hoistedImports.length === 0) {
+    return before;
+  }
+
+  const insertionIndex = lastImportEnd >= 0 ? lastImportEnd + 1 : insertAt;
+  const hoistedLines: string[] = [];
+  for (const block of hoistedImports) {
+    if (hoistedLines.length > 0) hoistedLines.push('');
+    hoistedLines.push(...block.split('\n'));
+  }
+
+  const out: string[] = [];
+  let inserted = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!inserted && i === insertionIndex) {
+      out.push(...hoistedLines);
+      inserted = true;
+    }
+    if (!removed[i]) {
+      out.push(lines[i]);
+    }
+  }
+  if (!inserted) {
+    out.unshift(...hoistedLines, '');
+  }
+
+  const next = out.join('\n');
+  if (next !== before) {
+    warnings.push('Hoisted late import statements to top of TSX file');
+  }
+
+  return next;
+}
+
 /**
  * Fix common JSX syntax errors from AI generation, such as truncated attributes.
  * Examples:
@@ -258,6 +397,72 @@ function sanitizeBoltTags(code: string, warnings: string[]): string {
 function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const before = code;
   let next = code;
+
+  // Fix 0 CRITICAL: Detect and remove truncated code at end of file
+  // This happens when LLM response is cut off mid-generation
+  // Pattern: file ends with unterminated string like: <p className="text
+  const beforeTruncationFix = next;
+
+  // Check if file ends with an unterminated JSX attribute string
+  // Look for pattern: attr="value (no closing quote before EOF)
+  const truncLines = next.split('\n');
+  const lastLine = truncLines[truncLines.length - 1];
+  const secondLastLine = truncLines.length > 1 ? truncLines[truncLines.length - 2] : '';
+
+  // Pattern 1: Last line has an unclosed string in attribute
+  // e.g., <p className="text  (no closing quote)
+  const unterminatedStringMatch = lastLine.match(/^\s*<[a-zA-Z][^>]*\s+[a-zA-Z]+\s*=\s*["'][^"']*$/);
+  if (unterminatedStringMatch) {
+    // Remove the truncated line entirely
+    truncLines.pop();
+    next = truncLines.join('\n');
+    warnings.push('Removed truncated line with unterminated string at end of file');
+  }
+
+  // Pattern 2: Last line is just whitespace and previous line has unclosed string
+  if (lastLine.trim() === '' && secondLastLine.match(/^\s*<[a-zA-Z][^>]*\s+[a-zA-Z]+\s*=\s*["'][^"']*$/)) {
+    truncLines.pop(); // Remove empty line
+    truncLines.pop(); // Remove truncated line
+    next = truncLines.join('\n');
+    warnings.push('Removed truncated code block with unterminated string');
+  }
+
+  // Pattern 3: File ends mid-component without closing brackets
+  // Check if we have more { than } or more ( than )
+  const openBraces = (next.match(/{/g) || []).length;
+  const closeBraces = (next.match(/}/g) || []).length;
+  if (openBraces > closeBraces + 3) {
+    // Severe truncation - try to close the file properly
+    // Add missing closing braces
+    const missing = openBraces - closeBraces;
+    next = next.trimEnd() + '\n' + '}'.repeat(Math.min(missing, 10));
+    warnings.push(`Added ${Math.min(missing, 10)} missing closing braces to complete truncated file`);
+  }
+
+  if (next !== beforeTruncationFix) {
+    // Re-split to update lines array
+  }
+
+  const beforeZeroWidthStrip = next;
+  next = next.replace(/[\u200B\uFEFF]/g, '');
+  if (next !== beforeZeroWidthStrip) {
+    warnings.push('Removed zero-width characters from JSX content');
+  }
+
+
+  // Fix 0a: Unterminated template literal inside className={cn(`...`)} blocks (Tailwind tokens).
+  const beforeUnterminatedTemplate = next;
+  next = next.replace(/className\s*=\s*{cn\(\s*`([\s\S]*?)(\)\s*})/g, (match, body, tail) => {
+    const tickCount = (match.match(/`/g) ?? []).length;
+    if (tickCount % 2 === 0) {
+      return match;
+    }
+    // Insert closing backtick before the )}
+    return `className={cn(\`${body}\`${tail}`;
+  });
+  if (next !== beforeUnterminatedTemplate) {
+    warnings.push('Closed unterminated template literal in className/cn call');
+  }
 
   const beforeButtTagFix = next;
   next = next.replace(/<\s*\/\s*butt(\s|>)/gi, '</button$1');
@@ -541,21 +746,47 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     warnings.push('Fixed missing arrow token in JSX attributes');
   }
 
-  // Fix 6c: Ensure <input> is self-closed (void element in JSX)
-  const beforeInputSelfClose = next;
-  next = next.replace(/<input\b([^>]*?)>/gi, (match, attrs) => {
-    if (/\/\s*>$/.test(match)) return match;
-    return `<input${attrs} />`;
-  });
-  next = next.replace(/<\/input>/gi, '');
-  if (next !== beforeInputSelfClose) {
-    warnings.push('Self-closed <input> tags');
+  // Fix 6c: Ensure void elements are self-closed in JSX (HTML + SVG void elements)
+  // HTML void elements
+  const htmlVoidElements = ['input', 'img', 'br', 'hr', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
+  // SVG self-closing elements (commonly used without children)
+  const svgVoidElements = ['path', 'circle', 'rect', 'line', 'polygon', 'polyline', 'ellipse', 'use', 'stop', 'animate', 'animateTransform', 'animateMotion', 'mpath', 'set', 'image'];
+  const voidElements = [...htmlVoidElements, ...svgVoidElements];
+  const beforeVoidSelfClose = next;
+
+  for (const tag of voidElements) {
+    // Match opening void tags - use [\s\S]*? to handle multi-line attributes
+    // Check for self-closing inside the replace function
+    const openTagRegex = new RegExp(`<${tag}\\b([\\s\\S]*?)>`, 'gi');
+    next = next.replace(openTagRegex, (match, attrs) => {
+      // Skip if already self-closed
+      if (/\/\s*>$/.test(match)) return match;
+      // Make it self-closing
+      return `<${tag}${attrs} />`;
+    });
+
+    // Remove any erroneous closing tags for void elements
+    const closeTagRegex = new RegExp(`<\\/${tag}\\s*>`, 'gi');
+    next = next.replace(closeTagRegex, '');
+  }
+
+  if (next !== beforeVoidSelfClose) {
+    warnings.push('Self-closed void element tags (input, img, br, etc.)');
   }
 
   // Fix 6e: Merge or remove orphaned declarations (e.g. "const" on its own line)
   const beforeLonelyDecl = next;
   next = next.replace(/(^\s*(?:export\s+)?(?:const|let|var)\s*)\n\s*([A-Za-z_$][\w$]*)/gm, '$1 $2');
+  // Remove orphaned export function/class/const/let/var without identifier
   next = next.replace(/^\s*(?:export\s+)?(?:const|let|var|function|class)\s*$/gm, '');
+  // Fix: "export function\n\nexport function name()" - orphaned export function followed by another
+  next = next.replace(/^\s*export\s+function\s*\n+(\s*export\s+function\s+)/gm, '$1');
+  next = next.replace(/^\s*export\s+const\s*\n+(\s*export\s+const\s+)/gm, '$1');
+  next = next.replace(/^\s*export\s+class\s*\n+(\s*export\s+class\s+)/gm, '$1');
+  // Just "export function" on a line by itself (without name) - remove it
+  next = next.replace(/^\s*export\s+function\s*\n/gm, '');
+  next = next.replace(/^\s*export\s+const\s*\n/gm, '');
+  next = next.replace(/^\s*export\s+class\s*\n/gm, '');
   if (next !== beforeLonelyDecl) {
     warnings.push('Fixed orphaned declarations (const/let/var/function/class)');
   }
@@ -600,8 +831,9 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const beforeDuplicateArrow = next;
   const duplicateArrowLines = next.split('\n');
   let duplicateArrowFixed = false;
+  let duplicateArrowReturnReplaced = false;
   for (let i = 0; i < duplicateArrowLines.length; i += 1) {
-    if (!/^\s*\}\)\s*=>\s*\(\s*$/.test(duplicateArrowLines[i])) {
+    if (!/^\s*\}?\)\s*=>\s*\(\s*$/.test(duplicateArrowLines[i])) {
       continue;
     }
 
@@ -620,7 +852,12 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     }
 
     if (!adjusted) {
-      duplicateArrowLines[i] = duplicateArrowLines[i].replace(/\}\)\s*=>\s*\(/, 'return (');
+      const original = duplicateArrowLines[i];
+      const replaced = original.replace(/\}?\)\s*=>\s*\(/, 'return (');
+      duplicateArrowLines[i] = replaced;
+      if (replaced !== original) {
+        duplicateArrowReturnReplaced = true;
+      }
     } else {
       duplicateArrowLines[i] = '';
     }
@@ -630,6 +867,9 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   if (duplicateArrowFixed) {
     next = duplicateArrowLines.join('\n');
     warnings.push('Fixed duplicate arrow function line after props destructuring');
+    if (duplicateArrowReturnReplaced && !warnings.includes('Replaced stray arrow line with return statement')) {
+      warnings.push('Replaced stray arrow line with return statement');
+    }
   }
 
   // Fix 6e4: Stray "}) => (" after statements - replace with "return (".
@@ -637,7 +877,7 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   const strayArrowLines = next.split('\n');
   let strayArrowFixed = false;
   for (let i = 0; i < strayArrowLines.length; i += 1) {
-    if (!/^\s*\}\)\s*=>\s*\(\s*$/.test(strayArrowLines[i])) continue;
+    if (!/^\s*\}?\)\s*=>\s*\(\s*$/.test(strayArrowLines[i])) continue;
 
     let j = i - 1;
     while (j >= 0 && strayArrowLines[j].trim() === '') {
@@ -646,7 +886,7 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
 
     if (j < 0) continue;
     const prev = strayArrowLines[j].trim();
-    if (!/[;}]$/.test(prev)) continue;
+    if (!/[;}\)\]]$/.test(prev)) continue;
 
     const indent = strayArrowLines[i].match(/^\s*/)?.[0] ?? '';
     strayArrowLines[i] = `${indent}return (`;
@@ -655,6 +895,45 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
   if (strayArrowFixed) {
     next = strayArrowLines.join('\n');
     warnings.push('Replaced stray arrow line with return statement');
+  }
+
+  const beforeStatementBodyArrow = next;
+  const statementBodyArrowLines = next.split('\n');
+  let statementBodyArrowFixed = false;
+  for (let i = 0; i < statementBodyArrowLines.length; i += 1) {
+    if (!/^\s*(?:export\s+)?const\s+[A-Za-z_$][\w$]*\s*=\s*\([^)]*\)\s*=>\s*\(\s*$/.test(statementBodyArrowLines[i])) {
+      continue;
+    }
+
+    let j = i + 1;
+    while (j < statementBodyArrowLines.length && statementBodyArrowLines[j].trim() === '') {
+      j += 1;
+    }
+    if (j >= statementBodyArrowLines.length) continue;
+
+    const nextNonEmpty = statementBodyArrowLines[j].trim();
+    if (!/^(?:const|let|var|if|for|while|switch|try|return|useEffect|useLayoutEffect|useMemo|useCallback|useState)\b/.test(nextNonEmpty)) {
+      continue;
+    }
+
+    const indent = statementBodyArrowLines[i].match(/^\s*/)?.[0] ?? '';
+    statementBodyArrowLines[i] = statementBodyArrowLines[i].replace(/=>\s*\(\s*$/, '=> {');
+
+    for (let k = i + 1; k < statementBodyArrowLines.length; k += 1) {
+      const line = statementBodyArrowLines[k];
+      if (!line.startsWith(indent)) continue;
+      const trimmed = line.trim();
+      if (trimmed === ')' || trimmed === ');') {
+        statementBodyArrowLines[k] = `${indent}${trimmed === ');' ? '};' : '}'}`;
+        break;
+      }
+    }
+
+    statementBodyArrowFixed = true;
+  }
+  if (statementBodyArrowFixed) {
+    next = statementBodyArrowLines.join('\n');
+    warnings.push('Converted invalid arrow function paren bodies to block statements');
   }
 
   // Fix 6f: Missing closing brace in import list before "from"
@@ -1497,8 +1776,10 @@ function sanitizeCssSyntaxErrors(code: string, warnings: string[]) {
   const beforeBraceBalance = next;
   const braceFix = closeUnbalancedCssBraces(next);
   next = braceFix.content;
-  if (next !== beforeBraceBalance) {
+  if (braceFix.warnings.length > 0) {
     warnings.push(...braceFix.warnings);
+  } else if (next !== beforeBraceBalance) {
+    warnings.push('Closed unbalanced CSS braces');
   }
 
   if (propertyFixApplied) {
@@ -1688,7 +1969,7 @@ function isLikelyValidTailwindConfig(code: string): boolean {
   if (!trimmed) return false;
 
   const withoutLeadingComments = trimmed.replace(
-    /^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)+/, 
+    /^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)+/,
     '',
   ).trimStart();
 
@@ -2178,6 +2459,69 @@ function deduplicateTsxContent(code: string, warnings: string[]): string {
 
       if (result !== before && result.startsWith('import')) {
         warnings.push('Removed duplicated TSX export (LLM restart detected)');
+        return result;
+      }
+    }
+  }
+
+  // Pattern 4: LLM merged function declaration with arrow function
+  // Example: "function App() {\n}) => (" 
+  // This happens when LLM started writing function declaration, then restarted as arrow function
+  // We need to fix the broken function header
+  const functionArrowMerge = /function\s+([A-Za-z][A-Za-z0-9_]*)\s*\(\s*\)\s*\{[\s\n]*\}\s*\)\s*=>\s*\(/g;
+  const fnArrowMatches = [...code.matchAll(functionArrowMerge)];
+
+  if (fnArrowMatches.length > 0) {
+    let result = code;
+    for (const match of fnArrowMatches) {
+      const componentName = match[1];
+      // Replace the broken pattern with proper function syntax
+      result = result.replace(match[0], `function ${componentName}() {\n  return (`);
+      warnings.push(`Fixed merged function/arrow syntax for ${componentName}`);
+    }
+    if (result !== before) {
+      return result;
+    }
+  }
+
+  // Pattern 5: More aggressive - "function Name() {\n}) => (" where LLM got confused
+  // The }) from arrow function params sneaked in after function declaration
+  const brokenFunctionPattern = /function\s+([A-Za-z][A-Za-z0-9_]*)\s*\(\s*\)\s*\{[\s\n]*\}\)\s*=>\s*\(/g;
+  const brokenFnMatches = [...code.matchAll(brokenFunctionPattern)];
+
+  if (brokenFnMatches.length > 0) {
+    let result = code;
+    for (const match of brokenFnMatches) {
+      const componentName = match[1];
+      result = result.replace(match[0], `function ${componentName}() {\n  return (`);
+      warnings.push(`Fixed broken function declaration for ${componentName}`);
+    }
+    if (result !== before) {
+      return result;
+    }
+  }
+
+  // Pattern 6: "function Name() {\n}) => (" with possible content between - simplest fix
+  // Just look for the pattern and try to keep the arrow function body
+  const veryBrokenPattern = /function\s+[A-Za-z][A-Za-z0-9_]*\s*\(\s*\)\s*\{[\s\S]{0,50}?\}\s*\)\s*=>\s*\(/;
+  if (veryBrokenPattern.test(code)) {
+    // Find where the arrow function body starts
+    const arrowBodyMatch = code.match(/\}\s*\)\s*=>\s*\(/);
+    if (arrowBodyMatch && arrowBodyMatch.index !== undefined) {
+      // Extract function name from the function declaration
+      const funcNameMatch = code.match(/function\s+([A-Za-z][A-Za-z0-9_]*)/);
+      const funcName = funcNameMatch ? funcNameMatch[1] : 'App';
+
+      // Get the arrow function body (everything after `) => (`)
+      const arrowBodyStart = arrowBodyMatch.index + arrowBodyMatch[0].length;
+      const arrowBody = code.substring(arrowBodyStart);
+
+      // Reconstruct as proper function
+      const importsSection = code.substring(0, code.indexOf('function'));
+      const result = `${importsSection}function ${funcName}() {\n  return (\n${arrowBody}`;
+
+      if (result !== before) {
+        warnings.push(`Reconstructed ${funcName} from broken function/arrow merge`);
         return result;
       }
     }
