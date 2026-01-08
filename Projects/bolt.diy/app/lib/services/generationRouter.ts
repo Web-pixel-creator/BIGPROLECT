@@ -12,9 +12,10 @@
 
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
-import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type AutoFixResult, type LlmRepairFn } from '~/utils/autoFixLoop';
+import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type LlmRepairFn } from '~/utils/autoFixLoop';
 import { validateAgainstContract, getContractHints, type ContractValidationResult } from './sectionContracts';
-import { planSections, generateSectionPrompt, type SectionPlan, type SectionType } from './sectionGenerator';
+import { planSections, type SectionPlan, type SectionType } from './sectionGenerator';
+import { emitPipelineRun, type EmitPipelineRunOptions } from './pipelineTelemetry';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('GenerationRouter');
@@ -65,6 +66,15 @@ export async function routeThroughPipeline(
   const startTime = Date.now();
   const warnings: string[] = [];
   
+  // Timing tracking for telemetry
+  const timings = {
+    sanitizer: 0,
+    validator: 0,
+    contract: 0,
+    autoFix: 0,
+  };
+  let usedFallback = false;
+  
   const result: PipelineResult = {
     success: false,
     code,
@@ -83,22 +93,26 @@ export async function routeThroughPipeline(
   let currentCode = code;
 
   // Stage 1: Sanitizer
+  const sanitizerStart = Date.now();
   logger.debug(`Stage 1: Running sanitizer for ${filename}`);
   const sanitized = sanitizeGeneratedFile(filename, currentCode);
   result.stages.sanitizer.ran = true;
   result.stages.sanitizer.changed = sanitized.changed;
   currentCode = sanitized.content;
+  timings.sanitizer = Date.now() - sanitizerStart;
 
   if (sanitized.changed) {
     logger.debug('Sanitizer made changes to the code');
   }
 
   // Stage 2: Validator
+  const validatorStart = Date.now();
   logger.debug(`Stage 2: Running validator for ${filename}`);
   const validation = validateFile(currentCode, filename);
   result.stages.validator.ran = true;
   result.stages.validator.valid = validation.valid;
   result.stages.validator.errors = validation.errors.filter(e => e.severity === 'error').length;
+  timings.validator = Date.now() - validatorStart;
 
   const unifiedErrors = (validation.unifiedViolations ?? []).filter((v) => v.severity === 'error');
   const isAutoFixable =
@@ -114,12 +128,14 @@ export async function routeThroughPipeline(
 
   // Stage 3: Contract validation (if applicable)
   if (!options.skipContractValidation && options.sectionType) {
+    const contractStart = Date.now();
     logger.debug(`Stage 3: Running contract validation for ${options.sectionType}`);
     const contractResult = validateAgainstContract(currentCode, options.sectionType);
     result.stages.contract.ran = true;
     result.stages.contract.valid = contractResult.valid;
     result.stages.contract.score = contractResult.score;
     result.contractValidation = contractResult;
+    timings.contract = Date.now() - contractStart;
 
     // Add contract warnings from unified violations (primary) or legacy violations (fallback)
     const violationsToCheck = contractResult.unifiedViolations ?? contractResult.violations;
@@ -136,6 +152,7 @@ export async function routeThroughPipeline(
 
   // Stage 4: Auto-fix loop (if validation failed)
   if (!validation.valid && !options.skipAutoFix) {
+    const autoFixStart = Date.now();
     logger.debug('Stage 4: Running auto-fix loop');
     
     // First try quick fix (sanitizer only)
@@ -170,6 +187,7 @@ export async function routeThroughPipeline(
         logger.info(`Auto-fix succeeded after ${autoFixResult.attempts} attempt(s)`);
         if (autoFixResult.usedFallback) {
           warnings.push('Used fallback model for repair');
+          usedFallback = true;
         }
       } else {
         logger.warn(`Auto-fix failed after ${autoFixResult.attempts} attempt(s)`);
@@ -179,6 +197,7 @@ export async function routeThroughPipeline(
       logger.debug('Skipping LLM repair - errors not auto-fixable or no repair function');
       warnings.push('Some errors are not auto-fixable');
     }
+    timings.autoFix = Date.now() - autoFixStart;
   }
 
   // Final validation
@@ -186,6 +205,20 @@ export async function routeThroughPipeline(
   result.code = currentCode;
   result.success = result.finalValidation.valid;
   result.processingTimeMs = Date.now() - startTime;
+
+  // Emit telemetry event
+  try {
+    emitPipelineRun({
+      result,
+      sectionType: options.sectionType,
+      usedFallback,
+      quarantined: false, // Quarantine is handled by ActionRunner
+      timings,
+    });
+  } catch (telemetryError) {
+    // Telemetry errors should not affect pipeline execution
+    logger.debug('Telemetry emission failed:', telemetryError);
+  }
 
   logger.info(`Pipeline completed in ${result.processingTimeMs}ms - ${result.success ? 'SUCCESS' : 'FAILED'}`);
 

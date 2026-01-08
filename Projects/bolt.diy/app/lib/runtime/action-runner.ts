@@ -9,6 +9,7 @@ import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
 import { quickFix, areErrorsAutoFixable, autoFixWithLlm } from '~/utils/autoFixLoop';
 import { createLlmRepairFn, createFallbackLlmRepairFn } from '~/lib/services/llmRepairService';
+import { emitQuarantineWritten } from '~/lib/services/pipelineTelemetry';
 import { unreachable } from '~/utils/unreachable';
 import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
@@ -700,12 +701,14 @@ export class ActionRunner {
 
         // Validation Gate: Check code validity before writing
         const validation = validateFile(contentToWrite, relativePath);
+        let autoFixAttemptsCount = 0;
         if (!validation.valid) {
           const errorCount = getUnifiedErrorCount(validation.unifiedViolations);
           
           // Auto-Fix Loop: Try to fix if errors are auto-fixable
           if (isValidationAutoFixable(validation)) {
             logger.info(`Attempting auto-fix for ${relativePath} (${errorCount} errors)`);
+            autoFixAttemptsCount = 1; // Quick fix counts as 1 attempt
             
             // First try quick fix (sanitizer only - fast)
             const quickFixResult = quickFix(contentToWrite, relativePath);
@@ -736,6 +739,8 @@ export class ActionRunner {
                       metrics,
                     },
                   });
+                  
+                  autoFixAttemptsCount += autoFixResult.attempts;
                   
                   if (autoFixResult.success) {
                     logger.info(`LLM repair succeeded for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
@@ -789,6 +794,20 @@ export class ActionRunner {
               structuredWarnings || [],
               metrics
             );
+            
+            // Emit telemetry event for quarantine
+            try {
+              emitQuarantineWritten({
+                filename: relativePath,
+                violations: finalValidation.unifiedViolations || [],
+                sanitizerWarnings: structuredWarnings || [],
+                metrics,
+                autoFixAttempts: autoFixAttemptsCount,
+              });
+            } catch (telemetryError) {
+              // Telemetry errors should not affect quarantine
+              logger.debug('Telemetry emission failed:', telemetryError);
+            }
           } catch (quarantineError) {
             logger.error('Failed to quarantine invalid file:', quarantineError);
           }
