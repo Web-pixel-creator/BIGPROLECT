@@ -383,4 +383,43 @@ describe('codeSanitizer', () => {
     expect(result.content).not.toContain('some garbage');
     expect(result.warnings.join('\n')).toMatch(/Removed garbage before first import/);
   });
+
+  it('fixes truncated closing tags like .</</p>', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <div>',
+      '      <p className="text-white">Trusted by leading enterprises.</</p>',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Should fix the truncated closing tag
+    expect(result.content).toContain('</p>');
+    expect(result.content).not.toContain('.</</p>');
+    expect(result.warnings.join('\n')).toMatch(/truncated closing tags|JSX/i);
+  });
+
+  it('fixes truncated closing tags with extra < like .<</p>', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <p>Hello world.<</p>',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Should fix the truncated closing tag
+    expect(result.content).toContain('</p>');
+    expect(result.content).not.toContain('.<</p>');
+  });
 });

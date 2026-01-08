@@ -1980,6 +1980,21 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     }
   }
 
+  // Fix truncated closing tags: .</</p> -> </p>, .</</div> -> </div>
+  // This happens when LLM truncates text content and closing tag gets corrupted
+  // Pattern: text content ending with . followed by truncated closing tag .</</tagname>
+  const beforeTruncatedClosingTag = next;
+  next = next.replace(/\.<\s*<\s*\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*>/g, '</$1>');
+  // Also handle: .</p> (missing the second <)
+  next = next.replace(/\.\s*<\s*\/\s*<\s*([a-zA-Z][a-zA-Z0-9]*)\s*>/g, '.</$1>');
+  // Handle: text.</</p> -> text</p>
+  next = next.replace(/([^<])\.<\s*<\s*\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*>/g, '$1</$2>');
+  // Handle: .</ without tag name followed by proper closing
+  next = next.replace(/\.<\s*\/\s*<\s*\/\s*([a-zA-Z][a-zA-Z0-9]*)\s*>/g, '</$1>');
+  if (next !== beforeTruncatedClosingTag) {
+    warnings.push('Fixed truncated closing tags (.</</tag> pattern)');
+  }
+
   if (next !== before) {
     warnings.push('Fixed truncated or malformed JSX attributes (AI generation error)');
     console.log('[CodeSanitizer] JSX FIXED! Changes were made to the code.');
