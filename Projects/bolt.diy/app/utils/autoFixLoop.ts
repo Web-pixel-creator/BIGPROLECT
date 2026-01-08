@@ -1,0 +1,317 @@
+/**
+ * Auto-Fix Loop - Attempts to repair invalid code using LLM
+ * 
+ * When validation fails, this module:
+ * 1. Sends the broken code + error info to LLM for repair
+ * 2. Validates the repaired code
+ * 3. Retries up to MAX_ATTEMPTS times
+ * 4. Falls back to alternative model if primary fails
+ */
+
+import { sanitizeGeneratedFile } from './codeSanitizer';
+import { validateFile, type ValidationResult, type ValidationError } from './codeValidator';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('AutoFixLoop');
+
+export const MAX_FIX_ATTEMPTS = 3;
+
+export interface AutoFixResult {
+  success: boolean;
+  code: string;
+  attempts: number;
+  errors: ValidationError[];
+  usedFallback: boolean;
+}
+
+export interface AutoFixOptions {
+  filename: string;
+  originalCode: string;
+  validationResult: ValidationResult;
+  llmRepairFn?: (code: string, errors: ValidationError[], filename: string) => Promise<string>;
+  fallbackLlmRepairFn?: (code: string, errors: ValidationError[], filename: string) => Promise<string>;
+}
+
+/**
+ * Attempt to fix invalid code through sanitizer iterations.
+ * This is a synchronous fix that doesn't require LLM.
+ */
+export function attemptSanitizerFix(
+  code: string,
+  filename: string,
+  maxIterations: number = 3
+): { code: string; valid: boolean; iterations: number } {
+  let currentCode = code;
+  let iterations = 0;
+
+  for (let i = 0; i < maxIterations; i++) {
+    iterations++;
+    
+    // Run sanitizer
+    const sanitized = sanitizeGeneratedFile(filename, currentCode);
+    currentCode = sanitized.content;
+
+    // Validate
+    const validation = validateFile(currentCode, filename);
+    
+    if (validation.valid) {
+      logger.debug(`Sanitizer fixed code in ${iterations} iteration(s)`);
+      return { code: currentCode, valid: true, iterations };
+    }
+
+    // If sanitizer didn't change anything, no point in retrying
+    if (!sanitized.changed) {
+      break;
+    }
+  }
+
+  return { code: currentCode, valid: false, iterations };
+}
+
+/**
+ * Build a repair prompt for LLM to fix the code.
+ */
+export function buildRepairPrompt(
+  code: string,
+  errors: ValidationError[],
+  filename: string
+): string {
+  const errorList = errors
+    .filter(e => e.severity === 'error')
+    .slice(0, 5)
+    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .join('\n');
+
+  const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
+                   ext === '.jsx' ? 'React JavaScript (JSX)' :
+                   ext === '.ts' ? 'TypeScript' :
+                   ext === '.js' ? 'JavaScript' :
+                   ext === '.css' ? 'CSS' : 'code';
+
+  return `Fix the following ${fileType} code that has syntax errors.
+
+FILE: ${filename}
+
+ERRORS:
+${errorList}
+
+BROKEN CODE:
+\`\`\`${ext.slice(1)}
+${code}
+\`\`\`
+
+INSTRUCTIONS:
+1. Fix ONLY the syntax errors listed above
+2. Do NOT change the logic or functionality
+3. Do NOT add new features or remove existing ones
+4. Return ONLY the fixed code, no explanations
+5. Ensure all brackets, braces, and tags are properly closed
+
+FIXED CODE:`;
+}
+
+/**
+ * Extract code from LLM response (handles markdown code blocks).
+ */
+export function extractCodeFromResponse(response: string): string {
+  // Try to extract from markdown code block
+  const codeBlockMatch = response.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Try to find code between common markers
+  const startMarkers = ['FIXED CODE:', 'Here is the fixed code:', 'Fixed:'];
+  for (const marker of startMarkers) {
+    const idx = response.indexOf(marker);
+    if (idx !== -1) {
+      const afterMarker = response.substring(idx + marker.length).trim();
+      // Check if there's a code block after the marker
+      const blockMatch = afterMarker.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
+      if (blockMatch) {
+        return blockMatch[1].trim();
+      }
+      return afterMarker;
+    }
+  }
+
+  // Return as-is if no markers found
+  return response.trim();
+}
+
+
+/**
+ * Main auto-fix loop with LLM repair.
+ */
+export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixResult> {
+  const { filename, originalCode, validationResult, llmRepairFn, fallbackLlmRepairFn } = options;
+  
+  let currentCode = originalCode;
+  let attempts = 0;
+  let usedFallback = false;
+  let lastErrors = validationResult.errors;
+
+  // First, try sanitizer-only fix
+  const sanitizerResult = attemptSanitizerFix(currentCode, filename);
+  if (sanitizerResult.valid) {
+    return {
+      success: true,
+      code: sanitizerResult.code,
+      attempts: 0,
+      errors: [],
+      usedFallback: false,
+    };
+  }
+  currentCode = sanitizerResult.code;
+
+  // If no LLM repair function provided, return sanitizer result
+  if (!llmRepairFn) {
+    return {
+      success: false,
+      code: currentCode,
+      attempts: 0,
+      errors: lastErrors,
+      usedFallback: false,
+    };
+  }
+
+  // Try LLM repair with primary model
+  for (let i = 0; i < MAX_FIX_ATTEMPTS; i++) {
+    attempts++;
+    logger.info(`Auto-fix attempt ${attempts}/${MAX_FIX_ATTEMPTS} for ${filename}`);
+
+    try {
+      // Get repair from LLM
+      const repairPrompt = buildRepairPrompt(currentCode, lastErrors, filename);
+      const llmResponse = await llmRepairFn(currentCode, lastErrors, filename);
+      const repairedCode = extractCodeFromResponse(llmResponse);
+
+      // Sanitize the repaired code
+      const sanitized = sanitizeGeneratedFile(filename, repairedCode);
+      currentCode = sanitized.content;
+
+      // Validate
+      const validation = validateFile(currentCode, filename);
+      lastErrors = validation.errors;
+
+      if (validation.valid) {
+        logger.info(`Auto-fix succeeded after ${attempts} attempt(s)`);
+        return {
+          success: true,
+          code: currentCode,
+          attempts,
+          errors: [],
+          usedFallback: false,
+        };
+      }
+
+      logger.debug(`Attempt ${attempts} still has ${validation.errors.length} error(s)`);
+    } catch (error) {
+      logger.error(`Auto-fix attempt ${attempts} failed:`, error);
+    }
+  }
+
+  // Try fallback model if available
+  if (fallbackLlmRepairFn) {
+    logger.info(`Trying fallback model for ${filename}`);
+    usedFallback = true;
+
+    try {
+      const llmResponse = await fallbackLlmRepairFn(currentCode, lastErrors, filename);
+      const repairedCode = extractCodeFromResponse(llmResponse);
+
+      const sanitized = sanitizeGeneratedFile(filename, repairedCode);
+      currentCode = sanitized.content;
+
+      const validation = validateFile(currentCode, filename);
+      lastErrors = validation.errors;
+
+      if (validation.valid) {
+        logger.info(`Fallback model fixed the code`);
+        return {
+          success: true,
+          code: currentCode,
+          attempts: attempts + 1,
+          errors: [],
+          usedFallback: true,
+        };
+      }
+    } catch (error) {
+      logger.error(`Fallback model failed:`, error);
+    }
+  }
+
+  // All attempts failed
+  logger.warn(`Auto-fix failed after ${attempts} attempts for ${filename}`);
+  return {
+    success: false,
+    code: currentCode,
+    attempts,
+    errors: lastErrors,
+    usedFallback,
+  };
+}
+
+/**
+ * Quick fix attempt without LLM - just sanitizer iterations.
+ * Use this for fast, synchronous fixes.
+ */
+export function quickFix(code: string, filename: string): {
+  code: string;
+  valid: boolean;
+  changed: boolean;
+} {
+  const result = attemptSanitizerFix(code, filename, 3);
+  return {
+    code: result.code,
+    valid: result.valid,
+    changed: result.code !== code,
+  };
+}
+
+/**
+ * Check if errors are likely fixable by auto-fix.
+ */
+export function areErrorsAutoFixable(errors: ValidationError[]): boolean {
+  // Errors that are typically auto-fixable
+  const autoFixableCodes = new Set([
+    1005, // '}' expected
+    1002, // Unterminated string literal
+    1003, // Identifier expected
+    1109, // Expression expected
+    1128, // Declaration or statement expected
+    17001, // Mismatched JSX tags
+    17002, // Unclosed JSX tag
+    17003, // Unbalanced braces
+    17004, // Unbalanced parentheses
+    17005, // Duplicate imports
+    17006, // Multiple export default
+    18001, // Unbalanced CSS braces
+    18002, // Unclosed CSS comment
+  ]);
+
+  const fixableErrors = errors.filter(e => 
+    e.severity === 'error' && autoFixableCodes.has(e.code)
+  );
+
+  // Consider fixable if at least half of errors are in the fixable set
+  const errorCount = errors.filter(e => e.severity === 'error').length;
+  return fixableErrors.length >= errorCount / 2;
+}
+
+/**
+ * Get a summary of what went wrong for logging/debugging.
+ */
+export function getErrorSummary(errors: ValidationError[]): string {
+  const errorsByType = new Map<string, number>();
+  
+  for (const error of errors) {
+    const key = error.message.split(':')[0].trim();
+    errorsByType.set(key, (errorsByType.get(key) || 0) + 1);
+  }
+
+  return Array.from(errorsByType.entries())
+    .map(([type, count]) => `${type} (${count})`)
+    .join(', ');
+}

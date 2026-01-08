@@ -7,6 +7,7 @@ import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateTsx } from '~/utils/tsxValidator';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
+import { quickFix, areErrorsAutoFixable } from '~/utils/autoFixLoop';
 import { unreachable } from '~/utils/unreachable';
 import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
@@ -576,15 +577,34 @@ export class ActionRunner {
         // Validation Gate: Check code validity before writing
         const validation = validateFile(contentToWrite, relativePath);
         if (!validation.valid) {
-          const errorSummary = validation.errors
-            .filter(e => e.severity === 'error')
-            .slice(0, 3)
-            .map(e => `Line ${e.line}: ${e.message}`)
-            .join('; ');
-          logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
+          const errorCount = validation.errors.filter(e => e.severity === 'error').length;
           
-          // Log but still write - validation is informational for now
-          // Future: implement auto-fix loop here
+          // Auto-Fix Loop: Try to fix if errors are auto-fixable
+          if (areErrorsAutoFixable(validation.errors)) {
+            logger.info(`Attempting auto-fix for ${relativePath} (${errorCount} errors)`);
+            const fixResult = quickFix(contentToWrite, relativePath);
+            
+            if (fixResult.valid) {
+              logger.info(`Auto-fix succeeded for ${relativePath}`);
+              contentToWrite = fixResult.code;
+            } else {
+              // Log errors but still write the best attempt
+              const errorSummary = validation.errors
+                .filter(e => e.severity === 'error')
+                .slice(0, 3)
+                .map(e => `Line ${e.line}: ${e.message}`)
+                .join('; ');
+              logger.warn(`Auto-fix incomplete for ${relativePath}: ${errorSummary}`);
+            }
+          } else {
+            // Errors not auto-fixable, just log
+            const errorSummary = validation.errors
+              .filter(e => e.severity === 'error')
+              .slice(0, 3)
+              .map(e => `Line ${e.line}: ${e.message}`)
+              .join('; ');
+            logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
+          }
         }
       }
 
