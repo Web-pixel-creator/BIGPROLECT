@@ -146,7 +146,9 @@ export class StreamingMessageParser {
           const currentAction = state.currentAction;
 
           if (closeIndex !== -1) {
-            currentAction.content += input.slice(i, closeIndex);
+            // Use = instead of += because streaming branch already sets content
+            // and input.slice(i, closeIndex) contains the full content from action start
+            currentAction.content = input.slice(i, closeIndex);
 
             let content = currentAction.content.trim();
 
