@@ -100,6 +100,12 @@ export async function routeThroughPipeline(
   result.stages.validator.valid = validation.valid;
   result.stages.validator.errors = validation.errors.filter(e => e.severity === 'error').length;
 
+  const unifiedErrors = (validation.unifiedViolations ?? []).filter((v) => v.severity === 'error');
+  const isAutoFixable =
+    unifiedErrors.length > 0
+      ? unifiedErrors.filter((v) => v.autoFixable).length >= unifiedErrors.length / 2
+      : areErrorsAutoFixable(validation.errors);
+
   if (validation.valid) {
     logger.debug('Code passed validation');
   } else {
@@ -140,7 +146,7 @@ export async function routeThroughPipeline(
       result.stages.autoFix.success = true;
       result.stages.autoFix.attempts = 1;
       logger.debug('Quick fix succeeded');
-    } else if (options.llmRepairFn && areErrorsAutoFixable(validation.errors)) {
+    } else if (options.llmRepairFn && isAutoFixable) {
       // Try LLM repair
       const autoFixResult = await autoFixWithLlm({
         filename,
@@ -148,6 +154,10 @@ export async function routeThroughPipeline(
         validationResult: validation,
         llmRepairFn: options.llmRepairFn,
         fallbackLlmRepairFn: options.fallbackLlmRepairFn,
+        repairContext: {
+          sanitizerWarnings: sanitized.structuredWarnings,
+          metrics: sanitized.metrics,
+        },
       });
 
       result.stages.autoFix.ran = true;

@@ -2,6 +2,7 @@ import type { WebContainer } from '@webcontainer/api';
 import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
+import type { UnifiedViolation, ViolationCode } from '~/lib/services/sectionContracts';
 import type { SectionContract } from '~/types/section-contract';
 import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
@@ -39,7 +40,8 @@ const SECTION_ALIASES: Record<string, string[]> = {
 };
 
 const DATA_SECTION_REGEX = /data-section\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?/g;
-const SECTION_BLOCK_REGEX = /<section\b[^>]*data-section\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?[^>]*>([\s\S]*?)<\/section>/gi;
+const SECTION_BLOCK_REGEX =
+  /<section\b[^>]*data-section\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?[^>]*>([\s\S]*?)<\/section>/gi;
 const IMG_SRC_REGEX = /<img\b[^>]*\bsrc\s*=\s*(?:\{\s*)?["']([^"']+)["'](?:\s*\})?[^>]*>/gi;
 
 const normalizeSectionValue = (value: string) =>
@@ -106,6 +108,113 @@ const extractImageSources = (content: string): string[] => {
   }
 
   return sources;
+};
+
+const getUnifiedErrorCount = (violations: UnifiedViolation[] | undefined) =>
+  (violations ?? []).filter((v) => v.severity === 'error').length;
+
+const isValidationAutoFixable = (validation: ValidationResult) => {
+  const unifiedErrors = (validation.unifiedViolations ?? []).filter((v) => v.severity === 'error');
+  if (unifiedErrors.length > 0) {
+    const fixable = unifiedErrors.filter((v) => v.autoFixable).length;
+    return fixable >= unifiedErrors.length / 2;
+  }
+  return areErrorsAutoFixable(validation.errors);
+};
+
+const formatUnifiedViolationLine = (violation: UnifiedViolation) => {
+  const line = typeof violation.context?.line === 'number' ? violation.context.line : undefined;
+  const column = typeof violation.context?.column === 'number' ? violation.context.column : undefined;
+  const location = line ? `Line ${line}${column ? `:${column}` : ''}: ` : '';
+  return `${violation.code}: ${location}${violation.message}`;
+};
+
+const formatUnifiedErrorsSummary = (violations: UnifiedViolation[] | undefined, max = 5) =>
+  (violations ?? [])
+    .filter((v) => v.severity === 'error')
+    .slice(0, max)
+    .map(formatUnifiedViolationLine)
+    .join('\n');
+
+const buildPageContractViolations = (args: {
+  file: string;
+  expectedKeys: string[];
+  actualMatched: string[];
+  missing: string[];
+  outOfOrder: string[];
+  extras: string[];
+  imageCountFailures: string[];
+  imageDuplicateFailures: string[];
+  invalidImageUrls: string[];
+}): UnifiedViolation[] => {
+  const violations: UnifiedViolation[] = [];
+  const contextBase = {
+    file: args.file,
+    expectedSections: args.expectedKeys,
+    actualSections: args.actualMatched,
+  };
+
+  if (args.missing.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_MISSING_SECTION',
+      severity: 'error',
+      message: `Missing sections: ${args.missing.join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, missing: args.missing },
+    });
+  }
+
+  if (args.outOfOrder.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_WRONG_ORDER',
+      severity: 'error',
+      message: `Out-of-order sections: ${args.outOfOrder.join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, outOfOrder: args.outOfOrder },
+    });
+  }
+
+  if (args.extras.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_UNKNOWN_SECTION',
+      severity: 'warning',
+      message: `Unknown sections: ${args.extras.join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, unknown: args.extras },
+    });
+  }
+
+  if (args.imageCountFailures.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_IMAGE_COUNT',
+      severity: 'error',
+      message: `Image counts below minimum: ${args.imageCountFailures.join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, imageCountFailures: args.imageCountFailures },
+    });
+  }
+
+  if (args.imageDuplicateFailures.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_IMAGE_DUPLICATE',
+      severity: 'warning',
+      message: `Duplicate images in section: ${args.imageDuplicateFailures.join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, imageDuplicateFailures: args.imageDuplicateFailures },
+    });
+  }
+
+  if (args.invalidImageUrls.length > 0) {
+    violations.push({
+      code: 'CONTRACT_PAGE_IMAGE_INVALID',
+      severity: 'error',
+      message: `Images not in IMAGES list: ${args.invalidImageUrls.slice(0, 5).join(', ')}`,
+      autoFixable: true,
+      context: { ...contextBase, invalidImageUrls: args.invalidImageUrls },
+    });
+  }
+
+  return violations;
 };
 
 export type ActionStatus = 'pending' | 'running' | 'complete' | 'aborted' | 'failed';
@@ -563,7 +672,7 @@ export class ActionRunner {
 
       // Don't sanitize internal history snapshots – they may store JSON under .tsx-like filenames.
       if (typeof contentToWrite === 'string' && !relativePath.startsWith('.history/')) {
-        const { content, changed, warnings } = sanitizeGeneratedFile(relativePath, contentToWrite);
+        const { content, changed, warnings, structuredWarnings, metrics } = sanitizeGeneratedFile(relativePath, contentToWrite);
         contentToWrite = content;
 
         if (changed) {
@@ -574,13 +683,28 @@ export class ActionRunner {
           logger.debug(`Sanitizer notes for ${relativePath}:\n- ${warnings.join('\n- ')}`);
         }
 
+        if (structuredWarnings && structuredWarnings.length > 0) {
+          const structuredSummary = structuredWarnings
+            .map((w) => `${w.code} (${w.risk}): ${w.message}`)
+            .join('\n- ');
+          logger.debug(`Sanitizer structured warnings for ${relativePath}:\n- ${structuredSummary}`);
+        }
+
+        if (metrics) {
+          logger.debug(
+            `Sanitizer change metrics for ${relativePath}: changedLinesPercent=${metrics.changedLinesPercent.toFixed(2)} ` +
+              `charsAdded=${metrics.charsAdded} charsRemoved=${metrics.charsRemoved} highRiskFixes=${metrics.highRiskFixes} ` +
+              `riskLevel=${metrics.riskLevel}`,
+          );
+        }
+
         // Validation Gate: Check code validity before writing
         const validation = validateFile(contentToWrite, relativePath);
         if (!validation.valid) {
-          const errorCount = validation.errors.filter(e => e.severity === 'error').length;
+          const errorCount = getUnifiedErrorCount(validation.unifiedViolations);
           
           // Auto-Fix Loop: Try to fix if errors are auto-fixable
-          if (areErrorsAutoFixable(validation.errors)) {
+          if (isValidationAutoFixable(validation)) {
             logger.info(`Attempting auto-fix for ${relativePath} (${errorCount} errors)`);
             
             // First try quick fix (sanitizer only - fast)
@@ -607,6 +731,10 @@ export class ActionRunner {
                     validationResult: validation,
                     llmRepairFn,
                     fallbackLlmRepairFn,
+                    repairContext: {
+                      sanitizerWarnings: structuredWarnings,
+                      metrics,
+                    },
                   });
                   
                   if (autoFixResult.success) {
@@ -624,22 +752,14 @@ export class ActionRunner {
                 }
               } else {
                 // Not important file or too many errors - use quick fix result
-                const errorSummary = validation.errors
-                  .filter(e => e.severity === 'error')
-                  .slice(0, 3)
-                  .map(e => `Line ${e.line}: ${e.message}`)
-                  .join('; ');
+                const errorSummary = formatUnifiedErrorsSummary(validation.unifiedViolations, 3).replace(/\n/g, '; ');
                 logger.warn(`Auto-fix incomplete for ${relativePath}: ${errorSummary}`);
                 contentToWrite = quickFixResult.code;
               }
             }
           } else {
             // Errors not auto-fixable, just log
-            const errorSummary = validation.errors
-              .filter(e => e.severity === 'error')
-              .slice(0, 3)
-              .map(e => `Line ${e.line}: ${e.message}`)
-              .join('; ');
+            const errorSummary = formatUnifiedErrorsSummary(validation.unifiedViolations, 3).replace(/\n/g, '; ');
             logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
           }
         }
@@ -647,7 +767,7 @@ export class ActionRunner {
         // Final validation before write - Hard Gate
         const finalValidation = validateFile(contentToWrite, relativePath);
         if (!finalValidation.valid) {
-          const errorCount = finalValidation.errors.filter(e => e.severity === 'error').length;
+          const errorCount = getUnifiedErrorCount(finalValidation.unifiedViolations);
           
           // Hard Gate: Don't write invalid files to working directory
           // Instead, quarantine to .history/ and alert user
@@ -656,18 +776,25 @@ export class ActionRunner {
           
           try {
             await webcontainer.fs.mkdir(quarantineFolder, { recursive: true });
+            
+            // Write the invalid file
             await webcontainer.fs.writeFile(quarantinePath, contentToWrite);
             logger.warn(`Quarantined invalid file to ${quarantinePath} (${errorCount} errors)`);
+            
+            // Write sidecar artifacts for debugging and analytics
+            await this.#writeQuarantineSidecars(
+              webcontainer,
+              quarantinePath,
+              finalValidation.unifiedViolations || [],
+              structuredWarnings || [],
+              metrics
+            );
           } catch (quarantineError) {
             logger.error('Failed to quarantine invalid file:', quarantineError);
           }
           
           // Alert user about the invalid file
-          const errorSummary = finalValidation.errors
-            .filter(e => e.severity === 'error')
-            .slice(0, 5)
-            .map(e => `Line ${e.line}: ${e.message}`)
-            .join('\n');
+          const errorSummary = formatUnifiedErrorsSummary(finalValidation.unifiedViolations, 5);
           
           this.onAlert?.({
             type: 'validation',
@@ -727,26 +854,38 @@ export class ActionRunner {
       }
 
       // Get first error for alert
-      const firstError = result.errors.find(e => e.severity === 'error');
-      if (!firstError) {
+      const firstUnifiedError = result.unifiedViolations?.find((v) => v.severity === 'error');
+      const fallbackFirstError = result.errors.find((e) => e.severity === 'error');
+      if (!firstUnifiedError && !fallbackFirstError) {
         return true; // Only warnings, consider valid
       }
 
+      const firstErrorLine =
+        (typeof firstUnifiedError?.context?.line === 'number' ? firstUnifiedError.context.line : undefined) ??
+        fallbackFirstError?.line ??
+        1;
+      const firstErrorColumn =
+        (typeof firstUnifiedError?.context?.column === 'number' ? firstUnifiedError.context.column : undefined) ??
+        fallbackFirstError?.column ??
+        1;
+      const firstErrorMessage = firstUnifiedError?.message ?? fallbackFirstError?.message ?? 'Unknown validation error';
+
       const attempts = this.#autoFixAttempts.get(normalizedPath) ?? 0;
-      const location = `${firstError.line}:${firstError.column}`;
+      const location = `${firstErrorLine}:${firstErrorColumn}`;
       
       // Build snippet from code
       const lines = content.split('\n');
-      const errorLine = lines[firstError.line - 1] || '';
-      const snippet = errorLine ? `\n\nSnippet:\n${errorLine}\n${' '.repeat(Math.max(0, firstError.column - 1))}^` : '';
+      const errorLine = lines[firstErrorLine - 1] || '';
+      const snippet = errorLine ? `\n\nSnippet:\n${errorLine}\n${' '.repeat(Math.max(0, firstErrorColumn - 1))}^` : '';
       
-      const contentSummary = `File: ${normalizedPath}\nError: ${firstError.message}\nLocation: ${location}${snippet}`;
-      const autoFixKey = `${normalizedPath}:${firstError.message}:${location}`;
+      const firstErrorCode = (firstUnifiedError?.code as ViolationCode | undefined) ?? 'SYNTAX_OTHER';
+      const contentSummary = `File: ${normalizedPath}\nCode: ${firstErrorCode}\nError: ${firstErrorMessage}\nLocation: ${location}${snippet}`;
+      const autoFixKey = `${normalizedPath}:${firstErrorCode}:${location}`;
 
       this.onAlert?.({
         type: 'validation',
         title: 'Invalid JSX Generated',
-        description: `${normalizedPath}: ${firstError.message} (line ${firstError.line}, column ${firstError.column})`,
+        description: `${normalizedPath}: ${firstErrorMessage} (line ${firstErrorLine}, column ${firstErrorColumn})`,
         content: contentSummary,
         source: 'validation',
         autoFix:
@@ -755,7 +894,8 @@ export class ActionRunner {
                 key: autoFixKey,
                 message:
                   `Fix the JSX/TSX parse error in ${normalizedPath}.\n` +
-                  `Error: ${firstError.message}\n` +
+                  `Code: ${firstErrorCode}\n` +
+                  `Error: ${firstErrorMessage}\n` +
                   `Location: ${location}${snippet}\n\n` +
                   `Please update the file so it compiles without JSX syntax errors.`,
               }
@@ -769,6 +909,79 @@ export class ActionRunner {
     } catch (error) {
       logger.debug('JSX validation failed:', error);
       return true;
+    }
+  }
+
+  /**
+   * Write sidecar artifacts alongside quarantined file for debugging and analytics.
+   * Creates:
+   * - .errors.json: Unified violations with structured codes
+   * - .sanitizer.json: Sanitizer warnings (what was already tried)
+   * - .metrics.json: Change metrics (risk assessment)
+   */
+  async #writeQuarantineSidecars(
+    webcontainer: WebContainer,
+    quarantinePath: string,
+    unifiedViolations: import('~/lib/services/sectionContracts').UnifiedViolation[],
+    sanitizerWarnings: import('~/utils/codeSanitizer').SanitizerWarning[],
+    metrics?: import('~/utils/codeSanitizer').ChangeMetrics
+  ): Promise<void> {
+    const timestamp = new Date().toISOString();
+    
+    try {
+      // Write errors.json - unified violations
+      if (unifiedViolations.length > 0) {
+        const errorsData = {
+          timestamp,
+          count: unifiedViolations.length,
+          violations: unifiedViolations.map(v => ({
+            code: v.code,
+            severity: v.severity,
+            message: v.message,
+            autoFixable: v.autoFixable,
+            context: v.context,
+          })),
+        };
+        await webcontainer.fs.writeFile(
+          `${quarantinePath}.errors.json`,
+          JSON.stringify(errorsData, null, 2)
+        );
+        logger.debug(`Wrote ${quarantinePath}.errors.json`);
+      }
+      
+      // Write sanitizer.json - what was already tried
+      if (sanitizerWarnings.length > 0) {
+        const sanitizerData = {
+          timestamp,
+          count: sanitizerWarnings.length,
+          warnings: sanitizerWarnings.map(w => ({
+            code: w.code,
+            message: w.message,
+            risk: w.risk,
+          })),
+        };
+        await webcontainer.fs.writeFile(
+          `${quarantinePath}.sanitizer.json`,
+          JSON.stringify(sanitizerData, null, 2)
+        );
+        logger.debug(`Wrote ${quarantinePath}.sanitizer.json`);
+      }
+      
+      // Write metrics.json - risk assessment
+      if (metrics) {
+        const metricsData = {
+          timestamp,
+          ...metrics,
+        };
+        await webcontainer.fs.writeFile(
+          `${quarantinePath}.metrics.json`,
+          JSON.stringify(metricsData, null, 2)
+        );
+        logger.debug(`Wrote ${quarantinePath}.metrics.json`);
+      }
+    } catch (error) {
+      // Non-critical - log but don't fail quarantine
+      logger.debug('Failed to write quarantine sidecars:', error);
     }
   }
 
@@ -797,7 +1010,7 @@ export class ActionRunner {
     }
 
     const expectedKeys = sectionContract.order.map(normalizeSectionValue);
-    const expectedLabels = sectionContract.labels ?? {};
+    const expectedLabels: Record<string, string> = sectionContract.labels ?? {};
     const labelFor = (key: string) => expectedLabels[key] ?? key;
 
     const dataSections = extractDataSectionValues(content);
@@ -832,10 +1045,10 @@ export class ActionRunner {
     }
 
     const imageRequired = (sectionContract.imageSections ?? []).map(normalizeSectionValue);
-    const imageMinCounts = sectionContract.imageMinCounts ?? {};
+    const imageMinCounts: Record<string, number> = sectionContract.imageMinCounts ?? {};
     const imageCountFailures: string[] = [];
     const imageDuplicateFailures: string[] = [];
-    const imageMap = sectionContract.imageMap ?? {};
+    const imageMap: Record<string, string[]> = sectionContract.imageMap ?? {};
     const allowedImageUrls = new Set(Object.values(imageMap).flat());
     const invalidImageUrls = new Set<string>();
 
@@ -892,6 +1105,22 @@ export class ActionRunner {
     const invalidImageList = Array.from(invalidImageUrls);
     const invalidImageLabel = invalidImageList.length > 0 ? invalidImageList.slice(0, 5).join(', ') : 'None';
 
+    const unifiedViolations = buildPageContractViolations({
+      file: normalizedPath,
+      expectedKeys,
+      actualMatched,
+      missing,
+      outOfOrder,
+      extras,
+      imageCountFailures,
+      imageDuplicateFailures,
+      invalidImageUrls: invalidImageList,
+    });
+
+    const unifiedSummary = unifiedViolations.length > 0
+      ? `\n\nCodes:\n${unifiedViolations.map((v) => formatUnifiedViolationLine(v)).join('\n')}`
+      : '';
+
     const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
     const attempts = this.#autoFixSectionAttempts.get(contractKey) ?? 0;
     const autoFixKey = `${contractKey}:${missing.join('|')}:${outOfOrder.join('|')}:${imageCountFailures.join('|')}:${imageDuplicateFailures.join('|')}:${invalidImageList.join('|')}`;
@@ -906,7 +1135,7 @@ export class ActionRunner {
       `Image counts below minimum: ${imageCountLabel}`,
       `Duplicate images in section: ${imageDuplicateLabel}`,
       `Images not in IMAGES list: ${invalidImageLabel}`,
-    ].join('\n');
+    ].join('\n') + unifiedSummary;
 
     this.onAlert?.({
       type: 'validation',

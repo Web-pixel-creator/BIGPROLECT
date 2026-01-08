@@ -43,6 +43,8 @@ export interface AutoFixOptions {
   llmRepairFn?: LlmRepairFn;
   /** Fallback LLM repair function - used when primary fails */
   fallbackLlmRepairFn?: LlmRepairFn;
+  /** Optional context to enrich the repair prompt (unified violations, sanitizer warnings, risk metrics) */
+  repairContext?: RepairContext;
 }
 
 /**
@@ -266,12 +268,15 @@ export function extractCodeFromResponse(response: string): string {
  * Main auto-fix loop with LLM repair.
  */
 export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixResult> {
-  const { filename, originalCode, validationResult, llmRepairFn, fallbackLlmRepairFn } = options;
+  const { filename, originalCode, validationResult, llmRepairFn, fallbackLlmRepairFn, repairContext } = options;
   
   let currentCode = originalCode;
   let attempts = 0;
   let usedFallback = false;
   let lastErrors = validationResult.errors;
+  let lastUnifiedViolations = validationResult.unifiedViolations;
+  const sanitizerWarnings = repairContext?.sanitizerWarnings;
+  const metrics = repairContext?.metrics;
 
   // First, try sanitizer-only fix
   const sanitizerResult = attemptSanitizerFix(currentCode, filename);
@@ -304,7 +309,11 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
     try {
       // Build the repair prompt (single source of truth)
-      const repairPrompt = buildRepairPrompt(currentCode, lastErrors, filename);
+      const repairPrompt = buildRepairPromptV2(currentCode, lastErrors, filename, {
+        unifiedViolations: lastUnifiedViolations,
+        sanitizerWarnings,
+        metrics,
+      });
       
       // Send prompt to LLM and get response
       const llmResponse = await llmRepairFn(repairPrompt);
@@ -317,6 +326,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
       // Validate
       const validation = validateFile(currentCode, filename);
       lastErrors = validation.errors;
+      lastUnifiedViolations = validation.unifiedViolations;
 
       if (validation.valid) {
         logger.info(`Auto-fix succeeded after ${attempts} attempt(s)`);
@@ -342,7 +352,11 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
     try {
       // Build prompt again with current state
-      const repairPrompt = buildRepairPrompt(currentCode, lastErrors, filename);
+      const repairPrompt = buildRepairPromptV2(currentCode, lastErrors, filename, {
+        unifiedViolations: lastUnifiedViolations,
+        sanitizerWarnings,
+        metrics,
+      });
       const llmResponse = await fallbackLlmRepairFn(repairPrompt);
       const repairedCode = extractCodeFromResponse(llmResponse);
 
@@ -351,6 +365,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
       const validation = validateFile(currentCode, filename);
       lastErrors = validation.errors;
+      lastUnifiedViolations = validation.unifiedViolations;
 
       if (validation.valid) {
         logger.info(`Fallback model fixed the code`);
