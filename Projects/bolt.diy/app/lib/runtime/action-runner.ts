@@ -806,6 +806,12 @@ export class ActionRunner {
               key: `hardgate:${relativePath}:${Date.now()}`,
               message: `Fix the syntax errors in ${relativePath}:\n\n${errorSummary}\n\nThe file was not written due to validation errors. Please regenerate or fix manually.`,
             },
+            // Structured data for UI
+            unifiedViolations: finalValidation.unifiedViolations,
+            sanitizerWarnings: structuredWarnings,
+            metrics,
+            quarantinePath,
+            filePath: relativePath,
           });
           
           return; // Don't write invalid file
@@ -900,6 +906,9 @@ export class ActionRunner {
                   `Please update the file so it compiles without JSX syntax errors.`,
               }
             : undefined,
+        // Structured data for UI
+        unifiedViolations: result.unifiedViolations,
+        filePath: normalizedPath,
       });
 
       if (attempts < 1) {
@@ -1160,6 +1169,9 @@ export class ActionRunner {
                 `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
             }
           : undefined,
+      // Structured data for UI
+      unifiedViolations,
+      filePath: normalizedPath,
     });
 
     if (attempts < 1) {

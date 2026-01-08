@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ActionAlert } from '~/types/actions';
 import { classNames } from '~/utils/classNames';
+import { ViolationDetails } from './ViolationDetails';
 
 interface Props {
   alert: ActionAlert;
@@ -9,10 +10,11 @@ interface Props {
 }
 
 export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
-  const { description, content, source } = alert;
+  const { description, content, source, unifiedViolations, sanitizerWarnings, metrics, quarantinePath, filePath } = alert;
 
   const isPreview = source === 'preview';
   const isValidation = source === 'validation';
+  const hasStructuredData = !!(unifiedViolations?.length || sanitizerWarnings?.length || metrics);
   const defaultTitle = isPreview ? 'Preview Error' : isValidation ? 'Validation Error' : 'Terminal Error';
   const title = alert.title || defaultTitle;
   const message = isPreview
@@ -64,6 +66,16 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                 <div className="text-xs text-bolt-elements-textSecondary p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4">
                   Error: {description}
                 </div>
+              )}
+              {/* Structured violation details */}
+              {hasStructuredData && (
+                <ViolationDetails
+                  violations={unifiedViolations}
+                  sanitizerWarnings={sanitizerWarnings}
+                  metrics={metrics}
+                  quarantinePath={quarantinePath}
+                  filePath={filePath}
+                />
               )}
             </motion.div>
 

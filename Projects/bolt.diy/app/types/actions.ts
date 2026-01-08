@@ -1,4 +1,6 @@
 import type { Change } from 'diff';
+import type { UnifiedViolation } from '~/lib/services/sectionContracts';
+import type { SanitizerWarning, ChangeMetrics } from '~/utils/codeSanitizer';
 
 export type ActionType = 'file' | 'shell' | 'supabase';
 
@@ -44,6 +46,16 @@ export interface ActionAlert {
     key: string;
     message: string;
   };
+  /** Structured violation data for UI rendering */
+  unifiedViolations?: UnifiedViolation[];
+  /** Sanitizer warnings showing what was already tried */
+  sanitizerWarnings?: SanitizerWarning[];
+  /** Change metrics for risk assessment */
+  metrics?: ChangeMetrics;
+  /** Path to quarantined file if hard gate triggered */
+  quarantinePath?: string;
+  /** File path that triggered the alert */
+  filePath?: string;
 }
 
 export interface SupabaseAlert {
