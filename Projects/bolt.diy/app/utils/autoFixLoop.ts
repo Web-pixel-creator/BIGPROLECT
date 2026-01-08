@@ -20,7 +20,10 @@ export interface AutoFixResult {
   success: boolean;
   code: string;
   attempts: number;
+  /** @deprecated Use unifiedViolations instead */
   errors: ValidationError[];
+  /** Unified violations with structured codes (preferred) */
+  unifiedViolations?: import('~/lib/services/sectionContracts').UnifiedViolation[];
   usedFallback: boolean;
 }
 
@@ -286,6 +289,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
       code: sanitizerResult.code,
       attempts: 0,
       errors: [],
+      unifiedViolations: [],
       usedFallback: false,
     };
   }
@@ -298,6 +302,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
       code: currentCode,
       attempts: 0,
       errors: lastErrors,
+      unifiedViolations: lastUnifiedViolations,
       usedFallback: false,
     };
   }
@@ -335,6 +340,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
           code: currentCode,
           attempts,
           errors: [],
+          unifiedViolations: [],
           usedFallback: false,
         };
       }
@@ -374,6 +380,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
           code: currentCode,
           attempts: attempts + 1,
           errors: [],
+          unifiedViolations: [],
           usedFallback: true,
         };
       }
@@ -389,6 +396,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
     code: currentCode,
     attempts,
     errors: lastErrors,
+    unifiedViolations: lastUnifiedViolations,
     usedFallback,
   };
 }

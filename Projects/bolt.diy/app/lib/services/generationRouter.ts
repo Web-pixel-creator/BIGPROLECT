@@ -121,8 +121,9 @@ export async function routeThroughPipeline(
     result.stages.contract.score = contractResult.score;
     result.contractValidation = contractResult;
 
-    // Add contract warnings
-    for (const violation of contractResult.violations) {
+    // Add contract warnings from unified violations (primary) or legacy violations (fallback)
+    const violationsToCheck = contractResult.unifiedViolations ?? contractResult.violations;
+    for (const violation of violationsToCheck) {
       if (violation.severity === 'warning') {
         warnings.push(`Contract: ${violation.message}`);
       }
