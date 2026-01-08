@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   attemptSanitizerFix,
   buildRepairPrompt,
+  buildRepairPromptV2,
   extractCodeFromResponse,
   quickFix,
   areErrorsAutoFixable,
@@ -9,8 +10,11 @@ import {
   autoFixWithLlm,
   type AutoFixOptions,
   type LlmRepairFn,
+  type RepairContext,
 } from './autoFixLoop';
 import type { ValidationError } from './codeValidator';
+import type { UnifiedViolation } from '~/lib/services/sectionContracts';
+import type { SanitizerWarning, ChangeMetrics } from './codeSanitizer';
 
 describe('autoFixLoop', () => {
   describe('attemptSanitizerFix', () => {
@@ -63,6 +67,140 @@ export default function App() {
     it('identifies JSX files correctly', () => {
       const prompt = buildRepairPrompt('', [], 'App.jsx');
       expect(prompt).toContain('React JavaScript (JSX)');
+    });
+  });
+
+  describe('buildRepairPromptV2', () => {
+    it('builds basic prompt without context', () => {
+      const code = 'const x = {';
+      const errors: ValidationError[] = [
+        { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+      ];
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.ts');
+      
+      expect(prompt).toContain('test.ts');
+      expect(prompt).toContain("'}' expected");
+      expect(prompt).toContain('ERRORS:');
+      expect(prompt).toContain('BROKEN CODE:');
+    });
+
+    it('includes unified violations when provided', () => {
+      const code = 'const x = {';
+      const errors: ValidationError[] = [
+        { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+      ];
+      const unifiedViolations: UnifiedViolation[] = [
+        {
+          code: 'SYNTAX_BRACE_EXPECTED',
+          severity: 'error',
+          message: "'}' expected",
+          autoFixable: true,
+          context: { line: 1, column: 12 },
+        },
+      ];
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.ts', { unifiedViolations });
+      
+      expect(prompt).toContain('UNIFIED_VIOLATIONS:');
+      expect(prompt).toContain('SYNTAX_BRACE_EXPECTED');
+      expect(prompt).toContain('[auto-fixable]');
+      expect(prompt).toContain('(Line 1)');
+    });
+
+    it('includes sanitizer warnings when provided', () => {
+      const code = 'const x = 1;';
+      const errors: ValidationError[] = [];
+      const sanitizerWarnings: SanitizerWarning[] = [
+        {
+          code: 'SANITIZER_FIX_TRUNCATED_BUTTON',
+          message: 'Fixed truncated <butt> tag names to <button>',
+          risk: 'low',
+        },
+        {
+          code: 'SANITIZER_FIX_BROKEN_ARROW',
+          message: 'Fixed broken arrow function syntax',
+          risk: 'medium',
+        },
+      ];
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.tsx', { sanitizerWarnings });
+      
+      expect(prompt).toContain('SANITIZER_ALREADY_TRIED:');
+      expect(prompt).toContain('SANITIZER_FIX_TRUNCATED_BUTTON');
+      expect(prompt).toContain('low risk');
+      expect(prompt).toContain('medium risk');
+      expect(prompt).toContain('already applied by the sanitizer');
+    });
+
+    it('includes change metrics when provided', () => {
+      const code = 'const x = 1;';
+      const errors: ValidationError[] = [];
+      const metrics: ChangeMetrics = {
+        changedLinesPercent: 25,
+        charsAdded: 50,
+        charsRemoved: 30,
+        highRiskFixes: 2,
+        riskLevel: 'medium',
+      };
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.ts', { metrics });
+      
+      expect(prompt).toContain('CHANGE_METRICS:');
+      expect(prompt).toContain('Risk level: MEDIUM');
+      expect(prompt).toContain('Changed lines: 25%');
+      expect(prompt).toContain('Characters added: 50');
+      expect(prompt).toContain('Characters removed: 30');
+      expect(prompt).toContain('High-risk fixes applied: 2');
+    });
+
+    it('adds conservative warning for high risk level', () => {
+      const code = 'const x = 1;';
+      const errors: ValidationError[] = [];
+      const metrics: ChangeMetrics = {
+        changedLinesPercent: 50,
+        charsAdded: 200,
+        charsRemoved: 150,
+        highRiskFixes: 5,
+        riskLevel: 'high',
+      };
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.ts', { metrics });
+      
+      expect(prompt).toContain('Risk level: HIGH');
+      expect(prompt).toContain('WARNING: Previous fixes were aggressive');
+      expect(prompt).toContain('Be CONSERVATIVE');
+    });
+
+    it('includes all context sections together', () => {
+      const code = 'const x = {';
+      const errors: ValidationError[] = [
+        { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+      ];
+      const context: RepairContext = {
+        unifiedViolations: [
+          { code: 'SYNTAX_BRACE_EXPECTED', severity: 'error', message: "'}' expected", autoFixable: true },
+        ],
+        sanitizerWarnings: [
+          { code: 'SANITIZER_FIX_IMPORTS_HOISTED', message: 'Hoisted imports', risk: 'low' },
+        ],
+        metrics: {
+          changedLinesPercent: 10,
+          charsAdded: 20,
+          charsRemoved: 5,
+          highRiskFixes: 0,
+          riskLevel: 'low',
+        },
+      };
+      
+      const prompt = buildRepairPromptV2(code, errors, 'test.ts', context);
+      
+      expect(prompt).toContain('ERRORS:');
+      expect(prompt).toContain('UNIFIED_VIOLATIONS:');
+      expect(prompt).toContain('SANITIZER_ALREADY_TRIED:');
+      expect(prompt).toContain('CHANGE_METRICS:');
+      expect(prompt).toContain('BROKEN CODE:');
+      expect(prompt).toContain('INSTRUCTIONS:');
     });
   });
 

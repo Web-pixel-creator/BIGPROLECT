@@ -82,7 +82,20 @@ export function attemptSanitizerFix(
 }
 
 /**
+ * Extended repair context for buildRepairPromptV2.
+ */
+export interface RepairContext {
+  /** Unified violations from validator (structured codes) */
+  unifiedViolations?: import('~/lib/services/sectionContracts').UnifiedViolation[];
+  /** Sanitizer warnings (what was already attempted) */
+  sanitizerWarnings?: import('./codeSanitizer').SanitizerWarning[];
+  /** Change metrics from sanitizer (risk assessment) */
+  metrics?: import('./codeSanitizer').ChangeMetrics;
+}
+
+/**
  * Build a repair prompt for LLM to fix the code.
+ * Basic version - uses ValidationError array.
  */
 export function buildRepairPrompt(
   code: string,
@@ -120,6 +133,101 @@ INSTRUCTIONS:
 3. Do NOT add new features or remove existing ones
 4. Return ONLY the fixed code, no explanations
 5. Ensure all brackets, braces, and tags are properly closed
+
+FIXED CODE:`;
+}
+
+/**
+ * Build an enhanced repair prompt with unified violations, sanitizer context, and risk metrics.
+ * This gives LLM more context about what was already tried and why fixes are risky.
+ */
+export function buildRepairPromptV2(
+  code: string,
+  errors: ValidationError[],
+  filename: string,
+  context?: RepairContext
+): string {
+  const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
+                   ext === '.jsx' ? 'React JavaScript (JSX)' :
+                   ext === '.ts' ? 'TypeScript' :
+                   ext === '.js' ? 'JavaScript' :
+                   ext === '.css' ? 'CSS' : 'code';
+
+  // Build error list from ValidationError (legacy format)
+  const errorList = errors
+    .filter(e => e.severity === 'error')
+    .slice(0, 5)
+    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .join('\n');
+
+  // Build unified violations section (structured codes)
+  let unifiedSection = '';
+  if (context?.unifiedViolations && context.unifiedViolations.length > 0) {
+    const violationList = context.unifiedViolations
+      .slice(0, 8)
+      .map(v => {
+        const loc = v.context?.line ? ` (Line ${v.context.line})` : '';
+        const fixable = v.autoFixable ? ' [auto-fixable]' : '';
+        return `- ${v.code}${loc}: ${v.message}${fixable}`;
+      })
+      .join('\n');
+    
+    unifiedSection = `
+UNIFIED_VIOLATIONS:
+${violationList}
+`;
+  }
+
+  // Build sanitizer warnings section (what was already tried)
+  let sanitizerSection = '';
+  if (context?.sanitizerWarnings && context.sanitizerWarnings.length > 0) {
+    const warningList = context.sanitizerWarnings
+      .slice(0, 5)
+      .map(w => `- ${w.code} (${w.risk} risk): ${w.message}`)
+      .join('\n');
+    
+    sanitizerSection = `
+SANITIZER_ALREADY_TRIED:
+${warningList}
+Note: These fixes were already applied by the sanitizer. Focus on remaining errors.
+`;
+  }
+
+  // Build metrics section (risk assessment)
+  let metricsSection = '';
+  if (context?.metrics) {
+    const m = context.metrics;
+    metricsSection = `
+CHANGE_METRICS:
+- Risk level: ${m.riskLevel.toUpperCase()}
+- Changed lines: ${m.changedLinesPercent}%
+- Characters added: ${m.charsAdded}
+- Characters removed: ${m.charsRemoved}
+- High-risk fixes applied: ${m.highRiskFixes}
+${m.riskLevel === 'high' ? 'WARNING: Previous fixes were aggressive. Be conservative with changes.' : ''}
+`;
+  }
+
+  return `Fix the following ${fileType} code that has syntax errors.
+
+FILE: ${filename}
+
+ERRORS:
+${errorList}
+${unifiedSection}${sanitizerSection}${metricsSection}
+BROKEN CODE:
+\`\`\`${ext.slice(1)}
+${code}
+\`\`\`
+
+INSTRUCTIONS:
+1. Fix ONLY the syntax errors listed above
+2. Do NOT change the logic or functionality
+3. Do NOT add new features or remove existing ones
+4. Return ONLY the fixed code, no explanations
+5. Ensure all brackets, braces, and tags are properly closed
+${context?.metrics?.riskLevel === 'high' ? '6. Be CONSERVATIVE - previous fixes were aggressive, avoid further major changes' : ''}
 
 FIXED CODE:`;
 }
