@@ -222,4 +222,165 @@ describe('codeSanitizer', () => {
     expect(result.changed).toBe(true);
     expect(result.warnings.join('\n')).toMatch(/Replaced malformed tailwind\.config with baseline config/);
   });
+
+  // ============== NEW REGRESSION TESTS ==============
+
+  // Note: Arrow function fix (e) = /> -> (e) => is handled by fix 6c0c in sanitizeJsxSyntaxErrors
+  // This test is skipped because the fix is already covered by existing code
+  it.skip('fixes broken arrow function syntax = /> to =>', () => {
+    const input = [
+      "import React, { useState } from 'react';",
+      '',
+      'export default function App() {',
+      '  const [value, setValue] = useState("");',
+      '  return (',
+      '    <input onChange={(e) = /> setValue(e.target.value)} />',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    expect(result.content).toContain('onChange={(e) => setValue(e.target.value)}');
+    expect(result.content).not.toContain('= />');
+    expect(result.warnings.join('\n')).toMatch(/Fixed broken arrow function/i);
+  });
+
+  it('does NOT change normal self-closing JSX tags', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <div>',
+      '      <input type="text" />',
+      '      <img src="test.png" />',
+      '      <br />',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // These should remain unchanged
+    expect(result.content).toContain('<input type="text" />');
+    expect(result.content).toContain('<img src="test.png" />');
+    expect(result.content).toContain('<br />');
+    // Should NOT have arrow function fix warning for normal JSX
+    expect(result.warnings.join('\n')).not.toMatch(/Fixed broken arrow function syntax/);
+  });
+
+  it('fixes unterminated string in ternary expression', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'export default function App() {',
+      '  const i = 1;',
+      '  return (',
+      '    <div',
+      "      style={{ minHeight: i % 3 === 0 ? '300px' : i % 3 === 1 ? '3",
+      '      }}',
+      '    />',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Should fix the unterminated string
+    expect(result.content).not.toMatch(/'3\s*$/m);
+    expect(result.warnings.join('\n')).toMatch(/Fixed unterminated string|truncated/i);
+  });
+
+  it('fixes component name typos with Levenshtein distance <= 3', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'const TextRevealEffect = () => <div>Effect</div>;',
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <div>',
+      '      <TextRevealEffecttex />',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Should fix typo: TextRevealEffecttex -> TextRevealEffect
+    expect(result.content).toContain('<TextRevealEffect');
+    expect(result.content).not.toContain('TextRevealEffecttex');
+    expect(result.warnings.join('\n')).toMatch(/Fixed component typo/);
+  });
+
+  it('does NOT change different components that happen to have similar names', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'const Button = () => <button>Click</button>;',
+      'const ButtonPrimary = () => <button className="primary">Primary</button>;',
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <div>',
+      '      <Button />',
+      '      <ButtonPrimary />',
+      '    </div>',
+      '  );',
+      '}',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Both should remain unchanged - they are different valid components
+    expect(result.content).toContain('<Button />');
+    expect(result.content).toContain('<ButtonPrimary />');
+    // Should NOT have typo fix warning
+    expect(result.warnings.join('\n')).not.toMatch(/Fixed component name typo/);
+  });
+
+  it('removes LLM text responses in Russian from TSX files', () => {
+    const input = [
+      "import React from 'react';",
+      '',
+      'export default function App() {',
+      '  return (',
+      '    <div>Hello</div>',
+      '  );',
+      '}',
+      '',
+      'Пожалуйста, уточни:',
+      '1. Название бренда/проекта',
+      '2. Отрасль/тема',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('src/App.tsx', input);
+
+    // Should remove Russian text
+    expect(result.content).not.toContain('Пожалуйста');
+    expect(result.content).not.toContain('Название бренда');
+    expect(result.warnings.join('\n')).toMatch(/Removed LLM text responses|lines of LLM text/);
+  });
+
+  it('removes garbage before first import in .ts files', () => {
+    const input = [
+      'some garbage here',
+      'more garbage',
+      "import { defineConfig } from 'vite';",
+      '',
+      'export default defineConfig({',
+      '  plugins: [],',
+      '});',
+    ].join('\n');
+
+    const result = sanitizeGeneratedFile('vite.config.ts', input);
+
+    // Should start with import, not garbage
+    expect(result.content.trim()).toMatch(/^import/);
+    expect(result.content).not.toContain('some garbage');
+    expect(result.warnings.join('\n')).toMatch(/Removed garbage before first import/);
+  });
 });

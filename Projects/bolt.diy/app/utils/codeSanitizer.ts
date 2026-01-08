@@ -298,28 +298,36 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     // Also remove duplicate declarations in .ts files (not just .tsx)
     next = removeDuplicateDeclarations(next, warnings);
 
-    // Fix truncated function declarations (like "return twMerge(clsx" without closing)
-    // This happens when LLM restarts mid-function and rewrites from export
-    const truncatedFunctionPattern = /return\s+\w+\s*\(\s*\w*\s*\n\s*\n\s*export\s+/g;
+    // Fix truncated function declarations (like "return twMerge(cls" without closing)
+    // This happens when LLM restarts mid-function and rewrites from import or export
+    // Pattern: return funcName(partial\nimport or return funcName(partial\n\nexport
+    const truncatedFunctionPattern = /return\s+\w+\s*\(\s*\w*\s*\n\s*(import|export)\s+/g;
     const truncatedMatch = next.match(truncatedFunctionPattern);
     if (truncatedMatch) {
-      // Find where the truncated code ends and new function starts
-      const findMatch = next.match(/return\s+\w+\s*\(\s*\w*\s*\n\s*\n\s*(export\s+)/);
+      // Find where the truncated code ends and new statement starts
+      const findMatch = next.match(/return\s+\w+\s*\(\s*\w*\s*\n\s*(import|export)\s+/);
       if (findMatch && findMatch.index !== undefined) {
-        // Find the beginning of the file until the truncated part
-        const truncStart = findMatch.index;
-        // Find the start of imports or beginning
-        const beforeTrunc = next.substring(0, truncStart);
-        const lastImportEnd = beforeTrunc.lastIndexOf(';');
+        // Find the import/export keyword position
+        const matchStart = findMatch.index;
+        const afterMatch = next.substring(matchStart);
+        const restartKeyword = findMatch[1]; // "import" or "export"
 
-        if (lastImportEnd !== -1) {
-          // Keep only from after the last complete statement to the new export
-          const afterLastImport = next.substring(lastImportEnd + 1);
-          const newExportMatch = afterLastImport.match(/export\s+/);
-          if (newExportMatch && newExportMatch.index !== undefined) {
-            const cleanStart = lastImportEnd + 1 + newExportMatch.index;
-            next = next.substring(0, lastImportEnd + 1) + '\n\n' + next.substring(cleanStart);
-            warnings.push('Fixed truncated function by skipping to next export');
+        // Find where the restart keyword starts
+        const keywordPos = afterMatch.search(new RegExp(`\\n\\s*${restartKeyword}\\s+`));
+        if (keywordPos >= 0) {
+          const cleanStart = matchStart + keywordPos + 1; // +1 for newline
+
+          // Keep everything before the broken function + restart from import/export
+          const beforeBroken = next.substring(0, matchStart);
+          const lastCompleteStatement = beforeBroken.lastIndexOf(';');
+
+          if (lastCompleteStatement !== -1) {
+            next = next.substring(0, lastCompleteStatement + 1) + '\n\n' + next.substring(cleanStart).trimStart();
+            warnings.push(`Fixed truncated function by skipping to next ${restartKeyword}`);
+          } else {
+            // No semicolon found - just skip to the restart
+            next = next.substring(cleanStart).trimStart();
+            warnings.push(`Fixed truncated function by keeping only from ${restartKeyword}`);
           }
         }
       }
@@ -568,14 +576,14 @@ function fixComponentTypos(code: string, warnings: string[]): string {
     for (const definedName of definedComponents) {
       const distance = levenshteinDistance(usedName, definedName);
 
-      // Only consider matches with distance 1-2 (typos, not completely different names)
-      if (distance <= 2 && distance < bestDistance) {
+      // Only consider matches with distance 1-3 (typos, not completely different names)
+      if (distance <= 3 && distance < bestDistance) {
         bestDistance = distance;
         bestMatch = definedName;
       }
     }
 
-    if (bestMatch && bestDistance <= 2) {
+    if (bestMatch && bestDistance <= 3) {
       typoFixes.push({ typo: usedName, correct: bestMatch });
     }
   }
@@ -813,6 +821,39 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
     warnings.push(`Added ${Math.min(missing, 10)} missing closing braces to complete truncated file`);
   }
 
+  // Pattern 4: Unterminated string inside JSX expression
+  // e.g., style={{ minHeight: '3\n}}}}
+  // Look for pattern: 'partial_value (newline) }
+  const beforeInlineStringFix = next;
+
+  // Find lines ending with an unclosed string followed by lines with just }}
+  const inlineLines = next.split('\n');
+  for (let i = 0; i < inlineLines.length - 1; i++) {
+    const line = inlineLines[i];
+    const nextLine = inlineLines[i + 1]?.trim() || '';
+
+    // Check if current line ends with unclosed string: '... or "...
+    const endsWithUnclosedString = /['"]\d*$/.test(line.trimEnd()) &&
+      !line.trimEnd().endsWith("'") &&
+      !line.trimEnd().endsWith('"');
+
+    // More general: line ends with something like ?: '3 (ternary with partial string)
+    const ternaryWithPartialString = /\?\s*['"][^'"]*$/.test(line);
+
+    // Check if next line is just }}}} or similar
+    const nextIsClosingBraces = /^[}\s)]+$/.test(nextLine);
+
+    if ((endsWithUnclosedString || ternaryWithPartialString) && nextIsClosingBraces) {
+      // Remove the broken line and the closing braces line
+      // Replace with a simple default value
+      const fixedLine = line.replace(/\?\s*['"][^'"]*$/, "? '100%'");
+      inlineLines[i] = fixedLine;
+      // Keep proper closing braces
+      warnings.push('Fixed unterminated string in JSX expression');
+    }
+  }
+  next = inlineLines.join('\n');
+
   if (next !== beforeTruncationFix) {
     // Re-split to update lines array
   }
@@ -863,6 +904,21 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
 
   if (next !== beforeSplitAttrInTagNames) {
     warnings.push('Repaired split JSX attributes merged into tag names');
+  }
+
+  // Fix broken arrow functions: (e) = /> should be (e) =>
+  // This happens when LLM confuses arrow function with self-closing tag
+  const beforeArrowFix = next;
+  // Pattern: (e) = /> setValue(...) -> (e) => setValue(...)
+  // Note: there may be space between = and />
+  // Match: (param) = /> or () = /> (with optional space)
+  next = next.replace(/\(\s*(\w*)\s*\)\s*=\s*\/>\s*/g, '($1) => ');
+  // Also handle: onChange={(e) = /> setValue} - the /> is inside the attribute
+  next = next.replace(/\{(\s*\([^)]*\)\s*)=\s*\/>\s*/g, '{$1=> ');
+  // Also fix patterns like: = /> followed by function call (without space)
+  next = next.replace(/=\s*\/>\s+(\w+\()/g, '=> $1');
+  if (next !== beforeArrowFix) {
+    warnings.push('Fixed broken arrow function syntax (= /> -> =>)');
   }
 
   // Fix 0: Remove stray Markdown code fences that break TSX parsing.
@@ -1826,6 +1882,24 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
         break; // Only fix once per file
       }
     }
+  }
+
+  // Fix truncated JSX tag opening: file ends with just "<" or "< " without tag name
+  // This happens when LLM truncates mid-tag opening
+  const trimmedForTruncCheck = next.trimEnd();
+  if (trimmedForTruncCheck.endsWith('<') || /\<\s*$/.test(trimmedForTruncCheck)) {
+    // Remove the trailing < and everything after the last complete line
+    const lines = next.split('\n');
+    while (lines.length > 0) {
+      const lastLine = lines[lines.length - 1].trimEnd();
+      if (lastLine === '<' || lastLine === '' || /\<\s*$/.test(lastLine)) {
+        lines.pop();
+      } else {
+        break;
+      }
+    }
+    next = lines.join('\n');
+    warnings.push('Removed truncated JSX tag opening at end of file');
   }
 
   // Fix unterminated JSX - auto-close unclosed tags at end of file

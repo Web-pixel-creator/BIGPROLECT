@@ -11,6 +11,8 @@ import {
 const CUSTOM_MODELS = [
   { name: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { name: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
+  { name: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq)', provider: 'Groq' },
+  { name: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Groq)', provider: 'Groq' },
   { name: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },
   { name: 'mistral-small-latest', label: 'Mistral Small', provider: 'Mistral' },
   { name: 'iic/QwenLong-L1.5-30B-A3B', label: 'Qwen Long (Verified)', provider: 'ModelScope' },
