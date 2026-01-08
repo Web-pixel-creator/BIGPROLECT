@@ -6,6 +6,7 @@ import type { SectionContract } from '~/types/section-contract';
 import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateTsx } from '~/utils/tsxValidator';
+import { validateFile, type ValidationResult } from '~/utils/codeValidator';
 import { unreachable } from '~/utils/unreachable';
 import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
@@ -570,6 +571,20 @@ export class ActionRunner {
 
         if (warnings.length > 0) {
           logger.debug(`Sanitizer notes for ${relativePath}:\n- ${warnings.join('\n- ')}`);
+        }
+
+        // Validation Gate: Check code validity before writing
+        const validation = validateFile(contentToWrite, relativePath);
+        if (!validation.valid) {
+          const errorSummary = validation.errors
+            .filter(e => e.severity === 'error')
+            .slice(0, 3)
+            .map(e => `Line ${e.line}: ${e.message}`)
+            .join('; ');
+          logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
+          
+          // Log but still write - validation is informational for now
+          // Future: implement auto-fix loop here
         }
       }
 
