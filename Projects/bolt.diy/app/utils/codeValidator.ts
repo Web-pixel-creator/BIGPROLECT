@@ -6,6 +6,7 @@
  */
 
 import ts from 'typescript';
+import type { ViolationCode, UnifiedViolation } from '~/lib/services/sectionContracts';
 
 export interface ValidationError {
   line: number;
@@ -18,6 +19,8 @@ export interface ValidationError {
 export interface ValidationResult {
   valid: boolean;
   errors: ValidationError[];
+  /** Unified violations with structured codes (for analytics and unified auto-fix) */
+  unifiedViolations?: UnifiedViolation[];
   fixable: boolean; // Can sanitizer potentially fix these errors?
 }
 
@@ -451,11 +454,127 @@ export function validateJson(code: string, filename: string): ValidationResult {
 }
 
 /**
+ * Map ValidationError to UnifiedViolation with structured code.
+ * This enables unified analytics, auto-fix routing, and UI across all error sources.
+ */
+export function mapErrorToUnifiedViolation(error: ValidationError, filename: string): UnifiedViolation {
+  const code = mapErrorCodeToViolationCode(error.code, error.message);
+  
+  return {
+    code,
+    severity: error.severity,
+    message: error.message,
+    autoFixable: isErrorAutoFixable(error.code),
+    context: {
+      file: filename,
+      line: error.line,
+      column: error.column,
+      tsCode: error.code,
+    },
+  };
+}
+
+/**
+ * Map TypeScript/custom error code to ViolationCode.
+ */
+function mapErrorCodeToViolationCode(errorCode: number, message: string): ViolationCode {
+  // TypeScript error codes
+  switch (errorCode) {
+    case 1005: // '}' expected
+      return 'SYNTAX_BRACE_EXPECTED';
+    case 1002: // Unterminated string literal
+      return 'SYNTAX_UNTERMINATED_STRING';
+    case 1003: // Identifier expected
+      return 'SYNTAX_IDENTIFIER_EXPECTED';
+    case 1109: // Expression expected
+      return 'SYNTAX_EXPRESSION_EXPECTED';
+    case 1128: // Declaration or statement expected
+      return 'SYNTAX_DECLARATION_EXPECTED';
+    case 1006: // ')' expected
+    case 1011: // ')' expected
+      return 'SYNTAX_PAREN_EXPECTED';
+    case 1010: // ']' expected
+      return 'SYNTAX_BRACKET_EXPECTED';
+    
+    // Custom error codes (17xxx for JSX, 18xxx for CSS)
+    case 17001: // Mismatched JSX tags
+      return 'SYNTAX_JSX_TAG_MISMATCH';
+    case 17002: // Unclosed JSX tag
+      return 'SYNTAX_JSX_UNCLOSED';
+    case 17003: // Unbalanced braces
+      return 'SYNTAX_UNBALANCED_BRACES';
+    case 17004: // Unbalanced parentheses
+      return 'SYNTAX_UNBALANCED_PARENS';
+    case 17005: // Duplicate imports
+      return 'SYNTAX_DUPLICATE_IMPORT';
+    case 17006: // Multiple export default
+      return 'SYNTAX_MULTIPLE_EXPORT_DEFAULT';
+    case 18001: // Unbalanced CSS braces
+      return 'SYNTAX_CSS_UNBALANCED';
+    case 18002: // Unclosed CSS comment
+      return 'SYNTAX_CSS_UNCLOSED_COMMENT';
+    case 9999: // Parser crash
+      return 'SYNTAX_PARSER_CRASH';
+    
+    default:
+      // Try to infer from message
+      if (message.includes("'}'") || message.includes("'}' expected")) {
+        return 'SYNTAX_BRACE_EXPECTED';
+      }
+      if (message.includes("')'") || message.includes("')' expected")) {
+        return 'SYNTAX_PAREN_EXPECTED';
+      }
+      if (message.includes("']'") || message.includes("']' expected")) {
+        return 'SYNTAX_BRACKET_EXPECTED';
+      }
+      if (message.toLowerCase().includes('unterminated string')) {
+        return 'SYNTAX_UNTERMINATED_STRING';
+      }
+      if (message.toLowerCase().includes('jsx') && message.toLowerCase().includes('tag')) {
+        return 'SYNTAX_JSX_TAG_MISMATCH';
+      }
+      return 'SYNTAX_OTHER';
+  }
+}
+
+/**
+ * Check if error is auto-fixable based on code.
+ */
+function isErrorAutoFixable(errorCode: number): boolean {
+  const autoFixableCodes = new Set([
+    1005, // '}' expected
+    1002, // Unterminated string literal
+    1003, // Identifier expected
+    1109, // Expression expected
+    1128, // Declaration or statement expected
+    17001, // Mismatched JSX tags
+    17002, // Unclosed JSX tag
+    17003, // Unbalanced braces
+    17004, // Unbalanced parentheses
+    17005, // Duplicate imports
+    17006, // Multiple export default
+    18001, // Unbalanced CSS braces
+    18002, // Unclosed CSS comment
+  ]);
+  
+  return autoFixableCodes.has(errorCode);
+}
+
+/**
+ * Map array of ValidationErrors to UnifiedViolations.
+ */
+export function mapErrorsToUnifiedViolations(errors: ValidationError[], filename: string): UnifiedViolation[] {
+  return errors.map(error => mapErrorToUnifiedViolation(error, filename));
+}
+
+/**
  * Main validation entry point - routes to appropriate validator based on file type.
  */
 export function validateFile(code: string, filename: string): ValidationResult {
   const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
 
+  let result: ValidationResult;
+  
   switch (ext) {
     case '.ts':
     case '.tsx':
@@ -463,19 +582,27 @@ export function validateFile(code: string, filename: string): ValidationResult {
     case '.jsx':
     case '.mjs':
     case '.cjs':
-      return validateCode(code, filename);
+      result = validateCode(code, filename);
+      break;
     
     case '.css':
     case '.scss':
     case '.sass':
     case '.less':
-      return validateCss(code, filename);
+      result = validateCss(code, filename);
+      break;
     
     case '.json':
-      return validateJson(code, filename);
+      result = validateJson(code, filename);
+      break;
     
     default:
       // No validation for other file types
-      return { valid: true, errors: [], fixable: false };
+      return { valid: true, errors: [], unifiedViolations: [], fixable: false };
   }
+  
+  // Add unified violations mapping
+  result.unifiedViolations = mapErrorsToUnifiedViolations(result.errors, filename);
+  
+  return result;
 }

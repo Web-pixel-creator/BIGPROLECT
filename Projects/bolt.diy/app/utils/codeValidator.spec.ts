@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateCode, validateFile, validateCss, validateJson, isValidSyntax } from './codeValidator';
+import { validateCode, validateFile, validateCss, validateJson, isValidSyntax, mapErrorToUnifiedViolation, mapErrorsToUnifiedViolations } from './codeValidator';
+import type { ValidationError } from './codeValidator';
 
 describe('codeValidator', () => {
   describe('validateCode', () => {
@@ -183,6 +184,166 @@ export default function App2() {
 
     it('returns false for invalid code', () => {
       expect(isValidSyntax('const x = {', 'test.ts')).toBe(false);
+    });
+  });
+
+  describe('unifiedViolations mapping', () => {
+    describe('mapErrorToUnifiedViolation', () => {
+      it('maps brace expected error to SYNTAX_BRACE_EXPECTED', () => {
+        const error: ValidationError = {
+          line: 5,
+          column: 10,
+          message: "'}' expected",
+          code: 1005,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'test.ts');
+        
+        expect(unified.code).toBe('SYNTAX_BRACE_EXPECTED');
+        expect(unified.severity).toBe('error');
+        expect(unified.autoFixable).toBe(true);
+        expect(unified.context?.file).toBe('test.ts');
+        expect(unified.context?.line).toBe(5);
+        expect(unified.context?.column).toBe(10);
+        expect(unified.context?.tsCode).toBe(1005);
+      });
+
+      it('maps unterminated string error to SYNTAX_UNTERMINATED_STRING', () => {
+        const error: ValidationError = {
+          line: 1,
+          column: 15,
+          message: 'Unterminated string literal',
+          code: 1002,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'test.ts');
+        
+        expect(unified.code).toBe('SYNTAX_UNTERMINATED_STRING');
+        expect(unified.autoFixable).toBe(true);
+      });
+
+      it('maps JSX tag mismatch to SYNTAX_JSX_TAG_MISMATCH', () => {
+        const error: ValidationError = {
+          line: 10,
+          column: 5,
+          message: 'Mismatched JSX tags: expected </div> but found </span>',
+          code: 17001,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'App.tsx');
+        
+        expect(unified.code).toBe('SYNTAX_JSX_TAG_MISMATCH');
+        expect(unified.autoFixable).toBe(true);
+      });
+
+      it('maps parser crash to SYNTAX_PARSER_CRASH', () => {
+        const error: ValidationError = {
+          line: 1,
+          column: 1,
+          message: 'Parser crashed: Unknown error',
+          code: 9999,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'test.ts');
+        
+        expect(unified.code).toBe('SYNTAX_PARSER_CRASH');
+        expect(unified.autoFixable).toBe(false);
+      });
+
+      it('maps unknown error to SYNTAX_OTHER', () => {
+        const error: ValidationError = {
+          line: 1,
+          column: 1,
+          message: 'Some unknown error',
+          code: 12345,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'test.ts');
+        
+        expect(unified.code).toBe('SYNTAX_OTHER');
+        expect(unified.autoFixable).toBe(false);
+      });
+
+      it('infers brace expected from message when code unknown', () => {
+        const error: ValidationError = {
+          line: 1,
+          column: 1,
+          message: "Expected '}' at end of block",
+          code: 99999,
+          severity: 'error',
+        };
+        
+        const unified = mapErrorToUnifiedViolation(error, 'test.ts');
+        
+        expect(unified.code).toBe('SYNTAX_BRACE_EXPECTED');
+      });
+    });
+
+    describe('mapErrorsToUnifiedViolations', () => {
+      it('maps array of errors to unified violations', () => {
+        const errors: ValidationError[] = [
+          { line: 1, column: 1, message: "'}' expected", code: 1005, severity: 'error' },
+          { line: 2, column: 5, message: 'Unterminated string literal', code: 1002, severity: 'error' },
+        ];
+        
+        const unified = mapErrorsToUnifiedViolations(errors, 'test.ts');
+        
+        expect(unified).toHaveLength(2);
+        expect(unified[0].code).toBe('SYNTAX_BRACE_EXPECTED');
+        expect(unified[1].code).toBe('SYNTAX_UNTERMINATED_STRING');
+      });
+
+      it('returns empty array for empty errors', () => {
+        const unified = mapErrorsToUnifiedViolations([], 'test.ts');
+        expect(unified).toHaveLength(0);
+      });
+    });
+
+    describe('validateFile with unifiedViolations', () => {
+      it('includes unifiedViolations in result for valid code', () => {
+        const result = validateFile('const x = 1;', 'test.ts');
+        
+        expect(result.unifiedViolations).toBeDefined();
+        expect(result.unifiedViolations).toHaveLength(0);
+      });
+
+      it('includes unifiedViolations in result for invalid code', () => {
+        const result = validateFile('const x = {', 'test.ts');
+        
+        expect(result.unifiedViolations).toBeDefined();
+        expect(result.unifiedViolations!.length).toBeGreaterThan(0);
+        expect(result.unifiedViolations![0].code).toBe('SYNTAX_BRACE_EXPECTED');
+      });
+
+      it('includes unifiedViolations for CSS errors', () => {
+        const result = validateFile('.foo { color: red;', 'test.css');
+        
+        expect(result.unifiedViolations).toBeDefined();
+        if (!result.valid) {
+          expect(result.unifiedViolations!.length).toBeGreaterThan(0);
+        }
+      });
+
+      it('includes unifiedViolations for JSON errors', () => {
+        const result = validateFile('{ "a": 1', 'test.json');
+        
+        expect(result.unifiedViolations).toBeDefined();
+        if (!result.valid) {
+          expect(result.unifiedViolations!.length).toBeGreaterThan(0);
+        }
+      });
+
+      it('includes empty unifiedViolations for unknown file types', () => {
+        const result = validateFile('# Hello', 'test.md');
+        
+        expect(result.unifiedViolations).toBeDefined();
+        expect(result.unifiedViolations).toHaveLength(0);
+      });
     });
   });
 });
