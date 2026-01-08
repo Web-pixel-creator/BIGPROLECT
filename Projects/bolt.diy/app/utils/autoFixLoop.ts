@@ -24,12 +24,25 @@ export interface AutoFixResult {
   usedFallback: boolean;
 }
 
+/**
+ * Type for LLM repair function.
+ * 
+ * STRICT CONTRACT: The function receives a fully-formed prompt string
+ * and returns the LLM response (which will be processed by extractCodeFromResponse).
+ * 
+ * This ensures determinism - the same prompt always goes to the LLM,
+ * regardless of which provider/model is used.
+ */
+export type LlmRepairFn = (prompt: string) => Promise<string>;
+
 export interface AutoFixOptions {
   filename: string;
   originalCode: string;
   validationResult: ValidationResult;
-  llmRepairFn?: (code: string, errors: ValidationError[], filename: string) => Promise<string>;
-  fallbackLlmRepairFn?: (code: string, errors: ValidationError[], filename: string) => Promise<string>;
+  /** Primary LLM repair function - receives prompt, returns raw LLM response */
+  llmRepairFn?: LlmRepairFn;
+  /** Fallback LLM repair function - used when primary fails */
+  fallbackLlmRepairFn?: LlmRepairFn;
 }
 
 /**
@@ -182,9 +195,11 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
     logger.info(`Auto-fix attempt ${attempts}/${MAX_FIX_ATTEMPTS} for ${filename}`);
 
     try {
-      // Get repair from LLM
+      // Build the repair prompt (single source of truth)
       const repairPrompt = buildRepairPrompt(currentCode, lastErrors, filename);
-      const llmResponse = await llmRepairFn(currentCode, lastErrors, filename);
+      
+      // Send prompt to LLM and get response
+      const llmResponse = await llmRepairFn(repairPrompt);
       const repairedCode = extractCodeFromResponse(llmResponse);
 
       // Sanitize the repaired code
@@ -218,7 +233,9 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
     usedFallback = true;
 
     try {
-      const llmResponse = await fallbackLlmRepairFn(currentCode, lastErrors, filename);
+      // Build prompt again with current state
+      const repairPrompt = buildRepairPrompt(currentCode, lastErrors, filename);
+      const llmResponse = await fallbackLlmRepairFn(repairPrompt);
       const repairedCode = extractCodeFromResponse(llmResponse);
 
       const sanitized = sanitizeGeneratedFile(filename, repairedCode);

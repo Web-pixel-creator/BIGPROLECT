@@ -1,5 +1,5 @@
 import type { Message } from 'ai';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { EnhancedStreamingMessageParser } from '~/lib/runtime/enhanced-message-parser';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { createScopedLogger } from '~/utils/logger';
@@ -47,7 +47,9 @@ const messageParser = new EnhancedStreamingMessageParser({
     },
     onActionStream: (data) => {
       logger.trace('onActionStream', data.action);
-      workbenchStore.runAction(data, true);
+      if (data.action.type !== 'file') {
+        workbenchStore.runAction(data, true);
+      }
     },
   },
 });
@@ -58,6 +60,8 @@ const extractTextContent = (message: Message) =>
 
 export function useMessageParser() {
   const [parsedMessages, setParsedMessages] = useState<{ [key: number]: string }>({});
+  const parsedMessagesRef = useRef<{ [key: number]: string }>({});
+  const lastParsedCountRef = useRef(0);
 
   const parseMessages = useCallback((messages: Message[], isLoading: boolean) => {
     let reset = false;
@@ -65,16 +69,61 @@ export function useMessageParser() {
     if (import.meta.env.DEV && !isLoading) {
       reset = true;
       messageParser.reset();
+      parsedMessagesRef.current = {};
+      lastParsedCountRef.current = 0;
     }
 
-    for (const [index, message] of messages.entries()) {
-      if (message.role === 'assistant' || message.role === 'user') {
-        const newParsedContent = messageParser.parse(message.id, extractTextContent(message));
-        setParsedMessages((prevParsed) => ({
-          ...prevParsed,
-          [index]: !reset ? (prevParsed[index] || '') + newParsedContent : newParsedContent,
-        }));
+    if (messages.length === 0) {
+      if (reset) {
+        setParsedMessages({});
       }
+      return;
+    }
+
+    const nextParsed = reset ? {} : { ...parsedMessagesRef.current };
+    let updated = false;
+
+    const parseAtIndex = (index: number, finalize: boolean) => {
+      const message = messages[index];
+      if (!message || message.role !== 'assistant') {
+        return;
+      }
+
+      const newParsedContent = messageParser.parse(message.id, extractTextContent(message));
+      if (finalize) {
+        messageParser.finalize(message.id);
+      }
+
+      if (newParsedContent) {
+        nextParsed[index] = (nextParsed[index] || '') + newParsedContent;
+        updated = true;
+      }
+    };
+
+    if (isLoading) {
+      let lastAssistantIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === 'assistant') {
+          lastAssistantIndex = i;
+          break;
+        }
+      }
+
+      if (lastAssistantIndex >= 0) {
+        parseAtIndex(lastAssistantIndex, false);
+      }
+      lastParsedCountRef.current = messages.length;
+    } else {
+      const startIndex = reset ? 0 : Math.max(0, lastParsedCountRef.current - 1);
+      for (let i = startIndex; i < messages.length; i++) {
+        parseAtIndex(i, true);
+      }
+      lastParsedCountRef.current = messages.length;
+    }
+
+    if (updated || reset) {
+      parsedMessagesRef.current = nextParsed;
+      setParsedMessages(nextParsed);
     }
   }, []);
 

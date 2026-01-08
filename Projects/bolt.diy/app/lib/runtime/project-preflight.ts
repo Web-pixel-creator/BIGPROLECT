@@ -11,7 +11,17 @@ export type PreflightViteReactResult = {
 };
 
 export async function preflightViteReactBaseline(webcontainer: WebContainer): Promise<PreflightViteReactResult> {
-  const pkgText = await readTextFile(webcontainer, 'package.json');
+  let pkgText = await readTextFile(webcontainer, 'package.json');
+  if (pkgText) {
+    const sanitized = sanitizeGeneratedFile('package.json', pkgText);
+    if (sanitized.content !== pkgText) {
+      const parsed = safeParseJson<Record<string, any>>(sanitized.content);
+      if (parsed) {
+        await webcontainer.fs.writeFile('package.json', sanitized.content);
+        pkgText = sanitized.content;
+      }
+    }
+  }
   if (!pkgText) {
     return {
       isViteReact: false,
@@ -55,6 +65,7 @@ export async function preflightViteReactBaseline(webcontainer: WebContainer): Pr
     pkg,
   );
 
+  const sanitizedRootFiles = await sanitizeRootFiles(webcontainer);
   const sanitizeResult = await sanitizeSourceTree(webcontainer);
   const { packageJsonChanged: importPkgChanged, addedDependencies: importDepsAdded } = await ensureImportsInPackageJson(
     webcontainer,
@@ -66,7 +77,7 @@ export async function preflightViteReactBaseline(webcontainer: WebContainer): Pr
   return {
     isViteReact: true,
     baselineFilesAdded,
-    sanitizedFiles: sanitizeResult.sanitizedFiles,
+    sanitizedFiles: sanitizeResult.sanitizedFiles + sanitizedRootFiles,
     packageJsonChanged,
     addedDependencies: [...baselineDepsAdded, ...importDepsAdded],
   };
@@ -436,6 +447,39 @@ async function sanitizeSourceTree(webcontainer: WebContainer): Promise<{ sanitiz
     await walk(dir);
   }
   return { sanitizedFiles, importedPackages };
+}
+
+async function sanitizeRootFiles(webcontainer: WebContainer): Promise<number> {
+  const rootFiles = [
+    'index.html',
+    'postcss.config.js',
+    'postcss.config.cjs',
+    'tailwind.config.js',
+    'tailwind.config.cjs',
+    'vite.config.ts',
+    'vite.config.mts',
+    'vite.config.js',
+    'vite.config.mjs',
+    'vite.config.cjs',
+  ];
+  let sanitizedFiles = 0;
+
+  for (const filePath of rootFiles) {
+    const content = await readTextFile(webcontainer, filePath);
+    if (!content) continue;
+
+    const sanitized = sanitizeGeneratedFile(filePath, content);
+    if (sanitized.content === content) continue;
+
+    try {
+      await webcontainer.fs.writeFile(filePath, sanitized.content);
+      sanitizedFiles += 1;
+    } catch {
+      // ignore
+    }
+  }
+
+  return sanitizedFiles;
 }
 
 function extractExternalPackages(code: string): string[] {

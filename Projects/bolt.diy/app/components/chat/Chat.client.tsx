@@ -33,6 +33,8 @@ import { createLayoutSeed, generateLayoutStrategy, getLayoutInstructions } from 
 import type { GenerationSummary } from './GenerationSummaryCard';
 
 const logger = createScopedLogger('Chat');
+const STREAM_STALL_MS = 60000;
+const STREAM_STALL_CHECK_MS = 5000;
 
 const decodePromptValue = (value: string): string => {
   if (!value || !/%[0-9A-Fa-f]{2}/.test(value)) {
@@ -170,7 +172,7 @@ const processSampledMessages = createSampler(
       storeMessageHistory(messages).catch((error) => toast.error(error.message));
     }
   },
-  50,
+  500,
 );
 
 interface ChatProps {
@@ -191,7 +193,7 @@ export const ChatImpl = memo(
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const [fakeLoading, setFakeLoading] = useState(false);
-    const files = useStore(workbenchStore.files);
+    const [files, setFiles] = useState(() => workbenchStore.files.get());
     const [designScheme, setDesignScheme] = useState<DesignScheme>(defaultDesignScheme);
     const actionAlert = useStore(workbenchStore.alert);
     const deployAlert = useStore(workbenchStore.deployAlert);
@@ -219,6 +221,9 @@ export const ChatImpl = memo(
     const mcpSettings = useMCPStore((state) => state.settings);
     const autoFixKeysRef = useRef<Set<string>>(new Set());
 
+    const streamThrottle =
+      provider?.name?.toLowerCase() === 'mistral' || model?.toLowerCase().includes('mistral') ? 1200 : 500;
+
     const {
       messages,
       isLoading,
@@ -235,6 +240,7 @@ export const ChatImpl = memo(
       addToolResult,
     } = useChat({
       api: '/api/chat',
+      experimental_throttle: streamThrottle,
       body: {
         apiKeys,
         files,
@@ -281,6 +287,25 @@ export const ChatImpl = memo(
       initialInput: decodePromptValue(Cookies.get(PROMPT_COOKIE_KEY) || ''),
     });
     useEffect(() => {
+      if (!isLoading) {
+        setFiles(workbenchStore.files.get());
+      }
+    }, [isLoading]);
+
+    useEffect(() => {
+      const unsubscribe = workbenchStore.files.subscribe((nextFiles) => {
+        if (isLoading) {
+          return;
+        }
+
+        setFiles(nextFiles);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, [isLoading]);
+    useEffect(() => {
       const rawPrompt = searchParams.get('prompt');
       const prompt = rawPrompt ? decodePromptValue(rawPrompt) : '';
 
@@ -298,6 +323,43 @@ export const ChatImpl = memo(
 
     const { enhancingPrompt, promptEnhanced, enhancePrompt, resetEnhancer } = usePromptEnhancer();
     const { parsedMessages, parseMessages } = useMessageParser();
+    const isStreaming = isLoading || fakeLoading;
+    const [renderMessages, setRenderMessages] = useState<Message[]>(() => initialMessages);
+    const renderMessagesRef = useRef<Message[]>(initialMessages);
+    const [renderData, setRenderData] = useState<typeof chatData>(chatData);
+    const pendingDataRef = useRef<typeof chatData>(chatData);
+    const dataTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastStreamActivityRef = useRef(Date.now());
+    const streamStallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const applyParsedMessages = useCallback(
+      (sourceMessages: Message[]) =>
+        sourceMessages.map((message, index) => {
+          if (message.role === 'user') {
+            return message;
+          }
+
+          const parsed = parsedMessages[index];
+          if (typeof parsed !== 'string') {
+            return message;
+          }
+
+          if (message.content === parsed) {
+            return message;
+          }
+
+          return {
+            ...message,
+            content: parsed,
+          };
+        }),
+      [parsedMessages],
+    );
+
+    const updateRenderMessages = useCallback((nextMessages: Message[]) => {
+      renderMessagesRef.current = nextMessages;
+      setRenderMessages(nextMessages);
+    }, []);
 
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
 
@@ -305,11 +367,17 @@ export const ChatImpl = memo(
       chatStore.setKey('started', initialMessages.length > 0);
     }, []);
 
+    const wasBusyRef = useRef(isStreaming);
     useEffect(() => {
-      if (!isLoading && !fakeLoading) {
+      const wasBusy = wasBusyRef.current;
+      const isBusy = isStreaming;
+
+      if (wasBusy && !isBusy) {
         setGenerationSummary(null);
       }
-    }, [isLoading, fakeLoading]);
+
+      wasBusyRef.current = isBusy;
+    }, [isStreaming]);
 
     useEffect(() => {
       processSampledMessages({
@@ -321,6 +389,53 @@ export const ChatImpl = memo(
       });
     }, [messages, isLoading, parseMessages]);
 
+    useEffect(() => {
+      if (messages.length === 0) {
+        if (renderMessagesRef.current.length !== 0) {
+          updateRenderMessages([]);
+        }
+        return;
+      }
+
+      if (!isStreaming) {
+        updateRenderMessages(applyParsedMessages(messages));
+        return;
+      }
+
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage?.role === 'user') {
+        updateRenderMessages(applyParsedMessages(messages));
+      }
+    }, [applyParsedMessages, isStreaming, messages, updateRenderMessages]);
+
+    useEffect(() => {
+      pendingDataRef.current = chatData;
+
+      if (!isStreaming) {
+        if (dataTimerRef.current) {
+          clearTimeout(dataTimerRef.current);
+          dataTimerRef.current = null;
+        }
+        setRenderData(chatData);
+        return;
+      }
+
+      if (dataTimerRef.current) {
+        return;
+      }
+
+      dataTimerRef.current = setTimeout(() => {
+        dataTimerRef.current = null;
+        setRenderData(pendingDataRef.current);
+      }, 600);
+    }, [chatData, isStreaming]);
+
+    useEffect(() => {
+      if (isStreaming) {
+        lastStreamActivityRef.current = Date.now();
+      }
+    }, [chatData, isStreaming, messages]);
+
     const scrollTextArea = () => {
       const textarea = textareaRef.current;
 
@@ -331,6 +446,8 @@ export const ChatImpl = memo(
 
     const abort = () => {
       stop();
+      setFakeLoading(false);
+      setData(undefined);
       chatStore.setKey('aborted', true);
       workbenchStore.abortAllActions();
       workbenchStore.clearPendingSectionContract();
@@ -342,6 +459,37 @@ export const ChatImpl = memo(
         provider: provider.name,
       });
     };
+
+    useEffect(() => {
+      if (!isStreaming) {
+        if (streamStallTimerRef.current) {
+          clearInterval(streamStallTimerRef.current);
+          streamStallTimerRef.current = null;
+        }
+        return;
+      }
+
+      if (streamStallTimerRef.current) {
+        return;
+      }
+
+      streamStallTimerRef.current = setInterval(() => {
+        const idleFor = Date.now() - lastStreamActivityRef.current;
+        if (idleFor < STREAM_STALL_MS) {
+          return;
+        }
+
+        abort();
+        toast.error('Stream stalled. Stopped response. Please retry or switch model.');
+      }, STREAM_STALL_CHECK_MS);
+
+      return () => {
+        if (streamStallTimerRef.current) {
+          clearInterval(streamStallTimerRef.current);
+          streamStallTimerRef.current = null;
+        }
+      };
+    }, [abort, isStreaming]);
 
     const handleError = useCallback(
       (error: any, context: 'chat' | 'template' | 'llmcall' = 'chat') => {
@@ -575,6 +723,7 @@ export const ChatImpl = memo(
           }
         } else {
           workbenchStore.clearPendingSectionContract();
+          summary = buildGenerationSummary(messageContent);
         }
 
         setGenerationSummary(summary);
@@ -806,7 +955,7 @@ export const ChatImpl = memo(
         input={input}
         showChat={showChat}
         chatStarted={chatStarted}
-        isStreaming={isLoading || fakeLoading}
+        isStreaming={isStreaming}
         onStreamingChange={(streaming) => {
           streamingState.set(streaming);
         }}
@@ -833,16 +982,7 @@ export const ChatImpl = memo(
         description={description}
         importChat={importChat}
         exportChat={exportChat}
-        messages={messages.map((message, i) => {
-          if (message.role === 'user') {
-            return message;
-          }
-
-          return {
-            ...message,
-            content: parsedMessages[i] || '',
-          };
-        })}
+        messages={renderMessages}
         enhancePrompt={() => {
           enhancePrompt(
             input,
@@ -867,7 +1007,7 @@ export const ChatImpl = memo(
         clearDeployAlert={() => workbenchStore.clearDeployAlert()}
         llmErrorAlert={llmErrorAlert}
         clearLlmErrorAlert={clearApiErrorAlert}
-        data={chatData}
+        data={renderData}
         chatMode={chatMode}
         setChatMode={setChatMode}
         append={append}

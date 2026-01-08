@@ -5,9 +5,9 @@ import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction,
 import type { SectionContract } from '~/types/section-contract';
 import { createScopedLogger } from '~/utils/logger';
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
-import { validateTsx } from '~/utils/tsxValidator';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
-import { quickFix, areErrorsAutoFixable } from '~/utils/autoFixLoop';
+import { quickFix, areErrorsAutoFixable, autoFixWithLlm } from '~/utils/autoFixLoop';
+import { createLlmRepairFn, createFallbackLlmRepairFn } from '~/lib/services/llmRepairService';
 import { unreachable } from '~/utils/unreachable';
 import { preflightViteReactBaseline } from './project-preflight';
 import type { ActionCallbackData } from './message-parser';
@@ -582,19 +582,56 @@ export class ActionRunner {
           // Auto-Fix Loop: Try to fix if errors are auto-fixable
           if (areErrorsAutoFixable(validation.errors)) {
             logger.info(`Attempting auto-fix for ${relativePath} (${errorCount} errors)`);
-            const fixResult = quickFix(contentToWrite, relativePath);
             
-            if (fixResult.valid) {
-              logger.info(`Auto-fix succeeded for ${relativePath}`);
-              contentToWrite = fixResult.code;
+            // First try quick fix (sanitizer only - fast)
+            const quickFixResult = quickFix(contentToWrite, relativePath);
+            
+            if (quickFixResult.valid) {
+              logger.info(`Quick fix succeeded for ${relativePath}`);
+              contentToWrite = quickFixResult.code;
             } else {
-              // Log errors but still write the best attempt
-              const errorSummary = validation.errors
-                .filter(e => e.severity === 'error')
-                .slice(0, 3)
-                .map(e => `Line ${e.line}: ${e.message}`)
-                .join('; ');
-              logger.warn(`Auto-fix incomplete for ${relativePath}: ${errorSummary}`);
+              // Quick fix failed - try LLM repair for important files
+              const isImportantFile = relativePath.endsWith('.tsx') || 
+                                      relativePath.endsWith('.jsx') ||
+                                      relativePath.includes('App.');
+              
+              if (isImportantFile && errorCount <= 10) {
+                logger.info(`Attempting LLM repair for ${relativePath}`);
+                try {
+                  const llmRepairFn = createLlmRepairFn();
+                  const fallbackLlmRepairFn = createFallbackLlmRepairFn();
+                  
+                  const autoFixResult = await autoFixWithLlm({
+                    filename: relativePath,
+                    originalCode: contentToWrite,
+                    validationResult: validation,
+                    llmRepairFn,
+                    fallbackLlmRepairFn,
+                  });
+                  
+                  if (autoFixResult.success) {
+                    logger.info(`LLM repair succeeded for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
+                    contentToWrite = autoFixResult.code;
+                  } else {
+                    logger.warn(`LLM repair failed for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
+                    // Use best attempt from quick fix
+                    contentToWrite = quickFixResult.code;
+                  }
+                } catch (llmError) {
+                  logger.error(`LLM repair error for ${relativePath}:`, llmError);
+                  // Fall back to quick fix result
+                  contentToWrite = quickFixResult.code;
+                }
+              } else {
+                // Not important file or too many errors - use quick fix result
+                const errorSummary = validation.errors
+                  .filter(e => e.severity === 'error')
+                  .slice(0, 3)
+                  .map(e => `Line ${e.line}: ${e.message}`)
+                  .join('; ');
+                logger.warn(`Auto-fix incomplete for ${relativePath}: ${errorSummary}`);
+                contentToWrite = quickFixResult.code;
+              }
             }
           } else {
             // Errors not auto-fixable, just log
@@ -605,6 +642,46 @@ export class ActionRunner {
               .join('; ');
             logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
           }
+        }
+        
+        // Final validation before write - Hard Gate
+        const finalValidation = validateFile(contentToWrite, relativePath);
+        if (!finalValidation.valid) {
+          const errorCount = finalValidation.errors.filter(e => e.severity === 'error').length;
+          
+          // Hard Gate: Don't write invalid files to working directory
+          // Instead, quarantine to .history/ and alert user
+          const quarantinePath = `.history/${relativePath}.invalid`;
+          const quarantineFolder = nodePath.dirname(quarantinePath);
+          
+          try {
+            await webcontainer.fs.mkdir(quarantineFolder, { recursive: true });
+            await webcontainer.fs.writeFile(quarantinePath, contentToWrite);
+            logger.warn(`Quarantined invalid file to ${quarantinePath} (${errorCount} errors)`);
+          } catch (quarantineError) {
+            logger.error('Failed to quarantine invalid file:', quarantineError);
+          }
+          
+          // Alert user about the invalid file
+          const errorSummary = finalValidation.errors
+            .filter(e => e.severity === 'error')
+            .slice(0, 5)
+            .map(e => `Line ${e.line}: ${e.message}`)
+            .join('\n');
+          
+          this.onAlert?.({
+            type: 'validation',
+            title: 'Invalid Code Blocked',
+            description: `${relativePath}: ${errorCount} syntax error(s) - file not written`,
+            content: `File quarantined to ${quarantinePath}\n\nErrors:\n${errorSummary}`,
+            source: 'validation',
+            autoFix: {
+              key: `hardgate:${relativePath}:${Date.now()}`,
+              message: `Fix the syntax errors in ${relativePath}:\n\n${errorSummary}\n\nThe file was not written due to validation errors. Please regenerate or fix manually.`,
+            },
+          });
+          
+          return; // Don't write invalid file
         }
       }
 
@@ -642,23 +719,34 @@ export class ActionRunner {
     }
 
     try {
-      const result = await validateTsx(content, normalizedPath);
-      if (result.ok) {
+      // Use unified validator (validateFile) instead of separate validateTsx
+      const result = validateFile(content, normalizedPath);
+      if (result.valid) {
         this.#autoFixAttempts.delete(normalizedPath);
         return true;
       }
 
-      const { error } = result;
+      // Get first error for alert
+      const firstError = result.errors.find(e => e.severity === 'error');
+      if (!firstError) {
+        return true; // Only warnings, consider valid
+      }
+
       const attempts = this.#autoFixAttempts.get(normalizedPath) ?? 0;
-      const location = `${error.line}:${error.column}`;
-      const snippet = error.snippet ? `\n\nSnippet:\n${error.snippet}` : '';
-      const contentSummary = `File: ${normalizedPath}\nError: ${error.message}\nLocation: ${location}${snippet}`;
-      const autoFixKey = `${normalizedPath}:${error.message}:${location}`;
+      const location = `${firstError.line}:${firstError.column}`;
+      
+      // Build snippet from code
+      const lines = content.split('\n');
+      const errorLine = lines[firstError.line - 1] || '';
+      const snippet = errorLine ? `\n\nSnippet:\n${errorLine}\n${' '.repeat(Math.max(0, firstError.column - 1))}^` : '';
+      
+      const contentSummary = `File: ${normalizedPath}\nError: ${firstError.message}\nLocation: ${location}${snippet}`;
+      const autoFixKey = `${normalizedPath}:${firstError.message}:${location}`;
 
       this.onAlert?.({
         type: 'validation',
         title: 'Invalid JSX Generated',
-        description: `${normalizedPath}: ${error.message} (line ${error.line}, column ${error.column})`,
+        description: `${normalizedPath}: ${firstError.message} (line ${firstError.line}, column ${firstError.column})`,
         content: contentSummary,
         source: 'validation',
         autoFix:
@@ -667,7 +755,7 @@ export class ActionRunner {
                 key: autoFixKey,
                 message:
                   `Fix the JSX/TSX parse error in ${normalizedPath}.\n` +
-                  `Error: ${error.message}\n` +
+                  `Error: ${firstError.message}\n` +
                   `Location: ${location}${snippet}\n\n` +
                   `Please update the file so it compiles without JSX syntax errors.`,
               }

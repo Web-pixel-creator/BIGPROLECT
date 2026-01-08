@@ -1,10 +1,61 @@
 import { path as nodePath } from './path';
 import { WEB_BASELINE_FILES } from './templateBaseline';
 
-type SanitizationResult = {
+/**
+ * Risk level for sanitizer changes.
+ * - low: Minor formatting/whitespace changes
+ * - medium: Structural fixes (imports, tags)
+ * - high: Significant code modifications (logic, strings, exports)
+ */
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+/**
+ * Structured warning code for analytics and monitoring.
+ */
+export type SanitizerWarningCode =
+  | 'SANITIZER_FIX_TRUNCATED_BUTTON'
+  | 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG'
+  | 'SANITIZER_FIX_BROKEN_ARROW'
+  | 'SANITIZER_FIX_MERGED_JSX_ATTR'
+  | 'SANITIZER_FIX_IMPORTS_HOISTED'
+  | 'SANITIZER_FIX_IMPORTS_MALFORMED'
+  | 'SANITIZER_FIX_IMPORTS_DUPLICATE'
+  | 'SANITIZER_FIX_EXPORT_DUPLICATE'
+  | 'SANITIZER_FIX_UNBALANCED_BRACES'
+  | 'SANITIZER_FIX_UNTERMINATED_STRING'
+  | 'SANITIZER_FIX_LLM_TEXT_REMOVED'
+  | 'SANITIZER_FIX_BASELINE_REPLACED'
+  | 'SANITIZER_FIX_COMPONENT_TYPO'
+  | 'SANITIZER_FIX_GARBAGE_REMOVED'
+  | 'SANITIZER_FIX_OTHER';
+
+export interface SanitizerWarning {
+  code: SanitizerWarningCode;
+  message: string;
+  risk: RiskLevel;
+}
+
+export interface ChangeMetrics {
+  /** Percentage of lines changed (0-100) */
+  changedLinesPercent: number;
+  /** Number of characters added */
+  charsAdded: number;
+  /** Number of characters removed */
+  charsRemoved: number;
+  /** Number of high-risk fixes applied */
+  highRiskFixes: number;
+  /** Overall risk level */
+  riskLevel: RiskLevel;
+}
+
+export type SanitizationResult = {
   content: string;
   changed: boolean;
   warnings: string[];
+  /** Structured warnings with codes (for analytics) */
+  structuredWarnings?: SanitizerWarning[];
+  /** Change metrics for risk assessment */
+  metrics?: ChangeMetrics;
 };
 
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.html', '.css', '.scss']);
@@ -409,7 +460,126 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
     }
   }
 
-  return { content: next, changed: next !== content, warnings };
+  // Calculate change metrics for risk assessment
+  const metrics = calculateChangeMetrics(content, next, warnings);
+
+  return { 
+    content: next, 
+    changed: next !== content, 
+    warnings,
+    structuredWarnings: parseWarningsToStructured(warnings),
+    metrics,
+  };
+}
+
+/**
+ * Calculate change metrics for risk assessment.
+ */
+function calculateChangeMetrics(
+  original: string,
+  modified: string,
+  warnings: string[]
+): ChangeMetrics {
+  const originalLines = original.split('\n');
+  const modifiedLines = modified.split('\n');
+  
+  // Calculate changed lines (simple diff)
+  let changedLines = 0;
+  const maxLines = Math.max(originalLines.length, modifiedLines.length);
+  
+  for (let i = 0; i < maxLines; i++) {
+    if (originalLines[i] !== modifiedLines[i]) {
+      changedLines++;
+    }
+  }
+  
+  const changedLinesPercent = maxLines > 0 
+    ? Math.round((changedLines / maxLines) * 100) 
+    : 0;
+  
+  // Calculate character changes
+  const charsAdded = Math.max(0, modified.length - original.length);
+  const charsRemoved = Math.max(0, original.length - modified.length);
+  
+  // Count high-risk fixes from warnings
+  const highRiskPatterns = [
+    /replaced.*baseline/i,
+    /removed.*export/i,
+    /removed.*import/i,
+    /fixed.*string/i,
+    /fixed.*arrow/i,
+    /removed.*LLM text/i,
+  ];
+  
+  let highRiskFixes = 0;
+  for (const warning of warnings) {
+    if (highRiskPatterns.some(pattern => pattern.test(warning))) {
+      highRiskFixes++;
+    }
+  }
+  
+  // Determine overall risk level
+  let riskLevel: RiskLevel = 'low';
+  
+  if (highRiskFixes > 0 || changedLinesPercent > 30 || charsRemoved > 500) {
+    riskLevel = 'high';
+  } else if (changedLinesPercent > 10 || charsRemoved > 100 || warnings.length > 3) {
+    riskLevel = 'medium';
+  }
+  
+  return {
+    changedLinesPercent,
+    charsAdded,
+    charsRemoved,
+    highRiskFixes,
+    riskLevel,
+  };
+}
+
+/**
+ * Parse free-text warnings into structured warnings with codes.
+ */
+function parseWarningsToStructured(warnings: string[]): SanitizerWarning[] {
+  const structured: SanitizerWarning[] = [];
+  
+  const patterns: Array<{
+    pattern: RegExp;
+    code: SanitizerWarningCode;
+    risk: RiskLevel;
+  }> = [
+    { pattern: /truncated.*<butt/i, code: 'SANITIZER_FIX_TRUNCATED_BUTTON', risk: 'low' },
+    { pattern: /truncated closing tags/i, code: 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG', risk: 'low' },
+    { pattern: /broken arrow|= \/>.*=>/i, code: 'SANITIZER_FIX_BROKEN_ARROW', risk: 'medium' },
+    { pattern: /merged.*JSX.*attr|split JSX attr/i, code: 'SANITIZER_FIX_MERGED_JSX_ATTR', risk: 'low' },
+    { pattern: /hoisted.*import|late import/i, code: 'SANITIZER_FIX_IMPORTS_HOISTED', risk: 'low' },
+    { pattern: /malformed import/i, code: 'SANITIZER_FIX_IMPORTS_MALFORMED', risk: 'medium' },
+    { pattern: /duplicate import/i, code: 'SANITIZER_FIX_IMPORTS_DUPLICATE', risk: 'low' },
+    { pattern: /duplicate.*export|multiple export default/i, code: 'SANITIZER_FIX_EXPORT_DUPLICATE', risk: 'medium' },
+    { pattern: /unbalanced.*brace|closing brace/i, code: 'SANITIZER_FIX_UNBALANCED_BRACES', risk: 'medium' },
+    { pattern: /unterminated.*string|unclosed.*string/i, code: 'SANITIZER_FIX_UNTERMINATED_STRING', risk: 'high' },
+    { pattern: /LLM text|removed.*text response/i, code: 'SANITIZER_FIX_LLM_TEXT_REMOVED', risk: 'medium' },
+    { pattern: /replaced.*baseline|baseline.*replaced/i, code: 'SANITIZER_FIX_BASELINE_REPLACED', risk: 'high' },
+    { pattern: /component.*typo|typo.*component/i, code: 'SANITIZER_FIX_COMPONENT_TYPO', risk: 'low' },
+    { pattern: /garbage.*removed|removed.*garbage/i, code: 'SANITIZER_FIX_GARBAGE_REMOVED', risk: 'medium' },
+  ];
+  
+  for (const warning of warnings) {
+    let matched = false;
+    
+    for (const { pattern, code, risk } of patterns) {
+      if (pattern.test(warning)) {
+        structured.push({ code, message: warning, risk });
+        matched = true;
+        break;
+      }
+    }
+    
+    if (!matched) {
+      structured.push({ code: 'SANITIZER_FIX_OTHER', message: warning, risk: 'low' });
+    }
+  }
+  
+  return structured;
 }
 
 /**

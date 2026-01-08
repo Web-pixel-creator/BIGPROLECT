@@ -8,6 +8,7 @@ import {
   getErrorSummary,
   autoFixWithLlm,
   type AutoFixOptions,
+  type LlmRepairFn,
 } from './autoFixLoop';
 import type { ValidationError } from './codeValidator';
 
@@ -189,7 +190,8 @@ export default function App() {
       const brokenCode = 'const x = {';
       const fixedCode = 'const x = {};';
       
-      const mockLlmRepair = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
+      // Mock LLM repair function - now receives prompt string
+      const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
       
       const options: AutoFixOptions = {
         filename: 'test.ts',
@@ -204,7 +206,14 @@ export default function App() {
       
       const result = await autoFixWithLlm(options);
       
+      // Verify LLM was called with a prompt string containing expected content
       expect(mockLlmRepair).toHaveBeenCalled();
+      const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(typeof promptArg).toBe('string');
+      expect(promptArg).toContain('ERRORS:');
+      expect(promptArg).toContain('FILE:');
+      expect(promptArg).toContain('test.ts');
+      
       expect(result.success).toBe(true);
       expect(result.code).toContain('const x = {}');
     });
@@ -213,8 +222,9 @@ export default function App() {
       const brokenCode = 'const x = {{{';
       const fixedCode = 'const x = {};';
       
-      const mockPrimaryLlm = vi.fn().mockResolvedValue('still broken {{{');
-      const mockFallbackLlm = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
+      // Mock LLM functions - now receive prompt string
+      const mockPrimaryLlm: LlmRepairFn = vi.fn().mockResolvedValue('still broken {{{');
+      const mockFallbackLlm: LlmRepairFn = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
       
       const options: AutoFixOptions = {
         filename: 'test.ts',
@@ -230,8 +240,46 @@ export default function App() {
       
       const result = await autoFixWithLlm(options);
       
+      // Verify fallback was called with prompt string
       expect(mockFallbackLlm).toHaveBeenCalled();
+      const promptArg = (mockFallbackLlm as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(typeof promptArg).toBe('string');
+      expect(promptArg).toContain('ERRORS:');
+      
       expect(result.usedFallback).toBe(true);
+    });
+
+    it('passes prompt with correct structure to LLM', async () => {
+      const brokenCode = 'export const x = {';
+      
+      const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('export const x = {};');
+      
+      const options: AutoFixOptions = {
+        filename: 'utils.ts',
+        originalCode: brokenCode,
+        validationResult: {
+          valid: false,
+          errors: [
+            { line: 1, column: 19, message: "'}' expected", code: 1005, severity: 'error' },
+            { line: 1, column: 1, message: 'Unbalanced braces', code: 17003, severity: 'error' },
+          ],
+          fixable: true,
+        },
+        llmRepairFn: mockLlmRepair,
+      };
+      
+      await autoFixWithLlm(options);
+      
+      const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      
+      // Verify prompt structure
+      expect(promptArg).toContain('FILE: utils.ts');
+      expect(promptArg).toContain('ERRORS:');
+      expect(promptArg).toContain("'}' expected");
+      expect(promptArg).toContain('BROKEN CODE:');
+      expect(promptArg).toContain('export const x = {');
+      expect(promptArg).toContain('INSTRUCTIONS:');
+      expect(promptArg).toContain('FIXED CODE:');
     });
   });
 });

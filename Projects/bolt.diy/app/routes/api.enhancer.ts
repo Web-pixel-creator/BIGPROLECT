@@ -96,31 +96,35 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
     });
 
     // Handle streaming errors in a non-blocking way
-    (async () => {
-      try {
-        for await (const part of result.fullStream) {
-          if (part.type === 'error') {
-            const error: any = part.error;
-            logger.error('Streaming error:', error);
-            break;
+    if (result) {
+      (async () => {
+        try {
+          for await (const part of result.fullStream) {
+            if (part.type === 'error') {
+              const error: any = part.error;
+              logger.error('Streaming error:', error);
+              break;
+            }
           }
+        } catch (error) {
+          logger.error('Error processing stream:', error);
         }
-      } catch (error) {
-        logger.error('Error processing stream:', error);
-      }
-    })();
+      })();
 
-    // Return the text stream directly since it's already text data
-    return new Response(result.textStream, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/event-stream',
-        Connection: 'keep-alive',
-        'Cache-Control': 'no-cache',
-      },
-    });
+      // Return the text stream directly since it's already text data
+      return new Response(result.textStream, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          Connection: 'keep-alive',
+          'Cache-Control': 'no-cache',
+        },
+      });
+    }
+
+    throw new Error('Failed to initialize enhancer stream');
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Enhancer failed:', error);
 
     if (error instanceof Error && error.message?.includes('API key')) {
       throw new Response('Invalid or missing API key', {
@@ -129,9 +133,10 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
       });
     }
 
-    throw new Response(null, {
-      status: 500,
-      statusText: 'Internal Server Error',
+    // Return a 503 Service Unavailable so the frontend knows to fallback to original prompt
+    throw new Response(error instanceof Error ? error.message : 'Prompt enhancement failed', {
+      status: 503,
+      statusText: 'Service Unavailable',
     });
   }
 }

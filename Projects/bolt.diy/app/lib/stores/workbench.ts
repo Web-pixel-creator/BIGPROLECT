@@ -704,7 +704,8 @@ export class WorkbenchStore {
        * This is a more complex feature that would be implemented in a future update
        */
 
-      if (this.selectedFile.value !== fullPath) {
+      const isSelected = this.selectedFile.value === fullPath;
+      if (!isStreaming && !isSelected) {
         this.setSelectedFile(fullPath);
       }
 
@@ -714,7 +715,9 @@ export class WorkbenchStore {
         await artifact.runner.runAction(data, isStreaming);
       }
 
-      this.#editorStore.updateFile(fullPath, data.action.content);
+      if (!isStreaming) {
+        this.#editorStore.updateFile(fullPath, data.action.content);
+      }
 
       if (!isStreaming && data.action.content) {
         await this.saveFile(fullPath);
@@ -731,7 +734,7 @@ export class WorkbenchStore {
 
   actionStreamSampler = createSampler(async (data: ActionCallbackData, isStreaming: boolean = false) => {
     return await this._runAction(data, isStreaming);
-  }, 100); // TODO: remove this magic number to have it configurable
+  }, 200); // TODO: remove this magic number to have it configurable
 
   #getArtifact(id: string) {
     const artifacts = this.artifacts.get();

@@ -55,6 +55,7 @@ interface MessageState {
   currentArtifact?: BoltArtifactData;
   currentAction: BoltActionData;
   actionId: number;
+  lastInputLength?: number;
 }
 
 function cleanoutMarkdownSyntax(content: string) {
@@ -95,6 +96,7 @@ export class StreamingMessageParser {
       this.#messages.set(messageId, state);
     }
 
+    state.lastInputLength = input.length;
     let output = '';
     let i = state.position;
     let earlyBreak = false;
@@ -187,6 +189,7 @@ export class StreamingMessageParser {
                 content = cleanEscapedTags(content);
               }
 
+              currentAction.content = content;
               this._options.callbacks?.onActionStream?.({
                 artifactId: currentArtifact.id,
                 messageId,
@@ -333,6 +336,55 @@ export class StreamingMessageParser {
 
   reset() {
     this.#messages.clear();
+  }
+
+  finalize(messageId: string) {
+    const state = this.#messages.get(messageId);
+    if (!state) {
+      return;
+    }
+
+    if (state.insideAction) {
+      const currentAction = state.currentAction;
+      if ('type' in currentAction && currentAction.type === 'file') {
+        let content = currentAction.content?.trim() ?? '';
+
+        if (currentAction.filePath && !currentAction.filePath.endsWith('.md')) {
+          content = cleanoutMarkdownSyntax(content);
+          content = cleanEscapedTags(content);
+        }
+
+        content += '\n';
+        currentAction.content = content;
+
+        if (state.currentArtifact) {
+          this._options.callbacks?.onActionClose?.({
+            artifactId: state.currentArtifact.id,
+            messageId,
+            actionId: String(state.actionId - 1),
+            action: currentAction as BoltAction,
+          });
+        }
+      }
+
+      state.insideAction = false;
+      state.currentAction = { content: '' };
+    }
+
+    if (state.insideArtifact && state.currentArtifact) {
+      this._options.callbacks?.onArtifactClose?.({
+        messageId,
+        artifactId: state.currentArtifact.id,
+        ...state.currentArtifact,
+      });
+
+      state.insideArtifact = false;
+      state.currentArtifact = undefined;
+    }
+
+    if (typeof state.lastInputLength === 'number') {
+      state.position = state.lastInputLength;
+    }
   }
 
   #parseActionTag(input: string, actionOpenIndex: number, actionEndIndex: number) {

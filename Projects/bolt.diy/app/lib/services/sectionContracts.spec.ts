@@ -382,4 +382,102 @@ export function HeroSection() {
       }
     });
   });
+
+  describe('unifiedViolations', () => {
+    it('returns unifiedViolations array alongside violations', () => {
+      const code = `
+function HeroSection() {
+  return <div>Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      expect(result.unifiedViolations).toBeDefined();
+      expect(Array.isArray(result.unifiedViolations)).toBe(true);
+    });
+
+    it('maps missing named export to CONTRACT_MISSING_NAMED_EXPORT code', () => {
+      const code = `
+function HeroSection() {
+  return <div className="py-20">Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
+      expect(unified).toBeDefined();
+      expect(unified?.severity).toBe('error');
+      expect(unified?.autoFixable).toBe(false);
+    });
+
+    it('maps missing Tailwind to CONTRACT_MISSING_TAILWIND code', () => {
+      const code = `
+export function HeroSection() {
+  return <div style={{ padding: '20px' }}>Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_TAILWIND');
+      expect(unified).toBeDefined();
+      expect(unified?.severity).toBe('warning');
+    });
+
+    it('maps missing responsive to CONTRACT_MISSING_RESPONSIVE code', () => {
+      const code = `
+export function HeroSection() {
+  return <div className="py-20">Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_RESPONSIVE');
+      expect(unified).toBeDefined();
+      expect(unified?.severity).toBe('warning');
+    });
+
+    it('maps hero-specific violations to correct codes', () => {
+      const code = `
+export function HeroSection() {
+  return <div className="py-20 md:py-32">Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      
+      // Should have hero-specific violations
+      const h1Violation = result.unifiedViolations?.find(v => v.code === 'CONTRACT_HERO_MISSING_H1');
+      const ctaViolation = result.unifiedViolations?.find(v => v.code === 'CONTRACT_HERO_MISSING_CTA');
+      
+      expect(h1Violation).toBeDefined();
+      expect(ctaViolation).toBeDefined();
+    });
+
+    it('maps CTA button error to CONTRACT_CTA_MISSING_BUTTON with error severity', () => {
+      const code = `
+export function CTASection() {
+  return <div className="py-20 md:py-32">No button here</div>;
+}`;
+      const result = validateAgainstContract(code, 'cta');
+      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_CTA_MISSING_BUTTON');
+      expect(unified).toBeDefined();
+      expect(unified?.severity).toBe('error');
+    });
+
+    it('includes context with sectionType for base violations', () => {
+      const code = `
+function HeroSection() {
+  return <div>Hello</div>;
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
+      expect(unified?.context).toBeDefined();
+      expect(unified?.context?.sectionType).toBe('hero');
+    });
+
+    it('returns empty unifiedViolations for valid code', () => {
+      const code = `
+export function HeroSection() {
+  return (
+    <section className="py-20 md:py-32 bg-gradient-to-r">
+      <h1>Welcome</h1>
+      <p>Subheading</p>
+      <button>CTA</button>
+    </section>
+  );
+}`;
+      const result = validateAgainstContract(code, 'hero');
+      expect(result.unifiedViolations).toHaveLength(0);
+    });
+  });
 });

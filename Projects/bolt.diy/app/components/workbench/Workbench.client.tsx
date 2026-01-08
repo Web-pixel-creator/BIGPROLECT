@@ -19,6 +19,7 @@ import { classNames } from '~/utils/classNames';
 import { cubicEasingFn } from '~/utils/easings';
 import { renderLogger } from '~/utils/logger';
 import { EditorPanel } from './EditorPanel';
+import type { EditorDocument } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { Preview } from './Preview';
 import useViewport from '~/lib/hooks';
 
@@ -28,6 +29,7 @@ import type { ElementInfo } from './Inspector';
 import { ExportChatButton } from '~/components/chat/chatExportAndImport/ExportChatButton';
 import { useChatHistory } from '~/lib/persistence';
 import { streamingState } from '~/lib/stores/streaming';
+import type { FileMap } from '~/lib/stores/files';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 interface WorkspaceProps {
@@ -73,6 +75,49 @@ const workbenchVariants = {
     },
   },
 } satisfies Variants;
+
+const buildLightFileMap = (files: FileMap, stableFiles: FileMap): FileMap => {
+  let changed = false;
+  const light: FileMap = { ...stableFiles };
+
+  for (const [filePath, dirent] of Object.entries(files)) {
+    if (!dirent) continue;
+    if (light[filePath]) continue;
+
+    changed = true;
+
+    if (dirent.type === 'file') {
+      light[filePath] = {
+        type: 'file',
+        content: '',
+        isBinary: dirent.isBinary,
+        isLocked: dirent.isLocked,
+        lockedByFolder: dirent.lockedByFolder,
+      };
+      continue;
+    }
+
+    light[filePath] = dirent;
+  }
+
+  return changed ? light : stableFiles;
+};
+
+const hasFileListChanged = (nextFiles: FileMap, previousKeys: Set<string>) => {
+  const nextKeys = Object.keys(nextFiles);
+
+  if (nextKeys.length !== previousKeys.size) {
+    return true;
+  }
+
+  for (const key of nextKeys) {
+    if (!previousKeys.has(key)) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 const FileModifiedDropdown = memo(
   ({
@@ -297,9 +342,12 @@ export const Workbench = memo(
     const hasPreview = useStore(computed(workbenchStore.previews, (previews) => previews.length > 0));
     const showWorkbench = useStore(workbenchStore.showWorkbench);
     const selectedFile = useStore(workbenchStore.selectedFile);
-    const currentDocument = useStore(workbenchStore.currentDocument);
+    const [currentDocument, setCurrentDocument] = useState<EditorDocument | undefined>(() =>
+      workbenchStore.currentDocument.get(),
+    );
+    const currentDocumentRef = useRef<EditorDocument | undefined>(currentDocument);
+    const pendingDocumentRef = useRef<EditorDocument | undefined>(undefined);
     const unsavedFiles = useStore(workbenchStore.unsavedFiles);
-    const files = useStore(workbenchStore.files);
     const selectedView = useStore(workbenchStore.currentView);
     const { showChat } = useStore(chatStore);
     const canHideChat = showWorkbench || !showChat;
@@ -307,6 +355,9 @@ export const Workbench = memo(
     const streaming = useStore(streamingState);
     const { exportChat } = useChatHistory();
     const [isSyncing, setIsSyncing] = useState(false);
+    const [files, setFiles] = useState<FileMap>(() => workbenchStore.files.get());
+    const filesKeySetRef = useRef<Set<string>>(new Set(Object.keys(files)));
+    const stableFilesRef = useRef<FileMap>(files);
 
     const setSelectedView = (view: WorkbenchViewType) => {
       workbenchStore.currentView.set(view);
@@ -326,8 +377,100 @@ export const Workbench = memo(
     }, [isStreaming]);
 
     useEffect(() => {
+      const currentFiles = workbenchStore.files.get();
+      filesKeySetRef.current = new Set(Object.keys(currentFiles));
+
+      if (streaming) {
+        const merged = buildLightFileMap(currentFiles, stableFilesRef.current);
+        if (merged !== stableFilesRef.current) {
+          stableFilesRef.current = merged;
+        }
+        setFiles(stableFilesRef.current);
+        return;
+      }
+
+      stableFilesRef.current = currentFiles;
+      setFiles(currentFiles);
+    }, [streaming]);
+
+    useEffect(() => {
+      const unsubscribe = workbenchStore.files.subscribe((nextFiles) => {
+        if (streaming) {
+          if (!hasFileListChanged(nextFiles, filesKeySetRef.current)) {
+            return;
+          }
+
+          filesKeySetRef.current = new Set(Object.keys(nextFiles));
+          const merged = buildLightFileMap(nextFiles, stableFilesRef.current);
+          if (merged !== stableFilesRef.current) {
+            stableFilesRef.current = merged;
+          }
+          setFiles(stableFilesRef.current);
+          return;
+        }
+
+        filesKeySetRef.current = new Set(Object.keys(nextFiles));
+        stableFilesRef.current = nextFiles;
+        setFiles(nextFiles);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, [streaming]);
+
+    useEffect(() => {
+      currentDocumentRef.current = currentDocument;
+    }, [currentDocument]);
+
+    useEffect(() => {
+      const unsubscribe = workbenchStore.currentDocument.subscribe((nextDocument) => {
+        if (streaming) {
+          const currentDoc = currentDocumentRef.current;
+          if (!currentDoc && nextDocument) {
+            currentDocumentRef.current = nextDocument;
+            setCurrentDocument(nextDocument);
+            return;
+          }
+
+          if (currentDoc && nextDocument && currentDoc.filePath !== nextDocument.filePath) {
+            currentDocumentRef.current = nextDocument;
+            setCurrentDocument(nextDocument);
+            return;
+          }
+
+          pendingDocumentRef.current = nextDocument;
+          return;
+        }
+
+        pendingDocumentRef.current = undefined;
+        currentDocumentRef.current = nextDocument;
+        setCurrentDocument(nextDocument);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, [streaming]);
+
+    useEffect(() => {
+      if (streaming) {
+        return;
+      }
+
+      if (pendingDocumentRef.current !== undefined) {
+        currentDocumentRef.current = pendingDocumentRef.current;
+        setCurrentDocument(pendingDocumentRef.current);
+        pendingDocumentRef.current = undefined;
+      }
+    }, [streaming]);
+
+    useEffect(() => {
+      if (streaming) {
+        return;
+      }
       workbenchStore.setDocuments(files);
-    }, [files]);
+    }, [files, streaming]);
 
     useEffect(() => {
       if (!showWorkbench) return;

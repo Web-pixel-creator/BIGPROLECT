@@ -12,7 +12,7 @@
 
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
-import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type AutoFixResult } from '~/utils/autoFixLoop';
+import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type AutoFixResult, type LlmRepairFn } from '~/utils/autoFixLoop';
 import { validateAgainstContract, getContractHints, type ContractValidationResult } from './sectionContracts';
 import { planSections, generateSectionPrompt, type SectionPlan, type SectionType } from './sectionGenerator';
 import { createScopedLogger } from '~/utils/logger';
@@ -48,10 +48,10 @@ export interface PipelineOptions {
   skipAutoFix?: boolean;
   /** Section type for contract validation */
   sectionType?: SectionType;
-  /** LLM repair function */
-  llmRepairFn?: (code: string, errors: any[], filename: string) => Promise<string>;
+  /** LLM repair function - receives prompt string, returns raw LLM response */
+  llmRepairFn?: LlmRepairFn;
   /** Fallback LLM repair function */
-  fallbackLlmRepairFn?: (code: string, errors: any[], filename: string) => Promise<string>;
+  fallbackLlmRepairFn?: LlmRepairFn;
 }
 
 /**

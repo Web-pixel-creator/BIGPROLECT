@@ -4,8 +4,20 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constant
 import { extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const logger = createScopedLogger('create-summary');
+
+function logModelScopeError(message: string) {
+  try {
+    const logPath = path.join(process.cwd(), 'modelscope_debug.txt');
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
+  } catch (e) {
+    // Ignore logging errors
+  }
+}
 
 export async function createSummary(props: {
   messages: Message[];
@@ -52,6 +64,10 @@ export async function createSummary(props: {
     if (internalModel !== currentModel) {
       logger.info(`Using internal model "${internalModel}" for summaries (original: "${currentModel}")`);
     }
+  } else if (provider.name === 'ModelScope') {
+    // For ModelScope, Qwen 2.5 72B is a good general-purpose choice for summaries if the selected one is too large/slow
+    // but usually, staying with the selected model is safer for context.
+    internalModel = currentModel;
   }
 
   if (!modelDetails) {
@@ -79,7 +95,7 @@ export async function createSummary(props: {
     }
   }
 
-  if (provider.name !== 'Google') {
+  if (provider.name !== 'Google' && provider.name !== 'ModelScope') {
     internalModel = modelDetails.name;
   }
 
@@ -115,10 +131,13 @@ ${summary.summary}`;
       : message.content;
 
   // select files from the list of code file from the project that might be useful for the current request from the user
-  const resp = await generateText({
-    // Keep internal summaries compact.
-    maxTokens: 2048,
-    system: `
+  let resp: GenerateTextResult<Record<string, CoreTool<any, any>>, never>;
+
+  try {
+    resp = await generateText({
+      // Keep internal summaries compact.
+      maxTokens: 2048,
+      system: `
         You are a software engineer. You are working on a project. you need to summarize the work till now and provide a summary of the chat till now.
 
         Please only use the following format to generate the summary:
@@ -187,22 +206,30 @@ Below is the chat after that:
 ---
 <new_chats>
 ${slicedMessages
-  .map((x) => {
-    return `---\n[${x.role}] ${extractTextContent(x)}\n---`;
-  })
-  .join('\n')}
+        .map((x) => {
+          return `---\n[${x.role}] ${extractTextContent(x)}\n---`;
+        })
+        .join('\n')}
 </new_chats>
 ---
 
-Please provide a summary of the chat till now including the hitorical summary of the chat.
+        Please provide a summary of the chat till now including the hitorical summary of the chat.
 `,
-    model: provider.getModelInstance({
-      model: internalModel,
-      serverEnv,
-      apiKeys,
-      providerSettings,
-    }),
-  });
+      model: provider.getModelInstance({
+        model: internalModel,
+        serverEnv,
+        apiKeys,
+        providerSettings,
+      }),
+    });
+  } catch (error: any) {
+    if (provider.name === 'ModelScope') {
+      logModelScopeError(
+        `SUMMARY ERROR - Message: ${error?.message || 'unknown'}, Status: ${error?.status || 'N/A'}, Detail: ${JSON.stringify(error)}`,
+      );
+    }
+    throw error;
+  }
 
   const response = resp.text;
 

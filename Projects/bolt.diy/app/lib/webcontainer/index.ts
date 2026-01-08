@@ -1,5 +1,7 @@
 import { WebContainer } from '@webcontainer/api';
 import { WORK_DIR_NAME } from '~/utils/constants';
+import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
+import { WEB_BASELINE_FILES } from '~/utils/templateBaseline';
 import { cleanStackTrace } from '~/utils/stacktrace';
 
 interface WebContainerContext {
@@ -17,6 +19,52 @@ if (import.meta.hot) {
 export let webcontainer: Promise<WebContainer> = new Promise(() => {
   // noop for ssr
 });
+
+const MAIN_ENTRY_PATH = 'src/main.tsx';
+let mainHealInFlight = false;
+let lastMainHealAt = 0;
+const MAIN_HEAL_COOLDOWN_MS = 3000;
+
+const shouldHealMainEntry = (message: any): boolean => {
+  const msgText = typeof message?.message === 'string' ? message.message : '';
+  const stackText = typeof message?.stack === 'string' ? message.stack : '';
+  if (!msgText && !stackText) return false;
+
+  const mentionsMain = stackText.includes('main.tsx') || msgText.includes('main.tsx');
+  const isReferenceError = msgText.includes('is not defined') || msgText.includes('ReferenceError');
+  return mentionsMain && isReferenceError;
+};
+
+const healMainEntry = async (webcontainer: WebContainer) => {
+  if (mainHealInFlight) return;
+  const now = Date.now();
+  if (now - lastMainHealAt < MAIN_HEAL_COOLDOWN_MS) return;
+
+  mainHealInFlight = true;
+  lastMainHealAt = now;
+
+  try {
+    const content = await webcontainer.fs.readFile(MAIN_ENTRY_PATH, 'utf-8');
+    const sanitized = sanitizeGeneratedFile(MAIN_ENTRY_PATH, content);
+    if (sanitized.changed) {
+      await webcontainer.fs.writeFile(MAIN_ENTRY_PATH, sanitized.content);
+    }
+    return;
+  } catch {
+    // Fall through to baseline write if read fails.
+  } finally {
+    mainHealInFlight = false;
+  }
+
+  const baselineMain = WEB_BASELINE_FILES.find((file) => file.path === MAIN_ENTRY_PATH)?.content;
+  if (!baselineMain) return;
+
+  try {
+    await webcontainer.fs.writeFile(MAIN_ENTRY_PATH, baselineMain);
+  } catch {
+    // ignore
+  }
+};
 
 if (!import.meta.env.SSR) {
   webcontainer =
@@ -58,6 +106,10 @@ if (!import.meta.env.SSR) {
               content: `Error occurred at ${message.pathname}${message.search}${message.hash}\nPort: ${message.port}\n\nStack trace:\n${cleanStackTrace(message.stack || '')}`,
               source: 'preview',
             });
+
+            if (shouldHealMainEntry(message)) {
+              void healMainEntry(webcontainer);
+            }
           }
         });
 

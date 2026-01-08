@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { componentMatcher } from '../Projects/bolt.diy/app/lib/services/componentMatcher.ts';
+import { componentMatcher } from '../Projects/bolt.diy/app/lib/services/componentMatcher.server';
 
 async function main() {
   // Загружаем индекс из prebuild/MD

@@ -14,6 +14,7 @@ import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { fixMojibake } from '~/utils/textEncoding';
 
 const menuVariants = {
   closed: {
@@ -83,6 +84,12 @@ export const Menu = () => {
     if (db) {
       getAll(db)
         .then((list) => list.filter((item) => item.urlId && item.description))
+        .then((list) =>
+          list.map((item) => ({
+            ...item,
+            description: item.description ? fixMojibake(item.description) : item.description,
+          })),
+        )
         .then(setList)
         .catch((error) => toast.error(error.message));
     }

@@ -174,11 +174,73 @@ export type SectionContract =
   | FaqContract;
 
 /**
+ * Unified violation code for all contract types.
+ * Enables consistent analytics, monitoring, and auto-fix routing.
+ */
+export type ViolationCode =
+  // Base contract violations
+  | 'CONTRACT_MISSING_NAMED_EXPORT'
+  | 'CONTRACT_MISSING_JSX_RETURN'
+  | 'CONTRACT_MISSING_TAILWIND'
+  | 'CONTRACT_MISSING_RESPONSIVE'
+  // Hero violations
+  | 'CONTRACT_HERO_MISSING_H1'
+  | 'CONTRACT_HERO_MISSING_CTA'
+  | 'CONTRACT_HERO_MISSING_VISUAL'
+  // Navigation violations
+  | 'CONTRACT_NAV_MISSING_NAV_ELEMENT'
+  | 'CONTRACT_NAV_MISSING_LINKS'
+  | 'CONTRACT_NAV_MISSING_MOBILE_MENU'
+  // Features violations
+  | 'CONTRACT_FEATURES_MISSING_ITEMS'
+  // Pricing violations
+  | 'CONTRACT_PRICING_MISSING_PRICE'
+  | 'CONTRACT_PRICING_MISSING_HIGHLIGHT'
+  // Footer violations
+  | 'CONTRACT_FOOTER_MISSING_FOOTER_ELEMENT'
+  | 'CONTRACT_FOOTER_MISSING_COPYRIGHT'
+  // Contact violations
+  | 'CONTRACT_CONTACT_MISSING_FORM'
+  | 'CONTRACT_CONTACT_MISSING_EMAIL'
+  | 'CONTRACT_CONTACT_MISSING_SUBMIT'
+  // CTA violations
+  | 'CONTRACT_CTA_MISSING_HEADLINE'
+  | 'CONTRACT_CTA_MISSING_BUTTON'
+  // Page structure violations (from ActionRunner)
+  | 'CONTRACT_PAGE_MISSING_SECTION'
+  | 'CONTRACT_PAGE_WRONG_ORDER'
+  | 'CONTRACT_PAGE_UNKNOWN_SECTION'
+  | 'CONTRACT_PAGE_IMAGE_COUNT'
+  | 'CONTRACT_PAGE_IMAGE_DUPLICATE'
+  | 'CONTRACT_PAGE_IMAGE_INVALID'
+  // Generic
+  | 'CONTRACT_OTHER';
+
+/**
+ * Unified violation format for all contract types.
+ * Used by both sectionContracts (content validation) and ActionRunner (page structure validation).
+ */
+export interface UnifiedViolation {
+  /** Structured code for analytics and routing */
+  code: ViolationCode;
+  /** Severity level */
+  severity: 'error' | 'warning';
+  /** Human-readable message */
+  message: string;
+  /** Whether this can be auto-fixed */
+  autoFixable: boolean;
+  /** Additional context for debugging/fixing */
+  context?: Record<string, unknown>;
+}
+
+/**
  * Contract validation result.
  */
 export interface ContractValidationResult {
   valid: boolean;
   violations: ContractViolation[];
+  /** Unified violations with structured codes (for analytics) */
+  unifiedViolations?: UnifiedViolation[];
   score: number; // 0-100
 }
 
@@ -306,6 +368,7 @@ export function validateAgainstContract(
   sectionType: SectionType
 ): ContractValidationResult {
   const violations: ContractViolation[] = [];
+  const unifiedViolations: UnifiedViolation[] = [];
   const contract = getContractForSection(sectionType);
 
   // Base contract checks
@@ -316,6 +379,13 @@ export function validateAgainstContract(
       severity: 'error',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_MISSING_NAMED_EXPORT',
+      severity: 'error',
+      message: 'Component must have a named export (export function ComponentName)',
+      autoFixable: false,
+      context: { sectionType },
+    });
   }
 
   if (contract.returnsJsx && !code.includes('return') && !code.includes('<')) {
@@ -325,6 +395,13 @@ export function validateAgainstContract(
       severity: 'error',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_MISSING_JSX_RETURN',
+      severity: 'error',
+      message: 'Component must return JSX',
+      autoFixable: false,
+      context: { sectionType },
+    });
   }
 
   if (contract.usesTailwind && !code.includes('className=')) {
@@ -333,6 +410,13 @@ export function validateAgainstContract(
       message: 'Component should use Tailwind CSS classes',
       severity: 'warning',
       autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_MISSING_TAILWIND',
+      severity: 'warning',
+      message: 'Component should use Tailwind CSS classes',
+      autoFixable: false,
+      context: { sectionType },
     });
   }
 
@@ -345,31 +429,38 @@ export function validateAgainstContract(
         severity: 'warning',
         autoFixable: false,
       });
+      unifiedViolations.push({
+        code: 'CONTRACT_MISSING_RESPONSIVE',
+        severity: 'warning',
+        message: 'Component should have responsive breakpoint classes (sm:, md:, lg:)',
+        autoFixable: false,
+        context: { sectionType },
+      });
     }
   }
 
   // Section-specific checks
   switch (sectionType) {
     case 'hero':
-      validateHeroContract(code, violations);
+      validateHeroContract(code, violations, unifiedViolations);
       break;
     case 'navigation':
-      validateNavigationContract(code, violations);
+      validateNavigationContract(code, violations, unifiedViolations);
       break;
     case 'features':
-      validateFeaturesContract(code, violations);
+      validateFeaturesContract(code, violations, unifiedViolations);
       break;
     case 'pricing':
-      validatePricingContract(code, violations);
+      validatePricingContract(code, violations, unifiedViolations);
       break;
     case 'footer':
-      validateFooterContract(code, violations);
+      validateFooterContract(code, violations, unifiedViolations);
       break;
     case 'contact':
-      validateContactContract(code, violations);
+      validateContactContract(code, violations, unifiedViolations);
       break;
     case 'cta':
-      validateCtaContract(code, violations);
+      validateCtaContract(code, violations, unifiedViolations);
       break;
   }
 
@@ -381,16 +472,23 @@ export function validateAgainstContract(
   return {
     valid: errorCount === 0,
     violations,
+    unifiedViolations,
     score,
   };
 }
 
-function validateHeroContract(code: string, violations: ContractViolation[]): void {
+function validateHeroContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   if (!/<h1[\s>]/.test(code)) {
     violations.push({
       rule: 'hasMainHeading',
       message: 'Hero section should have an h1 heading',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_HERO_MISSING_H1',
+      severity: 'warning',
+      message: 'Hero section should have an h1 heading',
       autoFixable: false,
     });
   }
@@ -400,6 +498,12 @@ function validateHeroContract(code: string, violations: ContractViolation[]): vo
       rule: 'hasCtaButton',
       message: 'Hero section should have a CTA button',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_HERO_MISSING_CTA',
+      severity: 'warning',
+      message: 'Hero section should have a CTA button',
       autoFixable: false,
     });
   }
@@ -412,15 +516,27 @@ function validateHeroContract(code: string, violations: ContractViolation[]): vo
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_HERO_MISSING_VISUAL',
+      severity: 'warning',
+      message: 'Hero section should have visual interest (gradient, background, or animation)',
+      autoFixable: false,
+    });
   }
 }
 
-function validateNavigationContract(code: string, violations: ContractViolation[]): void {
+function validateNavigationContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   if (!/<nav[\s>]/.test(code)) {
     violations.push({
       rule: 'hasNavElement',
       message: 'Navigation should use semantic <nav> element',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_NAV_MISSING_NAV_ELEMENT',
+      severity: 'warning',
+      message: 'Navigation should use semantic <nav> element',
       autoFixable: false,
     });
   }
@@ -433,6 +549,12 @@ function validateNavigationContract(code: string, violations: ContractViolation[
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_NAV_MISSING_LINKS',
+      severity: 'warning',
+      message: 'Navigation should have navigation links',
+      autoFixable: false,
+    });
   }
 
   const hasMobileMenu = /Menu|hamburger|mobile|toggle/i.test(code);
@@ -443,10 +565,16 @@ function validateNavigationContract(code: string, violations: ContractViolation[
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_NAV_MISSING_MOBILE_MENU',
+      severity: 'warning',
+      message: 'Navigation should have mobile menu support',
+      autoFixable: false,
+    });
   }
 }
 
-function validateFeaturesContract(code: string, violations: ContractViolation[]): void {
+function validateFeaturesContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   // Check for feature items (look for arrays or repeated patterns)
   const hasFeatureArray = /features|items|cards/i.test(code) && /\.map\(/.test(code);
   const hasMultipleFeatures = (code.match(/<div[^>]*className[^>]*>/g) || []).length >= 3;
@@ -458,16 +586,28 @@ function validateFeaturesContract(code: string, violations: ContractViolation[])
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_FEATURES_MISSING_ITEMS',
+      severity: 'warning',
+      message: 'Features section should have multiple feature items',
+      autoFixable: false,
+    });
   }
 }
 
-function validatePricingContract(code: string, violations: ContractViolation[]): void {
+function validatePricingContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   const hasPriceIndicator = /\$|\€|price|cost|month|year|free/i.test(code);
   if (!hasPriceIndicator) {
     violations.push({
       rule: 'tiersHavePrice',
       message: 'Pricing section should display prices',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_PRICING_MISSING_PRICE',
+      severity: 'warning',
+      message: 'Pricing section should display prices',
       autoFixable: false,
     });
   }
@@ -480,15 +620,27 @@ function validatePricingContract(code: string, violations: ContractViolation[]):
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_PRICING_MISSING_HIGHLIGHT',
+      severity: 'warning',
+      message: 'Pricing section should highlight a recommended tier',
+      autoFixable: false,
+    });
   }
 }
 
-function validateFooterContract(code: string, violations: ContractViolation[]): void {
+function validateFooterContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   if (!/<footer[\s>]/.test(code)) {
     violations.push({
       rule: 'hasFooterElement',
       message: 'Footer should use semantic <footer> element',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_FOOTER_MISSING_FOOTER_ELEMENT',
+      severity: 'warning',
+      message: 'Footer should use semantic <footer> element',
       autoFixable: false,
     });
   }
@@ -501,15 +653,27 @@ function validateFooterContract(code: string, violations: ContractViolation[]): 
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_FOOTER_MISSING_COPYRIGHT',
+      severity: 'warning',
+      message: 'Footer should have copyright notice',
+      autoFixable: false,
+    });
   }
 }
 
-function validateContactContract(code: string, violations: ContractViolation[]): void {
+function validateContactContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   if (!/<form[\s>]/.test(code)) {
     violations.push({
       rule: 'hasForm',
       message: 'Contact section should have a form element',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_CONTACT_MISSING_FORM',
+      severity: 'warning',
+      message: 'Contact section should have a form element',
       autoFixable: false,
     });
   }
@@ -522,6 +686,12 @@ function validateContactContract(code: string, violations: ContractViolation[]):
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_CONTACT_MISSING_EMAIL',
+      severity: 'warning',
+      message: 'Contact form should have an email field',
+      autoFixable: false,
+    });
   }
 
   const hasSubmit = /type=["']submit["']|<button/.test(code);
@@ -532,16 +702,28 @@ function validateContactContract(code: string, violations: ContractViolation[]):
       severity: 'warning',
       autoFixable: false,
     });
+    unifiedViolations.push({
+      code: 'CONTRACT_CONTACT_MISSING_SUBMIT',
+      severity: 'warning',
+      message: 'Contact form should have a submit button',
+      autoFixable: false,
+    });
   }
 }
 
-function validateCtaContract(code: string, violations: ContractViolation[]): void {
+function validateCtaContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
   const hasHeadline = /<h[1-3][\s>]/.test(code);
   if (!hasHeadline) {
     violations.push({
       rule: 'hasHeadline',
       message: 'CTA section should have a compelling headline',
       severity: 'warning',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_CTA_MISSING_HEADLINE',
+      severity: 'warning',
+      message: 'CTA section should have a compelling headline',
       autoFixable: false,
     });
   }
@@ -552,6 +734,12 @@ function validateCtaContract(code: string, violations: ContractViolation[]): voi
       rule: 'hasActionButton',
       message: 'CTA section must have an action button',
       severity: 'error',
+      autoFixable: false,
+    });
+    unifiedViolations.push({
+      code: 'CONTRACT_CTA_MISSING_BUTTON',
+      severity: 'error',
+      message: 'CTA section must have an action button',
       autoFixable: false,
     });
   }

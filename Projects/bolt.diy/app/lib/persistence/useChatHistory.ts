@@ -22,6 +22,7 @@ import type { Snapshot } from './types';
 import { webcontainer } from '~/lib/webcontainer';
 import { detectProjectCommands, createCommandActionsString } from '~/utils/projectCommands';
 import type { ContextAnnotation } from '~/types/context';
+import { fixMojibake } from '~/utils/textEncoding';
 
 export interface ChatHistoryItem {
   id: string;
@@ -176,7 +177,30 @@ ${value.content}
             setInitialMessages(filteredMessages);
 
             setUrlId(storedMessages.urlId);
-            description.set(storedMessages.description);
+            const normalizedDescription = storedMessages.description
+              ? fixMojibake(storedMessages.description)
+              : storedMessages.description;
+
+            description.set(normalizedDescription);
+
+            if (
+              db &&
+              storedMessages.description &&
+              normalizedDescription &&
+              normalizedDescription !== storedMessages.description
+            ) {
+              setMessages(
+                db,
+                storedMessages.id,
+                storedMessages.messages,
+                storedMessages.urlId,
+                normalizedDescription,
+                storedMessages.timestamp,
+                storedMessages.metadata,
+              ).catch((error) => {
+                console.warn('Failed to normalize chat description', error);
+              });
+            }
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
           } else {

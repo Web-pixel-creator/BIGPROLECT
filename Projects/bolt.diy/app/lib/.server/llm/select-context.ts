@@ -6,11 +6,23 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constant
 import { createFilesContext, extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Common patterns to ignore, similar to .gitignore
 
 const ig = ignore().add(IGNORE_PATTERNS);
 const logger = createScopedLogger('select-context');
+
+function logModelScopeError(message: string) {
+  try {
+    const logPath = path.join(process.cwd(), 'modelscope_debug.txt');
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
+  } catch (e) {
+    // Ignore logging errors
+  }
+}
 
 export async function selectContext(props: {
   messages: Message[];
@@ -60,6 +72,8 @@ export async function selectContext(props: {
     if (internalModel !== currentModel) {
       logger.info(`Using internal model "${internalModel}" for context selection (original: "${currentModel}")`);
     }
+  } else if (provider.name === 'ModelScope') {
+    internalModel = currentModel;
   }
 
   if (!modelDetails) {
@@ -87,7 +101,7 @@ export async function selectContext(props: {
     }
   }
 
-  if (provider.name !== 'Google') {
+  if (provider.name !== 'Google' && provider.name !== 'ModelScope') {
     internalModel = modelDetails.name;
   }
 
@@ -134,10 +148,13 @@ export async function selectContext(props: {
   }
 
   // select files from the list of code file from the project that might be useful for the current request from the user
-  const resp = await generateText({
-    // Keep internal file-selection compact.
-    maxTokens: 1024,
-    system: `
+  let resp: GenerateTextResult<Record<string, CoreTool<any, any>>, never>;
+
+  try {
+    resp = await generateText({
+      // Keep internal file-selection compact.
+      maxTokens: 1024,
+      system: `
         You are a software engineer. You are working on a project. You have access to the following files:
 
         AVAILABLE FILES PATHS
@@ -185,13 +202,21 @@ export async function selectContext(props: {
         * if the buffer is full, you need to exclude files that is not needed and include files that is relevent.
 
         `,
-    model: provider.getModelInstance({
-      model: internalModel,
-      serverEnv,
-      apiKeys,
-      providerSettings,
-    }),
-  });
+      model: provider.getModelInstance({
+        model: internalModel,
+        serverEnv,
+        apiKeys,
+        providerSettings,
+      }),
+    });
+  } catch (error: any) {
+    if (provider.name === 'ModelScope') {
+      logModelScopeError(
+        `CONTEXT ERROR - Message: ${error?.message || 'unknown'}, Status: ${error?.status || 'N/A'}, Detail: ${JSON.stringify(error)}`,
+      );
+    }
+    throw error;
+  }
 
   const response = resp.text;
   const updateContextBuffer = response.match(/<updateContextBuffer>([\s\S]*?)<\/updateContextBuffer>/);

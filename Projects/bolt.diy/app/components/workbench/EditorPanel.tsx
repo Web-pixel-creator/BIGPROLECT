@@ -164,16 +164,22 @@ export const EditorPanel = memo(
                 )}
               </PanelHeader>
               <div className="h-full flex-1 overflow-hidden modern-scrollbar">
-                <CodeMirrorEditor
-                  theme={theme}
-                  editable={!isStreaming && editorDocument !== undefined}
-                  settings={editorSettings}
-                  doc={editorDocument}
-                  autoFocusOnDocumentChange={!isMobile()}
-                  onScroll={onEditorScroll}
-                  onChange={onEditorChange}
-                  onSave={onFileSave}
-                />
+                {editorDocument ? (
+                  <CodeMirrorEditor
+                    theme={theme}
+                    editable={!isStreaming && editorDocument !== undefined}
+                    settings={editorSettings}
+                    doc={editorDocument}
+                    autoFocusOnDocumentChange={!isMobile()}
+                    onScroll={onEditorScroll}
+                    onChange={onEditorChange}
+                    onSave={onFileSave}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm text-bolt-elements-textTertiary">
+                    {isStreaming ? 'Generating files...' : 'Select a file to view its contents.'}
+                  </div>
+                )}
               </div>
             </Panel>
           </PanelGroup>

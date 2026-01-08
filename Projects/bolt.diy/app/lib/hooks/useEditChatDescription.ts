@@ -8,6 +8,7 @@ import {
   getMessages,
   updateChatDescription,
 } from '~/lib/persistence';
+import { fixMojibake } from '~/utils/textEncoding';
 
 interface EditChatDescriptionOptions {
   initialDescription?: string;
@@ -44,9 +45,10 @@ export function useEditChatDescription({
   customChatId,
   syncWithGlobalStore,
 }: EditChatDescriptionOptions): EditChatDescriptionHook {
+  const normalizedInitialDescription = fixMojibake(initialDescription);
   const chatIdFromStore = useStore(chatIdStore);
   const [editing, setEditing] = useState(false);
-  const [currentDescription, setCurrentDescription] = useState(initialDescription);
+  const [currentDescription, setCurrentDescription] = useState(normalizedInitialDescription);
 
   const [chatId, setChatId] = useState<string>();
 
@@ -54,7 +56,7 @@ export function useEditChatDescription({
     setChatId(customChatId || chatIdFromStore);
   }, [customChatId, chatIdFromStore]);
   useEffect(() => {
-    setCurrentDescription(initialDescription);
+    setCurrentDescription(fixMojibake(initialDescription));
   }, [initialDescription]);
 
   const toggleEditMode = useCallback(() => setEditing((prev) => !prev), []);
@@ -65,15 +67,15 @@ export function useEditChatDescription({
 
   const fetchLatestDescription = useCallback(async () => {
     if (!db || !chatId) {
-      return initialDescription;
+      return fixMojibake(initialDescription);
     }
 
     try {
       const chat = await getMessages(db, chatId);
-      return chat?.description || initialDescription;
+      return fixMojibake(chat?.description || initialDescription);
     } catch (error) {
       console.error('Failed to fetch latest description:', error);
-      return initialDescription;
+      return fixMojibake(initialDescription);
     }
   }, [db, chatId, initialDescription]);
 

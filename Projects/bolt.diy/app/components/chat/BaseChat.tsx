@@ -3,7 +3,7 @@
  * Preventing TS checks with files presented in the video for a better presentation.
  */
 import type { JSONValue, Message } from 'ai';
-import React, { type RefCallback, useEffect, useState } from 'react';
+import React, { type RefCallback, useCallback, useEffect, useRef, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { Menu } from '~/components/sidebar/Menu.client';
 import { Workbench } from '~/components/workbench/Workbench.client';
@@ -38,6 +38,9 @@ import LlmErrorAlert from './LLMApiAlert';
 import { workbenchStore } from '~/lib/stores/workbench';
 
 const TEXTAREA_MIN_HEIGHT = 76;
+const STREAMING_CONTENT_MAX_CHARS = 8000;
+const STREAMING_UPDATE_INTERVAL_MS = 400;
+const STREAMING_SCROLL_RESET_PX = 6;
 
 interface BaseChatProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement> | undefined;
@@ -147,6 +150,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [transcript, setTranscript] = useState('');
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
+    const progressKeyRef = useRef('');
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const showWorkbench = useStore(workbenchStore.showWorkbench);
@@ -160,10 +164,23 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     }, [expoUrl]);
 
     useEffect(() => {
-      if (data) {
-        const progressList = data.filter(
-          (x) => typeof x === 'object' && (x as any).type === 'progress',
-        ) as ProgressAnnotation[];
+      if (!data) {
+        if (progressKeyRef.current !== '') {
+          progressKeyRef.current = '';
+          setProgressAnnotations([]);
+        }
+        return;
+      }
+
+      const progressList = data.filter(
+        (x) => typeof x === 'object' && (x as any).type === 'progress',
+      ) as ProgressAnnotation[];
+      const progressKey = progressList
+        .map((item) => `${item.label}:${item.status}:${item.order}:${item.message}`)
+        .join('|');
+
+      if (progressKeyRef.current !== progressKey) {
+        progressKeyRef.current = progressKey;
         setProgressAnnotations(progressList);
       }
     }, [data]);
@@ -365,6 +382,106 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
+    const targetScrollTop = useCallback(
+      (target: number, { scrollElement }: { scrollElement: HTMLElement }) => {
+        if (enhancingPrompt) {
+          return scrollElement.scrollTop;
+        }
+
+      if (isStreaming) {
+        const maxScrollTop = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight - 1);
+        const distanceFromBottom = Math.abs(maxScrollTop - scrollElement.scrollTop);
+
+        if (userScrolledRef.current || distanceFromBottom > 8) {
+          return scrollElement.scrollTop;
+        }
+      }
+
+        return target;
+      },
+      [enhancingPrompt, isStreaming],
+    );
+
+    const stableMessagesRef = useRef<Message[]>(messages ? [...messages] : []);
+    const stableMessageCountRef = useRef(messages ? messages.length : 0);
+    const [streamingContent, setStreamingContent] = useState('');
+    const streamingContentRef = useRef('');
+    const streamingUpdateRef = useRef({ timeoutId: null as null | ReturnType<typeof setTimeout>, lastUpdate: 0 });
+    const userScrolledRef = useRef(false);
+
+    useEffect(() => {
+      return () => {
+        if (streamingUpdateRef.current.timeoutId) {
+          clearTimeout(streamingUpdateRef.current.timeoutId);
+          streamingUpdateRef.current.timeoutId = null;
+        }
+      };
+    }, []);
+
+    useEffect(() => {
+      if (!messages) {
+        if (streamingContentRef.current !== '') {
+          streamingContentRef.current = '';
+          setStreamingContent('');
+        }
+        return;
+      }
+
+      const lastMessage = messages[messages.length - 1];
+
+      if (isStreaming && lastMessage?.role === 'assistant' && typeof lastMessage.content === 'string') {
+        const maxChars = STREAMING_CONTENT_MAX_CHARS;
+        const nextContent =
+          lastMessage.content.length > maxChars ? lastMessage.content.slice(-maxChars) : lastMessage.content;
+
+        if (streamingContentRef.current !== nextContent) {
+          streamingContentRef.current = nextContent;
+          const now = Date.now();
+          const elapsed = now - streamingUpdateRef.current.lastUpdate;
+          const applyUpdate = () => {
+            streamingUpdateRef.current.lastUpdate = Date.now();
+            setStreamingContent(streamingContentRef.current);
+          };
+
+          if (elapsed >= STREAMING_UPDATE_INTERVAL_MS) {
+            if (streamingUpdateRef.current.timeoutId) {
+              clearTimeout(streamingUpdateRef.current.timeoutId);
+              streamingUpdateRef.current.timeoutId = null;
+            }
+            applyUpdate();
+          } else if (!streamingUpdateRef.current.timeoutId) {
+            streamingUpdateRef.current.timeoutId = setTimeout(() => {
+              streamingUpdateRef.current.timeoutId = null;
+              applyUpdate();
+            }, STREAMING_UPDATE_INTERVAL_MS - elapsed);
+          }
+        }
+      } else if (streamingContentRef.current !== '') {
+        streamingContentRef.current = '';
+        setStreamingContent('');
+        if (streamingUpdateRef.current.timeoutId) {
+          clearTimeout(streamingUpdateRef.current.timeoutId);
+          streamingUpdateRef.current.timeoutId = null;
+        }
+        userScrolledRef.current = false;
+      }
+
+      const messageCount = messages.length;
+
+      if (messageCount !== stableMessageCountRef.current) {
+        stableMessageCountRef.current = messageCount;
+        if (isStreaming && lastMessage?.role === 'assistant') {
+          stableMessagesRef.current = messages.slice(0, -1);
+        } else {
+          stableMessagesRef.current = messages.slice();
+        }
+      } else if (!isStreaming || lastMessage?.role === 'user') {
+        stableMessagesRef.current = messages.slice();
+      }
+    }, [isStreaming, messages]);
+
+    const scrollBehavior = isStreaming ? 'instant' : 'smooth';
+
     const baseChat = (
       <div
         ref={ref}
@@ -395,8 +512,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   'h-full flex flex-col modern-scrollbar': chatStarted,
                 },
               )}
-              resize="smooth"
-              initial="smooth"
+              resize={scrollBehavior}
+              initial={scrollBehavior}
+              targetScrollTop={targetScrollTop}
             >
               <StickToBottom.Content className="flex flex-col gap-4 relative items-center">
                 <ClientOnly>
@@ -404,9 +522,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     return chatStarted ? (
                       <Messages
                         className="flex flex-col w-full flex-1 max-w-[640px] px-4 sm:px-5 pb-4 mx-auto z-1"
-                        messages={messages}
+                        messages={isStreaming ? stableMessagesRef.current : messages ?? stableMessagesRef.current}
                         isStreaming={isStreaming}
                         generationSummary={generationSummary}
+                        streamingContent={isStreaming ? streamingContent : ''}
                         append={append}
                         chatMode={chatMode}
                         setChatMode={setChatMode}
@@ -417,6 +536,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     ) : null;
                   }}
                 </ClientOnly>
+                <ScrollActivityWatcher isStreaming={isStreaming} userScrolledRef={userScrolledRef} />
                 <ScrollToBottom />
               </StickToBottom.Content>
               <div
@@ -559,4 +679,40 @@ function ScrollToBottom() {
       </>
     )
   );
+}
+
+function ScrollActivityWatcher({
+  isStreaming,
+  userScrolledRef,
+}: {
+  isStreaming: boolean;
+  userScrolledRef: React.MutableRefObject<boolean>;
+}) {
+  const { scrollRef } = useStickToBottomContext();
+
+  useEffect(() => {
+    if (!isStreaming) {
+      return;
+    }
+
+    const node = scrollRef.current;
+    if (!node) {
+      return;
+    }
+
+    const updateScrollState = () => {
+      const maxScrollTop = Math.max(0, node.scrollHeight - node.clientHeight);
+      const distanceFromBottom = Math.abs(maxScrollTop - node.scrollTop);
+      userScrolledRef.current = distanceFromBottom > STREAMING_SCROLL_RESET_PX;
+    };
+
+    updateScrollState();
+    node.addEventListener('scroll', updateScrollState, { passive: true });
+
+    return () => {
+      node.removeEventListener('scroll', updateScrollState);
+    };
+  }, [isStreaming, scrollRef, userScrolledRef]);
+
+  return null;
 }

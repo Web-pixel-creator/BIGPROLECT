@@ -266,7 +266,15 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         provider: (error as any).provider || 'unknown',
       };
 
-      if (error instanceof Error && error.message?.includes('API key')) {
+      if (
+        (error instanceof Error &&
+          (error.message?.toLowerCase().includes('api key') ||
+            error.message?.toLowerCase().includes('unauthorized') ||
+            error.message?.toLowerCase().includes('authentication'))) ||
+        errorResponse.message?.toLowerCase().includes('api key') ||
+        errorResponse.message?.toLowerCase().includes('unauthorized') ||
+        errorResponse.message?.toLowerCase().includes('authentication')
+      ) {
         return new Response(
           JSON.stringify({
             ...errorResponse,
