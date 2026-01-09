@@ -96,7 +96,7 @@ const clampCount = (value: number | undefined, max: number): number => {
 };
 
 const getEnvVar = (context: ActionFunctionArgs['context'], name: string): string | undefined => {
-  const env = (context?.cloudflare?.env as Record<string, string | undefined>) ?? {};
+  const env = (context?.cloudflare?.env as unknown as Record<string, string | undefined>) ?? {};
   return env[name] || process.env[name];
 };
 

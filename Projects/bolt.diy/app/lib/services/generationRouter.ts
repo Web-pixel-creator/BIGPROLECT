@@ -11,7 +11,7 @@
  */
 
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
-import { validateFile } from '~/utils/codeValidator';
+import { validateFile, type ValidationResult } from '~/utils/codeValidator';
 import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type LlmRepairFn } from '~/utils/autoFixLoop';
 import { validateAgainstContract, getContractHints, type ContractValidationResult } from './sectionContracts';
 import { planSections, type SectionPlan, type SectionType } from './sectionGenerator';

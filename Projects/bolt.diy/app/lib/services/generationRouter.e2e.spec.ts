@@ -711,7 +711,7 @@ describe('E2E Pipeline Tests', () => {
 
       // Either no violations or empty array
       const violations = result.finalValidation.unifiedViolations ?? [];
-      const errors = violations.filter((v) => v.severity === 'error');
+      const errors = violations.filter((v: { severity: string }) => v.severity === 'error');
       expect(errors.length).toBe(0);
     });
   });

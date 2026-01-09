@@ -63,7 +63,7 @@ export async function validateTsx(content: string, filePath: string): Promise<Ts
   const ts = await import('typescript');
   const scriptKind = getScriptKind(filePath, ts);
   const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, scriptKind);
-  const diagnostics = sourceFile.parseDiagnostics ?? [];
+  const diagnostics = (sourceFile as any).parseDiagnostics ?? [];
 
   if (diagnostics.length === 0) {
     return { ok: true };

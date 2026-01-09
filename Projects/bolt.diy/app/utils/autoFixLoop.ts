@@ -394,8 +394,10 @@ export function getPromptBuilder(variant: PromptVariant): typeof buildRepairProm
 export function extractCodeFromResponse(response: string): string {
   let cleaned = response;
 
-  // Step 1: Handle <<<END_CODE>>> sentinel (used by code repair)
-  // Remove everything AFTER the sentinel (not just at end)
+  /*
+   * Step 1: Handle <<<END_CODE>>> sentinel (used by code repair)
+   * Remove everything AFTER the sentinel (not just at end)
+   */
   const sentinelIndex = cleaned.indexOf('<<<END_CODE>>>');
 
   if (sentinelIndex !== -1) {

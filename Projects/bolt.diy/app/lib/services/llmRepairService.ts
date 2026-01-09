@@ -82,8 +82,10 @@ STRICT RESPONSE CONTRACT:
           model: finalConfig.model,
           provider: { name: finalConfig.provider },
           streamOutput: false,
+
           // Purpose: repair needs larger token cap (8192) vs template selection (1024)
           purpose: 'repair',
+
           // Stop sequence: only the sentinel to avoid false positives
           stopSequences: ['<<<END_CODE>>>'],
         }),

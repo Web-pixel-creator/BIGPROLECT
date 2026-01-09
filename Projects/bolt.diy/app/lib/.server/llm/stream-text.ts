@@ -13,6 +13,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import { buildEffectRecipesPromptSection } from '~/lib/services/effectRecipes';
 import { SmartComponentSelector, type UserIntent } from '~/lib/services/smartComponentSelector.server';
 import { StructuredPromptBuilder } from '~/lib/services/structuredPromptBuilder';
+import { buildModularGenerationAddon } from '~/lib/services/modularGenerationPrompt';
 
 export type Messages = Message[];
 
@@ -416,9 +417,20 @@ export async function streamText(props: {
       },
     }) ?? getSystemPrompt();
 
+  let modularAddon: string | undefined = undefined;
+  let modularAddonReason: string | undefined = undefined;
+
   if (chatMode === 'build') {
     const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
     const userPrompt = lastUserMessage?.content ?? '';
+
+    const modular = buildModularGenerationAddon(userPrompt);
+    modularAddonReason = modular.reason;
+
+    if (modular.enabled && modular.addon) {
+      modularAddon = modular.addon;
+    }
+
     const effectRecipes = buildEffectRecipesPromptSection(userPrompt, {
       maxEffects: isGoogleProvider ? 2 : 4,
       includeCode: true,
@@ -429,6 +441,12 @@ export async function streamText(props: {
     if (effectRecipes) {
       systemPrompt = `${systemPrompt}\n\n${effectRecipes}\n`;
       logger.info('Added effect recipes to prompt context');
+    }
+
+    if (modularAddon) {
+      logger.info(`Enabled modular generation: ${modularAddonReason}`);
+    } else {
+      logger.info(`Modular generation not enabled: ${modularAddonReason}`);
     }
   }
 
@@ -522,6 +540,10 @@ export async function streamText(props: {
         }
       }
     }
+  }
+
+  if (chatMode === 'build' && modularAddon) {
+    systemPrompt = `${systemPrompt}\n\n${modularAddon}\n`;
   }
 
   const effectiveLockedFilePaths = new Set<string>();

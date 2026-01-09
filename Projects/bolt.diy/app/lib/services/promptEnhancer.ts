@@ -734,6 +734,7 @@ type RegistryComponent = {
   category: string;
   source: string;
   tags?: string[];
+  code?: string;
 };
 
 type ComponentIndex = {

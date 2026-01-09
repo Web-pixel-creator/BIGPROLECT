@@ -63,8 +63,10 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
     model: string;
     provider: ProviderInfo;
     streamOutput?: boolean;
+
     /** Purpose: 'template' (1024 tokens) or 'repair' (8192 tokens) */
     purpose?: 'template' | 'repair';
+
     /** Stop sequences for code repair sentinel pattern */
     stopSequences?: string[];
   }>();
@@ -205,9 +207,11 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       const isReasoning = isReasoningModel(modelDetails.name);
       logger.info(`DEBUG: Model "${modelDetails.name}" detected as reasoning model: ${isReasoning}`);
 
-      // Token limits depend on purpose:
-      // - 'template': small output for template selection XML (1024)
-      // - 'repair': larger output for code repair (8192)
+      /*
+       * Token limits depend on purpose:
+       * - 'template': small output for template selection XML (1024)
+       * - 'repair': larger output for code repair (8192)
+       */
       const TEMPLATE_SELECTION_MAX_TOKENS = 1024;
       const REPAIR_MAX_TOKENS = 8192;
 
@@ -242,10 +246,11 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         toolChoice: 'none' as const,
       };
 
-      // For reasoning models, set temperature to 1 (required by OpenAI API)
-      // Add stopSequences if provided (for code repair sentinel pattern)
-      const stopParams =
-        stopSequences && stopSequences.length > 0 && !isReasoning ? { stopSequences } : {};
+      /*
+       * For reasoning models, set temperature to 1 (required by OpenAI API)
+       * Add stopSequences if provided (for code repair sentinel pattern)
+       */
+      const stopParams = stopSequences && stopSequences.length > 0 && !isReasoning ? { stopSequences } : {};
 
       const finalParams = isReasoning
         ? { ...baseParams, temperature: 1 } // Set to 1 for reasoning models (only supported value)
