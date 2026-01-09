@@ -298,6 +298,7 @@ export async function streamText(props: {
   providerSettings?: Record<string, IProviderSetting>;
   promptId?: string;
   contextOptimization?: boolean;
+  modularGeneration?: boolean;
   contextFiles?: FileMap;
   summary?: string;
   messageSliceId?: number;
@@ -313,6 +314,7 @@ export async function streamText(props: {
     providerSettings,
     promptId,
     contextOptimization,
+    modularGeneration,
     contextFiles,
     summary,
     messageSliceId,
@@ -424,11 +426,16 @@ export async function streamText(props: {
     const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
     const userPrompt = lastUserMessage?.content ?? '';
 
-    const modular = buildModularGenerationAddon(userPrompt);
-    modularAddonReason = modular.reason;
+    // Only evaluate modular generation if feature flag is enabled
+    if (modularGeneration) {
+      const modular = buildModularGenerationAddon(userPrompt);
+      modularAddonReason = modular.reason;
 
-    if (modular.enabled && modular.addon) {
-      modularAddon = modular.addon;
+      if (modular.enabled && modular.addon) {
+        modularAddon = modular.addon;
+      }
+    } else {
+      modularAddonReason = 'feature flag disabled';
     }
 
     const effectRecipes = buildEffectRecipesPromptSection(userPrompt, {

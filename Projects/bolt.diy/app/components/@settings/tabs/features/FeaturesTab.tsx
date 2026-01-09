@@ -111,11 +111,13 @@ export default function FeaturesTab() {
     isLatestBranch,
     contextOptimizationEnabled,
     autoFixValidationEnabled,
+    modularGenerationEnabled,
     eventLogs,
     setAutoSelectTemplate,
     enableLatestBranch,
     enableContextOptimization,
     enableAutoFixValidation,
+    enableModularGeneration,
     setEventLogs,
     setPromptId,
     promptId,
@@ -146,6 +148,10 @@ export default function FeaturesTab() {
 
     if (autoFixValidationEnabled === undefined) {
       enableAutoFixValidation(true); // Default: ON - Auto-fix JSX validation errors
+    }
+
+    if (modularGenerationEnabled === undefined) {
+      enableModularGeneration(false); // Default: OFF - Modular generation is experimental
     }
   }, []); // Only run once on component mount
 
@@ -182,11 +188,17 @@ export default function FeaturesTab() {
           break;
         }
 
+        case 'modularGeneration': {
+          enableModularGeneration(enabled);
+          toast.success(`Modular generation ${enabled ? 'enabled' : 'disabled'}`);
+          break;
+        }
+
         default:
           break;
       }
     },
-    [enableLatestBranch, setAutoSelectTemplate, enableContextOptimization, setEventLogs, enableAutoFixValidation],
+    [enableLatestBranch, setAutoSelectTemplate, enableContextOptimization, setEventLogs, enableAutoFixValidation, enableModularGeneration],
   );
 
   const features = {
@@ -232,7 +244,16 @@ export default function FeaturesTab() {
         tooltip: 'Enabled by default to recover from invalid JSX in generated code',
       },
     ],
-    beta: [],
+    beta: [
+      {
+        id: 'modularGeneration',
+        title: 'Modular Generation',
+        description: 'Generate website sections as separate component files',
+        icon: 'i-ph:squares-four',
+        enabled: modularGenerationEnabled,
+        tooltip: 'Experimental: Creates separate files for Hero, Features, etc. instead of one App.tsx',
+      },
+    ],
   };
 
   return (

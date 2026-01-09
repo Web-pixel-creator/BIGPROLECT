@@ -206,7 +206,7 @@ export const ChatImpl = memo(
       (project) => project.id === supabaseConn.selectedProjectId,
     );
     const supabaseAlert = useStore(workbenchStore.supabaseAlert);
-    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled, autoFixValidationEnabled } =
+    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled, autoFixValidationEnabled, modularGenerationEnabled } =
       useSettings();
     const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
     const [model, setModel] = useState(() => {
@@ -251,6 +251,7 @@ export const ChatImpl = memo(
         files,
         promptId,
         contextOptimization: contextOptimizationEnabled,
+        modularGeneration: modularGenerationEnabled,
         chatMode,
         designScheme,
         supabase: {

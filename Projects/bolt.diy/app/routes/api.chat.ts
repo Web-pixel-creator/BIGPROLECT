@@ -194,12 +194,13 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     },
   });
 
-  const { messages, files, promptId, contextOptimization, supabase, chatMode, designScheme, maxLLMSteps } =
+  const { messages, files, promptId, contextOptimization, modularGeneration, supabase, chatMode, designScheme, maxLLMSteps } =
     await request.json<{
       messages: Messages;
       files: any;
       promptId?: string;
       contextOptimization: boolean;
+      modularGeneration?: boolean;
       chatMode: 'discuss' | 'build';
       designScheme?: DesignScheme;
       supabase?: {
@@ -480,6 +481,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
               providerSettings,
               promptId,
               contextOptimization,
+              modularGeneration,
               contextFiles: filteredFiles,
               chatMode,
               designScheme,
@@ -523,6 +525,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           providerSettings,
           promptId,
           contextOptimization,
+          modularGeneration,
           contextFiles: filteredFiles,
           chatMode,
           designScheme,

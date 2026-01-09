@@ -8,6 +8,7 @@ import {
   autoSelectStarterTemplate,
   enableContextOptimizationStore,
   autoFixValidationStore,
+  modularGenerationStore,
   tabConfigurationStore,
   resetTabConfiguration as resetTabConfig,
   updateProviderSettings as updateProviderSettingsStore,
@@ -16,6 +17,7 @@ import {
   updateContextOptimization,
   updateEventLogs,
   updateAutoFixValidation,
+  updateModularGeneration,
   updatePromptId,
 } from '~/lib/stores/settings';
 import { useCallback, useEffect, useState } from 'react';
@@ -62,6 +64,8 @@ export interface UseSettingsReturn {
   enableContextOptimization: (enabled: boolean) => void;
   autoFixValidationEnabled: boolean;
   enableAutoFixValidation: (enabled: boolean) => void;
+  modularGenerationEnabled: boolean;
+  enableModularGeneration: (enabled: boolean) => void;
 
   // Tab configuration
   tabConfiguration: TabWindowConfig;
@@ -83,6 +87,7 @@ export function useSettings(): UseSettingsReturn {
   const [activeProviders, setActiveProviders] = useState<ProviderInfo[]>([]);
   const contextOptimizationEnabled = useStore(enableContextOptimizationStore);
   const autoFixValidationEnabled = useStore(autoFixValidationStore);
+  const modularGenerationEnabled = useStore(modularGenerationStore);
   const tabConfiguration = useStore(tabConfigurationStore);
   const [settings, setSettings] = useState<Settings>(() => {
     const storedSettings = getLocalStorage('settings');
@@ -153,6 +158,11 @@ export function useSettings(): UseSettingsReturn {
     logStore.logSystem(`Auto-fix JSX validation ${enabled ? 'enabled' : 'disabled'}`);
   }, []);
 
+  const enableModularGeneration = useCallback((enabled: boolean) => {
+    updateModularGeneration(enabled);
+    logStore.logSystem(`Modular generation ${enabled ? 'enabled' : 'disabled'}`);
+  }, []);
+
   const setTheme = useCallback(
     (theme: Settings['theme']) => {
       saveSettings({ theme });
@@ -209,6 +219,8 @@ export function useSettings(): UseSettingsReturn {
     enableContextOptimization,
     autoFixValidationEnabled,
     enableAutoFixValidation,
+    modularGenerationEnabled,
+    enableModularGeneration,
     setTheme,
     setLanguage,
     setNotifications,

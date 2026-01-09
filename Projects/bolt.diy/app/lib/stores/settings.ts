@@ -257,6 +257,7 @@ const SETTINGS_KEYS = {
   CONTEXT_OPTIMIZATION: 'contextOptimizationEnabled',
   EVENT_LOGS: 'isEventLogsEnabled',
   AUTO_FIX_VALIDATION: 'autoFixValidationEnabled',
+  MODULAR_GENERATION: 'modularGenerationEnabled',
   PROMPT_ID: 'promptId',
   DEVELOPER_MODE: 'isDeveloperMode',
 } as const;
@@ -287,6 +288,7 @@ const getInitialSettings = () => {
     contextOptimization: getStoredBoolean(SETTINGS_KEYS.CONTEXT_OPTIMIZATION, true),
     eventLogs: getStoredBoolean(SETTINGS_KEYS.EVENT_LOGS, true),
     autoFixValidationEnabled: getStoredBoolean(SETTINGS_KEYS.AUTO_FIX_VALIDATION, true),
+    modularGenerationEnabled: getStoredBoolean(SETTINGS_KEYS.MODULAR_GENERATION, false),
     promptId: isBrowser ? localStorage.getItem(SETTINGS_KEYS.PROMPT_ID) || 'default' : 'default',
     developerMode: getStoredBoolean(SETTINGS_KEYS.DEVELOPER_MODE, false),
   };
@@ -300,6 +302,7 @@ export const autoSelectStarterTemplate = atom<boolean>(initialSettings.autoSelec
 export const enableContextOptimizationStore = atom<boolean>(initialSettings.contextOptimization);
 export const isEventLogsEnabled = atom<boolean>(initialSettings.eventLogs);
 export const autoFixValidationStore = atom<boolean>(initialSettings.autoFixValidationEnabled);
+export const modularGenerationStore = atom<boolean>(initialSettings.modularGenerationEnabled);
 export const promptStore = atom<string>(initialSettings.promptId);
 
 // Helper functions to update settings with persistence
@@ -326,6 +329,11 @@ export const updateEventLogs = (enabled: boolean) => {
 export const updateAutoFixValidation = (enabled: boolean) => {
   autoFixValidationStore.set(enabled);
   localStorage.setItem(SETTINGS_KEYS.AUTO_FIX_VALIDATION, JSON.stringify(enabled));
+};
+
+export const updateModularGeneration = (enabled: boolean) => {
+  modularGenerationStore.set(enabled);
+  localStorage.setItem(SETTINGS_KEYS.MODULAR_GENERATION, JSON.stringify(enabled));
 };
 
 export const updatePromptId = (id: string) => {
