@@ -45,4 +45,6 @@ changelogUI.md
 docs/instructions/Roadmap.md
 .cursorrules
 *.md
+# Allow MkDocs documentation
+!docs/docs/**/*.md
 .qodo

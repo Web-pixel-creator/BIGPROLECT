@@ -71,3 +71,10 @@ markdown_extensions:
       custom_checkbox: true
   - toc:
       permalink: true
+
+nav:
+  - Home: index.md
+  - FAQ: FAQ.md
+  - Contributing: CONTRIBUTING.md
+  - Quality Pipeline: quality-pipeline/index.md
+  - Prompt Tuning: prompt-tuning/index.md
