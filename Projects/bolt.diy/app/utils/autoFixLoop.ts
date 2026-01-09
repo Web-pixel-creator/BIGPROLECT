@@ -1,6 +1,6 @@
 /**
  * Auto-Fix Loop - Attempts to repair invalid code using LLM
- * 
+ *
  * When validation fails, this module:
  * 1. Sends the broken code + error info to LLM for repair
  * 2. Validates the repaired code
@@ -22,8 +22,10 @@ export interface AutoFixResult {
   success: boolean;
   code: string;
   attempts: number;
+
   /** @deprecated Use unifiedViolations instead */
   errors: ValidationError[];
+
   /** Unified violations with structured codes (preferred) */
   unifiedViolations?: import('~/lib/services/sectionContracts').UnifiedViolation[];
   usedFallback: boolean;
@@ -32,10 +34,10 @@ export interface AutoFixResult {
 
 /**
  * Type for LLM repair function.
- * 
+ *
  * STRICT CONTRACT: The function receives a fully-formed prompt string
  * and returns the LLM response (which will be processed by extractCodeFromResponse).
- * 
+ *
  * This ensures determinism - the same prompt always goes to the LLM,
  * regardless of which provider/model is used.
  */
@@ -62,21 +64,21 @@ export interface AutoFixOptions {
 export function attemptSanitizerFix(
   code: string,
   filename: string,
-  maxIterations: number = 3
+  maxIterations: number = 3,
 ): { code: string; valid: boolean; iterations: number } {
   let currentCode = code;
   let iterations = 0;
 
   for (let i = 0; i < maxIterations; i++) {
     iterations++;
-    
+
     // Run sanitizer
     const sanitized = sanitizeGeneratedFile(filename, currentCode);
     currentCode = sanitized.content;
 
     // Validate
     const validation = validateFile(currentCode, filename);
-    
+
     if (validation.valid) {
       logger.debug(`Sanitizer fixed code in ${iterations} iteration(s)`);
       return { code: currentCode, valid: true, iterations };
@@ -97,8 +99,10 @@ export function attemptSanitizerFix(
 export interface RepairContext {
   /** Unified violations from validator (structured codes) */
   unifiedViolations?: import('~/lib/services/sectionContracts').UnifiedViolation[];
+
   /** Sanitizer warnings (what was already attempted) */
   sanitizerWarnings?: import('./codeSanitizer').SanitizerWarning[];
+
   /** Change metrics from sanitizer (risk assessment) */
   metrics?: import('./codeSanitizer').ChangeMetrics;
 }
@@ -107,23 +111,26 @@ export interface RepairContext {
  * Build a repair prompt for LLM to fix the code.
  * Basic version - uses ValidationError array.
  */
-export function buildRepairPrompt(
-  code: string,
-  errors: ValidationError[],
-  filename: string
-): string {
+export function buildRepairPrompt(code: string, errors: ValidationError[], filename: string): string {
   const errorList = errors
-    .filter(e => e.severity === 'error')
+    .filter((e) => e.severity === 'error')
     .slice(0, 5)
-    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .map((e) => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
     .join('\n');
 
   const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
-  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
-                   ext === '.jsx' ? 'React JavaScript (JSX)' :
-                   ext === '.ts' ? 'TypeScript' :
-                   ext === '.js' ? 'JavaScript' :
-                   ext === '.css' ? 'CSS' : 'code';
+  const fileType =
+    ext === '.tsx'
+      ? 'React TypeScript (TSX)'
+      : ext === '.jsx'
+        ? 'React JavaScript (JSX)'
+        : ext === '.ts'
+          ? 'TypeScript'
+          : ext === '.js'
+            ? 'JavaScript'
+            : ext === '.css'
+              ? 'CSS'
+              : 'code';
 
   return `Fix the following ${fileType} code that has syntax errors.
 
@@ -155,34 +162,43 @@ export function buildRepairPromptV2(
   code: string,
   errors: ValidationError[],
   filename: string,
-  context?: RepairContext
+  context?: RepairContext,
 ): string {
   const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
-  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
-                   ext === '.jsx' ? 'React JavaScript (JSX)' :
-                   ext === '.ts' ? 'TypeScript' :
-                   ext === '.js' ? 'JavaScript' :
-                   ext === '.css' ? 'CSS' : 'code';
+  const fileType =
+    ext === '.tsx'
+      ? 'React TypeScript (TSX)'
+      : ext === '.jsx'
+        ? 'React JavaScript (JSX)'
+        : ext === '.ts'
+          ? 'TypeScript'
+          : ext === '.js'
+            ? 'JavaScript'
+            : ext === '.css'
+              ? 'CSS'
+              : 'code';
 
   // Build error list from ValidationError (legacy format)
   const errorList = errors
-    .filter(e => e.severity === 'error')
+    .filter((e) => e.severity === 'error')
     .slice(0, 5)
-    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .map((e) => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
     .join('\n');
 
   // Build unified violations section (structured codes)
   let unifiedSection = '';
+
   if (context?.unifiedViolations && context.unifiedViolations.length > 0) {
     const violationList = context.unifiedViolations
       .slice(0, 8)
-      .map(v => {
+      .map((v) => {
         const loc = v.context?.line ? ` (Line ${v.context.line})` : '';
         const fixable = v.autoFixable ? ' [auto-fixable]' : '';
+
         return `- ${v.code}${loc}: ${v.message}${fixable}`;
       })
       .join('\n');
-    
+
     unifiedSection = `
 UNIFIED_VIOLATIONS:
 ${violationList}
@@ -191,12 +207,13 @@ ${violationList}
 
   // Build sanitizer warnings section (what was already tried)
   let sanitizerSection = '';
+
   if (context?.sanitizerWarnings && context.sanitizerWarnings.length > 0) {
     const warningList = context.sanitizerWarnings
       .slice(0, 5)
-      .map(w => `- ${w.code} (${w.risk} risk): ${w.message}`)
+      .map((w) => `- ${w.code} (${w.risk} risk): ${w.message}`)
       .join('\n');
-    
+
     sanitizerSection = `
 SANITIZER_ALREADY_TRIED:
 ${warningList}
@@ -206,6 +223,7 @@ Note: These fixes were already applied by the sanitizer. Focus on remaining erro
 
   // Build metrics section (risk assessment)
   let metricsSection = '';
+
   if (context?.metrics) {
     const m = context.metrics;
     metricsSection = `
@@ -254,11 +272,7 @@ export const REPAIR_BOUNDARIES: Record<string, { instructions: string[] }> = {
     ],
   },
   medium: {
-    instructions: [
-      'Fix only the syntax errors',
-      'Preserve the existing structure',
-      'Avoid major refactoring',
-    ],
+    instructions: ['Fix only the syntax errors', 'Preserve the existing structure', 'Avoid major refactoring'],
   },
   high: {
     instructions: [
@@ -285,38 +299,47 @@ export function buildRepairPromptWithFewShot(
   code: string,
   errors: ValidationError[],
   filename: string,
-  context?: RepairContext
+  context?: RepairContext,
 ): string {
   const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
-  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
-                   ext === '.jsx' ? 'React JavaScript (JSX)' :
-                   ext === '.ts' ? 'TypeScript' :
-                   ext === '.js' ? 'JavaScript' :
-                   ext === '.css' ? 'CSS' : 'code';
+  const fileType =
+    ext === '.tsx'
+      ? 'React TypeScript (TSX)'
+      : ext === '.jsx'
+        ? 'React JavaScript (JSX)'
+        : ext === '.ts'
+          ? 'TypeScript'
+          : ext === '.js'
+            ? 'JavaScript'
+            : ext === '.css'
+              ? 'CSS'
+              : 'code';
 
   // Build error list
   const errorList = errors
-    .filter(e => e.severity === 'error')
+    .filter((e) => e.severity === 'error')
     .slice(0, 5)
-    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .map((e) => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
     .join('\n');
 
   // Get violation codes for few-shot matching
-  const violationCodes = (context?.unifiedViolations?.map(v => v.code) ?? []) as import('~/lib/services/sectionContracts').ViolationCode[];
+  const violationCodes = (context?.unifiedViolations?.map((v) => v.code) ??
+    []) as import('~/lib/services/sectionContracts').ViolationCode[];
   const fewShotExamples = getFewShotExamples(violationCodes, 3);
   const fewShotSection = formatFewShotExamples(fewShotExamples);
 
   // Build unified violations section
   let unifiedSection = '';
+
   if (context?.unifiedViolations && context.unifiedViolations.length > 0) {
     const violationList = context.unifiedViolations
       .slice(0, 8)
-      .map(v => {
+      .map((v) => {
         const loc = v.context?.line ? ` (Line ${v.context.line})` : '';
         return `- ${v.code}${loc}: ${v.message}`;
       })
       .join('\n');
-    
+
     unifiedSection = `
 VIOLATIONS:
 ${violationList}
@@ -326,9 +349,7 @@ ${violationList}
   // Get risk-based boundary instructions
   const riskLevel = context?.metrics?.riskLevel ?? 'low';
   const boundaryInstructions = getBoundaryInstructions(riskLevel);
-  const instructionsList = boundaryInstructions
-    .map((instr, i) => `${i + 1}. ${instr}`)
-    .join('\n');
+  const instructionsList = boundaryInstructions.map((instr, i) => `${i + 1}. ${instr}`).join('\n');
 
   // Add standard instructions
   const standardInstructions = `
@@ -372,21 +393,27 @@ export function getPromptBuilder(variant: PromptVariant): typeof buildRepairProm
 export function extractCodeFromResponse(response: string): string {
   // Try to extract from markdown code block
   const codeBlockMatch = response.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
+
   if (codeBlockMatch) {
     return codeBlockMatch[1].trim();
   }
 
   // Try to find code between common markers
   const startMarkers = ['FIXED CODE:', 'Here is the fixed code:', 'Fixed:'];
+
   for (const marker of startMarkers) {
     const idx = response.indexOf(marker);
+
     if (idx !== -1) {
       const afterMarker = response.substring(idx + marker.length).trim();
+
       // Check if there's a code block after the marker
       const blockMatch = afterMarker.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
+
       if (blockMatch) {
         return blockMatch[1].trim();
       }
+
       return afterMarker;
     }
   }
@@ -395,13 +422,12 @@ export function extractCodeFromResponse(response: string): string {
   return response.trim();
 }
 
-
 /**
  * Main auto-fix loop with LLM repair.
  */
 export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixResult> {
   const { filename, originalCode, validationResult, llmRepairFn, fallbackLlmRepairFn, repairContext } = options;
-  
+
   let currentCode = originalCode;
   let attempts = 0;
   let usedFallback = false;
@@ -412,6 +438,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
   // First, try sanitizer-only fix
   const sanitizerResult = attemptSanitizerFix(currentCode, filename);
+
   if (sanitizerResult.valid) {
     return {
       success: true,
@@ -422,6 +449,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
       usedFallback: false,
     };
   }
+
   currentCode = sanitizerResult.code;
 
   // If no LLM repair function provided, return sanitizer result
@@ -458,7 +486,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
         sanitizerWarnings,
         metrics,
       });
-      
+
       // Send prompt to LLM and get response
       const llmResponse = await llmRepairFn(repairPrompt);
       const repairedCode = extractCodeFromResponse(llmResponse);
@@ -532,6 +560,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
   // All attempts failed
   logger.warn(`Auto-fix failed after ${attempts} attempts for ${filename}`);
+
   return {
     success: false,
     code: currentCode,
@@ -547,7 +576,10 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
  * Quick fix attempt without LLM - just sanitizer iterations.
  * Use this for fast, synchronous fixes.
  */
-export function quickFix(code: string, filename: string): {
+export function quickFix(
+  code: string,
+  filename: string,
+): {
   code: string;
   valid: boolean;
   changed: boolean;
@@ -581,12 +613,11 @@ export function areErrorsAutoFixable(errors: ValidationError[]): boolean {
     18002, // Unclosed CSS comment
   ]);
 
-  const fixableErrors = errors.filter(e => 
-    e.severity === 'error' && autoFixableCodes.has(e.code)
-  );
+  const fixableErrors = errors.filter((e) => e.severity === 'error' && autoFixableCodes.has(e.code));
 
   // Consider fixable if at least half of errors are in the fixable set
-  const errorCount = errors.filter(e => e.severity === 'error').length;
+  const errorCount = errors.filter((e) => e.severity === 'error').length;
+
   return fixableErrors.length >= errorCount / 2;
 }
 
@@ -595,7 +626,7 @@ export function areErrorsAutoFixable(errors: ValidationError[]): boolean {
  */
 export function getErrorSummary(errors: ValidationError[]): string {
   const errorsByType = new Map<string, number>();
-  
+
   for (const error of errors) {
     const key = error.message.split(':')[0].trim();
     errorsByType.set(key, (errorsByType.get(key) || 0) + 1);

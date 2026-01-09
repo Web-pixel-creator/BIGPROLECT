@@ -1,21 +1,21 @@
 /**
  * Generation Router - Orchestrates the quality pipeline
- * 
+ *
  * Routes code through:
  * 1. Sanitizer (quick fixes)
  * 2. Validator (syntax check)
  * 3. Contract validation (structure check)
  * 4. Auto-fix loop (LLM repair if needed)
- * 
+ *
  * Decides which path to take based on file type and error severity.
  */
 
 import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
-import { validateFile, type ValidationResult } from '~/utils/codeValidator';
+import { validateFile } from '~/utils/codeValidator';
 import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type LlmRepairFn } from '~/utils/autoFixLoop';
 import { validateAgainstContract, getContractHints, type ContractValidationResult } from './sectionContracts';
 import { planSections, type SectionPlan, type SectionType } from './sectionGenerator';
-import { emitPipelineRun, type EmitPipelineRunOptions } from './pipelineTelemetry';
+import { emitPipelineRun } from './pipelineTelemetry';
 import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('GenerationRouter');
@@ -45,12 +45,16 @@ export interface PipelineResult {
 export interface PipelineOptions {
   /** Skip contract validation */
   skipContractValidation?: boolean;
+
   /** Skip auto-fix loop */
   skipAutoFix?: boolean;
+
   /** Section type for contract validation */
   sectionType?: SectionType;
+
   /** LLM repair function - receives prompt string, returns raw LLM response */
   llmRepairFn?: LlmRepairFn;
+
   /** Fallback LLM repair function */
   fallbackLlmRepairFn?: LlmRepairFn;
 }
@@ -61,11 +65,11 @@ export interface PipelineOptions {
 export async function routeThroughPipeline(
   code: string,
   filename: string,
-  options: PipelineOptions = {}
+  options: PipelineOptions = {},
 ): Promise<PipelineResult> {
   const startTime = Date.now();
   const warnings: string[] = [];
-  
+
   // Timing tracking for telemetry
   const timings = {
     sanitizer: 0,
@@ -75,7 +79,7 @@ export async function routeThroughPipeline(
   };
   let usedFallback = false;
   let promptVariant: import('~/utils/promptVariants').PromptVariant | undefined;
-  
+
   const result: PipelineResult = {
     success: false,
     code,
@@ -96,6 +100,7 @@ export async function routeThroughPipeline(
   // Stage 1: Sanitizer
   const sanitizerStart = Date.now();
   logger.debug(`Stage 1: Running sanitizer for ${filename}`);
+
   const sanitized = sanitizeGeneratedFile(filename, currentCode);
   result.stages.sanitizer.ran = true;
   result.stages.sanitizer.changed = sanitized.changed;
@@ -109,10 +114,11 @@ export async function routeThroughPipeline(
   // Stage 2: Validator
   const validatorStart = Date.now();
   logger.debug(`Stage 2: Running validator for ${filename}`);
+
   const validation = validateFile(currentCode, filename);
   result.stages.validator.ran = true;
   result.stages.validator.valid = validation.valid;
-  result.stages.validator.errors = validation.errors.filter(e => e.severity === 'error').length;
+  result.stages.validator.errors = validation.errors.filter((e) => e.severity === 'error').length;
   timings.validator = Date.now() - validatorStart;
 
   const unifiedErrors = (validation.unifiedViolations ?? []).filter((v) => v.severity === 'error');
@@ -131,6 +137,7 @@ export async function routeThroughPipeline(
   if (!options.skipContractValidation && options.sectionType) {
     const contractStart = Date.now();
     logger.debug(`Stage 3: Running contract validation for ${options.sectionType}`);
+
     const contractResult = validateAgainstContract(currentCode, options.sectionType);
     result.stages.contract.ran = true;
     result.stages.contract.valid = contractResult.valid;
@@ -140,6 +147,7 @@ export async function routeThroughPipeline(
 
     // Add contract warnings from unified violations (primary) or legacy violations (fallback)
     const violationsToCheck = contractResult.unifiedViolations ?? contractResult.violations;
+
     for (const violation of violationsToCheck) {
       if (violation.severity === 'warning') {
         warnings.push(`Contract: ${violation.message}`);
@@ -155,10 +163,10 @@ export async function routeThroughPipeline(
   if (!validation.valid && !options.skipAutoFix) {
     const autoFixStart = Date.now();
     logger.debug('Stage 4: Running auto-fix loop');
-    
+
     // First try quick fix (sanitizer only)
     const quickFixResult = quickFix(currentCode, filename);
-    
+
     if (quickFixResult.valid) {
       currentCode = quickFixResult.code;
       result.stages.autoFix.ran = true;
@@ -187,6 +195,7 @@ export async function routeThroughPipeline(
       if (autoFixResult.success) {
         currentCode = autoFixResult.code;
         logger.info(`Auto-fix succeeded after ${autoFixResult.attempts} attempt(s)`);
+
         if (autoFixResult.usedFallback) {
           warnings.push('Used fallback model for repair');
           usedFallback = true;
@@ -199,6 +208,7 @@ export async function routeThroughPipeline(
       logger.debug('Skipping LLM repair - errors not auto-fixable or no repair function');
       warnings.push('Some errors are not auto-fixable');
     }
+
     timings.autoFix = Date.now() - autoFixStart;
   }
 
@@ -237,21 +247,38 @@ export function determineStrategy(userPrompt: string): {
   reason: string;
 } {
   const promptLower = userPrompt.toLowerCase();
-  
+
   // Keywords that suggest a full website/landing page
   const websiteKeywords = [
-    'website', 'landing', 'page', 'site', 'saas', 'portfolio',
-    'сайт', 'страница', 'лендинг', 'портфолио'
-  ];
-  
-  // Keywords that suggest a single component
-  const componentKeywords = [
-    'component', 'button', 'card', 'modal', 'form', 'input',
-    'компонент', 'кнопка', 'карточка', 'модал', 'форма'
+    'website',
+    'landing',
+    'page',
+    'site',
+    'saas',
+    'portfolio',
+    'сайт',
+    'страница',
+    'лендинг',
+    'портфолио',
   ];
 
-  const isWebsite = websiteKeywords.some(k => promptLower.includes(k));
-  const isComponent = componentKeywords.some(k => promptLower.includes(k));
+  // Keywords that suggest a single component
+  const componentKeywords = [
+    'component',
+    'button',
+    'card',
+    'modal',
+    'form',
+    'input',
+    'компонент',
+    'кнопка',
+    'карточка',
+    'модал',
+    'форма',
+  ];
+
+  const isWebsite = websiteKeywords.some((k) => promptLower.includes(k));
+  const isComponent = componentKeywords.some((k) => promptLower.includes(k));
 
   if (isComponent && !isWebsite) {
     return {
@@ -279,12 +306,9 @@ export function determineStrategy(userPrompt: string): {
 /**
  * Generate enhanced prompt with contract hints.
  */
-export function enhancePromptWithContract(
-  basePrompt: string,
-  sectionType: SectionType
-): string {
+export function enhancePromptWithContract(basePrompt: string, sectionType: SectionType): string {
   const hints = getContractHints(sectionType);
-  
+
   return `${basePrompt}
 
 QUALITY REQUIREMENTS:
@@ -322,16 +346,31 @@ const stats = {
  */
 export function recordPipelineResult(result: PipelineResult): void {
   stats.runs++;
-  if (result.success) stats.successes++;
+
+  if (result.success) {
+    stats.successes++;
+  }
+
   stats.totalTimeMs += result.processingTimeMs;
-  if (result.stages.sanitizer.changed) stats.sanitizerFixes++;
+
+  if (result.stages.sanitizer.changed) {
+    stats.sanitizerFixes++;
+  }
+
   if (result.stages.autoFix.ran) {
     stats.autoFixAttempts++;
-    if (result.stages.autoFix.success) stats.autoFixSuccesses++;
+
+    if (result.stages.autoFix.success) {
+      stats.autoFixSuccesses++;
+    }
   }
+
   if (result.stages.contract.ran) {
     stats.contractRuns++;
-    if (result.stages.contract.valid) stats.contractPasses++;
+
+    if (result.stages.contract.valid) {
+      stats.contractPasses++;
+    }
   }
 }
 

@@ -5,16 +5,26 @@ import ignore from 'ignore';
 import type { ContextAnnotation } from '~/types/context';
 
 function getLlmPromptFromAnnotations(annotations: unknown): string | undefined {
-  if (!Array.isArray(annotations)) return undefined;
+  if (!Array.isArray(annotations)) {
+    return undefined;
+  }
 
   for (const annotation of annotations) {
-    if (!annotation || typeof annotation !== 'object') continue;
+    if (!annotation || typeof annotation !== 'object') {
+      continue;
+    }
 
     const record = annotation as any;
-    if (record.type !== 'llmPrompt') continue;
+
+    if (record.type !== 'llmPrompt') {
+      continue;
+    }
 
     const value = record.value ?? record.content ?? record.text;
-    if (typeof value === 'string') return value;
+
+    if (typeof value === 'string') {
+      return value;
+    }
   }
 
   return undefined;
@@ -39,6 +49,7 @@ export function extractPropertiesFromMessage(message: Omit<Message, 'id'>): {
 
   // AGGRESSIVE INFERENCE: If the model name clearly belongs to a specific provider, force it.
   const lowerModel = model.toLowerCase();
+
   if (
     lowerModel.includes('qwen') ||
     lowerModel.includes('deepseek') ||

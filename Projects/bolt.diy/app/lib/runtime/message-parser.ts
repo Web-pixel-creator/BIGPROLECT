@@ -97,6 +97,7 @@ export class StreamingMessageParser {
     }
 
     state.lastInputLength = input.length;
+
     let output = '';
     let i = state.position;
     let earlyBreak = false;
@@ -146,8 +147,10 @@ export class StreamingMessageParser {
           const currentAction = state.currentAction;
 
           if (closeIndex !== -1) {
-            // Use = instead of += because streaming branch already sets content
-            // and input.slice(i, closeIndex) contains the full content from action start
+            /*
+             * Use = instead of += because streaming branch already sets content
+             * and input.slice(i, closeIndex) contains the full content from action start
+             */
             currentAction.content = input.slice(i, closeIndex);
 
             let content = currentAction.content.trim();
@@ -342,12 +345,14 @@ export class StreamingMessageParser {
 
   finalize(messageId: string) {
     const state = this.#messages.get(messageId);
+
     if (!state) {
       return;
     }
 
     if (state.insideAction) {
       const currentAction = state.currentAction;
+
       if ('type' in currentAction && currentAction.type === 'file') {
         let content = currentAction.content?.trim() ?? '';
 

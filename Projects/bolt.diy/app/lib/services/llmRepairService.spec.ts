@@ -31,13 +31,13 @@ describe('llmRepairService', () => {
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-        })
+        }),
       );
-      
+
       // Verify prompt was passed to API
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(callBody.message).toBe(prompt);
-      
+
       // Returns raw response (caller parses it)
       expect(result).toContain('const x = 1;');
     });
@@ -69,7 +69,7 @@ describe('llmRepairService', () => {
       global.fetch = mockFetch;
 
       const repairFn = createLlmRepairFn();
-      
+
       await expect(repairFn('some prompt')).rejects.toThrow('LLM repair failed: 500');
     });
 
@@ -81,7 +81,7 @@ describe('llmRepairService', () => {
       global.fetch = mockFetch;
 
       const repairFn = createLlmRepairFn();
-      
+
       await expect(repairFn('some prompt')).rejects.toThrow('LLM returned empty response');
     });
 

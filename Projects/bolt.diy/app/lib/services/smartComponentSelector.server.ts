@@ -42,7 +42,10 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   saas: { sections: ['hero', 'features', 'pricing', 'testimonials', 'cta'], effects: ['sparkles', 'border-beam'] },
   construction: { sections: ['hero', 'features', 'projects', 'stats', 'cta', 'contact'], effects: ['fade', 'slide'] },
   auto: { sections: ['hero', 'features', 'gallery', 'pricing', 'cta'], effects: ['spotlight', 'glow'] },
-  ecommerce: { sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  ecommerce: {
+    sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'],
+    effects: ['hover', 'spotlight'],
+  },
   portfolio: { sections: ['hero', 'projects', 'about', 'contact'], effects: ['parallax', 'tilt'] },
   web3: { sections: ['hero', 'cases', 'cta', 'contact'], effects: ['aurora', 'grid', 'sparkles'] },
   finance: { sections: ['hero', 'features', 'stats', 'testimonials', 'cta'], effects: ['fade', 'hover'] },
@@ -75,7 +78,10 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
   music: { sections: ['hero', 'gallery', 'events', 'cta'], effects: ['glow', 'spotlight'] },
   personal: { sections: ['hero', 'about', 'blog', 'contact'], effects: ['fade'] },
   professional: { sections: ['hero', 'services', 'cases', 'testimonials', 'cta'], effects: ['spotlight', 'fade'] },
-  retail: { sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'], effects: ['hover', 'spotlight'] },
+  retail: {
+    sections: ['navigation', 'hero', 'products', 'features', 'testimonials', 'cta'],
+    effects: ['hover', 'spotlight'],
+  },
   technology: { sections: ['hero', 'features', 'cases', 'cta'], effects: ['sparkles', 'border-beam'] },
   transportation: {
     sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'],
@@ -86,7 +92,19 @@ const INDUSTRY_PRESETS: Record<string, { sections: string[]; effects: string[] }
 
 // Lightweight keyword map to help ranking
 const KEYWORDS: Record<string, string[]> = {
-  navigation: ['navigation', 'navbar', 'nav', 'menu', 'top nav', 'header', 'корзина', 'cart', 'profile', 'account', 'search'],
+  navigation: [
+    'navigation',
+    'navbar',
+    'nav',
+    'menu',
+    'top nav',
+    'header',
+    'корзина',
+    'cart',
+    'profile',
+    'account',
+    'search',
+  ],
   hero: ['hero', 'header', 'landing', 'splash', 'above fold'],
   features: ['feature', 'features', 'services', 'benefits'],
   pricing: ['pricing', 'price', 'plans'],
@@ -137,6 +155,7 @@ export class SmartComponentSelector {
 
   constructor(index?: ComponentIndex) {
     this.index = index || buildIndex(BOLT_ROOT, true);
+
     // Подготавливаем пул эффектов из облегчённого реестра
     this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
       name: e.name || e.id,
@@ -149,7 +168,7 @@ export class SmartComponentSelector {
     }));
   }
 
-  public refresh() {
+  refresh() {
     this.index = buildIndex(BOLT_ROOT, true);
     this.effectsPool = (effectsRegistry.effects || []).map((e: any) => ({
       name: e.name || e.id,
@@ -168,15 +187,23 @@ export class SmartComponentSelector {
     const effectsWanted = intent.effects?.length ? intent.effects : preset.effects;
 
     const components: SelectedComponent[] = [];
+
     for (const section of needSections) {
       const best = this.pickForSection(section, intent);
-      if (best) components.push(best);
+
+      if (best) {
+        components.push(best);
+      }
     }
 
     const effects: SelectedComponent[] = [];
+
     for (const eff of effectsWanted) {
       const best = this.pickForEffect(eff, intent);
-      if (best) effects.push(best);
+
+      if (best) {
+        effects.push(best);
+      }
     }
 
     const deps = this.collectDeps([...components, ...effects]);
@@ -214,7 +241,11 @@ export class SmartComponentSelector {
 
   private pickForSection(section: string, intent: UserIntent): SelectedComponent | null {
     const candidates = this.index.components.filter((c) => this.matches(c, section));
-    if (!candidates.length) return null;
+
+    if (!candidates.length) {
+      return null;
+    }
+
     return this.rankAndPick(candidates, intent, section);
   }
 
@@ -222,24 +253,35 @@ export class SmartComponentSelector {
     const candidates = this.index.components
       .filter((c) => this.matchesEffect(c, effect))
       .concat(this.effectsPool.filter((c) => this.matchesEffect(c as any, effect)));
-    if (!candidates.length) return null;
+
+    if (!candidates.length) {
+      return null;
+    }
+
     return this.rankAndPick(candidates, intent, effect);
   }
 
   private matches(comp: ComponentMeta, section: string): boolean {
     const low = (comp.rawCategory || comp.category || '').toLowerCase();
-    if (low.includes(section)) return true;
+
+    if (low.includes(section)) {
+      return true;
+    }
+
     const kw = KEYWORDS[section];
+
     if (kw) {
       const text = `${comp.name} ${comp.description} ${comp.rawCategory || ''}`.toLowerCase();
       return kw.some((k) => text.includes(k));
     }
+
     return false;
   }
 
   private matchesEffect(comp: ComponentMeta, effect: string): boolean {
     const text = `${comp.name} ${comp.description} ${comp.rawCategory || ''}`.toLowerCase();
     const eff = effect.toLowerCase();
+
     return text.includes(eff) || (KEYWORDS.effects || []).some((k) => eff.includes(k) && text.includes(k));
   }
 
@@ -249,24 +291,48 @@ export class SmartComponentSelector {
       .map((c) => {
         let score = 0;
         const text = `${c.name} ${c.description} ${c.rawCategory || ''}`.toLowerCase();
-        if (text.includes(section)) score += 5;
+
+        if (text.includes(section)) {
+          score += 5;
+        }
+
         const kw = KEYWORDS[section];
-        if (kw) score += kw.filter((k) => text.includes(k)).length * 2;
+
+        if (kw) {
+          score += kw.filter((k) => text.includes(k)).length * 2;
+        }
+
         score += (SOURCE_PRIORITY[c.source] || 10) / 10;
-        if (requestText && text.includes(intent.theme || '')) score += 1;
+
+        if (requestText && text.includes(intent.theme || '')) {
+          score += 1;
+        }
+
         // Penalize very large components (>300 lines) and heavy deps hints
         const lines = this.countLines(c.code);
-        if (lines > 300) score -= 2;
-        if (lines > 600) score -= 4;
-        if (!intent.allow3d && (text.includes('three') || text.includes('webgl'))) score -= 3; // avoid heavy 3D unless allowed
+
+        if (lines > 300) {
+          score -= 2;
+        }
+
+        if (lines > 600) {
+          score -= 4;
+        }
+
+        if (!intent.allow3d && (text.includes('three') || text.includes('webgl'))) {
+          score -= 3;
+        } // avoid heavy 3D unless allowed
+
         return { ...c, score };
       })
       .sort((a, b) => b.score - a.score);
+
     return { ...ranked[0] };
   }
 
   private collectDeps(components: SelectedComponent[]): string[] {
     const deps = new Set<string>();
+
     // Always add base dependencies for cn() utility
     deps.add('clsx');
     deps.add('tailwind-merge');
@@ -275,17 +341,36 @@ export class SmartComponentSelector {
 
     components.forEach((c) => {
       const text = `${c.code}`.toLowerCase();
-      if (text.includes('class-variance-authority') || text.includes('cva')) deps.add('class-variance-authority');
-      if (text.includes('@/components/ui/')) deps.add('shadcn-ui-base'); // placeholder marker
-      if (text.includes('three') || text.includes('webgl')) deps.add('three');
-      if (text.includes('gsap')) deps.add('gsap');
-      if (text.includes('@radix-ui')) deps.add('@radix-ui/react-slot');
+
+      if (text.includes('class-variance-authority') || text.includes('cva')) {
+        deps.add('class-variance-authority');
+      }
+
+      if (text.includes('@/components/ui/')) {
+        deps.add('shadcn-ui-base');
+      } // placeholder marker
+
+      if (text.includes('three') || text.includes('webgl')) {
+        deps.add('three');
+      }
+
+      if (text.includes('gsap')) {
+        deps.add('gsap');
+      }
+
+      if (text.includes('@radix-ui')) {
+        deps.add('@radix-ui/react-slot');
+      }
     });
+
     return Array.from(deps);
   }
 
   private countLines(code?: string): number {
-    if (!code) return 0;
+    if (!code) {
+      return 0;
+    }
+
     return code.split(/\r?\n/).length;
   }
 
@@ -296,17 +381,26 @@ export class SmartComponentSelector {
   ): { components: SelectedComponent[]; effects: SelectedComponent[]; totalLines: number } {
     let pool: SelectedComponent[] = [...components, ...effects];
     let total = pool.reduce((sum, c) => sum + this.countLines(c.code), 0);
-    if (total <= maxLines) return { components, effects, totalLines: total };
+
+    if (total <= maxLines) {
+      return { components, effects, totalLines: total };
+    }
 
     // Sort ascending by score (drop worst first)
     pool = pool.sort((a, b) => a.score - b.score);
+
     while (total > maxLines && pool.length > 0) {
       const dropped = pool.shift();
-      if (!dropped) break;
+
+      if (!dropped) {
+        break;
+      }
+
       total -= this.countLines(dropped.code);
       components = components.filter((c) => c.name !== dropped.name || c.source !== dropped.source);
       effects = effects.filter((c) => c.name !== dropped.name || c.source !== dropped.source);
     }
+
     return { components, effects, totalLines: total };
   }
 }

@@ -52,58 +52,65 @@ export function buildIndex(mdDir: string = BOLT_ROOT, useCache: boolean = true):
   const registryMtime = fs.existsSync(registryPath) ? fs.statSync(registryPath).mtimeMs : 0;
   const newestSource = Math.max(newestMd, registryMtime);
 
-   if (useCache && fs.existsSync(cacheFullPath)) {
-     try {
-       const cacheStat = fs.statSync(cacheFullPath);
-       if (cacheStat.mtimeMs >= newestSource) {
-         const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
-         if (!cached.generatedAt) cached.generatedAt = cacheStat.mtimeMs;
-         if (
-           cached?.components?.length &&
-           cached.cacheVersion === CACHE_VERSION &&
-           Array.isArray(cached.mdFiles) &&
-           cached.mdFiles.length === MD_FILES.length &&
-           cached.mdFiles.every((file, index) => file === MD_FILES[index])
-         ) {
-           return cached;
-         }
-       }
-     } catch {
-       // ignore cache errors
-     }
-   }
+  if (useCache && fs.existsSync(cacheFullPath)) {
+    try {
+      const cacheStat = fs.statSync(cacheFullPath);
+
+      if (cacheStat.mtimeMs >= newestSource) {
+        const cached = JSON.parse(fs.readFileSync(cacheFullPath, 'utf8')) as ComponentIndex;
+
+        if (!cached.generatedAt) {
+          cached.generatedAt = cacheStat.mtimeMs;
+        }
+
+        if (
+          cached?.components?.length &&
+          cached.cacheVersion === CACHE_VERSION &&
+          Array.isArray(cached.mdFiles) &&
+          cached.mdFiles.length === MD_FILES.length &&
+          cached.mdFiles.every((file, index) => file === MD_FILES[index])
+        ) {
+          return cached;
+        }
+      }
+    } catch {
+      // ignore cache errors
+    }
+  }
 
   // Prefer JSON registry if present
   if (fs.existsSync(registryPath)) {
     try {
       const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8')) as ComponentIndex;
       const merged = mergeWithMD(registry.components || [], mdDir);
-       const deduped = dedupeByName(merged);
-       const indexFromRegistry: ComponentIndex = {
-         components: deduped,
-         total: deduped.length,
-         generatedAt: Date.now(),
-         mdFiles: [...MD_FILES],
-         cacheVersion: CACHE_VERSION,
-       };
-       writeCache(cacheFullPath, indexFromRegistry);
-       return indexFromRegistry;
-     } catch {
-       // fall back to MD parsing
-     }
-   }
+      const deduped = dedupeByName(merged);
+      const indexFromRegistry: ComponentIndex = {
+        components: deduped,
+        total: deduped.length,
+        generatedAt: Date.now(),
+        mdFiles: [...MD_FILES],
+        cacheVersion: CACHE_VERSION,
+      };
+      writeCache(cacheFullPath, indexFromRegistry);
 
-   const parsed = mergeWithMD([], mdDir);
-   const deduped = dedupeByName(parsed);
-   const index: ComponentIndex = {
-     components: deduped,
-     total: deduped.length,
-     generatedAt: Date.now(),
-     mdFiles: [...MD_FILES],
-     cacheVersion: CACHE_VERSION,
-   };
-   writeCache(cacheFullPath, index);
-   return index;
+      return indexFromRegistry;
+    } catch {
+      // fall back to MD parsing
+    }
+  }
+
+  const parsed = mergeWithMD([], mdDir);
+  const deduped = dedupeByName(parsed);
+  const index: ComponentIndex = {
+    components: deduped,
+    total: deduped.length,
+    generatedAt: Date.now(),
+    mdFiles: [...MD_FILES],
+    cacheVersion: CACHE_VERSION,
+  };
+  writeCache(cacheFullPath, index);
+
+  return index;
 }
 
 function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] {
@@ -111,7 +118,11 @@ function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] 
 
   for (const file of MD_FILES) {
     const fullPath = path.resolve(mdDir, file);
-    if (!fs.existsSync(fullPath)) continue;
+
+    if (!fs.existsSync(fullPath)) {
+      continue;
+    }
+
     const content = fs.readFileSync(fullPath, 'utf8');
     const lines = content.split('\n');
     let currentCategory = file.replace('.md', '').toLowerCase();
@@ -124,6 +135,7 @@ function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] 
     for (const line of lines) {
       if (line.startsWith('## ')) {
         currentRawCategory = line.replace('## ', '').trim();
+
         const cleanedCategory = currentRawCategory.replace(/^[^A-Za-z0-9]+/, '').trim();
         const categoryToken = cleanedCategory.split(/\s+/)[0];
         currentCategory = (categoryToken || file.replace('.md', '')).toLowerCase();
@@ -150,14 +162,18 @@ function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] 
         }
 
         pendingAuthorTag = null;
+
         const match = line.match(/### (.+?) \((.+?)\)/);
+
         if (match) {
           const left = match[1].trim();
           const right = match[2].trim();
 
-          // Support two formats:
-          // 1) "Title Case Name (component-id)"  -> description=Title Case Name, name=component-id
-          // 2) "component-id (author)"          -> description=Title Case from id, name=component-id, tag=author
+          /*
+           * Support two formats:
+           * 1) "Title Case Name (component-id)"  -> description=Title Case Name, name=component-id
+           * 2) "component-id (author)"          -> description=Title Case from id, name=component-id, tag=author
+           */
           const leftLooksSlug = /^[a-z0-9][a-z0-9-]*$/.test(left);
           const leftLooksTitle = /[A-Z]/.test(left) || left.includes(' ');
 
@@ -177,6 +193,7 @@ function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] 
             currentComponent = { description: left, name: right, category: currentCategory, source: file, code: '' };
           }
         }
+
         codeBuffer = [];
         continue;
       }
@@ -186,11 +203,14 @@ function mergeWithMD(existing: ComponentMeta[], mdDir: string): ComponentMeta[] 
           currentComponent.code = (currentComponent.code || '') + codeBuffer.join('\n') + '\n\n';
           codeBuffer = [];
         }
+
         inCode = !inCode;
         continue;
       }
 
-      if (inCode) codeBuffer.push(line);
+      if (inCode) {
+        codeBuffer.push(line);
+      }
     }
 
     if (currentComponent?.name) {
@@ -226,7 +246,10 @@ function dedupeByName(components: ComponentMeta[]): ComponentMeta[] {
 
   for (const comp of components) {
     const key = (comp.name || '').trim().toLowerCase();
-    if (!key) continue;
+
+    if (!key) {
+      continue;
+    }
 
     const existing = buckets.get(key);
     const nextTags = new Set<string>([...(existing?.tags ?? []), ...((comp.tags ?? []) as string[])]);
@@ -238,6 +261,7 @@ function dedupeByName(components: ComponentMeta[]): ComponentMeta[] {
     }
 
     existing.tags = nextTags;
+
     if (componentQualityScore(comp) > componentQualityScore(existing.best)) {
       existing.best = comp;
     }
@@ -246,7 +270,11 @@ function dedupeByName(components: ComponentMeta[]): ComponentMeta[] {
   return order
     .map((key): ComponentMeta | null => {
       const bucket = buckets.get(key);
-      if (!bucket) return null;
+
+      if (!bucket) {
+        return null;
+      }
+
       return { ...bucket.best, tags: Array.from(bucket.tags) };
     })
     .filter((comp): comp is ComponentMeta => comp !== null);
@@ -260,7 +288,9 @@ function componentQualityScore(comp: ComponentMeta): number {
   let score = 0;
 
   // Prefer components that actually include code (common issue: duplicates with empty code).
-  if (codeLen > 0) score += 1_000_000;
+  if (codeLen > 0) {
+    score += 1_000_000;
+  }
 
   // Prefer richer code (cap so huge files don't dominate too hard).
   score += Math.min(codeLen, 20_000);
@@ -269,15 +299,34 @@ function componentQualityScore(comp: ComponentMeta): number {
   score += Math.min(descLen, 500);
 
   // Slight source bias towards our most reliable extractions.
-  if (src.includes('21st-dev')) score += 2_000;
-  if (src.includes('reactbits')) score += 1_000;
-  if (src.includes('aceternity')) score += 800;
-  if (src.includes('kokonut')) score += 400;
-  if (src.includes('tailark')) score += 300;
-  if (src.includes('shadcnui-blocks')) score += 300;
+  if (src.includes('21st-dev')) {
+    score += 2_000;
+  }
+
+  if (src.includes('reactbits')) {
+    score += 1_000;
+  }
+
+  if (src.includes('aceternity')) {
+    score += 800;
+  }
+
+  if (src.includes('kokonut')) {
+    score += 400;
+  }
+
+  if (src.includes('tailark')) {
+    score += 300;
+  }
+
+  if (src.includes('shadcnui-blocks')) {
+    score += 300;
+  }
 
   // Some sources are known to contain install-only stubs for a subset of items.
-  if (src.includes('magicui-components.md')) score -= 300;
+  if (src.includes('magicui-components.md')) {
+    score -= 300;
+  }
 
   return score;
 }
@@ -285,7 +334,11 @@ function componentQualityScore(comp: ComponentMeta): number {
 function writeCache(cacheFullPath: string, index: ComponentIndex) {
   try {
     const dir = path.dirname(cacheFullPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
     fs.writeFileSync(cacheFullPath, JSON.stringify(index, null, 2), 'utf8');
   } catch {
     // ignore cache write errors

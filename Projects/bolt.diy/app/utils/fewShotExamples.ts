@@ -1,6 +1,6 @@
 /**
  * Few-Shot Examples for LLM Repair
- * 
+ *
  * Minimal examples showing common errors and their fixes.
  * Used by fewshot-v1 variant to improve repair accuracy.
  */
@@ -142,28 +142,20 @@ export function Header() { }`,
  * Get relevant few-shot examples for given violation codes.
  * Returns examples matching any of the provided codes, limited to maxExamples.
  */
-export function getFewShotExamples(
-  violationCodes: ViolationCode[],
-  maxExamples: number = 3
-): FewShotExample[] {
+export function getFewShotExamples(violationCodes: ViolationCode[], maxExamples: number = 3): FewShotExample[] {
   const codeSet = new Set<string>(violationCodes);
-  
-  const matching = FEW_SHOT_EXAMPLES.filter(ex => codeSet.has(ex.violationCode));
-  
+
+  const matching = FEW_SHOT_EXAMPLES.filter((ex) => codeSet.has(ex.violationCode));
+
   return matching.slice(0, maxExamples);
 }
 
 /**
  * Get few-shot examples by category prefix.
  */
-export function getFewShotByCategory(
-  category: 'SYNTAX' | 'CONTRACT',
-  maxExamples: number = 3
-): FewShotExample[] {
-  const matching = FEW_SHOT_EXAMPLES.filter(ex => 
-    ex.violationCode.startsWith(category)
-  );
-  
+export function getFewShotByCategory(category: 'SYNTAX' | 'CONTRACT', maxExamples: number = 3): FewShotExample[] {
+  const matching = FEW_SHOT_EXAMPLES.filter((ex) => ex.violationCode.startsWith(category));
+
   return matching.slice(0, maxExamples);
 }
 
@@ -171,10 +163,14 @@ export function getFewShotByCategory(
  * Format few-shot examples for inclusion in prompt.
  */
 export function formatFewShotExamples(examples: FewShotExample[]): string {
-  if (examples.length === 0) return '';
-  
-  const formatted = examples.map((ex, i) => 
-    `Example ${i + 1} (${ex.violationCode}): ${ex.description}
+  if (examples.length === 0) {
+    return '';
+  }
+
+  const formatted = examples
+    .map(
+      (ex, i) =>
+        `Example ${i + 1} (${ex.violationCode}): ${ex.description}
 BROKEN:
 \`\`\`
 ${ex.broken}
@@ -182,9 +178,10 @@ ${ex.broken}
 FIXED:
 \`\`\`
 ${ex.fixed}
-\`\`\``
-  ).join('\n\n');
-  
+\`\`\``,
+    )
+    .join('\n\n');
+
   return `
 SIMILAR FIXES (learn from these examples):
 ${formatted}

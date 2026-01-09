@@ -100,8 +100,11 @@ describe('ActionRunner quarantine sidecars', () => {
     expect(paths).toContain('.history/src/App.tsx.invalid.sanitizer.json');
     expect(paths).toContain('.history/src/App.tsx.invalid.metrics.json');
 
-    const errorsSidecarCall = writeFile.mock.calls.find((call) => call[0] === '.history/src/App.tsx.invalid.errors.json');
+    const errorsSidecarCall = writeFile.mock.calls.find(
+      (call) => call[0] === '.history/src/App.tsx.invalid.errors.json',
+    );
     expect(errorsSidecarCall).toBeTruthy();
+
     const errorsSidecar = JSON.parse(errorsSidecarCall![1]);
     expect(errorsSidecar).toMatchObject({
       count: 1,
@@ -121,6 +124,7 @@ describe('ActionRunner quarantine sidecars', () => {
       (call) => call[0] === '.history/src/App.tsx.invalid.sanitizer.json',
     );
     expect(sanitizerSidecarCall).toBeTruthy();
+
     const sanitizerSidecar = JSON.parse(sanitizerSidecarCall![1]);
     expect(sanitizerSidecar).toMatchObject({
       count: 1,
@@ -133,8 +137,11 @@ describe('ActionRunner quarantine sidecars', () => {
     });
     expect(typeof sanitizerSidecar.timestamp).toBe('string');
 
-    const metricsSidecarCall = writeFile.mock.calls.find((call) => call[0] === '.history/src/App.tsx.invalid.metrics.json');
+    const metricsSidecarCall = writeFile.mock.calls.find(
+      (call) => call[0] === '.history/src/App.tsx.invalid.metrics.json',
+    );
     expect(metricsSidecarCall).toBeTruthy();
+
     const metricsSidecar = JSON.parse(metricsSidecarCall![1]);
     expect(metricsSidecar).toMatchObject({
       changedLinesPercent: 10,

@@ -3,12 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  getContractForSection,
-  validateAgainstContract,
-  getContractHints,
-  type SectionContract,
-} from './sectionContracts';
+import { getContractForSection, validateAgainstContract, getContractHints } from './sectionContracts';
 
 describe('sectionContracts', () => {
   describe('getContractForSection', () => {
@@ -71,7 +66,7 @@ function HeroSection() {
   return <div className="py-20">Hello</div>;
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'hasNamedExport')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasNamedExport')).toBe(true);
       });
 
       it('detects missing Tailwind classes', () => {
@@ -80,7 +75,7 @@ export function HeroSection() {
   return <div style={{ padding: '20px' }}>Hello</div>;
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'usesTailwind')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'usesTailwind')).toBe(true);
       });
 
       it('warns about missing responsive classes', () => {
@@ -89,7 +84,7 @@ export function HeroSection() {
   return <div className="py-20">Hello</div>;
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'isResponsive')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'isResponsive')).toBe(true);
       });
 
       it('passes responsive check with breakpoint classes', () => {
@@ -98,7 +93,7 @@ export function HeroSection() {
   return <div className="py-10 md:py-20 lg:py-32">Hello</div>;
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'isResponsive')).toBe(false);
+        expect(result.violations.some((v) => v.rule === 'isResponsive')).toBe(false);
       });
     });
 
@@ -113,7 +108,7 @@ export function HeroSection() {
   );
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'hasMainHeading')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasMainHeading')).toBe(true);
       });
 
       it('warns about missing CTA button', () => {
@@ -126,7 +121,7 @@ export function HeroSection() {
   );
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.some(v => v.rule === 'hasCtaButton')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasCtaButton')).toBe(true);
       });
 
       it('passes with proper hero structure', () => {
@@ -141,7 +136,7 @@ export function HeroSection() {
   );
 }`;
         const result = validateAgainstContract(code, 'hero');
-        expect(result.violations.filter(v => v.severity === 'error')).toHaveLength(0);
+        expect(result.violations.filter((v) => v.severity === 'error')).toHaveLength(0);
       });
     });
 
@@ -156,7 +151,7 @@ export function Navigation() {
   );
 }`;
         const result = validateAgainstContract(code, 'navigation');
-        expect(result.violations.some(v => v.rule === 'hasNavElement')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasNavElement')).toBe(true);
       });
 
       it('warns about missing navigation links', () => {
@@ -169,7 +164,7 @@ export function Navigation() {
   );
 }`;
         const result = validateAgainstContract(code, 'navigation');
-        expect(result.violations.some(v => v.rule === 'hasNavLinks')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasNavLinks')).toBe(true);
       });
 
       it('passes with proper navigation structure', () => {
@@ -184,7 +179,7 @@ export function Navigation() {
   );
 }`;
         const result = validateAgainstContract(code, 'navigation');
-        expect(result.violations.filter(v => v.severity === 'error')).toHaveLength(0);
+        expect(result.violations.filter((v) => v.severity === 'error')).toHaveLength(0);
       });
     });
 
@@ -199,7 +194,7 @@ export function Footer() {
   );
 }`;
         const result = validateAgainstContract(code, 'footer');
-        expect(result.violations.some(v => v.rule === 'hasFooterElement')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasFooterElement')).toBe(true);
       });
 
       it('warns about missing copyright', () => {
@@ -212,7 +207,7 @@ export function Footer() {
   );
 }`;
         const result = validateAgainstContract(code, 'footer');
-        expect(result.violations.some(v => v.rule === 'hasCopyright')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasCopyright')).toBe(true);
       });
 
       it('passes with proper footer structure', () => {
@@ -226,7 +221,7 @@ export function Footer() {
   );
 }`;
         const result = validateAgainstContract(code, 'footer');
-        expect(result.violations.filter(v => v.severity === 'error')).toHaveLength(0);
+        expect(result.violations.filter((v) => v.severity === 'error')).toHaveLength(0);
       });
     });
 
@@ -242,7 +237,7 @@ export function ContactSection() {
   );
 }`;
         const result = validateAgainstContract(code, 'contact');
-        expect(result.violations.some(v => v.rule === 'hasForm')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasForm')).toBe(true);
       });
 
       it('passes with proper contact form', () => {
@@ -260,7 +255,7 @@ export function ContactSection() {
   );
 }`;
         const result = validateAgainstContract(code, 'contact');
-        expect(result.violations.filter(v => v.severity === 'error')).toHaveLength(0);
+        expect(result.violations.filter((v) => v.severity === 'error')).toHaveLength(0);
       });
     });
 
@@ -276,7 +271,7 @@ export function CTASection() {
 }`;
         const result = validateAgainstContract(code, 'cta');
         expect(result.valid).toBe(false);
-        expect(result.violations.some(v => v.rule === 'hasActionButton' && v.severity === 'error')).toBe(true);
+        expect(result.violations.some((v) => v.rule === 'hasActionButton' && v.severity === 'error')).toBe(true);
       });
 
       it('passes with proper CTA structure', () => {
@@ -375,6 +370,7 @@ export function HeroSection() {
 
     it('always includes responsive hints', () => {
       const sections = ['hero', 'navigation', 'features', 'pricing', 'footer', 'contact', 'cta', 'faq'];
+
       for (const section of sections) {
         const hints = getContractHints(section as any);
         expect(hints).toContain('responsive');
@@ -400,7 +396,7 @@ function HeroSection() {
   return <div className="py-20">Hello</div>;
 }`;
       const result = validateAgainstContract(code, 'hero');
-      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
+      const unified = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
       expect(unified).toBeDefined();
       expect(unified?.severity).toBe('error');
       expect(unified?.autoFixable).toBe(false);
@@ -412,7 +408,7 @@ export function HeroSection() {
   return <div style={{ padding: '20px' }}>Hello</div>;
 }`;
       const result = validateAgainstContract(code, 'hero');
-      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_TAILWIND');
+      const unified = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_MISSING_TAILWIND');
       expect(unified).toBeDefined();
       expect(unified?.severity).toBe('warning');
     });
@@ -423,7 +419,7 @@ export function HeroSection() {
   return <div className="py-20">Hello</div>;
 }`;
       const result = validateAgainstContract(code, 'hero');
-      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_RESPONSIVE');
+      const unified = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_MISSING_RESPONSIVE');
       expect(unified).toBeDefined();
       expect(unified?.severity).toBe('warning');
     });
@@ -434,11 +430,11 @@ export function HeroSection() {
   return <div className="py-20 md:py-32">Hello</div>;
 }`;
       const result = validateAgainstContract(code, 'hero');
-      
+
       // Should have hero-specific violations
-      const h1Violation = result.unifiedViolations?.find(v => v.code === 'CONTRACT_HERO_MISSING_H1');
-      const ctaViolation = result.unifiedViolations?.find(v => v.code === 'CONTRACT_HERO_MISSING_CTA');
-      
+      const h1Violation = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_HERO_MISSING_H1');
+      const ctaViolation = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_HERO_MISSING_CTA');
+
       expect(h1Violation).toBeDefined();
       expect(ctaViolation).toBeDefined();
     });
@@ -449,7 +445,7 @@ export function CTASection() {
   return <div className="py-20 md:py-32">No button here</div>;
 }`;
       const result = validateAgainstContract(code, 'cta');
-      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_CTA_MISSING_BUTTON');
+      const unified = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_CTA_MISSING_BUTTON');
       expect(unified).toBeDefined();
       expect(unified?.severity).toBe('error');
     });
@@ -460,7 +456,7 @@ function HeroSection() {
   return <div>Hello</div>;
 }`;
       const result = validateAgainstContract(code, 'hero');
-      const unified = result.unifiedViolations?.find(v => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
+      const unified = result.unifiedViolations?.find((v) => v.code === 'CONTRACT_MISSING_NAMED_EXPORT');
       expect(unified?.context).toBeDefined();
       expect(unified?.context?.sectionType).toBe('hero');
     });

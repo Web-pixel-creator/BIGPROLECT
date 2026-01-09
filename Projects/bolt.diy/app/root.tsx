@@ -81,12 +81,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ClientOnly>{() => (
-        <>
-          <DndProvider backend={HTML5Backend}>{children}</DndProvider>
-          <ThemePanel />
-        </>
-      )}</ClientOnly>
+      <ClientOnly>
+        {() => (
+          <>
+            <DndProvider backend={HTML5Backend}>{children}</DndProvider>
+            <ThemePanel />
+          </>
+        )}
+      </ClientOnly>
       <ToastContainer
         closeButton={({ closeToast }) => {
           return (

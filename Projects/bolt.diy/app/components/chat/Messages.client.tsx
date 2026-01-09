@@ -68,8 +68,9 @@ const MessagesComponent = forwardRef<HTMLDivElement, MessagesProps>(
         ref={ref}
         className={classNames(
           props.className,
+
           // Сужаем колонку, чтобы не заходить под правые панели
-          'mx-auto w-full max-w-[640px] px-4 sm:px-5'
+          'mx-auto w-full max-w-[640px] px-4 sm:px-5',
         )}
       >
         {messagesToRender.length > 0
@@ -83,8 +84,7 @@ const MessagesComponent = forwardRef<HTMLDivElement, MessagesProps>(
                 return <Fragment key={index} />;
               }
 
-              const hideStreamingAssistant =
-                showStreamingCard && role === 'assistant' && index === lastMessageIndex;
+              const hideStreamingAssistant = showStreamingCard && role === 'assistant' && index === lastMessageIndex;
 
               if (hideStreamingAssistant) {
                 return <Fragment key={index} />;
@@ -174,14 +174,22 @@ function extractStreamingActions(content: string): StreamingAction[] {
   while ((match = fileRegex.exec(content)) !== null) {
     const filePath = match[1];
     const key = `file:${filePath}`;
-    if (seen.has(key)) continue;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
     seen.add(key);
     actions.push({ key, label: `Create ${filePath}` });
   }
 
   while ((match = tagRegex.exec(content)) !== null) {
     const type = match[1];
-    if (type === 'file') continue;
+
+    if (type === 'file') {
+      continue;
+    }
+
     const key = `action:${type}:${match.index}`;
     actions.push({ key, label: `Action: ${type}` });
   }
@@ -191,11 +199,11 @@ function extractStreamingActions(content: string): StreamingAction[] {
 
 function StreamingAssistantMessage({ content }: { content: string }) {
   const { actions, snippet } = useMemo(() => {
-    const scanSource =
-      content.length > STREAMING_SCAN_MAX_CHARS ? content.slice(-STREAMING_SCAN_MAX_CHARS) : content;
+    const scanSource = content.length > STREAMING_SCAN_MAX_CHARS ? content.slice(-STREAMING_SCAN_MAX_CHARS) : content;
     const hasActions = scanSource.includes('<boltAction');
     const cleaned = stripBoltTags(scanSource).trim();
     const tail = cleaned.slice(-STREAMING_SNIPPET_MAX_CHARS);
+
     return {
       actions: hasActions ? extractStreamingActions(scanSource) : [],
       snippet: tail,

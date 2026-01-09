@@ -44,10 +44,16 @@ function normalizePathForMatch(path: string): string {
 }
 
 function getMessageTextContent(message: Messages[number] | undefined): string {
-  if (!message) return '';
+  if (!message) {
+    return '';
+  }
 
   const content: any = (message as any).content;
-  if (typeof content === 'string') return content;
+
+  if (typeof content === 'string') {
+    return content;
+  }
+
   if (Array.isArray(content)) {
     return content
       .filter((item) => item && item.type === 'text' && typeof item.text === 'string')
@@ -73,7 +79,10 @@ function heuristicSelectContextFiles(args: {
     for (const suffix of suffixes) {
       const target = `${workDirPrefix}${suffix}`.toLowerCase();
       const found = normalizedFullPaths.find((p) => p.toLowerCase() === target);
-      if (found) return found;
+
+      if (found) {
+        return found;
+      }
     }
     return undefined;
   };
@@ -83,15 +92,23 @@ function heuristicSelectContextFiles(args: {
     const found = normalizedFullPaths.find((p) => {
       const fileName = p.split('/').pop() ?? p;
       const lowerName = fileName.toLowerCase();
+
       return lowerNeedles.some((n) => lowerName.includes(n));
     });
+
     return found;
   };
 
   const picked = new Set<string>();
   const add = (fullPath: string | undefined) => {
-    if (!fullPath) return;
-    if (picked.size >= maxFiles) return;
+    if (!fullPath) {
+      return;
+    }
+
+    if (picked.size >= maxFiles) {
+      return;
+    }
+
     picked.add(fullPath);
   };
 
@@ -99,10 +116,12 @@ function heuristicSelectContextFiles(args: {
   add(pickFullByEndsWith(['package.json']));
   add(pickFullByEndsWith(['src/App.tsx', 'src/app.tsx', 'src/main.tsx']));
   add(pickFullByEndsWith(['src/lib/utils.ts']));
+
   if (/\b(css|tailwind|style|стил|цвет|theme)\b/i.test(userPrompt)) {
     add(pickFullByEndsWith(['src/index.css', 'src/App.css']));
     add(pickFullByEndsWith(['tailwind.config.ts', 'tailwind.config.js', 'postcss.config.js', 'postcss.config.cjs']));
   }
+
   if (/\b(vite|alias|tsconfig|path)\b/i.test(userPrompt)) {
     add(pickFullByEndsWith(['vite.config.ts', 'vite.config.js', 'tsconfig.json']));
   }
@@ -116,12 +135,15 @@ function heuristicSelectContextFiles(args: {
   if (wantsHeader) {
     add(pickFullByNameIncludes(['header', 'navbar', 'nav']));
   }
+
   if (wantsFooter) {
     add(pickFullByNameIncludes(['footer']));
   }
+
   if (wantsProducts) {
     add(pickFullByNameIncludes(['product', 'grid', 'bestseller']));
   }
+
   if (wantsCategories) {
     add(pickFullByNameIncludes(['category', 'categories']));
   }
@@ -129,20 +151,34 @@ function heuristicSelectContextFiles(args: {
   // Fallback: include a few TS/TSX files from src if we still have budget.
   if (picked.size === 0) {
     for (const fullPath of normalizedFullPaths) {
-      if (picked.size >= maxFiles) break;
-      if (!fullPath.includes('/src/')) continue;
-      if (!/\.(tsx|ts)$/.test(fullPath)) continue;
+      if (picked.size >= maxFiles) {
+        break;
+      }
+
+      if (!fullPath.includes('/src/')) {
+        continue;
+      }
+
+      if (!/\.(tsx|ts)$/.test(fullPath)) {
+        continue;
+      }
+
       picked.add(fullPath);
     }
   }
 
   const result: FileMap = {};
+
   for (const fullPath of picked) {
     const rel = fullPath.toLowerCase().startsWith(workDirPrefix.toLowerCase())
       ? fullPath.slice(workDirPrefix.length)
       : fullPath;
     const dirent = files[fullPath] ?? files[`${WORK_DIR}/${rel}`];
-    if (!dirent) continue;
+
+    if (!dirent) {
+      continue;
+    }
+
     result[rel] = dirent;
   }
 
@@ -221,16 +257,21 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
         const isModelScopeProvider =
           (selectedProvider || '').toLowerCase() === 'modelscope' ||
-          Boolean(selectedModel && (/qwen/i.test(selectedModel) || /deepseek/i.test(selectedModel) || selectedModel.startsWith('iic/')));
+          Boolean(
+            selectedModel &&
+              (/qwen/i.test(selectedModel) || /deepseek/i.test(selectedModel) || selectedModel.startsWith('iic/')),
+          );
 
         if (processedMessages.length > 3) {
           messageSliceId = processedMessages.length - 3;
         }
 
         if (filePaths.length > 0 && contextOptimization) {
-          // Google is particularly sensitive to RPM/TPM quotas. Summary + context-selection are extra LLM calls
-          // that often cause the *second* user prompt to hit rate limits. For Google, use a fast heuristic
-          // selector and skip summary/context LLM calls to keep a single LLM request per user prompt.
+          /*
+           * Google is particularly sensitive to RPM/TPM quotas. Summary + context-selection are extra LLM calls
+           * that often cause the *second* user prompt to hit rate limits. For Google, use a fast heuristic
+           * selector and skip summary/context LLM calls to keep a single LLM request per user prompt.
+           */
           if (isGoogleProvider) {
             logger.debug('Skipping createSummary/selectContext for Google (heuristic context selection)');
             dataStream.writeData({
@@ -250,6 +291,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
             });
 
             const contextKeys = Object.keys(filteredFiles || {});
+
             if (contextKeys.length) {
               logger.debug(`heuristic files in context : ${JSON.stringify(contextKeys)}`);
 
@@ -316,6 +358,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             // Select context files
             console.log(`Messages count: ${processedMessages.length}`);
+
             try {
               filteredFiles = await selectContext({
                 messages: [...processedMessages],
@@ -508,6 +551,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           }
           streamRecovery.stop();
         })();
+
         if (result) {
           result.mergeIntoDataStream(dataStream);
         }
@@ -515,6 +559,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       onError: (error: any) => {
         // Provide more specific error messages for common issues
         console.error('LLM Provider Error:', error);
+
         const errorMessage = error.message || 'Unknown error';
         const lowerErrorMessage = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
 

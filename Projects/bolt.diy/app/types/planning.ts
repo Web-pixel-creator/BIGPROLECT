@@ -28,4 +28,3 @@ export type PlanningBlock = {
   techStack?: string[];
   status?: PlanningStatus;
 };
-

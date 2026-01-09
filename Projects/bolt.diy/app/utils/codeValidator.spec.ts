@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { validateCode, validateFile, validateCss, validateJson, isValidSyntax, mapErrorToUnifiedViolation, mapErrorsToUnifiedViolations } from './codeValidator';
+import {
+  validateCode,
+  validateFile,
+  validateCss,
+  validateJson,
+  isValidSyntax,
+  mapErrorToUnifiedViolation,
+  mapErrorsToUnifiedViolations,
+} from './codeValidator';
 import type { ValidationError } from './codeValidator';
 
 describe('codeValidator', () => {
@@ -36,7 +44,7 @@ const x = 1;
 `;
       const result = validateCode(code, 'test.ts');
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.message.toLowerCase().includes('unterminated'))).toBe(true);
+      expect(result.errors.some((e) => e.message.toLowerCase().includes('unterminated'))).toBe(true);
     });
 
     it('detects unbalanced braces', () => {
@@ -49,7 +57,7 @@ function test() {
 `;
       const result = validateCode(code, 'test.ts');
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.code === 17003 || e.message.includes('brace'))).toBe(true);
+      expect(result.errors.some((e) => e.code === 17003 || e.message.includes('brace'))).toBe(true);
     });
 
     it('detects duplicate imports', () => {
@@ -63,7 +71,7 @@ export default function App() {
 }
 `;
       const result = validateCode(code, 'App.tsx');
-      expect(result.errors.some(e => e.code === 17005)).toBe(true);
+      expect(result.errors.some((e) => e.code === 17005)).toBe(true);
     });
 
     it('detects multiple export default', () => {
@@ -77,7 +85,7 @@ export default function App2() {
 }
 `;
       const result = validateCode(code, 'App.tsx');
-      expect(result.errors.some(e => e.code === 17006)).toBe(true);
+      expect(result.errors.some((e) => e.code === 17006)).toBe(true);
     });
 
     it('skips validation for non-JS/TS files', () => {
@@ -111,7 +119,7 @@ export default function App2() {
 `;
       const result = validateCss(code, 'styles.css');
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.code === 18001)).toBe(true);
+      expect(result.errors.some((e) => e.code === 18001)).toBe(true);
     });
 
     it('detects unclosed comments', () => {
@@ -123,7 +131,7 @@ export default function App2() {
 `;
       const result = validateCss(code, 'styles.css');
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.code === 18002)).toBe(true);
+      expect(result.errors.some((e) => e.code === 18002)).toBe(true);
     });
   });
 
@@ -197,9 +205,9 @@ export default function App2() {
           code: 1005,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'test.ts');
-        
+
         expect(unified.code).toBe('SYNTAX_BRACE_EXPECTED');
         expect(unified.severity).toBe('error');
         expect(unified.autoFixable).toBe(true);
@@ -217,9 +225,9 @@ export default function App2() {
           code: 1002,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'test.ts');
-        
+
         expect(unified.code).toBe('SYNTAX_UNTERMINATED_STRING');
         expect(unified.autoFixable).toBe(true);
       });
@@ -232,9 +240,9 @@ export default function App2() {
           code: 17001,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'App.tsx');
-        
+
         expect(unified.code).toBe('SYNTAX_JSX_TAG_MISMATCH');
         expect(unified.autoFixable).toBe(true);
       });
@@ -247,9 +255,9 @@ export default function App2() {
           code: 9999,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'test.ts');
-        
+
         expect(unified.code).toBe('SYNTAX_PARSER_CRASH');
         expect(unified.autoFixable).toBe(false);
       });
@@ -262,9 +270,9 @@ export default function App2() {
           code: 12345,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'test.ts');
-        
+
         expect(unified.code).toBe('SYNTAX_OTHER');
         expect(unified.autoFixable).toBe(false);
       });
@@ -277,9 +285,9 @@ export default function App2() {
           code: 99999,
           severity: 'error',
         };
-        
+
         const unified = mapErrorToUnifiedViolation(error, 'test.ts');
-        
+
         expect(unified.code).toBe('SYNTAX_BRACE_EXPECTED');
       });
     });
@@ -290,9 +298,9 @@ export default function App2() {
           { line: 1, column: 1, message: "'}' expected", code: 1005, severity: 'error' },
           { line: 2, column: 5, message: 'Unterminated string literal', code: 1002, severity: 'error' },
         ];
-        
+
         const unified = mapErrorsToUnifiedViolations(errors, 'test.ts');
-        
+
         expect(unified).toHaveLength(2);
         expect(unified[0].code).toBe('SYNTAX_BRACE_EXPECTED');
         expect(unified[1].code).toBe('SYNTAX_UNTERMINATED_STRING');
@@ -307,14 +315,14 @@ export default function App2() {
     describe('validateFile with unifiedViolations', () => {
       it('includes unifiedViolations in result for valid code', () => {
         const result = validateFile('const x = 1;', 'test.ts');
-        
+
         expect(result.unifiedViolations).toBeDefined();
         expect(result.unifiedViolations).toHaveLength(0);
       });
 
       it('includes unifiedViolations in result for invalid code', () => {
         const result = validateFile('const x = {', 'test.ts');
-        
+
         expect(result.unifiedViolations).toBeDefined();
         expect(result.unifiedViolations!.length).toBeGreaterThan(0);
         expect(result.unifiedViolations![0].code).toBe('SYNTAX_BRACE_EXPECTED');
@@ -322,8 +330,9 @@ export default function App2() {
 
       it('includes unifiedViolations for CSS errors', () => {
         const result = validateFile('.foo { color: red;', 'test.css');
-        
+
         expect(result.unifiedViolations).toBeDefined();
+
         if (!result.valid) {
           expect(result.unifiedViolations!.length).toBeGreaterThan(0);
         }
@@ -331,8 +340,9 @@ export default function App2() {
 
       it('includes unifiedViolations for JSON errors', () => {
         const result = validateFile('{ "a": 1', 'test.json');
-        
+
         expect(result.unifiedViolations).toBeDefined();
+
         if (!result.valid) {
           expect(result.unifiedViolations!.length).toBeGreaterThan(0);
         }
@@ -340,7 +350,7 @@ export default function App2() {
 
       it('includes empty unifiedViolations for unknown file types', () => {
         const result = validateFile('# Hello', 'test.md');
-        
+
         expect(result.unifiedViolations).toBeDefined();
         expect(result.unifiedViolations).toHaveLength(0);
       });

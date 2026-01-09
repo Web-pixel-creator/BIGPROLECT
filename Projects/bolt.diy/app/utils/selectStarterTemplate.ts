@@ -68,19 +68,32 @@ const templates: Template[] = STARTER_TEMPLATES.filter((t) => !t.name.toLowerCas
 
 function titleFromPrompt(message: string): string {
   const raw = (message || '').trim();
-  if (!raw) return '';
+
+  if (!raw) {
+    return '';
+  }
 
   const firstLine = raw.split(/\r?\n/)[0] ?? raw;
-  const cleaned = firstLine.replace(/^\[Model:.*?\]\s*/i, '').replace(/^\[Provider:.*?\]\s*/i, '').trim();
+  const cleaned = firstLine
+    .replace(/^\[Model:.*?\]\s*/i, '')
+    .replace(/^\[Provider:.*?\]\s*/i, '')
+    .trim();
 
   const maxLen = 80;
-  if (cleaned.length <= maxLen) return cleaned;
+
+  if (cleaned.length <= maxLen) {
+    return cleaned;
+  }
+
   return cleaned.slice(0, maxLen - 1).trimEnd() + '\u2026';
 }
 
 function heuristicSelectStarterTemplate(message: string): { template: string; title: string } | null {
   const raw = (message || '').trim();
-  if (!raw) return null;
+
+  if (!raw) {
+    return null;
+  }
 
   const lower = raw.toLowerCase();
   const wantsShadcn = /\bshadcn\b/.test(lower) || lower.includes('shadcn/ui');
@@ -118,8 +131,10 @@ function heuristicSelectStarterTemplate(message: string): { template: string; ti
     return { template: 'Qwik Typescript', title: titleFromPrompt(raw) };
   }
 
-  // Default for UI/website/design requests: prefer Vite React.
-  // Use shadcn templates ONLY when the user explicitly asks for shadcn.
+  /*
+   * Default for UI/website/design requests: prefer Vite React.
+   * Use shadcn templates ONLY when the user explicitly asks for shadcn.
+   */
   if (
     /\b(website|landing|web app|ui|design|frontend|react|vite|tailwind|shadcn|e-?commerce)\b/.test(lower) ||
     /(лендинг|сайт|дизайн|интерфейс|магазин|интернет[\\s-]магазин|витрина|каталог)/.test(lower) ||
@@ -154,6 +169,7 @@ export const selectStarterTemplate = async (options: { message: string; model: s
   const wantsShadcn = /\bshadcn\b/i.test(message) || message.toLowerCase().includes('shadcn/ui');
 
   const heuristic = heuristicSelectStarterTemplate(message);
+
   if (heuristic) {
     return heuristic;
   }
@@ -197,6 +213,7 @@ export const selectStarterTemplate = async (options: { message: string; model: s
     }
 
     console.log('No template selected, using blank template');
+
     return { template: 'blank', title: '' };
   } catch (error) {
     console.error('Error selecting starter template:', error);
@@ -255,10 +272,13 @@ export async function getTemplates(templateName: string, title?: string) {
   // exclude    .bolt
   filteredFiles = filteredFiles.filter((x) => x.path.startsWith('.bolt') == false);
 
-  // If it's a Vite+React template, drop any pre-bundled src/*
-  // so we don't import preset UIs like "BoltApp". Baseline will add neutral files.
+  /*
+   * If it's a Vite+React template, drop any pre-bundled src/*
+   * so we don't import preset UIs like "BoltApp". Baseline will add neutral files.
+   */
   const templateTags = template.tags ?? [];
   const isViteReactTemplate = templateTags.includes('vite') && templateTags.includes('react');
+
   if (isViteReactTemplate) {
     filteredFiles = filteredFiles.filter((x) => !x.path.replace(/\\/g, '/').startsWith('src/'));
   }

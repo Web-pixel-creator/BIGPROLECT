@@ -30,12 +30,14 @@ export type EffectRecipesOptions = {
 
 const EFFECTS: EffectListItem[] = (effectsList as EffectListItem[]) ?? [];
 const EFFECT_ID_TO_META = new Map<string, EffectListItem>();
+
 for (const effect of EFFECTS) {
   EFFECT_ID_TO_META.set(effect.id.toLowerCase(), effect);
 }
 
 const EFFECT_REGISTRY: EffectsRegistryJson = effectsRegistry as EffectsRegistryJson;
 const EFFECT_ID_TO_REGISTRY = new Map<string, EffectRegistryItem>();
+
 for (const entry of EFFECT_REGISTRY.effects ?? []) {
   EFFECT_ID_TO_REGISTRY.set(entry.id.toLowerCase(), entry);
 }
@@ -80,7 +82,12 @@ function classifyEffect(idLower: string): 'background' | 'cursor' | 'button' | '
     return 'card';
   }
 
-  if (idLower.includes('text') || idLower.includes('typewriter') || idLower.includes('typing') || idLower.includes('scramble')) {
+  if (
+    idLower.includes('text') ||
+    idLower.includes('typewriter') ||
+    idLower.includes('typing') ||
+    idLower.includes('scramble')
+  ) {
     return 'text';
   }
 
@@ -124,7 +131,9 @@ function buildApplyInstructions(kind: ReturnType<typeof classifyEffect>): string
 }
 
 export function extractEffectIdsFromText(text: string, options?: { maxEffects?: number }): string[] {
-  if (!text) return [];
+  if (!text) {
+    return [];
+  }
 
   const lower = text.toLowerCase();
   const matches: Array<{ id: string; idx: number }> = [];
@@ -133,7 +142,11 @@ export function extractEffectIdsFromText(text: string, options?: { maxEffects?: 
   for (const effect of EFFECTS) {
     const idLower = effect.id.toLowerCase();
     const idx = lower.indexOf(idLower);
-    if (idx === -1) continue;
+
+    if (idx === -1) {
+      continue;
+    }
+
     matches.push({ id: effect.id, idx });
   }
 
@@ -141,12 +154,20 @@ export function extractEffectIdsFromText(text: string, options?: { maxEffects?: 
 
   const unique: string[] = [];
   const seen = new Set<string>();
+
   for (const match of matches) {
     const key = match.id.toLowerCase();
-    if (seen.has(key)) continue;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
     seen.add(key);
     unique.push(match.id);
-    if (options?.maxEffects && unique.length >= options.maxEffects) break;
+
+    if (options?.maxEffects && unique.length >= options.maxEffects) {
+      break;
+    }
   }
 
   return unique;
@@ -159,7 +180,10 @@ export function buildEffectRecipesPromptSection(userPrompt: string, opts?: Effec
   const maxTotalCodeChars = opts?.maxTotalCodeChars ?? 24_000;
 
   const effectIds = extractEffectIdsFromText(userPrompt, { maxEffects });
-  if (!effectIds.length) return null;
+
+  if (!effectIds.length) {
+    return null;
+  }
 
   const omitted = extractEffectIdsFromText(userPrompt, { maxEffects: 999 }).slice(effectIds.length);
 
@@ -202,7 +226,9 @@ export function buildEffectRecipesPromptSection(userPrompt: string, opts?: Effec
         );
       }
     } else {
-      lines.push(`\n(No code snippet found for \`${id}\`. Implement a minimal compatible version or skip the effect ONLY if impossible.)`);
+      lines.push(
+        `\n(No code snippet found for \`${id}\`. Implement a minimal compatible version or skip the effect ONLY if impossible.)`,
+      );
     }
 
     sections.push(lines.join('\n'));

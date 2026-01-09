@@ -123,6 +123,7 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       const errorMessage = error instanceof Error ? error.message || '' : '';
       const lowerErrorMessage = errorMessage.toLowerCase();
       const statusCode = (error as any)?.statusCode;
+
       if (
         statusCode === 429 ||
         lowerErrorMessage.includes('quota') ||
@@ -131,10 +132,13 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         lowerErrorMessage.includes('requests per minute') ||
         lowerErrorMessage.includes('tokens per minute')
       ) {
-        throw new Response('API quota/rate limit exceeded. Please wait and try again, or check provider billing/quotas.', {
-          status: 429,
-          statusText: 'Rate Limit Exceeded',
-        });
+        throw new Response(
+          'API quota/rate limit exceeded. Please wait and try again, or check provider billing/quotas.',
+          {
+            status: 429,
+            statusText: 'Rate Limit Exceeded',
+          },
+        );
       }
 
       // Handle token limit errors with helpful messages
@@ -168,9 +172,11 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         throw new Error('Model not found');
       }
 
-      // NOTE: `/api/llmcall` is currently only used for starter template selection.
-      // Keep the output token budget intentionally small to avoid provider-specific max output limits
-      // (e.g. Gemini output caps) and to reduce the chance of quota/limit errors.
+      /*
+       * NOTE: `/api/llmcall` is currently only used for starter template selection.
+       * Keep the output token budget intentionally small to avoid provider-specific max output limits
+       * (e.g. Gemini output caps) and to reduce the chance of quota/limit errors.
+       */
       const dynamicMaxTokens = modelDetails ? getCompletionTokenLimit(modelDetails) : Math.min(MAX_TOKENS, 16384);
 
       // Validate token limits before making API request

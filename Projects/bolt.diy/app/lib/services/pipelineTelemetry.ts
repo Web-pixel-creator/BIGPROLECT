@@ -1,6 +1,6 @@
 /**
  * Pipeline Telemetry Service
- * 
+ *
  * Collects anonymized metrics from the quality pipeline.
  * Privacy by design: no code, prompts, or messages - only codes, counts, timings.
  */
@@ -10,9 +10,11 @@ import type { UnifiedViolation } from './sectionContracts';
 import type { SanitizerWarning, ChangeMetrics } from '~/utils/codeSanitizer';
 import type { PromptVariant } from '~/utils/promptVariants';
 
-// ============================================================================
-// Event Types
-// ============================================================================
+/*
+ * ============================================================================
+ * Event Types
+ * ============================================================================
+ */
 
 /**
  * Event emitted after each pipeline run.
@@ -20,30 +22,30 @@ import type { PromptVariant } from '~/utils/promptVariants';
 export interface PipelineRunEvent {
   timestamp: string; // ISO 8601
   promptVariant?: PromptVariant;
-  
+
   // File context (anonymized - extension only)
   fileExt: string;
   sectionType?: string;
-  
+
   // Outcome
   success: boolean;
   usedFallback: boolean;
   quarantined: boolean;
-  
+
   // Violation breakdown (codes only, no messages)
   violationCounts: {
     errors: number;
     warnings: number;
     byCode: Record<string, number>;
   };
-  
+
   // Auto-fix stats
   autoFix: {
     ran: boolean;
     success: boolean;
     attempts: number;
   };
-  
+
   // Timing breakdown (ms)
   timings: {
     sanitizer: number;
@@ -67,9 +69,11 @@ export interface QuarantineEvent {
   autoFixAttempts: number;
 }
 
-// ============================================================================
-// Telemetry Store
-// ============================================================================
+/*
+ * ============================================================================
+ * Telemetry Store
+ * ============================================================================
+ */
 
 interface TelemetryStore {
   // Counters
@@ -78,23 +82,26 @@ interface TelemetryStore {
   failureCount: number;
   quarantineCount: number;
   fallbackUsedCount: number;
-  
-  variantStats: Map<string, {
-    totalRuns: number;
-    successRuns: number;
-    quarantineRuns: number;
-    totalAttempts: number;
-    totalRepairLatencyMs: number;
-    repairRunsWithTiming: number;
-  }>;
-  
+
+  variantStats: Map<
+    string,
+    {
+      totalRuns: number;
+      successRuns: number;
+      quarantineRuns: number;
+      totalAttempts: number;
+      totalRepairLatencyMs: number;
+      repairRunsWithTiming: number;
+    }
+  >;
+
   // ViolationCode tracking
   violationFrequency: Map<string, number>;
   violationQuarantineRate: Map<string, { total: number; quarantined: number }>;
-  
+
   // Auto-fix tracking
   autoFixByCode: Map<string, { attempts: number; successes: number }>;
-  
+
   // Timing aggregates
   timingTotals: {
     sanitizer: number;
@@ -103,7 +110,7 @@ interface TelemetryStore {
     autoFix: number;
     total: number;
   };
-  
+
   // Recent events (ring buffer, last 100)
   recentEvents: PipelineRunEvent[];
 }
@@ -134,16 +141,22 @@ function createEmptyStore(): TelemetryStore {
   };
 }
 
-// ============================================================================
-// Privacy Filter
-// ============================================================================
+/*
+ * ============================================================================
+ * Privacy Filter
+ * ============================================================================
+ */
 
 /**
  * Extract file extension from filename (privacy-safe).
  */
 export function extractFileExt(filename: string): string {
   const lastDot = filename.lastIndexOf('.');
-  if (lastDot === -1) return '';
+
+  if (lastDot === -1) {
+    return '';
+  }
+
   return filename.slice(lastDot);
 }
 
@@ -151,14 +164,14 @@ export function extractFileExt(filename: string): string {
  * Extract violation codes from unified violations (no messages).
  */
 export function extractViolationCodes(violations: UnifiedViolation[]): string[] {
-  return violations.map(v => v.code);
+  return violations.map((v) => v.code);
 }
 
 /**
  * Extract sanitizer warning codes (no messages).
  */
 export function extractSanitizerCodes(warnings: SanitizerWarning[]): string[] {
-  return warnings.map(w => w.code);
+  return warnings.map((w) => w.code);
 }
 
 /**
@@ -168,20 +181,25 @@ export function buildViolationCounts(violations: UnifiedViolation[]): PipelineRu
   const byCode: Record<string, number> = {};
   let errors = 0;
   let warnings = 0;
-  
+
   for (const v of violations) {
-    if (v.severity === 'error') errors++;
-    else if (v.severity === 'warning') warnings++;
-    
+    if (v.severity === 'error') {
+      errors++;
+    } else if (v.severity === 'warning') {
+      warnings++;
+    }
+
     byCode[v.code] = (byCode[v.code] || 0) + 1;
   }
-  
+
   return { errors, warnings, byCode };
 }
 
-// ============================================================================
-// Event Emitters
-// ============================================================================
+/*
+ * ============================================================================
+ * Event Emitters
+ * ============================================================================
+ */
 
 export interface EmitPipelineRunOptions {
   result: PipelineResult;
@@ -202,10 +220,10 @@ export interface EmitPipelineRunOptions {
  */
 export function emitPipelineRun(options: EmitPipelineRunOptions): PipelineRunEvent {
   const { result, sectionType, usedFallback = false, quarantined = false, promptVariant, timings = {} } = options;
-  
+
   // Extract violations from final validation
   const violations = result.finalValidation.unifiedViolations ?? [];
-  
+
   const event: PipelineRunEvent = {
     timestamp: new Date().toISOString(),
     ...(promptVariant ? { promptVariant } : {}),
@@ -228,10 +246,10 @@ export function emitPipelineRun(options: EmitPipelineRunOptions): PipelineRunEve
       total: result.processingTimeMs,
     },
   };
-  
+
   // Update store
   aggregatePipelineEvent(event, violations);
-  
+
   return event;
 }
 
@@ -249,7 +267,7 @@ export interface EmitQuarantineOptions {
  */
 export function emitQuarantineWritten(options: EmitQuarantineOptions): QuarantineEvent {
   const { filename, violations, sanitizerWarnings, metrics, autoFixAttempts = 0, promptVariant } = options;
-  
+
   const event: QuarantineEvent = {
     timestamp: new Date().toISOString(),
     ...(promptVariant ? { promptVariant } : {}),
@@ -259,30 +277,39 @@ export function emitQuarantineWritten(options: EmitQuarantineOptions): Quarantin
     riskLevel: metrics?.riskLevel ?? 'low',
     autoFixAttempts,
   };
-  
+
   // Update store
   aggregateQuarantineEvent(event);
-  
+
   // Track quarantine-specific details
   trackQuarantineDetailsInternal(event);
-  
+
   return event;
 }
 
-// ============================================================================
-// Aggregator
-// ============================================================================
+/*
+ * ============================================================================
+ * Aggregator
+ * ============================================================================
+ */
 
 function aggregatePipelineEvent(event: PipelineRunEvent, violations: UnifiedViolation[]): void {
   // Update counters
   store.totalRuns++;
+
   if (event.success) {
     store.successCount++;
   } else {
     store.failureCount++;
   }
-  if (event.usedFallback) store.fallbackUsedCount++;
-  if (event.quarantined) store.quarantineCount++;
+
+  if (event.usedFallback) {
+    store.fallbackUsedCount++;
+  }
+
+  if (event.quarantined) {
+    store.quarantineCount++;
+  }
 
   if (event.promptVariant) {
     const current = store.variantStats.get(event.promptVariant) ?? {
@@ -295,9 +322,17 @@ function aggregatePipelineEvent(event: PipelineRunEvent, violations: UnifiedViol
     };
 
     current.totalRuns++;
-    if (event.success) current.successRuns++;
-    if (event.quarantined) current.quarantineRuns++;
+
+    if (event.success) {
+      current.successRuns++;
+    }
+
+    if (event.quarantined) {
+      current.quarantineRuns++;
+    }
+
     current.totalAttempts += event.autoFix.attempts;
+
     if (event.timings.autoFix > 0) {
       current.totalRepairLatencyMs += event.timings.autoFix;
       current.repairRunsWithTiming++;
@@ -305,48 +340,59 @@ function aggregatePipelineEvent(event: PipelineRunEvent, violations: UnifiedViol
 
     store.variantStats.set(event.promptVariant, current);
   }
-  
+
   // Update violation frequency
   for (const [code, count] of Object.entries(event.violationCounts.byCode)) {
     store.violationFrequency.set(code, (store.violationFrequency.get(code) || 0) + count);
-    
+
     // Track quarantine rate per code
     const rateData = store.violationQuarantineRate.get(code) || { total: 0, quarantined: 0 };
     rateData.total += count;
-    if (event.quarantined) rateData.quarantined += count;
+
+    if (event.quarantined) {
+      rateData.quarantined += count;
+    }
+
     store.violationQuarantineRate.set(code, rateData);
   }
-  
+
   // Update auto-fix stats by code
   if (event.autoFix.ran) {
     for (const v of violations) {
       if (v.autoFixable) {
         const fixData = store.autoFixByCode.get(v.code) || { attempts: 0, successes: 0 };
         fixData.attempts++;
-        if (event.autoFix.success) fixData.successes++;
+
+        if (event.autoFix.success) {
+          fixData.successes++;
+        }
+
         store.autoFixByCode.set(v.code, fixData);
       }
     }
   }
-  
+
   // Update timing totals
   store.timingTotals.sanitizer += event.timings.sanitizer;
   store.timingTotals.validator += event.timings.validator;
   store.timingTotals.contract += event.timings.contract;
   store.timingTotals.autoFix += event.timings.autoFix;
   store.timingTotals.total += event.timings.total;
-  
+
   // Add to recent events (ring buffer)
   store.recentEvents.push(event);
+
   if (store.recentEvents.length > RECENT_EVENTS_LIMIT) {
     store.recentEvents.shift();
   }
 }
 
 function aggregateQuarantineEvent(event: QuarantineEvent): void {
-  // Quarantine count already updated in pipeline event
-  // Here we just track additional quarantine-specific data
-  
+  /*
+   * Quarantine count already updated in pipeline event
+   * Here we just track additional quarantine-specific data
+   */
+
   if (event.promptVariant) {
     const current = store.variantStats.get(event.promptVariant) ?? {
       totalRuns: 0,
@@ -363,15 +409,20 @@ function aggregateQuarantineEvent(event: QuarantineEvent): void {
 
   for (const code of event.violationCodes) {
     const rateData = store.violationQuarantineRate.get(code) || { total: 0, quarantined: 0 };
-    // Don't double-count if already counted in pipeline event
-    // This is for standalone quarantine tracking
+
+    /*
+     * Don't double-count if already counted in pipeline event
+     * This is for standalone quarantine tracking
+     */
     store.violationQuarantineRate.set(code, rateData);
   }
 }
 
-// ============================================================================
-// Telemetry API
-// ============================================================================
+/*
+ * ============================================================================
+ * Telemetry API
+ * ============================================================================
+ */
 
 export interface TelemetrySummary {
   totalRuns: number;
@@ -393,15 +444,16 @@ export interface TelemetrySummary {
  */
 export function getTelemetrySummary(): TelemetrySummary {
   const { totalRuns, successCount, quarantineCount, fallbackUsedCount, timingTotals, autoFixByCode } = store;
-  
+
   // Calculate auto-fix success rate
   let totalAttempts = 0;
   let totalSuccesses = 0;
+
   for (const { attempts, successes } of autoFixByCode.values()) {
     totalAttempts += attempts;
     totalSuccesses += successes;
   }
-  
+
   return {
     totalRuns,
     successRate: totalRuns > 0 ? successCount / totalRuns : 0,
@@ -431,15 +483,15 @@ export interface ViolationStats {
  */
 export function getTopViolations(n: number): ViolationStats[] {
   const totalViolations = Array.from(store.violationFrequency.values()).reduce((a, b) => a + b, 0);
-  
+
   const sorted = Array.from(store.violationFrequency.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, n);
-  
+
   return sorted.map(([code, count]) => {
     const rateData = store.violationQuarantineRate.get(code);
     const fixData = store.autoFixByCode.get(code);
-    
+
     return {
       code,
       count,
@@ -483,14 +535,13 @@ export function getQuarantineStats(): QuarantineStats {
     .sort((a, b) => b[1].quarantined - a[1].quarantined)
     .slice(0, 10)
     .map(([code]) => code);
-  
+
   return {
     total: store.quarantineCount,
     byRiskLevel: { ...quarantineData.byRiskLevel },
     topViolationCodes: topCodes,
-    avgAutoFixAttempts: quarantineData.quarantineCount > 0 
-      ? quarantineData.totalAutoFixAttempts / quarantineData.quarantineCount 
-      : 0,
+    avgAutoFixAttempts:
+      quarantineData.quarantineCount > 0 ? quarantineData.totalAutoFixAttempts / quarantineData.quarantineCount : 0,
   };
 }
 

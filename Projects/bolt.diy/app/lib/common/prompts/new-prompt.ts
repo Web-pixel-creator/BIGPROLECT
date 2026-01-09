@@ -133,29 +133,32 @@ FORBIDDEN:
 <database_instructions>
   CRITICAL: Use Supabase for databases by default, unless specified otherwise.
   
-  Supabase project setup handled separately by user! ${supabase
-    ? !supabase.isConnected
-      ? 'You are not connected to Supabase. Remind user to "connect to Supabase in chat box before proceeding".'
-      : !supabase.hasSelectedProject
-        ? 'Connected to Supabase but no project selected. Remind user to select project in chat box.'
-        : ''
-    : ''
+  Supabase project setup handled separately by user! ${
+    supabase
+      ? !supabase.isConnected
+        ? 'You are not connected to Supabase. Remind user to "connect to Supabase in chat box before proceeding".'
+        : !supabase.hasSelectedProject
+          ? 'Connected to Supabase but no project selected. Remind user to select project in chat box.'
+          : ''
+      : ''
   }
 
 
-  ${supabase?.isConnected &&
+  ${
+    supabase?.isConnected &&
     supabase?.hasSelectedProject &&
     supabase?.credentials?.supabaseUrl &&
     supabase?.credentials?.anonKey
-    ? `
-    Create .env file if it doesn't exist${supabase?.isConnected &&
+      ? `
+    Create .env file if it doesn't exist${
+      supabase?.isConnected &&
       supabase?.hasSelectedProject &&
       supabase?.credentials?.supabaseUrl &&
       supabase?.credentials?.anonKey
-      ? ` with:
+        ? ` with:
       VITE_SUPABASE_URL=${supabase.credentials.supabaseUrl}
       VITE_SUPABASE_ANON_KEY=${supabase.credentials.anonKey}`
-      : '.'
+        : '.'
     }
     DATA PRESERVATION REQUIREMENTS:
       - DATA INTEGRITY IS HIGHEST PRIORITY - users must NEVER lose data
@@ -210,7 +213,7 @@ FORBIDDEN:
       - Use descriptive policy names
       - Add indexes for frequently queried columns
   `
-    : ''
+      : ''
   }
 </database_instructions>
 
@@ -306,12 +309,13 @@ FORBIDDEN:
   - Use custom icons or symbolic visuals to reinforce the brand's visual identity
 
   User Design Scheme:
-  ${designScheme
-    ? `
+  ${
+    designScheme
+      ? `
   FONT: ${JSON.stringify(designScheme.font)}
   PALETTE: ${JSON.stringify(designScheme.palette)}
   FEATURES: ${JSON.stringify(designScheme.features)}`
-    : "None provided. Create a bespoke palette (3-5 colors + neutrals), font selection (modern sans-serif paired with an elegant serif), and a feature set aligned with the brand identity and emotional tone."
+      : 'None provided. Create a bespoke palette (3-5 colors + neutrals), font selection (modern sans-serif paired with an elegant serif), and a feature set aligned with the brand identity and emotional tone.'
   }
 
   Final Quality Check:
@@ -377,4 +381,3 @@ export const CONTINUE_PROMPT = stripIndents`
   Continue your prior response. IMPORTANT: Immediately begin from where you left off without any interruptions.
   Do not repeat any content, including artifact and action tags.
 `;
-

@@ -79,12 +79,19 @@ const DEFAULT_COUNTS: Required<ImageSearchCounts> = {
 
 const pickQuery = (queries?: string[]): string => {
   const list = (queries ?? []).map((value) => value.trim()).filter(Boolean);
-  if (list.length === 0) return '';
+
+  if (list.length === 0) {
+    return '';
+  }
+
   return list[Math.floor(Math.random() * list.length)];
 };
 
 const clampCount = (value: number | undefined, max: number): number => {
-  if (!value || Number.isNaN(value)) return max;
+  if (!value || Number.isNaN(value)) {
+    return max;
+  }
+
   return Math.max(1, Math.min(max, value));
 };
 
@@ -94,11 +101,16 @@ const getEnvVar = (context: ActionFunctionArgs['context'], name: string): string
 };
 
 const buildSourceFallback = (query: string, count: number, width: number) => {
-  if (!query) return [];
+  if (!query) {
+    return [];
+  }
+
   const height = Math.round(width * 0.6);
+
   return Array.from({ length: count }, (_value, index) => {
     const seed = Date.now() + Math.floor(Math.random() * 10000) + index;
     const encodedQuery = encodeURIComponent(query).replace(/%2C/g, ',');
+
     return `https://source.unsplash.com/${width}x${height}/?${encodedQuery}&sig=${seed}`;
   });
 };
@@ -106,7 +118,10 @@ const buildSourceFallback = (query: string, count: number, width: number) => {
 const pickRandomPage = (max: number = 5) => Math.floor(Math.random() * max) + 1;
 
 async function fetchUnsplashRandom(query: string, count: number, orientation: string, accessKey?: string) {
-  if (!accessKey) return [];
+  if (!accessKey) {
+    return [];
+  }
+
   const url = new URL('https://api.unsplash.com/photos/random');
   url.searchParams.set('query', query);
   url.searchParams.set('count', String(count));
@@ -120,16 +135,27 @@ async function fetchUnsplashRandom(query: string, count: number, orientation: st
     },
   });
 
-  if (!response.ok) return [];
-  const data = (await response.json()) as
-    | { urls?: Record<string, string> }
-    | Array<{ urls?: Record<string, string> }>;
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = (await response.json()) as { urls?: Record<string, string> } | Array<{ urls?: Record<string, string> }>;
   const items = Array.isArray(data) ? data : [data];
+
   return items.map((item) => item.urls?.regular).filter((value): value is string => Boolean(value));
 }
 
-async function fetchUnsplashSearch(query: string, count: number, orientation: string, page: number, accessKey?: string) {
-  if (!accessKey) return [];
+async function fetchUnsplashSearch(
+  query: string,
+  count: number,
+  orientation: string,
+  page: number,
+  accessKey?: string,
+) {
+  if (!accessKey) {
+    return [];
+  }
+
   const url = new URL('https://api.unsplash.com/search/photos');
   url.searchParams.set('query', query);
   url.searchParams.set('per_page', String(count));
@@ -144,15 +170,20 @@ async function fetchUnsplashSearch(query: string, count: number, orientation: st
     },
   });
 
-  if (!response.ok) return [];
+  if (!response.ok) {
+    return [];
+  }
+
   const data = (await response.json()) as { results?: Array<{ urls?: Record<string, string> }> };
-  return (data.results ?? [])
-    .map((item) => item.urls?.regular)
-    .filter((value): value is string => Boolean(value));
+
+  return (data.results ?? []).map((item) => item.urls?.regular).filter((value): value is string => Boolean(value));
 }
 
 async function fetchPexels(query: string, count: number, orientation: string, page: number, apiKey?: string) {
-  if (!apiKey) return [];
+  if (!apiKey) {
+    return [];
+  }
+
   const url = new URL('https://api.pexels.com/v1/search');
   url.searchParams.set('query', query);
   url.searchParams.set('per_page', String(count));
@@ -165,11 +196,13 @@ async function fetchPexels(query: string, count: number, orientation: string, pa
     },
   });
 
-  if (!response.ok) return [];
+  if (!response.ok) {
+    return [];
+  }
+
   const data = (await response.json()) as { photos?: Array<{ src?: Record<string, string> }> };
-  return (data.photos ?? [])
-    .map((item) => item.src?.large)
-    .filter((value): value is string => Boolean(value));
+
+  return (data.photos ?? []).map((item) => item.src?.large).filter((value): value is string => Boolean(value));
 }
 
 async function searchImages(
@@ -179,7 +212,10 @@ async function searchImages(
   orientation: string,
   fallbackWidth: number,
 ) {
-  if (!query) return [];
+  if (!query) {
+    return [];
+  }
+
   const page = pickRandomPage();
   const unsplashKey = getEnvVar(context, 'UNSPLASH_ACCESS_KEY');
   const pexelsKey = getEnvVar(context, 'PEXELS_API_KEY');
@@ -190,16 +226,21 @@ async function searchImages(
   });
 
   let combined = [...unsplashRandom];
+
   if (combined.length < count) {
     const remaining = count - combined.length;
-    const unsplashSearch = await fetchUnsplashSearch(query, remaining, orientation, page, unsplashKey).catch((error) => {
-      logger.warn('Unsplash search failed', error);
-      return [];
-    });
+    const unsplashSearch = await fetchUnsplashSearch(query, remaining, orientation, page, unsplashKey).catch(
+      (error) => {
+        logger.warn('Unsplash search failed', error);
+        return [];
+      },
+    );
     combined = [...combined, ...unsplashSearch];
   }
 
-  if (combined.length >= count) return combined.slice(0, count);
+  if (combined.length >= count) {
+    return combined.slice(0, count);
+  }
 
   const remaining = count - combined.length;
   const pexelsResults = await fetchPexels(query, remaining, orientation, page, pexelsKey).catch((error) => {
@@ -208,7 +249,10 @@ async function searchImages(
   });
 
   const withPexels = [...combined, ...pexelsResults];
-  if (withPexels.length > 0) return withPexels.slice(0, count);
+
+  if (withPexels.length > 0) {
+    return withPexels.slice(0, count);
+  }
 
   return buildSourceFallback(query, count, fallbackWidth);
 }
@@ -223,7 +267,11 @@ function normalizeList(values?: string[]) {
 
   for (const value of values ?? []) {
     const trimmed = value?.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
+
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+
     seen.add(trimmed);
     out.push(trimmed);
   }
@@ -235,6 +283,7 @@ export async function action({ context, request }: ActionFunctionArgs) {
   logger.info('=== IMAGE SEARCH API CALLED ===');
 
   let payload: ImageSearchPayload;
+
   try {
     payload = (await request.json()) as ImageSearchPayload;
     logger.info('Payload received:', JSON.stringify(payload, null, 2));
@@ -300,5 +349,6 @@ export async function action({ context, request }: ActionFunctionArgs) {
   if (shouldCache) {
     cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data });
   }
+
   return json(data);
 }

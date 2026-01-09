@@ -6,9 +6,11 @@ export type DesignPreset = {
   code: string;
 };
 
-// Curated UI snippets that can be dropped into projects built on Tailwind + Radix.
-// They are inspired by the referenced libraries but adapted to the current stack
-// to avoid pulling heavy dependencies.
+/*
+ * Curated UI snippets that can be dropped into projects built on Tailwind + Radix.
+ * They are inspired by the referenced libraries but adapted to the current stack
+ * to avoid pulling heavy dependencies.
+ */
 export const DESIGN_PRESETS: DesignPreset[] = [
   {
     id: 'shadcn-hero',

@@ -49,10 +49,7 @@ const decodePromptValue = (value: string): string => {
   }
 };
 
-const THEME_SUMMARIES: Record<
-  string,
-  { intro: string; colors: string; typography: string; animations: string }
-> = {
+const THEME_SUMMARIES: Record<string, { intro: string; colors: string; typography: string; animations: string }> = {
   food: {
     intro: 'a warm, appetizing meal kit homepage inspired by modern meal services.',
     colors: 'Warm coral primary, sage green accent, cream backgrounds',
@@ -75,9 +72,11 @@ const THEME_SUMMARIES: Record<
 
 function extractBrandNameFromPrompt(prompt: string): string | null {
   const match = prompt.match(/(?:called|named)\s+["'`“”]?([^"'`\n]{2,40})["'`“”]?/i);
+
   if (match && match[1]) {
     return match[1].trim();
   }
+
   return null;
 }
 
@@ -94,9 +93,14 @@ function extractSectionsFromPrompt(prompt: string): string[] {
 
   const seen = new Set<string>();
   const unique: string[] = [];
+
   for (const section of sections) {
     const key = section.toLowerCase();
-    if (seen.has(key)) continue;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
     seen.add(key);
     unique.push(section);
   }
@@ -202,7 +206,8 @@ export const ChatImpl = memo(
       (project) => project.id === supabaseConn.selectedProjectId,
     );
     const supabaseAlert = useStore(workbenchStore.supabaseAlert);
-    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled, autoFixValidationEnabled } = useSettings();
+    const { activeProviders, promptId, autoSelectTemplate, contextOptimizationEnabled, autoFixValidationEnabled } =
+      useSettings();
     const [llmErrorAlert, setLlmErrorAlert] = useState<LlmErrorAlertType | undefined>(undefined);
     const [model, setModel] = useState(() => {
       const savedModel = Cookies.get('selectedModel');
@@ -340,6 +345,7 @@ export const ChatImpl = memo(
           }
 
           const parsed = parsedMessages[index];
+
           if (typeof parsed !== 'string') {
             return message;
           }
@@ -394,6 +400,7 @@ export const ChatImpl = memo(
         if (renderMessagesRef.current.length !== 0) {
           updateRenderMessages([]);
         }
+
         return;
       }
 
@@ -403,6 +410,7 @@ export const ChatImpl = memo(
       }
 
       const lastMessage = messages[messages.length - 1];
+
       if (lastMessage?.role === 'user') {
         updateRenderMessages(applyParsedMessages(messages));
       }
@@ -416,7 +424,9 @@ export const ChatImpl = memo(
           clearTimeout(dataTimerRef.current);
           dataTimerRef.current = null;
         }
+
         setRenderData(chatData);
+
         return;
       }
 
@@ -466,6 +476,7 @@ export const ChatImpl = memo(
           clearInterval(streamStallTimerRef.current);
           streamStallTimerRef.current = null;
         }
+
         return;
       }
 
@@ -475,6 +486,7 @@ export const ChatImpl = memo(
 
       streamStallTimerRef.current = setInterval(() => {
         const idleFor = Date.now() - lastStreamActivityRef.current;
+
         if (idleFor < STREAM_STALL_MS) {
           return;
         }
@@ -697,11 +709,13 @@ export const ChatImpl = memo(
             finalMessageContent = enhanced.enhancedPrompt;
             displayMessageContent = enhanced.displayPrompt ?? messageContent;
             summary = buildGenerationSummary(messageContent, enhanced);
+
             if (enhanced.sectionContract?.order?.length) {
               workbenchStore.setPendingSectionContract(enhanced.sectionContract);
             } else {
               workbenchStore.clearPendingSectionContract();
             }
+
             console.log('=== PROMPT ENHANCER DEBUG ===');
             console.log('Theme:', enhanced.detectedTheme);
             console.log('Images:', JSON.stringify(enhanced.images, null, 2));
@@ -714,6 +728,7 @@ export const ChatImpl = memo(
             finalMessageContent = messageContent;
             displayMessageContent = messageContent;
             summary = buildGenerationSummary(messageContent);
+
             const errorMessage =
               typeof enhanceError?.message === 'string' && enhanceError.message.trim().length > 0
                 ? enhanceError.message.trim()
@@ -844,7 +859,9 @@ export const ChatImpl = memo(
           const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
 
           const attachmentOptions =
-            uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
 
           append(
             {
@@ -862,7 +879,9 @@ export const ChatImpl = memo(
           const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
 
           const attachmentOptions =
-            uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
 
           append(
             {
@@ -884,20 +903,26 @@ export const ChatImpl = memo(
         resetEnhancer();
 
         textareaRef.current?.blur();
+
         return true;
       } catch (sendError: any) {
         logger.error('sendMessage failed', sendError);
         setFakeLoading(false);
         setInput(originalInput);
+
         const rawMessage = sendError?.message || 'Failed to send message.';
-        const safeMessage = String(rawMessage).replace(/[^\x20-\x7E]+/g, ' ').trim();
+        const safeMessage = String(rawMessage)
+          .replace(/[^\x20-\x7E]+/g, ' ')
+          .trim();
         toast.error(safeMessage || 'Failed to send message.');
+
         return false;
       }
     };
 
     useEffect(() => {
       const autoFix = actionAlert?.autoFix;
+
       if (!autoFix || !autoFixValidationEnabled || isLoading || fakeLoading) {
         return;
       }
@@ -970,11 +995,14 @@ export const ChatImpl = memo(
         providerList={activeProviders}
         handleInputChange={(e) => {
           const decodedValue = decodePromptValue(e.target.value);
+
           if (decodedValue !== e.target.value) {
             setInput(decodedValue);
             debouncedCachePrompt({ target: { value: decodedValue } } as React.ChangeEvent<HTMLTextAreaElement>);
+
             return;
           }
+
           onTextareaChange(e);
           debouncedCachePrompt(e);
         }}

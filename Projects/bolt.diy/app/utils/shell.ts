@@ -119,7 +119,10 @@ export class BoltShell {
     this.#terminal = terminal;
 
     // Use all three streams from tee: one for terminal, one for command execution, one for Expo URL detection
-    const { process, commandStream, expoUrlStream, errorStream } = await this.newBoltShellProcess(webcontainer, terminal);
+    const { process, commandStream, expoUrlStream, errorStream } = await this.newBoltShellProcess(
+      webcontainer,
+      terminal,
+    );
     this.#process = process;
     this.#outputStream = commandStream.getReader();
 
@@ -176,7 +179,13 @@ export class BoltShell {
     await jshReady.promise;
 
     // Return all streams for use in init
-    return { process, terminalStream: streamA, commandStream: streamC, expoUrlStream: streamD, errorStream: streamError };
+    return {
+      process,
+      terminalStream: streamA,
+      commandStream: streamC,
+      expoUrlStream: streamD,
+      errorStream: streamError,
+    };
   }
 
   // Dedicated background watcher for Expo URL
@@ -237,7 +246,6 @@ export class BoltShell {
           await healFile(this.#webcontainer, errorInfo.file, errorInfo.type);
           buffer = '';
         }
-
       } catch (err) {
         console.error('[BoltShell] Error watcher failed:', err);
         break;
@@ -377,6 +385,7 @@ export class BoltShell {
         console.warn(`[BoltShell] Command timed out after ${timeoutMs / 1000}s`);
         return { output: fullOutput + '\n\n[TIMEOUT: Command exceeded time limit]', exitCode: -1 };
       }
+
       throw error;
     }
 

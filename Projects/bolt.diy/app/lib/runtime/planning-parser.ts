@@ -12,9 +12,11 @@ export function parsePlanningBlock(content: string): { planning: PlanningData | 
 
   // Try XML-style planning tags first
   const xmlMatch = content.match(/<boltPlanning>([\s\S]*?)<\/boltPlanning>/);
+
   if (xmlMatch) {
     planning = parseXMLPlanning(xmlMatch[1]);
     cleanContent = content.replace(/<boltPlanning>[\s\S]*?<\/boltPlanning>/, '').trim();
+
     return { planning, cleanContent };
   }
 
@@ -23,12 +25,14 @@ export function parsePlanningBlock(content: string): { planning: PlanningData | 
 
 function hasExplicitPlanCue(text: string): boolean {
   const head = text.slice(0, 400);
+
   if (/\b(plan|steps|roadmap|outline|implementation plan)\b/i.test(head)) {
     return true;
   }
 
   const hasBullets = /(?:^|\n)\s*[-*]\s+\w+/.test(head);
   const hasNumbered = /(?:^|\n)\s*\d+\.\s+\w+/.test(head);
+
   return /\b(plan|steps|roadmap|outline)\b/i.test(text) && (hasBullets || hasNumbered);
 }
 
@@ -51,7 +55,11 @@ function parseXMLPlanning(xml: string): PlanningData {
 
   const getListTag = (tag: string): string[] => {
     const content = getTag(tag);
-    if (!content) return [];
+
+    if (!content) {
+      return [];
+    }
+
     return content
       .split('\n')
       .map((line) => line.replace(/^[-*•]\s*/, '').trim())
@@ -66,16 +74,28 @@ function parseXMLPlanning(xml: string): PlanningData {
 
   const designConcept: PlanningData['designConcept'] = {};
   const designSection = getTag('design');
+
   if (designSection) {
     const colorMatch = designSection.match(/colors?:?\s*([^\n]+)/i);
     const effectsMatch = designSection.match(/effects?:?\s*([^\n]+)/i);
     const typographyMatch = designSection.match(/typography:?\s*([^\n]+)/i);
     const animationsMatch = designSection.match(/animations?:?\s*([^\n]+)/i);
 
-    if (colorMatch) designConcept.colors = colorMatch[1].trim();
-    if (effectsMatch) designConcept.effects = effectsMatch[1].trim();
-    if (typographyMatch) designConcept.typography = typographyMatch[1].trim();
-    if (animationsMatch) designConcept.animations = animationsMatch[1].trim();
+    if (colorMatch) {
+      designConcept.colors = colorMatch[1].trim();
+    }
+
+    if (effectsMatch) {
+      designConcept.effects = effectsMatch[1].trim();
+    }
+
+    if (typographyMatch) {
+      designConcept.typography = typographyMatch[1].trim();
+    }
+
+    if (animationsMatch) {
+      designConcept.animations = animationsMatch[1].trim();
+    }
   }
 
   return {
@@ -94,21 +114,29 @@ function parseXMLPlanning(xml: string): PlanningData {
  * Parse free-form planning text (like "I'll create a stunning design with parallax effects...")
  */
 function parseFreeFormPlanning(text: string): PlanningData {
-  const sentences = text.split(/[.!]\s+/).filter(s => s.trim().length > 10);
-  
+  const sentences = text.split(/[.!]\s+/).filter((s) => s.trim().length > 10);
+
   let title = 'Project Plan';
   const features: string[] = [];
   const designConcept: PlanningData['designConcept'] = {};
 
   // Extract title from first sentence or "создам/create" pattern
-  const titleMatch = text.match(/(?:создам|сделаю|create|build|make)\s+(?:для вас\s+)?(?:потрясающ\w*|красив\w*|stunning|beautiful|amazing)?\s*,?\s*(?:кинематографичн\w*)?\s*([\wа-яё\s-]+?)(?:\.|!|,|\s+для|\s+with|\s+с\s)/i);
+  const titleMatch = text.match(
+    /(?:создам|сделаю|create|build|make)\s+(?:для вас\s+)?(?:потрясающ\w*|красив\w*|stunning|beautiful|amazing)?\s*,?\s*(?:кинематографичн\w*)?\s*([\wа-яё\s-]+?)(?:\.|!|,|\s+для|\s+with|\s+с\s)/i,
+  );
+
   if (titleMatch) {
     title = titleMatch[1].trim();
-    if (title.length < 5) title = 'Project Plan';
+
+    if (title.length < 5) {
+      title = 'Project Plan';
+    }
   }
 
-  // Extract design concepts from text
-  // Look for effects
+  /*
+   * Extract design concepts from text
+   * Look for effects
+   */
   const effectPatterns = [
     /параллакс[а-яё-]*/gi,
     /parallax/gi,
@@ -123,14 +151,17 @@ function parseFreeFormPlanning(text: string): PlanningData {
     /иммерсивн\w*/gi,
     /кинематографичн\w*/gi,
   ];
-  
+
   const foundEffects: string[] = [];
+
   for (const pattern of effectPatterns) {
     const matches = text.match(pattern);
+
     if (matches) {
-      foundEffects.push(...matches.map(m => m.toLowerCase()));
+      foundEffects.push(...matches.map((m) => m.toLowerCase()));
     }
   }
+
   if (foundEffects.length > 0) {
     designConcept.effects = [...new Set(foundEffects)].slice(0, 5).join(', ');
   }
@@ -145,14 +176,17 @@ function parseFreeFormPlanning(text: string): PlanningData {
     /элегантн\w*\s*анимац\w*/gi,
     /scroll\s*animation/gi,
   ];
-  
+
   const foundAnimations: string[] = [];
+
   for (const pattern of animationPatterns) {
     const matches = text.match(pattern);
+
     if (matches) {
-      foundAnimations.push(...matches.map(m => m.toLowerCase().trim()));
+      foundAnimations.push(...matches.map((m) => m.toLowerCase().trim()));
     }
   }
+
   if (foundAnimations.length > 0) {
     designConcept.animations = [...new Set(foundAnimations)].slice(0, 3).join(', ');
   }
@@ -168,14 +202,17 @@ function parseFreeFormPlanning(text: string): PlanningData {
     /премиум/gi,
     /premium/gi,
   ];
-  
+
   const foundColors: string[] = [];
+
   for (const pattern of colorPatterns) {
     const matches = text.match(pattern);
+
     if (matches) {
-      foundColors.push(...matches.map(m => m.toLowerCase().trim()));
+      foundColors.push(...matches.map((m) => m.toLowerCase().trim()));
     }
   }
+
   if (foundColors.length > 0) {
     designConcept.colors = [...new Set(foundColors)].slice(0, 3).join(', ');
   }
@@ -205,9 +242,11 @@ function parseFreeFormPlanning(text: string): PlanningData {
     for (const pattern of featureIndicators) {
       if (pattern.test(sentence)) {
         const feature = sentence.trim().replace(/^[-•*]\s*/, '');
+
         if (feature.length > 10 && feature.length < 150 && !features.includes(feature)) {
           features.push(feature);
         }
+
         break;
       }
     }
@@ -217,6 +256,7 @@ function parseFreeFormPlanning(text: string): PlanningData {
   if (features.length === 0) {
     for (const sentence of sentences.slice(0, 4)) {
       const trimmed = sentence.trim();
+
       if (trimmed.length > 20 && trimmed.length < 200) {
         features.push(trimmed);
       }
@@ -234,11 +274,27 @@ function parseFreeFormPlanning(text: string): PlanningData {
 
 function hasEnoughPlanningData(planning: PlanningData): boolean {
   let score = 0;
-  if (planning.goal && planning.goal !== 'Project Plan') score++;
-  if (planning.designConcept?.effects) score++;
-  if (planning.designConcept?.animations) score++;
-  if (planning.designConcept?.colors) score++;
-  if (planning.features && planning.features.length > 0) score++;
+
+  if (planning.goal && planning.goal !== 'Project Plan') {
+    score++;
+  }
+
+  if (planning.designConcept?.effects) {
+    score++;
+  }
+
+  if (planning.designConcept?.animations) {
+    score++;
+  }
+
+  if (planning.designConcept?.colors) {
+    score++;
+  }
+
+  if (planning.features && planning.features.length > 0) {
+    score++;
+  }
+
   return score >= 2;
 }
 
@@ -250,6 +306,7 @@ function looksLikePlanningSection(text: string): boolean {
     /animation|effect|transition/i,
     /feature|section|component/i,
     /beautiful|stunning|amazing|elegant|modern/i,
+
     // Russian
     /создам|сделаю|буду создавать/i,
     /дизайн|концеп|стиль/i,
@@ -262,22 +319,21 @@ function looksLikePlanningSection(text: string): boolean {
   ];
 
   const matchCount = planningIndicators.filter((pattern) => pattern.test(text)).length;
+
   return matchCount >= 3;
 }
 
 /**
  * Updates planning status based on content
  */
-export function updatePlanningStatus(
-  planning: PlanningData,
-  hasArtifacts: boolean,
-  isComplete: boolean,
-): PlanningData {
+export function updatePlanningStatus(planning: PlanningData, hasArtifacts: boolean, isComplete: boolean): PlanningData {
   if (isComplete) {
     return { ...planning, status: 'complete' };
   }
+
   if (hasArtifacts) {
     return { ...planning, status: 'implementing' };
   }
+
   return planning;
 }

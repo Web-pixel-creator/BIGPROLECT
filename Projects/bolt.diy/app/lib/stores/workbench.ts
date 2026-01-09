@@ -165,6 +165,7 @@ export class WorkbenchStore {
     }
 
     const artifact = this.firstArtifact;
+
     if (!artifact) {
       return;
     }
@@ -232,6 +233,7 @@ export class WorkbenchStore {
       } as const;
 
       artifact.runner.addAction(startAction);
+
       try {
         await artifact.runner.runAction(startAction);
       } catch (error) {
@@ -705,6 +707,7 @@ export class WorkbenchStore {
        */
 
       const isSelected = this.selectedFile.value === fullPath;
+
       if (!isStreaming && !isSelected) {
         this.setSelectedFile(fullPath);
       }

@@ -16,16 +16,16 @@ import {
   extractViolationCodes,
   extractSanitizerCodes,
   buildViolationCounts,
-  type PipelineRunEvent,
-  type QuarantineEvent,
 } from './pipelineTelemetry';
 import type { PipelineResult } from './generationRouter';
 import type { UnifiedViolation, ViolationCode } from './sectionContracts';
 import type { SanitizerWarning, SanitizerWarningCode } from '~/utils/codeSanitizer';
 
-// ============================================================================
-// Test Helpers
-// ============================================================================
+/*
+ * ============================================================================
+ * Test Helpers
+ * ============================================================================
+ */
 
 function createMockPipelineResult(overrides: Partial<PipelineResult> = {}): PipelineResult {
   return {
@@ -67,9 +67,11 @@ function createMockSanitizerWarning(code: SanitizerWarningCode): SanitizerWarnin
   };
 }
 
-// ============================================================================
-// Privacy Filter Tests
-// ============================================================================
+/*
+ * ============================================================================
+ * Privacy Filter Tests
+ * ============================================================================
+ */
 
 describe('Privacy Filter', () => {
   describe('extractFileExt', () => {
@@ -96,9 +98,9 @@ describe('Privacy Filter', () => {
         createMockViolation('SYNTAX_JSX_UNCLOSED'),
         createMockViolation('CONTRACT_HERO_MISSING_H1'),
       ];
-      
+
       const codes = extractViolationCodes(violations);
-      
+
       expect(codes).toEqual(['SYNTAX_JSX_UNCLOSED', 'CONTRACT_HERO_MISSING_H1']);
     });
 
@@ -113,9 +115,9 @@ describe('Privacy Filter', () => {
         createMockSanitizerWarning('SANITIZER_FIX_IMPORTS_MALFORMED'),
         createMockSanitizerWarning('SANITIZER_FIX_UNTERMINATED_STRING'),
       ];
-      
+
       const codes = extractSanitizerCodes(warnings);
-      
+
       expect(codes).toEqual(['SANITIZER_FIX_IMPORTS_MALFORMED', 'SANITIZER_FIX_UNTERMINATED_STRING']);
     });
   });
@@ -127,9 +129,9 @@ describe('Privacy Filter', () => {
         createMockViolation('SYNTAX_PAREN_EXPECTED', 'error'),
         createMockViolation('CONTRACT_OTHER', 'warning'),
       ];
-      
+
       const counts = buildViolationCounts(violations);
-      
+
       expect(counts.errors).toBe(2);
       expect(counts.warnings).toBe(1);
     });
@@ -140,12 +142,12 @@ describe('Privacy Filter', () => {
         createMockViolation('SYNTAX_JSX_UNCLOSED'),
         createMockViolation('CONTRACT_HERO_MISSING_H1'),
       ];
-      
+
       const counts = buildViolationCounts(violations);
-      
+
       expect(counts.byCode).toEqual({
-        'SYNTAX_JSX_UNCLOSED': 2,
-        'CONTRACT_HERO_MISSING_H1': 1,
+        SYNTAX_JSX_UNCLOSED: 2,
+        CONTRACT_HERO_MISSING_H1: 1,
       });
     });
   });
@@ -159,9 +161,9 @@ describe('Privacy Filter', () => {
       const result = createMockPipelineResult({
         code: '<div>sensitive code content</div>',
       });
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(event).not.toHaveProperty('code');
       expect(JSON.stringify(event)).not.toContain('sensitive code content');
     });
@@ -170,9 +172,9 @@ describe('Privacy Filter', () => {
       const result = createMockPipelineResult({
         filename: '/home/user/project/src/components/Button.tsx',
       });
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(event.fileExt).toBe('.tsx');
       expect(JSON.stringify(event)).not.toContain('/home/user');
       expect(JSON.stringify(event)).not.toContain('Button');
@@ -182,14 +184,22 @@ describe('Privacy Filter', () => {
       const result = createMockPipelineResult({
         finalValidation: {
           valid: false,
-          errors: [{ message: 'Sensitive error with code snippet: const x = 1', line: 1, column: 1, code: 1001, severity: 'error' }],
+          errors: [
+            {
+              message: 'Sensitive error with code snippet: const x = 1',
+              line: 1,
+              column: 1,
+              code: 1001,
+              severity: 'error',
+            },
+          ],
           fixable: true,
           unifiedViolations: [createMockViolation('SYNTAX_OTHER')],
         },
       });
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(JSON.stringify(event)).not.toContain('Sensitive error');
       expect(JSON.stringify(event)).not.toContain('const x = 1');
     });
@@ -201,17 +211,18 @@ describe('Privacy Filter', () => {
         sanitizerWarnings: [],
         metrics: { riskLevel: 'high', changedLinesPercent: 10, charsAdded: 100, charsRemoved: 50, highRiskFixes: 1 },
       });
-      
+
       expect(event.fileExt).toBe('.tsx');
       expect(JSON.stringify(event)).not.toContain('/path/to/secret');
     });
   });
 });
 
-
-// ============================================================================
-// Event Emitter Tests
-// ============================================================================
+/*
+ * ============================================================================
+ * Event Emitter Tests
+ * ============================================================================
+ */
 
 describe('Event Emitters', () => {
   beforeEach(() => {
@@ -221,9 +232,9 @@ describe('Event Emitters', () => {
   describe('emitPipelineRun', () => {
     it('creates event with correct structure', () => {
       const result = createMockPipelineResult();
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(event).toHaveProperty('timestamp');
       expect(event).toHaveProperty('fileExt', '.tsx');
       expect(event).toHaveProperty('success', true);
@@ -242,9 +253,9 @@ describe('Event Emitters', () => {
 
     it('includes section type when provided', () => {
       const result = createMockPipelineResult();
-      
+
       const event = emitPipelineRun({ result, sectionType: 'hero' });
-      
+
       expect(event.sectionType).toBe('hero');
     });
 
@@ -257,9 +268,9 @@ describe('Event Emitters', () => {
           autoFix: { ran: true, success: true, attempts: 2 },
         },
       });
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(event.autoFix.ran).toBe(true);
       expect(event.autoFix.success).toBe(true);
       expect(event.autoFix.attempts).toBe(2);
@@ -267,12 +278,12 @@ describe('Event Emitters', () => {
 
     it('includes timing breakdown', () => {
       const result = createMockPipelineResult({ processingTimeMs: 100 });
-      
+
       const event = emitPipelineRun({
         result,
         timings: { sanitizer: 10, validator: 20, contract: 30, autoFix: 40 },
       });
-      
+
       expect(event.timings.sanitizer).toBe(10);
       expect(event.timings.validator).toBe(20);
       expect(event.timings.contract).toBe(30);
@@ -282,9 +293,9 @@ describe('Event Emitters', () => {
 
     it('has valid ISO timestamp', () => {
       const result = createMockPipelineResult();
-      
+
       const event = emitPipelineRun({ result });
-      
+
       expect(() => new Date(event.timestamp)).not.toThrow();
       expect(event.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     });
@@ -299,7 +310,7 @@ describe('Event Emitters', () => {
         metrics: { riskLevel: 'high', changedLinesPercent: 10, charsAdded: 100, charsRemoved: 50, highRiskFixes: 1 },
         autoFixAttempts: 3,
       });
-      
+
       expect(event).toHaveProperty('timestamp');
       expect(event.fileExt).toBe('.tsx');
       expect(event.violationCodes).toEqual(['SYNTAX_OTHER']);
@@ -324,15 +335,17 @@ describe('Event Emitters', () => {
         violations: [],
         sanitizerWarnings: [],
       });
-      
+
       expect(event.riskLevel).toBe('low');
     });
   });
 });
 
-// ============================================================================
-// Aggregator Tests
-// ============================================================================
+/*
+ * ============================================================================
+ * Aggregator Tests
+ * ============================================================================
+ */
 
 describe('Aggregator', () => {
   beforeEach(() => {
@@ -342,11 +355,11 @@ describe('Aggregator', () => {
   describe('Counter Updates', () => {
     it('increments totalRuns on each event', () => {
       const result = createMockPipelineResult();
-      
+
       emitPipelineRun({ result });
       emitPipelineRun({ result });
       emitPipelineRun({ result });
-      
+
       const summary = getTelemetrySummary();
       expect(summary.totalRuns).toBe(3);
     });
@@ -355,15 +368,15 @@ describe('Aggregator', () => {
       emitPipelineRun({ result: createMockPipelineResult({ success: true }) });
       emitPipelineRun({ result: createMockPipelineResult({ success: true }) });
       emitPipelineRun({ result: createMockPipelineResult({ success: false }) });
-      
+
       const summary = getTelemetrySummary();
-      expect(summary.successRate).toBeCloseTo(2/3);
+      expect(summary.successRate).toBeCloseTo(2 / 3);
     });
 
     it('tracks fallback usage', () => {
       emitPipelineRun({ result: createMockPipelineResult(), usedFallback: true });
       emitPipelineRun({ result: createMockPipelineResult(), usedFallback: false });
-      
+
       const summary = getTelemetrySummary();
       expect(summary.fallbackRate).toBe(0.5);
     });
@@ -372,9 +385,9 @@ describe('Aggregator', () => {
       emitPipelineRun({ result: createMockPipelineResult(), quarantined: true });
       emitPipelineRun({ result: createMockPipelineResult(), quarantined: false });
       emitPipelineRun({ result: createMockPipelineResult(), quarantined: true });
-      
+
       const summary = getTelemetrySummary();
-      expect(summary.quarantineRate).toBeCloseTo(2/3);
+      expect(summary.quarantineRate).toBeCloseTo(2 / 3);
     });
   });
 
@@ -385,13 +398,10 @@ describe('Aggregator', () => {
           valid: false,
           errors: [],
           fixable: true,
-          unifiedViolations: [
-            createMockViolation('SYNTAX_JSX_UNCLOSED'),
-            createMockViolation('SYNTAX_JSX_UNCLOSED'),
-          ],
+          unifiedViolations: [createMockViolation('SYNTAX_JSX_UNCLOSED'), createMockViolation('SYNTAX_JSX_UNCLOSED')],
         },
       });
-      
+
       const result2 = createMockPipelineResult({
         finalValidation: {
           valid: false,
@@ -403,14 +413,14 @@ describe('Aggregator', () => {
           ],
         },
       });
-      
+
       emitPipelineRun({ result: result1 });
       emitPipelineRun({ result: result2 });
-      
+
       const top = getTopViolations(10);
-      const syntaxViolation = top.find(v => v.code === 'SYNTAX_JSX_UNCLOSED');
-      const contractViolation = top.find(v => v.code === 'CONTRACT_HERO_MISSING_H1');
-      
+      const syntaxViolation = top.find((v) => v.code === 'SYNTAX_JSX_UNCLOSED');
+      const contractViolation = top.find((v) => v.code === 'CONTRACT_HERO_MISSING_H1');
+
       expect(syntaxViolation?.count).toBe(3);
       expect(contractViolation?.count).toBe(1);
     });
@@ -429,12 +439,12 @@ describe('Aggregator', () => {
           ],
         },
       });
-      
+
       emitPipelineRun({ result });
-      
+
       const top = getTopViolations(10);
-      const codeA = top.find(v => v.code === 'SYNTAX_OTHER');
-      
+      const codeA = top.find((v) => v.code === 'SYNTAX_OTHER');
+
       expect(codeA?.percentage).toBe(0.75);
     });
   });
@@ -449,9 +459,9 @@ describe('Aggregator', () => {
         result: createMockPipelineResult({ processingTimeMs: 200 }),
         timings: { sanitizer: 20, validator: 40, contract: 60, autoFix: 80 },
       });
-      
+
       const summary = getTelemetrySummary();
-      
+
       expect(summary.avgTimings.sanitizer).toBe(15);
       expect(summary.avgTimings.validator).toBe(30);
       expect(summary.avgTimings.contract).toBe(45);
@@ -463,30 +473,32 @@ describe('Aggregator', () => {
   describe('Recent Events Ring Buffer', () => {
     it('stores recent events', () => {
       const result = createMockPipelineResult();
-      
+
       emitPipelineRun({ result });
       emitPipelineRun({ result });
-      
+
       const recent = getRecentEvents();
       expect(recent.length).toBe(2);
     });
 
     it('limits to 100 events', () => {
       const result = createMockPipelineResult();
-      
+
       for (let i = 0; i < 150; i++) {
         emitPipelineRun({ result });
       }
-      
+
       const recent = getRecentEvents();
       expect(recent.length).toBe(100);
     });
   });
 });
 
-// ============================================================================
-// Telemetry API Tests
-// ============================================================================
+/*
+ * ============================================================================
+ * Telemetry API Tests
+ * ============================================================================
+ */
 
 describe('Telemetry API', () => {
   beforeEach(() => {
@@ -496,7 +508,7 @@ describe('Telemetry API', () => {
   describe('getTelemetrySummary', () => {
     it('returns zeros for empty store', () => {
       const summary = getTelemetrySummary();
-      
+
       expect(summary.totalRuns).toBe(0);
       expect(summary.successRate).toBe(0);
       expect(summary.quarantineRate).toBe(0);
@@ -509,13 +521,13 @@ describe('Telemetry API', () => {
       emitPipelineRun({ result: createMockPipelineResult({ success: true }) });
       emitPipelineRun({ result: createMockPipelineResult({ success: true }), quarantined: true });
       emitPipelineRun({ result: createMockPipelineResult({ success: false }), usedFallback: true });
-      
+
       const summary = getTelemetrySummary();
-      
+
       expect(summary.totalRuns).toBe(3);
-      expect(summary.successRate).toBeCloseTo(2/3);
-      expect(summary.quarantineRate).toBeCloseTo(1/3);
-      expect(summary.fallbackRate).toBeCloseTo(1/3);
+      expect(summary.successRate).toBeCloseTo(2 / 3);
+      expect(summary.quarantineRate).toBeCloseTo(1 / 3);
+      expect(summary.fallbackRate).toBeCloseTo(1 / 3);
     });
   });
 
@@ -539,11 +551,11 @@ describe('Telemetry API', () => {
           ],
         },
       });
-      
+
       emitPipelineRun({ result });
-      
+
       const top = getTopViolations(10);
-      
+
       expect(top[0].code).toBe('SYNTAX_OTHER');
       expect(top[0].count).toBe(3);
       expect(top[1].code).toBe('CONTRACT_OTHER');
@@ -574,8 +586,8 @@ describe('Telemetry API', () => {
         'CONTRACT_MISSING_NAMED_EXPORT',
       ];
 
-      const violations = pool.map(code => createMockViolation(code));
-      
+      const violations = pool.map((code) => createMockViolation(code));
+
       const result = createMockPipelineResult({
         finalValidation: {
           valid: false,
@@ -584,9 +596,9 @@ describe('Telemetry API', () => {
           unifiedViolations: violations,
         },
       });
-      
+
       emitPipelineRun({ result });
-      
+
       const top = getTopViolations(5);
       expect(top.length).toBe(5);
     });
@@ -595,7 +607,7 @@ describe('Telemetry API', () => {
   describe('getQuarantineStats', () => {
     it('returns zeros for no quarantines', () => {
       const stats = getQuarantineStats();
-      
+
       expect(stats.total).toBe(0);
       expect(stats.topViolationCodes).toEqual([]);
       expect(stats.avgAutoFixAttempts).toBe(0);
@@ -620,9 +632,9 @@ describe('Telemetry API', () => {
         sanitizerWarnings: [],
         metrics: { riskLevel: 'low', changedLinesPercent: 5, charsAdded: 20, charsRemoved: 10, highRiskFixes: 0 },
       });
-      
+
       const stats = getQuarantineStats();
-      
+
       expect(stats.byRiskLevel.high).toBe(2);
       expect(stats.byRiskLevel.low).toBe(1);
     });
@@ -640,9 +652,9 @@ describe('Telemetry API', () => {
         sanitizerWarnings: [],
         autoFixAttempts: 4,
       });
-      
+
       const stats = getQuarantineStats();
-      
+
       expect(stats.avgAutoFixAttempts).toBe(3);
     });
   });
@@ -707,8 +719,8 @@ describe('Telemetry API', () => {
       });
 
       const stats = getVariantStats();
-      const baseline = stats.find(s => s.variant === 'baseline');
-      const fewshot = stats.find(s => s.variant === 'fewshot-v1');
+      const baseline = stats.find((s) => s.variant === 'baseline');
+      const fewshot = stats.find((s) => s.variant === 'fewshot-v1');
 
       expect(baseline).toBeTruthy();
       expect(baseline!.totalRuns).toBe(2);
@@ -734,14 +746,14 @@ describe('Telemetry API', () => {
         violations: [createMockViolation('SYNTAX_OTHER')],
         sanitizerWarnings: [],
       });
-      
+
       resetTelemetry();
-      
+
       const summary = getTelemetrySummary();
       const top = getTopViolations(10);
       const quarantine = getQuarantineStats();
       const recent = getRecentEvents();
-      
+
       expect(summary.totalRuns).toBe(0);
       expect(top).toEqual([]);
       expect(quarantine.total).toBe(0);
@@ -750,9 +762,11 @@ describe('Telemetry API', () => {
   });
 });
 
-// ============================================================================
-// Integration Tests
-// ============================================================================
+/*
+ * ============================================================================
+ * Integration Tests
+ * ============================================================================
+ */
 
 describe('Integration', () => {
   beforeEach(() => {
@@ -780,37 +794,34 @@ describe('Integration', () => {
       },
       processingTimeMs: 150,
     });
-    
+
     emitPipelineRun({
       result,
       sectionType: 'hero',
       quarantined: true,
       timings: { sanitizer: 10, validator: 30, contract: 50, autoFix: 60 },
     });
-    
+
     // Emit quarantine event
     emitQuarantineWritten({
       filename: 'hero.tsx',
-      violations: [
-        createMockViolation('SYNTAX_JSX_UNCLOSED'),
-        createMockViolation('CONTRACT_HERO_MISSING_H1'),
-      ],
+      violations: [createMockViolation('SYNTAX_JSX_UNCLOSED'), createMockViolation('CONTRACT_HERO_MISSING_H1')],
       sanitizerWarnings: [createMockSanitizerWarning('SANITIZER_FIX_IMPORTS_MALFORMED')],
       metrics: { riskLevel: 'high', changedLinesPercent: 50, charsAdded: 500, charsRemoved: 100, highRiskFixes: 2 },
       autoFixAttempts: 3,
     });
-    
+
     // Verify summary
     const summary = getTelemetrySummary();
     expect(summary.totalRuns).toBe(1);
     expect(summary.successRate).toBe(0);
     expect(summary.quarantineRate).toBe(1);
-    
+
     // Verify top violations
     const top = getTopViolations(10);
     expect(top.length).toBe(2);
-    expect(top.some(v => v.code === 'SYNTAX_JSX_UNCLOSED')).toBe(true);
-    
+    expect(top.some((v) => v.code === 'SYNTAX_JSX_UNCLOSED')).toBe(true);
+
     // Verify quarantine stats
     const quarantine = getQuarantineStats();
     expect(quarantine.byRiskLevel.high).toBe(1);
@@ -823,7 +834,7 @@ describe('Integration', () => {
       result: createMockPipelineResult({ success: true, processingTimeMs: 50 }),
       timings: { sanitizer: 5, validator: 10, contract: 15, autoFix: 0 },
     });
-    
+
     // Run 2: Failure with auto-fix
     emitPipelineRun({
       result: createMockPipelineResult({
@@ -839,20 +850,20 @@ describe('Integration', () => {
       quarantined: true,
       timings: { sanitizer: 10, validator: 20, contract: 0, autoFix: 150 },
     });
-    
+
     // Run 3: Success with fallback
     emitPipelineRun({
       result: createMockPipelineResult({ success: true, processingTimeMs: 150 }),
       usedFallback: true,
       timings: { sanitizer: 15, validator: 30, contract: 45, autoFix: 0 },
     });
-    
+
     const summary = getTelemetrySummary();
-    
+
     expect(summary.totalRuns).toBe(3);
-    expect(summary.successRate).toBeCloseTo(2/3);
-    expect(summary.quarantineRate).toBeCloseTo(1/3);
-    expect(summary.fallbackRate).toBeCloseTo(1/3);
+    expect(summary.successRate).toBeCloseTo(2 / 3);
+    expect(summary.quarantineRate).toBeCloseTo(1 / 3);
+    expect(summary.fallbackRate).toBeCloseTo(1 / 3);
     expect(summary.avgTimings.total).toBeCloseTo((50 + 200 + 150) / 3);
   });
 });

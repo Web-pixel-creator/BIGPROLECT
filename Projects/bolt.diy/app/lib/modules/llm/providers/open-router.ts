@@ -104,14 +104,16 @@ export default class OpenRouterProvider extends BaseProvider {
       throw new Error(`Missing API key for ${this.name} provider`);
     }
 
-    // Use OpenAI-compatible provider instead of @openrouter/ai-sdk-provider
-    // to avoid logprobs validation issues
+    /*
+     * Use OpenAI-compatible provider instead of @openrouter/ai-sdk-provider
+     * to avoid logprobs validation issues
+     */
     const openRouter = createOpenAI({
       apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
       compatibility: 'compatible', // Relaxed validation for OpenRouter
     });
-    
+
     const instance = openRouter(model) as LanguageModelV1;
 
     return instance;

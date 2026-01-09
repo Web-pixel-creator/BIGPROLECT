@@ -368,11 +368,23 @@ export function Test() {
   describe('SECTION_DEFINITIONS', () => {
     it('has all section types defined', () => {
       const expectedTypes: SectionType[] = [
-        'hero', 'navigation', 'features', 'pricing', 'testimonials',
-        'gallery', 'cta', 'faq', 'contact', 'footer', 'about',
-        'team', 'stats', 'blog', 'services'
+        'hero',
+        'navigation',
+        'features',
+        'pricing',
+        'testimonials',
+        'gallery',
+        'cta',
+        'faq',
+        'contact',
+        'footer',
+        'about',
+        'team',
+        'stats',
+        'blog',
+        'services',
       ];
-      
+
       for (const type of expectedTypes) {
         expect(SECTION_DEFINITIONS[type]).toBeDefined();
         expect(SECTION_DEFINITIONS[type].name).toBeTruthy();
@@ -381,7 +393,7 @@ export function Test() {
     });
 
     it('has unique component names', () => {
-      const names = Object.values(SECTION_DEFINITIONS).map(d => d.name);
+      const names = Object.values(SECTION_DEFINITIONS).map((d) => d.name);
       const uniqueNames = new Set(names);
       expect(uniqueNames.size).toBe(names.length);
     });

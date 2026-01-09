@@ -64,7 +64,6 @@ export default class GoogleProvider extends BaseProvider {
       maxCompletionTokens: 8192,
     },
 
-
     /*
      * Gemini 1.5 Pro: 2M context, 8K output limit
      */
@@ -124,7 +123,11 @@ export default class GoogleProvider extends BaseProvider {
     // Filter out models with very low token limits and experimental/unstable models
     const data = res.models.filter((model: any) => {
       const hasGoodTokenLimit = (model.outputTokenLimit || 0) > 8000;
-      const isStable = !model.name.includes('exp') || model.name.includes('flash-exp') || model.name.includes('thinking-exp') || model.name.includes('2.5');
+      const isStable =
+        !model.name.includes('exp') ||
+        model.name.includes('flash-exp') ||
+        model.name.includes('thinking-exp') ||
+        model.name.includes('2.5');
       const isGemini = model.name.includes('gemini');
 
       return hasGoodTokenLimit && isStable && isGemini;
@@ -175,6 +178,7 @@ export default class GoogleProvider extends BaseProvider {
 
     // Always add Gemini 2.0 Flash Thinking if not already in list
     const hasThinking = models.some((m: any) => m.name.includes('thinking'));
+
     if (!hasThinking) {
       models.push({
         name: 'gemini-2.0-flash-thinking-exp-1219',
@@ -215,4 +219,3 @@ export default class GoogleProvider extends BaseProvider {
     return google(model);
   }
 }
-

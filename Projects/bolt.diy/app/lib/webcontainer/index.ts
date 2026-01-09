@@ -28,17 +28,27 @@ const MAIN_HEAL_COOLDOWN_MS = 3000;
 const shouldHealMainEntry = (message: any): boolean => {
   const msgText = typeof message?.message === 'string' ? message.message : '';
   const stackText = typeof message?.stack === 'string' ? message.stack : '';
-  if (!msgText && !stackText) return false;
+
+  if (!msgText && !stackText) {
+    return false;
+  }
 
   const mentionsMain = stackText.includes('main.tsx') || msgText.includes('main.tsx');
   const isReferenceError = msgText.includes('is not defined') || msgText.includes('ReferenceError');
+
   return mentionsMain && isReferenceError;
 };
 
 const healMainEntry = async (webcontainer: WebContainer) => {
-  if (mainHealInFlight) return;
+  if (mainHealInFlight) {
+    return;
+  }
+
   const now = Date.now();
-  if (now - lastMainHealAt < MAIN_HEAL_COOLDOWN_MS) return;
+
+  if (now - lastMainHealAt < MAIN_HEAL_COOLDOWN_MS) {
+    return;
+  }
 
   mainHealInFlight = true;
   lastMainHealAt = now;
@@ -46,9 +56,11 @@ const healMainEntry = async (webcontainer: WebContainer) => {
   try {
     const content = await webcontainer.fs.readFile(MAIN_ENTRY_PATH, 'utf-8');
     const sanitized = sanitizeGeneratedFile(MAIN_ENTRY_PATH, content);
+
     if (sanitized.changed) {
       await webcontainer.fs.writeFile(MAIN_ENTRY_PATH, sanitized.content);
     }
+
     return;
   } catch {
     // Fall through to baseline write if read fails.
@@ -57,7 +69,10 @@ const healMainEntry = async (webcontainer: WebContainer) => {
   }
 
   const baselineMain = WEB_BASELINE_FILES.find((file) => file.path === MAIN_ENTRY_PATH)?.content;
-  if (!baselineMain) return;
+
+  if (!baselineMain) {
+    return;
+  }
 
   try {
     await webcontainer.fs.writeFile(MAIN_ENTRY_PATH, baselineMain);

@@ -74,6 +74,7 @@ const findExpectedSectionKey = (actualValue: string, expectedKeys: string[]): st
 
   for (const expectedKey of expectedKeys) {
     const candidates = [expectedKey, ...(SECTION_ALIASES[expectedKey] ?? [])].map(normalizeSectionValue);
+
     if (candidates.includes(normalizedActual)) {
       return expectedKey;
     }
@@ -90,6 +91,7 @@ const extractSectionBlocks = (content: string, expectedKeys: string[]): Map<stri
     const rawValue = match[1] ?? '';
     const blockContent = match[2] ?? '';
     const matchedKey = findExpectedSectionKey(rawValue, expectedKeys) ?? normalizeSectionValue(rawValue);
+
     if (matchedKey && !blocks.has(matchedKey)) {
       blocks.set(matchedKey, blockContent);
     }
@@ -116,10 +118,12 @@ const getUnifiedErrorCount = (violations: UnifiedViolation[] | undefined) =>
 
 const isValidationAutoFixable = (validation: ValidationResult) => {
   const unifiedErrors = (validation.unifiedViolations ?? []).filter((v) => v.severity === 'error');
+
   if (unifiedErrors.length > 0) {
     const fixable = unifiedErrors.filter((v) => v.autoFixable).length;
     return fixable >= unifiedErrors.length / 2;
   }
+
   return areErrorsAutoFixable(validation.errors);
 };
 
@@ -127,6 +131,7 @@ const formatUnifiedViolationLine = (violation: UnifiedViolation) => {
   const line = typeof violation.context?.line === 'number' ? violation.context.line : undefined;
   const column = typeof violation.context?.column === 'number' ? violation.context.column : undefined;
   const location = line ? `Line ${line}${column ? `:${column}` : ''}: ` : '';
+
   return `${violation.code}: ${location}${violation.message}`;
 };
 
@@ -531,15 +536,20 @@ export class ActionRunner {
   async #maybePreflightProject(command: string) {
     const wantsInstall = /\b(npm|pnpm|yarn)\s+install\b/.test(command);
     const wantsDev = /\b(npm|pnpm|yarn)\s+run\s+dev\b/.test(command) || /\bpnpm\s+dev\b/.test(command);
-    if (!wantsInstall && !wantsDev) return;
+
+    if (!wantsInstall && !wantsDev) {
+      return;
+    }
 
     try {
       const webcontainer = await this.#webcontainer;
       const result = await preflightViteReactBaseline(webcontainer);
 
-      // If we're about to start dev server, ensure deps are installed when preflight mutated package.json
-      // or when the project doesn't have node_modules yet. This prevents "black screen" loops where Vite
-      // fails to resolve imports after registry/CLI commands wrote files directly.
+      /*
+       * If we're about to start dev server, ensure deps are installed when preflight mutated package.json
+       * or when the project doesn't have node_modules yet. This prevents "black screen" loops where Vite
+       * fails to resolve imports after registry/CLI commands wrote files directly.
+       */
       if (wantsDev && result.isViteReact) {
         const hasNodeModules = await (async () => {
           try {
@@ -551,7 +561,9 @@ export class ActionRunner {
         })();
 
         const needsInstall =
-          !hasNodeModules || result.packageJsonChanged || (result.addedDependencies && result.addedDependencies.length > 0);
+          !hasNodeModules ||
+          result.packageJsonChanged ||
+          (result.addedDependencies && result.addedDependencies.length > 0);
 
         if (needsInstall) {
           const installProcess = await webcontainer.spawn('npm', ['install']);
@@ -571,6 +583,7 @@ export class ActionRunner {
           const timeoutPromise = new Promise<number>((resolve) => {
             timeoutId = setTimeout(() => {
               logger.warn('Preflight npm install timeout - killing process');
+
               try {
                 installProcess.kill();
               } catch {
@@ -601,10 +614,15 @@ export class ActionRunner {
   }
 
   async #maybePostflightProject(command: string) {
-    // Commands like `pnpm dlx shadcn ...` can write files directly inside the WebContainer and bypass
-    // our per-file sanitizer. Run a postflight pass to normalize imports/URLs and ensure deps.
+    /*
+     * Commands like `pnpm dlx shadcn ...` can write files directly inside the WebContainer and bypass
+     * our per-file sanitizer. Run a postflight pass to normalize imports/URLs and ensure deps.
+     */
     const isShadcnCommand = /\bshadcn\b/i.test(command) || /\b@21st-dev\/cli\b/i.test(command);
-    if (!isShadcnCommand) return;
+
+    if (!isShadcnCommand) {
+      return;
+    }
 
     try {
       const webcontainer = await this.#webcontainer;
@@ -615,7 +633,7 @@ export class ActionRunner {
         const installProcess = await webcontainer.spawn('npm', ['install']);
         installProcess.output.pipeTo(
           new WritableStream({
-            write() { },
+            write() {},
           }),
         );
 
@@ -626,6 +644,7 @@ export class ActionRunner {
         const timeoutPromise = new Promise<number>((resolve) => {
           timeoutId = setTimeout(() => {
             logger.warn('Postflight npm install timeout - killing process');
+
             try {
               installProcess.kill();
             } catch {
@@ -673,7 +692,10 @@ export class ActionRunner {
 
       // Don't sanitize internal history snapshots – they may store JSON under .tsx-like filenames.
       if (typeof contentToWrite === 'string' && !relativePath.startsWith('.history/')) {
-        const { content, changed, warnings, structuredWarnings, metrics } = sanitizeGeneratedFile(relativePath, contentToWrite);
+        const { content, changed, warnings, structuredWarnings, metrics } = sanitizeGeneratedFile(
+          relativePath,
+          contentToWrite,
+        );
         contentToWrite = content;
 
         if (changed) {
@@ -685,9 +707,7 @@ export class ActionRunner {
         }
 
         if (structuredWarnings && structuredWarnings.length > 0) {
-          const structuredSummary = structuredWarnings
-            .map((w) => `${w.code} (${w.risk}): ${w.message}`)
-            .join('\n- ');
+          const structuredSummary = structuredWarnings.map((w) => `${w.code} (${w.risk}): ${w.message}`).join('\n- ');
           logger.debug(`Sanitizer structured warnings for ${relativePath}:\n- ${structuredSummary}`);
         }
 
@@ -703,32 +723,33 @@ export class ActionRunner {
         const validation = validateFile(contentToWrite, relativePath);
         let autoFixAttemptsCount = 0;
         let promptVariant: import('~/utils/promptVariants').PromptVariant | undefined;
+
         if (!validation.valid) {
           const errorCount = getUnifiedErrorCount(validation.unifiedViolations);
-          
+
           // Auto-Fix Loop: Try to fix if errors are auto-fixable
           if (isValidationAutoFixable(validation)) {
             logger.info(`Attempting auto-fix for ${relativePath} (${errorCount} errors)`);
             autoFixAttemptsCount = 1; // Quick fix counts as 1 attempt
-            
+
             // First try quick fix (sanitizer only - fast)
             const quickFixResult = quickFix(contentToWrite, relativePath);
-            
+
             if (quickFixResult.valid) {
               logger.info(`Quick fix succeeded for ${relativePath}`);
               contentToWrite = quickFixResult.code;
             } else {
               // Quick fix failed - try LLM repair for important files
-              const isImportantFile = relativePath.endsWith('.tsx') || 
-                                      relativePath.endsWith('.jsx') ||
-                                      relativePath.includes('App.');
-              
+              const isImportantFile =
+                relativePath.endsWith('.tsx') || relativePath.endsWith('.jsx') || relativePath.includes('App.');
+
               if (isImportantFile && errorCount <= 10) {
                 logger.info(`Attempting LLM repair for ${relativePath}`);
+
                 try {
                   const llmRepairFn = createLlmRepairFn();
                   const fallbackLlmRepairFn = createFallbackLlmRepairFn();
-                  
+
                   const autoFixResult = await autoFixWithLlm({
                     filename: relativePath,
                     originalCode: contentToWrite,
@@ -740,20 +761,22 @@ export class ActionRunner {
                       metrics,
                     },
                   });
-                  
+
                   autoFixAttemptsCount += autoFixResult.attempts;
                   promptVariant = autoFixResult.promptVariant;
-                  
+
                   if (autoFixResult.success) {
                     logger.info(`LLM repair succeeded for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
                     contentToWrite = autoFixResult.code;
                   } else {
                     logger.warn(`LLM repair failed for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
+
                     // Use best attempt from quick fix
                     contentToWrite = quickFixResult.code;
                   }
                 } catch (llmError) {
                   logger.error(`LLM repair error for ${relativePath}:`, llmError);
+
                   // Fall back to quick fix result
                   contentToWrite = quickFixResult.code;
                 }
@@ -770,33 +793,36 @@ export class ActionRunner {
             logger.warn(`Validation errors in ${relativePath}: ${errorSummary}`);
           }
         }
-        
+
         // Final validation before write - Hard Gate
         const finalValidation = validateFile(contentToWrite, relativePath);
+
         if (!finalValidation.valid) {
           const errorCount = getUnifiedErrorCount(finalValidation.unifiedViolations);
-          
-          // Hard Gate: Don't write invalid files to working directory
-          // Instead, quarantine to .history/ and alert user
+
+          /*
+           * Hard Gate: Don't write invalid files to working directory
+           * Instead, quarantine to .history/ and alert user
+           */
           const quarantinePath = `.history/${relativePath}.invalid`;
           const quarantineFolder = nodePath.dirname(quarantinePath);
-          
+
           try {
             await webcontainer.fs.mkdir(quarantineFolder, { recursive: true });
-            
+
             // Write the invalid file
             await webcontainer.fs.writeFile(quarantinePath, contentToWrite);
             logger.warn(`Quarantined invalid file to ${quarantinePath} (${errorCount} errors)`);
-            
+
             // Write sidecar artifacts for debugging and analytics
             await this.#writeQuarantineSidecars(
               webcontainer,
               quarantinePath,
               finalValidation.unifiedViolations || [],
               structuredWarnings || [],
-              metrics
+              metrics,
             );
-            
+
             // Emit telemetry event for quarantine
             try {
               emitQuarantineWritten({
@@ -814,10 +840,10 @@ export class ActionRunner {
           } catch (quarantineError) {
             logger.error('Failed to quarantine invalid file:', quarantineError);
           }
-          
+
           // Alert user about the invalid file
           const errorSummary = formatUnifiedErrorsSummary(finalValidation.unifiedViolations, 5);
-          
+
           this.onAlert?.({
             type: 'validation',
             title: 'Invalid Code Blocked',
@@ -828,6 +854,7 @@ export class ActionRunner {
               key: `hardgate:${relativePath}:${Date.now()}`,
               message: `Fix the syntax errors in ${relativePath}:\n\n${errorSummary}\n\nThe file was not written due to validation errors. Please regenerate or fix manually.`,
             },
+
             // Structured data for UI
             unifiedViolations: finalValidation.unifiedViolations,
             sanitizerWarnings: structuredWarnings,
@@ -835,7 +862,7 @@ export class ActionRunner {
             quarantinePath,
             filePath: relativePath,
           });
-          
+
           return; // Don't write invalid file
         }
       }
@@ -860,11 +887,13 @@ export class ActionRunner {
 
   async #maybeValidateGeneratedJsx(relativePath: string, content: string): Promise<boolean> {
     const normalizedPath = relativePath.replace(/\\/g, '/');
+
     if (normalizedPath.startsWith('.history/')) {
       return true;
     }
 
     const ext = nodePath.extname(normalizedPath).toLowerCase();
+
     if (ext !== '.tsx' && ext !== '.jsx') {
       return true;
     }
@@ -876,6 +905,7 @@ export class ActionRunner {
     try {
       // Use unified validator (validateFile) instead of separate validateTsx
       const result = validateFile(content, normalizedPath);
+
       if (result.valid) {
         this.#autoFixAttempts.delete(normalizedPath);
         return true;
@@ -884,6 +914,7 @@ export class ActionRunner {
       // Get first error for alert
       const firstUnifiedError = result.unifiedViolations?.find((v) => v.severity === 'error');
       const fallbackFirstError = result.errors.find((e) => e.severity === 'error');
+
       if (!firstUnifiedError && !fallbackFirstError) {
         return true; // Only warnings, consider valid
       }
@@ -900,12 +931,12 @@ export class ActionRunner {
 
       const attempts = this.#autoFixAttempts.get(normalizedPath) ?? 0;
       const location = `${firstErrorLine}:${firstErrorColumn}`;
-      
+
       // Build snippet from code
       const lines = content.split('\n');
       const errorLine = lines[firstErrorLine - 1] || '';
       const snippet = errorLine ? `\n\nSnippet:\n${errorLine}\n${' '.repeat(Math.max(0, firstErrorColumn - 1))}^` : '';
-      
+
       const firstErrorCode = (firstUnifiedError?.code as ViolationCode | undefined) ?? 'SYNTAX_OTHER';
       const contentSummary = `File: ${normalizedPath}\nCode: ${firstErrorCode}\nError: ${firstErrorMessage}\nLocation: ${location}${snippet}`;
       const autoFixKey = `${normalizedPath}:${firstErrorCode}:${location}`;
@@ -928,6 +959,7 @@ export class ActionRunner {
                   `Please update the file so it compiles without JSX syntax errors.`,
               }
             : undefined,
+
         // Structured data for UI
         unifiedViolations: result.unifiedViolations,
         filePath: normalizedPath,
@@ -936,6 +968,7 @@ export class ActionRunner {
       if (attempts < 1) {
         this.#autoFixAttempts.set(normalizedPath, attempts + 1);
       }
+
       return false;
     } catch (error) {
       logger.debug('JSX validation failed:', error);
@@ -955,17 +988,17 @@ export class ActionRunner {
     quarantinePath: string,
     unifiedViolations: import('~/lib/services/sectionContracts').UnifiedViolation[],
     sanitizerWarnings: import('~/utils/codeSanitizer').SanitizerWarning[],
-    metrics?: import('~/utils/codeSanitizer').ChangeMetrics
+    metrics?: import('~/utils/codeSanitizer').ChangeMetrics,
   ): Promise<void> {
     const timestamp = new Date().toISOString();
-    
+
     try {
       // Write errors.json - unified violations
       if (unifiedViolations.length > 0) {
         const errorsData = {
           timestamp,
           count: unifiedViolations.length,
-          violations: unifiedViolations.map(v => ({
+          violations: unifiedViolations.map((v) => ({
             code: v.code,
             severity: v.severity,
             message: v.message,
@@ -973,41 +1006,32 @@ export class ActionRunner {
             context: v.context,
           })),
         };
-        await webcontainer.fs.writeFile(
-          `${quarantinePath}.errors.json`,
-          JSON.stringify(errorsData, null, 2)
-        );
+        await webcontainer.fs.writeFile(`${quarantinePath}.errors.json`, JSON.stringify(errorsData, null, 2));
         logger.debug(`Wrote ${quarantinePath}.errors.json`);
       }
-      
+
       // Write sanitizer.json - what was already tried
       if (sanitizerWarnings.length > 0) {
         const sanitizerData = {
           timestamp,
           count: sanitizerWarnings.length,
-          warnings: sanitizerWarnings.map(w => ({
+          warnings: sanitizerWarnings.map((w) => ({
             code: w.code,
             message: w.message,
             risk: w.risk,
           })),
         };
-        await webcontainer.fs.writeFile(
-          `${quarantinePath}.sanitizer.json`,
-          JSON.stringify(sanitizerData, null, 2)
-        );
+        await webcontainer.fs.writeFile(`${quarantinePath}.sanitizer.json`, JSON.stringify(sanitizerData, null, 2));
         logger.debug(`Wrote ${quarantinePath}.sanitizer.json`);
       }
-      
+
       // Write metrics.json - risk assessment
       if (metrics) {
         const metricsData = {
           timestamp,
           ...metrics,
         };
-        await webcontainer.fs.writeFile(
-          `${quarantinePath}.metrics.json`,
-          JSON.stringify(metricsData, null, 2)
-        );
+        await webcontainer.fs.writeFile(`${quarantinePath}.metrics.json`, JSON.stringify(metricsData, null, 2));
         logger.debug(`Wrote ${quarantinePath}.metrics.json`);
       }
     } catch (error) {
@@ -1022,11 +1046,13 @@ export class ActionRunner {
     }
 
     const normalizedPath = relativePath.replace(/\\/g, '/');
+
     if (normalizedPath.startsWith('.history/')) {
       return;
     }
 
     const ext = nodePath.extname(normalizedPath).toLowerCase();
+
     if (ext !== '.tsx' && ext !== '.jsx') {
       return;
     }
@@ -1036,6 +1062,7 @@ export class ActionRunner {
     }
 
     const sectionContract = this.#sectionContract;
+
     if (!sectionContract || sectionContract.order.length === 0) {
       return;
     }
@@ -1050,6 +1077,7 @@ export class ActionRunner {
 
     for (const value of dataSections) {
       const matchedKey = findExpectedSectionKey(value, expectedKeys);
+
       if (matchedKey) {
         if (!actualMatched.includes(matchedKey)) {
           actualMatched.push(matchedKey);
@@ -1065,9 +1093,11 @@ export class ActionRunner {
 
     for (const key of expectedKeys) {
       const index = actualMatched.indexOf(key);
+
       if (index === -1) {
         continue;
       }
+
       if (index < lastIndex) {
         outOfOrder.push(key);
       } else {
@@ -1085,19 +1115,24 @@ export class ActionRunner {
 
     if (imageRequired.length > 0) {
       const sectionBlocks = extractSectionBlocks(content, expectedKeys);
+
       for (const key of imageRequired) {
         if (missing.includes(key)) {
           continue;
         }
+
         const block = sectionBlocks.get(key) ?? '';
         const requiredCount = imageMinCounts[key] ?? 1;
         const sources = extractImageSources(block);
         const imgCount = sources.length;
+
         if (imgCount < requiredCount) {
           imageCountFailures.push(`${labelFor(key)} (${imgCount}/${requiredCount})`);
         }
+
         if (imgCount > 1) {
           const uniqueCount = new Set(sources).size;
+
           if (uniqueCount < imgCount) {
             imageDuplicateFailures.push(`${labelFor(key)} (${uniqueCount}/${imgCount} unique)`);
           }
@@ -1107,6 +1142,7 @@ export class ActionRunner {
 
     if (allowedImageUrls.size > 0) {
       const sources = extractImageSources(content);
+
       for (const source of sources) {
         if (!allowedImageUrls.has(source)) {
           invalidImageUrls.add(source);
@@ -1123,6 +1159,7 @@ export class ActionRunner {
     ) {
       const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
       this.#autoFixSectionAttempts.delete(contractKey);
+
       return;
     }
 
@@ -1148,25 +1185,27 @@ export class ActionRunner {
       invalidImageUrls: invalidImageList,
     });
 
-    const unifiedSummary = unifiedViolations.length > 0
-      ? `\n\nCodes:\n${unifiedViolations.map((v) => formatUnifiedViolationLine(v)).join('\n')}`
-      : '';
+    const unifiedSummary =
+      unifiedViolations.length > 0
+        ? `\n\nCodes:\n${unifiedViolations.map((v) => formatUnifiedViolationLine(v)).join('\n')}`
+        : '';
 
     const contractKey = `${normalizedPath}:${expectedKeys.join('|')}`;
     const attempts = this.#autoFixSectionAttempts.get(contractKey) ?? 0;
     const autoFixKey = `${contractKey}:${missing.join('|')}:${outOfOrder.join('|')}:${imageCountFailures.join('|')}:${imageDuplicateFailures.join('|')}:${invalidImageList.join('|')}`;
 
-    const contentSummary = [
-      `File: ${normalizedPath}`,
-      `Expected order: ${expectedOrderLabel}`,
-      `Actual order: ${actualOrderLabel}`,
-      `Missing sections: ${missingLabel}`,
-      `Out-of-order sections: ${outOfOrderLabel}`,
-      `Unknown sections: ${extrasLabel}`,
-      `Image counts below minimum: ${imageCountLabel}`,
-      `Duplicate images in section: ${imageDuplicateLabel}`,
-      `Images not in IMAGES list: ${invalidImageLabel}`,
-    ].join('\n') + unifiedSummary;
+    const contentSummary =
+      [
+        `File: ${normalizedPath}`,
+        `Expected order: ${expectedOrderLabel}`,
+        `Actual order: ${actualOrderLabel}`,
+        `Missing sections: ${missingLabel}`,
+        `Out-of-order sections: ${outOfOrderLabel}`,
+        `Unknown sections: ${extrasLabel}`,
+        `Image counts below minimum: ${imageCountLabel}`,
+        `Duplicate images in section: ${imageDuplicateLabel}`,
+        `Images not in IMAGES list: ${invalidImageLabel}`,
+      ].join('\n') + unifiedSummary;
 
     this.onAlert?.({
       type: 'validation',
@@ -1191,6 +1230,7 @@ export class ActionRunner {
                 `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
             }
           : undefined,
+
       // Structured data for UI
       unifiedViolations,
       filePath: normalizedPath,

@@ -1,9 +1,9 @@
 /**
  * LLM Repair Service - Creates repair functions for auto-fix loop
- * 
+ *
  * This module provides the bridge between autoFixLoop and the LLM API.
  * It creates llmRepairFn that can be passed to autoFixWithLlm.
- * 
+ *
  * STRICT CONTRACT: The repair function receives a fully-formed prompt string
  * and returns the raw LLM response. Prompt building and response parsing
  * are handled by autoFixLoop.ts (single source of truth).
@@ -20,12 +20,16 @@ const logger = createScopedLogger('LLMRepairService');
 export interface LlmRepairConfig {
   /** API endpoint for LLM calls */
   apiEndpoint?: string;
+
   /** Model to use for repair */
   model?: string;
+
   /** Provider name */
   provider?: string;
+
   /** Maximum tokens for response */
   maxTokens?: number;
+
   /** Timeout in milliseconds */
   timeout?: number;
 }
@@ -40,11 +44,11 @@ const DEFAULT_CONFIG: Required<LlmRepairConfig> = {
 
 /**
  * Create an LLM repair function for use with autoFixWithLlm.
- * 
+ *
  * STRICT CONTRACT: Returns a function that takes a prompt string
  * and returns the raw LLM response. The caller (autoFixLoop) is
  * responsible for building the prompt and parsing the response.
- * 
+ *
  * @param config - Configuration options
  * @returns A function that takes a prompt and returns LLM response
  */
@@ -65,7 +69,8 @@ export function createLlmRepairFn(config: LlmRepairConfig = {}): LlmRepairFn {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          system: 'You are a code repair assistant. Fix syntax errors in code. Return ONLY the fixed code, no explanations.',
+          system:
+            'You are a code repair assistant. Fix syntax errors in code. Return ONLY the fixed code, no explanations.',
           message: prompt,
           model: finalConfig.model,
           provider: { name: finalConfig.provider },
@@ -82,11 +87,11 @@ export function createLlmRepairFn(config: LlmRepairConfig = {}): LlmRepairFn {
         throw new Error(`LLM repair failed: ${response.status}`);
       }
 
-      const result = await response.json() as { text?: string; content?: string };
-      
+      const result = (await response.json()) as { text?: string; content?: string };
+
       // Extract the text from the response
       const responseText = result.text || result.content || '';
-      
+
       if (!responseText) {
         logger.warn('LLM returned empty response');
         throw new Error('LLM returned empty response');
@@ -102,7 +107,7 @@ export function createLlmRepairFn(config: LlmRepairConfig = {}): LlmRepairFn {
         logger.error(`LLM repair timed out`);
         throw new Error('LLM repair timed out');
       }
-      
+
       logger.error(`LLM repair error:`, error);
       throw error;
     }

@@ -11,17 +11,33 @@ const MAX_SNIPPET_LENGTH = 200;
 
 function getScriptKind(filePath: string, ts: typeof import('typescript')): import('typescript').ScriptKind {
   const lower = filePath.toLowerCase();
-  if (lower.endsWith('.tsx')) return ts.ScriptKind.TSX;
-  if (lower.endsWith('.jsx')) return ts.ScriptKind.JSX;
-  if (lower.endsWith('.ts')) return ts.ScriptKind.TS;
-  if (lower.endsWith('.js')) return ts.ScriptKind.JS;
+
+  if (lower.endsWith('.tsx')) {
+    return ts.ScriptKind.TSX;
+  }
+
+  if (lower.endsWith('.jsx')) {
+    return ts.ScriptKind.JSX;
+  }
+
+  if (lower.endsWith('.ts')) {
+    return ts.ScriptKind.TS;
+  }
+
+  if (lower.endsWith('.js')) {
+    return ts.ScriptKind.JS;
+  }
+
   return ts.ScriptKind.TSX;
 }
 
 function formatSnippet(content: string, lineNumber: number, columnNumber: number): string {
   const lines = content.split(/\r?\n/);
   const lineText = lines[lineNumber - 1] ?? '';
-  if (!lineText) return '';
+
+  if (!lineText) {
+    return '';
+  }
 
   let snippetLine = lineText;
   let caretColumn = columnNumber;
@@ -35,6 +51,7 @@ function formatSnippet(content: string, lineNumber: number, columnNumber: number
   }
 
   const caret = `${' '.repeat(Math.max(0, caretColumn - 1))}^`;
+
   return `${snippetLine}\n${caret}`;
 }
 

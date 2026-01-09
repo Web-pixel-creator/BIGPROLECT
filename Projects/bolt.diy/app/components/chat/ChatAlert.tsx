@@ -10,7 +10,8 @@ interface Props {
 }
 
 export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
-  const { description, content, source, unifiedViolations, sanitizerWarnings, metrics, quarantinePath, filePath } = alert;
+  const { description, content, source, unifiedViolations, sanitizerWarnings, metrics, quarantinePath, filePath } =
+    alert;
 
   const isPreview = source === 'preview';
   const isValidation = source === 'validation';
@@ -96,7 +97,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
                     'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bolt-elements-button-danger-background',
                     'text-bolt-elements-button-primary-text',
                     'flex items-center gap-1.5',
-                  )} 
+                  )}
                 >
                   <div className="i-ph:chat-circle-duotone"></div>
                   {isValidation ? 'Fix Issue' : 'Ask Bolt'}

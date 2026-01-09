@@ -13,7 +13,7 @@ const messageParser = new EnhancedStreamingMessageParser({
 
       workbenchStore.showWorkbench.set(true);
       workbenchStore.addArtifact(data);
-      
+
       // Don't auto-switch tabs - let user control navigation
     },
     onArtifactClose: (data) => {
@@ -47,6 +47,7 @@ const messageParser = new EnhancedStreamingMessageParser({
     },
     onActionStream: (data) => {
       logger.trace('onActionStream', data.action);
+
       if (data.action.type !== 'file') {
         workbenchStore.runAction(data, true);
       }
@@ -77,6 +78,7 @@ export function useMessageParser() {
       if (reset) {
         setParsedMessages({});
       }
+
       return;
     }
 
@@ -85,11 +87,13 @@ export function useMessageParser() {
 
     const parseAtIndex = (index: number, finalize: boolean) => {
       const message = messages[index];
+
       if (!message || message.role !== 'assistant') {
         return;
       }
 
       const newParsedContent = messageParser.parse(message.id, extractTextContent(message));
+
       if (finalize) {
         messageParser.finalize(message.id);
       }
@@ -102,6 +106,7 @@ export function useMessageParser() {
 
     if (isLoading) {
       let lastAssistantIndex = -1;
+
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].role === 'assistant') {
           lastAssistantIndex = i;
@@ -112,9 +117,11 @@ export function useMessageParser() {
       if (lastAssistantIndex >= 0) {
         parseAtIndex(lastAssistantIndex, false);
       }
+
       lastParsedCountRef.current = messages.length;
     } else {
       const startIndex = reset ? 0 : Math.max(0, lastParsedCountRef.current - 1);
+
       for (let i = startIndex; i < messages.length; i++) {
         parseAtIndex(i, true);
       }

@@ -64,7 +64,12 @@ export function Navbar({ brand = 'Shadcn UI', items = [], ctaLabel = 'Get Starte
                 ))}
               </nav>
               <div className="p-3">
-                <Button size="sm" variant="secondary" className="w-full" onClick={() => (window.location.href = ctaHref)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => (window.location.href = ctaHref)}
+                >
                   {ctaLabel}
                 </Button>
               </div>

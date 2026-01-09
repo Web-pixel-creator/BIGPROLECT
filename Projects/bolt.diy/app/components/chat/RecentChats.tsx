@@ -156,9 +156,12 @@ function normalizePreviewImageUrl(url?: string): string | undefined {
   // Normalize common relative variants.
   const normalized = trimmed.startsWith('images/') ? `/${trimmed}` : trimmed;
 
-  // The UI itself only serves a small, stable set of preview placeholders. Any external URL is blocked
-  // by COEP/COOP in WebContainer contexts and causes noisy errors + broken thumbnails.
+  /*
+   * The UI itself only serves a small, stable set of preview placeholders. Any external URL is blocked
+   * by COEP/COOP in WebContainer contexts and causes noisy errors + broken thumbnails.
+   */
   const pathname = normalized.split('?')[0].split('#')[0];
+
   if (pathname === '/images/hero.svg' || pathname === '/images/placeholder.svg') {
     return normalized;
   }

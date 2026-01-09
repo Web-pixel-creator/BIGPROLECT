@@ -463,7 +463,11 @@ export function applyWebTemplateBaseline(templateFiles: TemplateFile[]): Templat
 
   const addFileIfMissing = (file: TemplateFile) => {
     const normalizedPath = file.path.replace(/\\/g, '/');
-    if (existingPaths.has(normalizedPath)) return;
+
+    if (existingPaths.has(normalizedPath)) {
+      return;
+    }
+
     nextFiles.push(file);
     existingPaths.add(normalizedPath);
   };
@@ -482,7 +486,10 @@ export function applyWebTemplateBaseline(templateFiles: TemplateFile[]): Templat
 
 function ensurePackageJsonDeps(files: TemplateFile[]) {
   const packageIndex = files.findIndex((file) => file.path === 'package.json');
-  if (packageIndex === -1) return;
+
+  if (packageIndex === -1) {
+    return;
+  }
 
   try {
     const pkg = JSON.parse(files[packageIndex].content) as any;
@@ -505,7 +512,9 @@ function ensurePackageJsonDeps(files: TemplateFile[]) {
       }
     }
 
-    if (!changed) return;
+    if (!changed) {
+      return;
+    }
 
     pkg.dependencies = deps;
     pkg.devDependencies = devDeps;
@@ -517,7 +526,10 @@ function ensurePackageJsonDeps(files: TemplateFile[]) {
 
 function ensureTsconfigPaths(files: TemplateFile[]) {
   const tsconfigIndex = files.findIndex((file) => file.path === 'tsconfig.json');
-  if (tsconfigIndex === -1) return;
+
+  if (tsconfigIndex === -1) {
+    return;
+  }
 
   try {
     const config = JSON.parse(files[tsconfigIndex].content) as any;
@@ -536,7 +548,9 @@ function ensureTsconfigPaths(files: TemplateFile[]) {
       changed = true;
     }
 
-    if (!changed) return;
+    if (!changed) {
+      return;
+    }
 
     compilerOptions.paths = paths;
     config.compilerOptions = compilerOptions;
@@ -548,21 +562,27 @@ function ensureTsconfigPaths(files: TemplateFile[]) {
 
 function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
   const viteConfigIndex = files.findIndex((file) => /^vite\.config\.(ts|mts|js|mjs)$/.test(file.path));
-  if (viteConfigIndex === -1) return;
+
+  if (viteConfigIndex === -1) {
+    return;
+  }
 
   const original = files[viteConfigIndex].content;
+
   if (original.includes('vite-tsconfig-paths')) {
     return;
   }
 
   let next = original;
 
-  const isCommonJs = /\bmodule\.exports\b/.test(next) || (/\brequire\(/.test(next) && !/\bexport\s+default\b/.test(next));
+  const isCommonJs =
+    /\bmodule\.exports\b/.test(next) || (/\brequire\(/.test(next) && !/\bexport\s+default\b/.test(next));
 
   if (isCommonJs) {
     if (!next.includes('vite-tsconfig-paths')) {
       // Insert after the last require line (or at the top if no requires found).
       const requireMatches = [...next.matchAll(/^const .*require\(.*\).*$/gm)];
+
       if (requireMatches.length > 0) {
         const last = requireMatches[requireMatches.length - 1];
         const insertAt = (last.index ?? 0) + last[0].length;
@@ -575,6 +595,7 @@ function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
     if (!next.includes("from 'vite-tsconfig-paths'") && !next.includes('from \"vite-tsconfig-paths\"')) {
       // Insert after the last import line.
       const importMatches = [...next.matchAll(/^import .*$/gm)];
+
       if (importMatches.length > 0) {
         const last = importMatches[importMatches.length - 1];
         const insertAt = (last.index ?? 0) + last[0].length;
@@ -596,9 +617,13 @@ function ensureViteConfigPathsPlugin(files: TemplateFile[]) {
 
 function ensureViteConfigImageProxyPlugin(files: TemplateFile[]) {
   const viteConfigIndex = files.findIndex((file) => /^vite\.config\.(ts|mts|js|mjs)$/.test(file.path));
-  if (viteConfigIndex === -1) return;
+
+  if (viteConfigIndex === -1) {
+    return;
+  }
 
   const original = files[viteConfigIndex].content;
+
   if (original.includes('__image_proxy__') || original.includes('imageProxyPlugin')) {
     return;
   }

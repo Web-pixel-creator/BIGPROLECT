@@ -177,6 +177,7 @@ ${value.content}
             setInitialMessages(filteredMessages);
 
             setUrlId(storedMessages.urlId);
+
             const normalizedDescription = storedMessages.description
               ? fixMojibake(storedMessages.description)
               : storedMessages.description;
@@ -201,6 +202,7 @@ ${value.content}
                 console.warn('Failed to normalize chat description', error);
               });
             }
+
             chatId.set(storedMessages.id);
             chatMetadata.set(storedMessages.metadata);
           } else {
@@ -360,6 +362,7 @@ ${value.content}
       // compute preview url and persist in metadata
       const mergedMetadata = { ...chatMetadata.get() };
       const preview = extractPreviewImage([...archivedMessages, ...messages]);
+
       if (preview) {
         mergedMetadata.previewUrl = preview;
         chatMetadata.set(mergedMetadata);
@@ -445,6 +448,7 @@ function navigateChat(nextId: string) {
 
 function extractPreviewImage(messages: Message[]): string | undefined {
   type Candidate = { url: string; score: number };
+
   const candidates: Candidate[] = [];
   const keywordRe = /(hero|preview|landing|screenshot|ui|design|page)/i;
 
@@ -457,17 +461,31 @@ function extractPreviewImage(messages: Message[]): string | undefined {
         : '';
 
     const pushUrl = (url?: string) => {
-      if (!url) return;
+      if (!url) {
+        return;
+      }
+
       let score = 0;
       const isHttp = url.startsWith('http');
       const isData = url.startsWith('data:image/');
       const keyword = keywordRe.test(url);
       const isImageExt = /\.(png|jpe?g|webp|gif)$/i.test(url);
 
-      if (isHttp) score += 3;
-      if (isImageExt) score += 1;
-      if (keyword) score += 2;
-      if (isData) score -= 1;
+      if (isHttp) {
+        score += 3;
+      }
+
+      if (isImageExt) {
+        score += 1;
+      }
+
+      if (keyword) {
+        score += 2;
+      }
+
+      if (isData) {
+        score -= 1;
+      }
 
       candidates.push({ url, score });
     };
@@ -485,7 +503,11 @@ function extractPreviewImage(messages: Message[]): string | undefined {
     dataUris.forEach((m) => pushUrl(m[1]));
   }
 
-  if (!candidates.length) return undefined;
+  if (!candidates.length) {
+    return undefined;
+  }
+
   candidates.sort((a, b) => b.score - a.score);
+
   return candidates[0].url;
 }

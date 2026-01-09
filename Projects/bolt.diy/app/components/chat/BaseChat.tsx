@@ -169,6 +169,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           progressKeyRef.current = '';
           setProgressAnnotations([]);
         }
+
         return;
       }
 
@@ -388,14 +389,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           return scrollElement.scrollTop;
         }
 
-      if (isStreaming) {
-        const maxScrollTop = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight - 1);
-        const distanceFromBottom = Math.abs(maxScrollTop - scrollElement.scrollTop);
+        if (isStreaming) {
+          const maxScrollTop = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight - 1);
+          const distanceFromBottom = Math.abs(maxScrollTop - scrollElement.scrollTop);
 
-        if (userScrolledRef.current || distanceFromBottom > 8) {
-          return scrollElement.scrollTop;
+          if (userScrolledRef.current || distanceFromBottom > 8) {
+            return scrollElement.scrollTop;
+          }
         }
-      }
 
         return target;
       },
@@ -424,6 +425,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           streamingContentRef.current = '';
           setStreamingContent('');
         }
+
         return;
       }
 
@@ -436,6 +438,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
         if (streamingContentRef.current !== nextContent) {
           streamingContentRef.current = nextContent;
+
           const now = Date.now();
           const elapsed = now - streamingUpdateRef.current.lastUpdate;
           const applyUpdate = () => {
@@ -448,6 +451,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               clearTimeout(streamingUpdateRef.current.timeoutId);
               streamingUpdateRef.current.timeoutId = null;
             }
+
             applyUpdate();
           } else if (!streamingUpdateRef.current.timeoutId) {
             streamingUpdateRef.current.timeoutId = setTimeout(() => {
@@ -459,10 +463,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       } else if (streamingContentRef.current !== '') {
         streamingContentRef.current = '';
         setStreamingContent('');
+
         if (streamingUpdateRef.current.timeoutId) {
           clearTimeout(streamingUpdateRef.current.timeoutId);
           streamingUpdateRef.current.timeoutId = null;
         }
+
         userScrolledRef.current = false;
       }
 
@@ -470,6 +476,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
       if (messageCount !== stableMessageCountRef.current) {
         stableMessageCountRef.current = messageCount;
+
         if (isStreaming && lastMessage?.role === 'assistant') {
           stableMessagesRef.current = messages.slice(0, -1);
         } else {
@@ -491,9 +498,13 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         <ClientOnly>{() => <Menu />}</ClientOnly>
         <div className="flex flex-col lg:flex-row overflow-y-auto overflow-x-hidden w-full h-full">
           <div
-            className={classNames(styles.Chat, 'flex flex-col flex-grow min-w-0 lg:min-w-[var(--chat-min-width)] h-full', {
-              'lg:w-[var(--workbench-left)] lg:max-w-[var(--workbench-left)]': constrainChatWidth,
-            })}
+            className={classNames(
+              styles.Chat,
+              'flex flex-col flex-grow min-w-0 lg:min-w-[var(--chat-min-width)] h-full',
+              {
+                'lg:w-[var(--workbench-left)] lg:max-w-[var(--workbench-left)]': constrainChatWidth,
+              },
+            )}
           >
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
@@ -506,12 +517,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               </div>
             )}
             <StickToBottom
-              className={classNames(
-                'pt-6 px-4 sm:px-6 lg:px-8 relative w-full min-w-0',
-                {
-                  'h-full flex flex-col modern-scrollbar': chatStarted,
-                },
-              )}
+              className={classNames('pt-6 px-4 sm:px-6 lg:px-8 relative w-full min-w-0', {
+                'h-full flex flex-col modern-scrollbar': chatStarted,
+              })}
               resize={scrollBehavior}
               initial={scrollBehavior}
               targetScrollTop={targetScrollTop}
@@ -522,7 +530,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     return chatStarted ? (
                       <Messages
                         className="flex flex-col w-full flex-1 max-w-[640px] px-4 sm:px-5 pb-4 mx-auto z-1"
-                        messages={isStreaming ? stableMessagesRef.current : messages ?? stableMessagesRef.current}
+                        messages={isStreaming ? stableMessagesRef.current : (messages ?? stableMessagesRef.current)}
                         isStreaming={isStreaming}
                         generationSummary={generationSummary}
                         streamingContent={isStreaming ? streamingContent : ''}
@@ -696,6 +704,7 @@ function ScrollActivityWatcher({
     }
 
     const node = scrollRef.current;
+
     if (!node) {
       return;
     }

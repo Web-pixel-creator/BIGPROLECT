@@ -31,7 +31,7 @@ interface RegistryStore {
   settings: RegistrySettings;
   components: RegistryComponent[];
   error: string | null;
-  
+
   // Actions
   initialize: () => Promise<void>;
   updateSettings: (settings: Partial<RegistrySettings>) => void;
@@ -50,10 +50,13 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
   error: null,
 
   initialize: async () => {
-    if (get().isInitialized) return;
+    if (get().isInitialized) {
+      return;
+    }
 
     if (isBrowser) {
       const saved = localStorage.getItem(REGISTRY_SETTINGS_KEY);
+
       if (saved) {
         try {
           const settings = JSON.parse(saved) as RegistrySettings;
@@ -65,7 +68,7 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     }
 
     set({ isInitialized: true });
-    
+
     // Fetch components after initialization
     await get().fetchComponents();
   },
@@ -73,11 +76,11 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
   updateSettings: (newSettings: Partial<RegistrySettings>) => {
     const currentSettings = get().settings;
     const updated = { ...currentSettings, ...newSettings };
-    
+
     if (isBrowser) {
       localStorage.setItem(REGISTRY_SETTINGS_KEY, JSON.stringify(updated));
     }
-    
+
     set({ settings: updated });
   },
 
@@ -86,18 +89,18 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
 
     try {
       const response = await fetch('/api.registry');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
       }
 
-      const data = await response.json() as { components?: RegistryComponent[] };
+      const data = (await response.json()) as { components?: RegistryComponent[] };
       set({ components: data.components || [], isLoading: false });
     } catch (error) {
       console.error('Error fetching registry components:', error);
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Unknown error',
-        isLoading: false 
+        isLoading: false,
       });
     }
   },
@@ -109,11 +112,11 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
       registries: { ...settings.registries, [name]: url },
       enabledRegistries: [...settings.enabledRegistries, name],
     };
-    
+
     if (isBrowser) {
       localStorage.setItem(REGISTRY_SETTINGS_KEY, JSON.stringify(updated));
     }
-    
+
     set({ settings: updated });
   },
 
@@ -123,13 +126,13 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     const updated = {
       ...settings,
       registries: remainingRegistries,
-      enabledRegistries: settings.enabledRegistries.filter(r => r !== name),
+      enabledRegistries: settings.enabledRegistries.filter((r) => r !== name),
     };
-    
+
     if (isBrowser) {
       localStorage.setItem(REGISTRY_SETTINGS_KEY, JSON.stringify(updated));
     }
-    
+
     set({ settings: updated });
   },
 
@@ -139,24 +142,22 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
     const updated = {
       ...settings,
       enabledRegistries: isEnabled
-        ? settings.enabledRegistries.filter(r => r !== name)
+        ? settings.enabledRegistries.filter((r) => r !== name)
         : [...settings.enabledRegistries, name],
     };
-    
+
     if (isBrowser) {
       localStorage.setItem(REGISTRY_SETTINGS_KEY, JSON.stringify(updated));
     }
-    
+
     set({ settings: updated });
   },
 
   getComponentsForPrompt: () => {
     const { components, settings } = get();
-    
+
     // Filter by enabled registries
-    const enabledComponents = components.filter(c => 
-      settings.enabledRegistries.includes(c.registry)
-    );
+    const enabledComponents = components.filter((c) => settings.enabledRegistries.includes(c.registry));
 
     if (enabledComponents.length === 0) {
       return '';
@@ -164,10 +165,12 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
 
     // Group by registry
     const byRegistry: Record<string, RegistryComponent[]> = {};
+
     for (const comp of enabledComponents) {
       if (!byRegistry[comp.registry]) {
         byRegistry[comp.registry] = [];
       }
+
       byRegistry[comp.registry].push(comp);
     }
 
@@ -179,6 +182,7 @@ export const useRegistryStore = create<RegistryStore>((set, get) => ({
 
     for (const [registry, comps] of Object.entries(byRegistry)) {
       prompt += `  ${registry}:\n`;
+
       for (const comp of comps.slice(0, 25)) {
         prompt += `    - ${comp.name}${comp.description ? ` - ${comp.description}` : ''}\n`;
       }

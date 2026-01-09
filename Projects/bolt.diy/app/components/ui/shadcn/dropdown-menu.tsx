@@ -49,28 +49,22 @@ export function DropdownMenuItem({
   );
 }
 
-export const DropdownMenuLabel = React.forwardRef<
-  HTMLDivElement,
-  DropdownMenuPrimitive.DropdownMenuLabelProps
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Label
-    ref={ref}
-    className={classNames('px-2 py-1.5 text-xs font-medium text-white/60', className)}
-    {...props}
-  />
-));
+export const DropdownMenuLabel = React.forwardRef<HTMLDivElement, DropdownMenuPrimitive.DropdownMenuLabelProps>(
+  ({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.Label
+      ref={ref}
+      className={classNames('px-2 py-1.5 text-xs font-medium text-white/60', className)}
+      {...props}
+    />
+  ),
+);
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
-export const DropdownMenuSeparator = React.forwardRef<
-  HTMLDivElement,
-  DropdownMenuPrimitive.DropdownMenuSeparatorProps
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Separator
-    ref={ref}
-    className={classNames('my-1 h-px bg-white/10', className)}
-    {...props}
-  />
-));
+export const DropdownMenuSeparator = React.forwardRef<HTMLDivElement, DropdownMenuPrimitive.DropdownMenuSeparatorProps>(
+  ({ className, ...props }, ref) => (
+    <DropdownMenuPrimitive.Separator ref={ref} className={classNames('my-1 h-px bg-white/10', className)} {...props} />
+  ),
+);
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 export const DropdownMenuCheckboxItem = React.forwardRef<
@@ -96,24 +90,23 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
 ));
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
-export const DropdownMenuRadioItem = React.forwardRef<
-  HTMLDivElement,
-  DropdownMenuPrimitive.DropdownMenuRadioItemProps
->(({ className, children, ...props }, ref) => (
-  <DropdownMenuPrimitive.RadioItem
-    ref={ref}
-    className={classNames(
-      'relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none transition-colors',
-      'focus:bg-white/10 focus:text-white',
-      'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-      className,
-    )}
-    {...props}
-  >
-    <span className="absolute left-2 h-2 w-2 rounded-full bg-white/80" />
-    {children}
-  </DropdownMenuPrimitive.RadioItem>
-));
+export const DropdownMenuRadioItem = React.forwardRef<HTMLDivElement, DropdownMenuPrimitive.DropdownMenuRadioItemProps>(
+  ({ className, children, ...props }, ref) => (
+    <DropdownMenuPrimitive.RadioItem
+      ref={ref}
+      className={classNames(
+        'relative flex cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none transition-colors',
+        'focus:bg-white/10 focus:text-white',
+        'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        className,
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 h-2 w-2 rounded-full bg-white/80" />
+      {children}
+    </DropdownMenuPrimitive.RadioItem>
+  ),
+);
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
 export const DropdownMenuSubTrigger = React.forwardRef<

@@ -67,7 +67,8 @@ export async function selectContext(props: {
   // Use a cheaper/faster model for internal file-selection to reduce provider rate-limit pressure.
   if (provider.name === 'Google') {
     const availableModels = new Set(staticModels.map((m) => m.name));
-    internalModel = (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
+    internalModel =
+      (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
 
     if (internalModel !== currentModel) {
       logger.info(`Using internal model "${internalModel}" for context selection (original: "${currentModel}")`);
@@ -186,7 +187,7 @@ export async function selectContext(props: {
         * You should not include any file that is already in the context buffer.
         * If no changes are needed, you can leave the response empty updateContextBuffer tag.
         `,
-    prompt: `
+      prompt: `
         ${summaryText}
 
         Users Question: ${extractTextContent(lastUserMessage)}
@@ -215,6 +216,7 @@ export async function selectContext(props: {
         `CONTEXT ERROR - Message: ${error?.message || 'unknown'}, Status: ${error?.status || 'N/A'}, Detail: ${JSON.stringify(error)}`,
       );
     }
+
     throw error;
   }
 

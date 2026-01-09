@@ -59,14 +59,17 @@ export async function createSummary(props: {
   // Use a cheaper/faster model for internal summarization to reduce provider rate-limit pressure.
   if (provider.name === 'Google') {
     const availableModels = new Set(staticModels.map((m) => m.name));
-    internalModel = (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
+    internalModel =
+      (['gemini-2.0-flash', 'gemini-2.5-flash'] as const).find((m) => availableModels.has(m)) ?? currentModel;
 
     if (internalModel !== currentModel) {
       logger.info(`Using internal model "${internalModel}" for summaries (original: "${currentModel}")`);
     }
   } else if (provider.name === 'ModelScope') {
-    // For ModelScope, Qwen 2.5 72B is a good general-purpose choice for summaries if the selected one is too large/slow
-    // but usually, staying with the selected model is safer for context.
+    /*
+     * For ModelScope, Qwen 2.5 72B is a good general-purpose choice for summaries if the selected one is too large/slow
+     * but usually, staying with the selected model is safer for context.
+     */
     internalModel = currentModel;
   }
 
@@ -195,7 +198,7 @@ Note:
         * DO not need to think too much just start writing imidiately
         * do not write any thing other that the summary with with the provided structure
         `,
-    prompt: `
+      prompt: `
 
 Here is the previous summary of the chat:
 <old_summary>
@@ -206,10 +209,10 @@ Below is the chat after that:
 ---
 <new_chats>
 ${slicedMessages
-        .map((x) => {
-          return `---\n[${x.role}] ${extractTextContent(x)}\n---`;
-        })
-        .join('\n')}
+  .map((x) => {
+    return `---\n[${x.role}] ${extractTextContent(x)}\n---`;
+  })
+  .join('\n')}
 </new_chats>
 ---
 
@@ -228,6 +231,7 @@ ${slicedMessages
         `SUMMARY ERROR - Message: ${error?.message || 'unknown'}, Status: ${error?.status || 'N/A'}, Detail: ${JSON.stringify(error)}`,
       );
     }
+
     throw error;
   }
 

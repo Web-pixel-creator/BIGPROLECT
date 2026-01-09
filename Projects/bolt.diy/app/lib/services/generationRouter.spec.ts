@@ -29,7 +29,7 @@ export function HeroSection() {
   );
 }`;
       const result = await routeThroughPipeline(code, 'HeroSection.tsx');
-      
+
       expect(result.success).toBe(true);
       expect(result.stages.sanitizer.ran).toBe(true);
       expect(result.stages.validator.ran).toBe(true);
@@ -43,7 +43,7 @@ export const Button = () => {
   return <butt className="px-4">Click</butt>;
 };`;
       const result = await routeThroughPipeline(code, 'Button.tsx');
-      
+
       expect(result.stages.sanitizer.ran).toBe(true);
       expect(result.stages.sanitizer.changed).toBe(true);
     });
@@ -54,7 +54,7 @@ export function Component() {
   return <div className="p-4">Hello</div>;
 }`;
       const result = await routeThroughPipeline(code, 'Component.tsx');
-      
+
       expect(result.stages.validator.ran).toBe(true);
       expect(result.finalValidation.valid).toBe(true);
     });
@@ -72,7 +72,7 @@ export function HeroSection() {
       const result = await routeThroughPipeline(code, 'HeroSection.tsx', {
         sectionType: 'hero',
       });
-      
+
       expect(result.stages.contract.ran).toBe(true);
       expect(result.contractValidation).toBeDefined();
     });
@@ -86,7 +86,7 @@ export function HeroSection() {
         sectionType: 'hero',
         skipContractValidation: true,
       });
-      
+
       expect(result.stages.contract.ran).toBe(false);
     });
 
@@ -97,7 +97,7 @@ export const Button = () = > {
   return <butt className="px-4">Click</butt>;
 };`;
       const result = await routeThroughPipeline(code, 'Button.tsx');
-      
+
       expect(result.stages.sanitizer.ran).toBe(true);
     });
 
@@ -109,7 +109,7 @@ export function Component() {
       const result = await routeThroughPipeline(code, 'Component.tsx', {
         skipAutoFix: true,
       });
-      
+
       // Auto-fix should not run even if validation fails
       expect(result.stages.autoFix.ran).toBe(false);
     });
@@ -120,7 +120,7 @@ export function Component() {
   return <div className="p-4">Hello</div>;
 }`;
       const result = await routeThroughPipeline(code, 'Component.tsx');
-      
+
       expect(result.processingTimeMs).toBeGreaterThanOrEqual(0);
     });
 
@@ -132,7 +132,7 @@ export function HeroSection() {
       const result = await routeThroughPipeline(code, 'HeroSection.tsx', {
         sectionType: 'hero',
       });
-      
+
       // Should have warnings about missing h1, button, etc.
       expect(result.warnings.length).toBeGreaterThan(0);
     });
@@ -140,7 +140,7 @@ export function HeroSection() {
     it('handles CSS files', async () => {
       const code = `.button { color: red; }`;
       const result = await routeThroughPipeline(code, 'styles.css');
-      
+
       expect(result.success).toBe(true);
       expect(result.stages.validator.ran).toBe(true);
     });
@@ -148,7 +148,7 @@ export function HeroSection() {
     it('handles JSON files', async () => {
       const code = `{"name": "test", "version": "1.0.0"}`;
       const result = await routeThroughPipeline(code, 'package.json');
-      
+
       expect(result.success).toBe(true);
     });
   });
@@ -207,7 +207,7 @@ export function HeroSection() {
     it('adds contract hints to prompt', () => {
       const basePrompt = 'Create a hero section';
       const enhanced = enhancePromptWithContract(basePrompt, 'hero');
-      
+
       expect(enhanced).toContain(basePrompt);
       expect(enhanced).toContain('QUALITY REQUIREMENTS');
       expect(enhanced).toContain('h1');
@@ -236,7 +236,7 @@ export function HeroSection() {
       const code = `export function Test() { return <div className="p-4">Hi</div>; }`;
       const result = await routeThroughPipeline(code, 'Test.tsx');
       recordPipelineResult(result);
-      
+
       const stats = getPipelineStats();
       expect(stats.totalRuns).toBe(1);
       expect(stats.successRate).toBe(1);

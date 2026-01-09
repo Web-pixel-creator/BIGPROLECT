@@ -1,6 +1,6 @@
 /**
  * Section Contracts - Type-safe contracts for section generation
- * 
+ *
  * Defines the expected structure and validation rules for each section type.
  * Used to:
  * 1. Validate LLM output matches expected structure
@@ -16,10 +16,13 @@ import type { SectionType } from './sectionGenerator';
 export interface BaseSectionContract {
   /** Component must have a named export */
   hasNamedExport: boolean;
+
   /** Component must return JSX */
   returnsJsx: boolean;
+
   /** Component must use Tailwind classes */
   usesTailwind: boolean;
+
   /** Component must be responsive */
   isResponsive: boolean;
 }
@@ -29,12 +32,16 @@ export interface BaseSectionContract {
  */
 export interface HeroContract extends BaseSectionContract {
   type: 'hero';
+
   /** Must have a main heading (h1) */
   hasMainHeading: boolean;
+
   /** Must have a subheading or description */
   hasSubheading: boolean;
+
   /** Should have at least one CTA button */
   hasCtaButton: boolean;
+
   /** Should have visual interest (gradient, image, or animation) */
   hasVisualInterest: boolean;
 }
@@ -44,12 +51,16 @@ export interface HeroContract extends BaseSectionContract {
  */
 export interface NavigationContract extends BaseSectionContract {
   type: 'navigation';
+
   /** Must have logo or brand name */
   hasLogo: boolean;
+
   /** Must have navigation links */
   hasNavLinks: boolean;
+
   /** Should have mobile menu toggle */
   hasMobileMenu: boolean;
+
   /** Should be sticky or fixed */
   isSticky: boolean;
 }
@@ -59,13 +70,17 @@ export interface NavigationContract extends BaseSectionContract {
  */
 export interface FeaturesContract extends BaseSectionContract {
   type: 'features';
+
   /** Must have section title */
   hasSectionTitle: boolean;
+
   /** Must have feature items (minimum 3) */
   hasFeatureItems: boolean;
   minFeatureCount: number;
+
   /** Each feature should have icon */
   featuresHaveIcons: boolean;
+
   /** Each feature should have title and description */
   featuresHaveContent: boolean;
 }
@@ -75,13 +90,17 @@ export interface FeaturesContract extends BaseSectionContract {
  */
 export interface PricingContract extends BaseSectionContract {
   type: 'pricing';
+
   /** Must have pricing tiers */
   hasPricingTiers: boolean;
   minTierCount: number;
+
   /** Each tier should have price */
   tiersHavePrice: boolean;
+
   /** Each tier should have features list */
   tiersHaveFeatures: boolean;
+
   /** Should highlight recommended tier */
   hasHighlightedTier: boolean;
 }
@@ -91,11 +110,14 @@ export interface PricingContract extends BaseSectionContract {
  */
 export interface TestimonialsContract extends BaseSectionContract {
   type: 'testimonials';
+
   /** Must have testimonial items */
   hasTestimonials: boolean;
   minTestimonialCount: number;
+
   /** Each testimonial should have quote */
   testimonialsHaveQuote: boolean;
+
   /** Each testimonial should have author */
   testimonialsHaveAuthor: boolean;
 }
@@ -105,10 +127,13 @@ export interface TestimonialsContract extends BaseSectionContract {
  */
 export interface FooterContract extends BaseSectionContract {
   type: 'footer';
+
   /** Should have copyright notice */
   hasCopyright: boolean;
+
   /** Should have navigation links */
   hasLinks: boolean;
+
   /** Should have social media links */
   hasSocialLinks: boolean;
 }
@@ -118,14 +143,19 @@ export interface FooterContract extends BaseSectionContract {
  */
 export interface ContactContract extends BaseSectionContract {
   type: 'contact';
+
   /** Must have contact form or info */
   hasContactMethod: boolean;
+
   /** Form should have name field */
   hasNameField: boolean;
+
   /** Form should have email field */
   hasEmailField: boolean;
+
   /** Form should have message field */
   hasMessageField: boolean;
+
   /** Form should have submit button */
   hasSubmitButton: boolean;
 }
@@ -135,10 +165,13 @@ export interface ContactContract extends BaseSectionContract {
  */
 export interface CtaContract extends BaseSectionContract {
   type: 'cta';
+
   /** Must have compelling headline */
   hasHeadline: boolean;
+
   /** Must have action button */
   hasActionButton: boolean;
+
   /** Should have visual distinction (background color/gradient) */
   hasVisualDistinction: boolean;
 }
@@ -148,13 +181,17 @@ export interface CtaContract extends BaseSectionContract {
  */
 export interface FaqContract extends BaseSectionContract {
   type: 'faq';
+
   /** Must have FAQ items */
   hasFaqItems: boolean;
   minFaqCount: number;
+
   /** Each FAQ should have question */
   faqsHaveQuestion: boolean;
+
   /** Each FAQ should have answer */
   faqsHaveAnswer: boolean;
+
   /** Should be expandable/accordion */
   isExpandable: boolean;
 }
@@ -178,34 +215,41 @@ export type SectionContract =
  * Enables consistent analytics, monitoring, and auto-fix routing.
  */
 export type ViolationCode =
-  // Base contract violations
   | 'CONTRACT_MISSING_NAMED_EXPORT'
   | 'CONTRACT_MISSING_JSX_RETURN'
   | 'CONTRACT_MISSING_TAILWIND'
   | 'CONTRACT_MISSING_RESPONSIVE'
+
   // Hero violations
   | 'CONTRACT_HERO_MISSING_H1'
   | 'CONTRACT_HERO_MISSING_CTA'
   | 'CONTRACT_HERO_MISSING_VISUAL'
+
   // Navigation violations
   | 'CONTRACT_NAV_MISSING_NAV_ELEMENT'
   | 'CONTRACT_NAV_MISSING_LINKS'
   | 'CONTRACT_NAV_MISSING_MOBILE_MENU'
+
   // Features violations
   | 'CONTRACT_FEATURES_MISSING_ITEMS'
+
   // Pricing violations
   | 'CONTRACT_PRICING_MISSING_PRICE'
   | 'CONTRACT_PRICING_MISSING_HIGHLIGHT'
+
   // Footer violations
   | 'CONTRACT_FOOTER_MISSING_FOOTER_ELEMENT'
   | 'CONTRACT_FOOTER_MISSING_COPYRIGHT'
+
   // Contact violations
   | 'CONTRACT_CONTACT_MISSING_FORM'
   | 'CONTRACT_CONTACT_MISSING_EMAIL'
   | 'CONTRACT_CONTACT_MISSING_SUBMIT'
+
   // CTA violations
   | 'CONTRACT_CTA_MISSING_HEADLINE'
   | 'CONTRACT_CTA_MISSING_BUTTON'
+
   // Page structure violations (from ActionRunner)
   | 'CONTRACT_PAGE_MISSING_SECTION'
   | 'CONTRACT_PAGE_WRONG_ORDER'
@@ -213,6 +257,7 @@ export type ViolationCode =
   | 'CONTRACT_PAGE_IMAGE_COUNT'
   | 'CONTRACT_PAGE_IMAGE_DUPLICATE'
   | 'CONTRACT_PAGE_IMAGE_INVALID'
+
   // Syntax/validation errors (from codeValidator)
   | 'SYNTAX_BRACE_EXPECTED'
   | 'SYNTAX_PAREN_EXPECTED'
@@ -231,6 +276,7 @@ export type ViolationCode =
   | 'SYNTAX_CSS_UNCLOSED_COMMENT'
   | 'SYNTAX_PARSER_CRASH'
   | 'SYNTAX_OTHER'
+
   // Generic
   | 'CONTRACT_OTHER';
 
@@ -241,12 +287,16 @@ export type ViolationCode =
 export interface UnifiedViolation {
   /** Structured code for analytics and routing */
   code: ViolationCode;
+
   /** Severity level */
   severity: 'error' | 'warning';
+
   /** Human-readable message */
   message: string;
+
   /** Whether this can be auto-fixed */
   autoFixable: boolean;
+
   /** Additional context for debugging/fixing */
   context?: Record<string, unknown>;
 }
@@ -257,6 +307,7 @@ export interface UnifiedViolation {
 export interface ContractValidationResult {
   valid: boolean;
   violations: ContractViolation[];
+
   /** Unified violations with structured codes (for analytics) */
   unifiedViolations?: UnifiedViolation[];
   score: number; // 0-100
@@ -381,10 +432,7 @@ export function getContractForSection(sectionType: SectionType): Partial<Section
 /**
  * Validate generated code against section contract.
  */
-export function validateAgainstContract(
-  code: string,
-  sectionType: SectionType
-): ContractValidationResult {
+export function validateAgainstContract(code: string, sectionType: SectionType): ContractValidationResult {
   const violations: ContractViolation[] = [];
   const unifiedViolations: UnifiedViolation[] = [];
   const contract = getContractForSection(sectionType);
@@ -440,6 +488,7 @@ export function validateAgainstContract(
 
   if (contract.isResponsive) {
     const hasResponsiveClasses = /\b(sm:|md:|lg:|xl:|2xl:)/.test(code);
+
     if (!hasResponsiveClasses) {
       violations.push({
         rule: 'isResponsive',
@@ -483,9 +532,9 @@ export function validateAgainstContract(
   }
 
   // Calculate score
-  const errorCount = violations.filter(v => v.severity === 'error').length;
-  const warningCount = violations.filter(v => v.severity === 'warning').length;
-  const score = Math.max(0, 100 - (errorCount * 20) - (warningCount * 5));
+  const errorCount = violations.filter((v) => v.severity === 'error').length;
+  const warningCount = violations.filter((v) => v.severity === 'warning').length;
+  const score = Math.max(0, 100 - errorCount * 20 - warningCount * 5);
 
   return {
     valid: errorCount === 0,
@@ -495,7 +544,11 @@ export function validateAgainstContract(
   };
 }
 
-function validateHeroContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateHeroContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   if (!/<h1[\s>]/.test(code)) {
     violations.push({
       rule: 'hasMainHeading',
@@ -527,6 +580,7 @@ function validateHeroContract(code: string, violations: ContractViolation[], uni
   }
 
   const hasVisualInterest = /gradient|bg-\w+-\d+|background|animate-/.test(code);
+
   if (!hasVisualInterest) {
     violations.push({
       rule: 'hasVisualInterest',
@@ -543,7 +597,11 @@ function validateHeroContract(code: string, violations: ContractViolation[], uni
   }
 }
 
-function validateNavigationContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateNavigationContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   if (!/<nav[\s>]/.test(code)) {
     violations.push({
       rule: 'hasNavElement',
@@ -560,6 +618,7 @@ function validateNavigationContract(code: string, violations: ContractViolation[
   }
 
   const hasLinks = /<a[\s>]/.test(code) || /href=/.test(code);
+
   if (!hasLinks) {
     violations.push({
       rule: 'hasNavLinks',
@@ -576,6 +635,7 @@ function validateNavigationContract(code: string, violations: ContractViolation[
   }
 
   const hasMobileMenu = /Menu|hamburger|mobile|toggle/i.test(code);
+
   if (!hasMobileMenu) {
     violations.push({
       rule: 'hasMobileMenu',
@@ -592,11 +652,15 @@ function validateNavigationContract(code: string, violations: ContractViolation[
   }
 }
 
-function validateFeaturesContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateFeaturesContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   // Check for feature items (look for arrays or repeated patterns)
   const hasFeatureArray = /features|items|cards/i.test(code) && /\.map\(/.test(code);
   const hasMultipleFeatures = (code.match(/<div[^>]*className[^>]*>/g) || []).length >= 3;
-  
+
   if (!hasFeatureArray && !hasMultipleFeatures) {
     violations.push({
       rule: 'hasFeatureItems',
@@ -613,8 +677,13 @@ function validateFeaturesContract(code: string, violations: ContractViolation[],
   }
 }
 
-function validatePricingContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validatePricingContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   const hasPriceIndicator = /\$|\€|price|cost|month|year|free/i.test(code);
+
   if (!hasPriceIndicator) {
     violations.push({
       rule: 'tiersHavePrice',
@@ -631,6 +700,7 @@ function validatePricingContract(code: string, violations: ContractViolation[], 
   }
 
   const hasHighlight = /popular|recommended|best|featured/i.test(code);
+
   if (!hasHighlight) {
     violations.push({
       rule: 'hasHighlightedTier',
@@ -647,7 +717,11 @@ function validatePricingContract(code: string, violations: ContractViolation[], 
   }
 }
 
-function validateFooterContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateFooterContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   if (!/<footer[\s>]/.test(code)) {
     violations.push({
       rule: 'hasFooterElement',
@@ -664,6 +738,7 @@ function validateFooterContract(code: string, violations: ContractViolation[], u
   }
 
   const hasCopyright = /©|copyright|\d{4}/i.test(code);
+
   if (!hasCopyright) {
     violations.push({
       rule: 'hasCopyright',
@@ -680,7 +755,11 @@ function validateFooterContract(code: string, violations: ContractViolation[], u
   }
 }
 
-function validateContactContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateContactContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   if (!/<form[\s>]/.test(code)) {
     violations.push({
       rule: 'hasForm',
@@ -697,6 +776,7 @@ function validateContactContract(code: string, violations: ContractViolation[], 
   }
 
   const hasEmailInput = /type=["']email["']|email/i.test(code);
+
   if (!hasEmailInput) {
     violations.push({
       rule: 'hasEmailField',
@@ -713,6 +793,7 @@ function validateContactContract(code: string, violations: ContractViolation[], 
   }
 
   const hasSubmit = /type=["']submit["']|<button/.test(code);
+
   if (!hasSubmit) {
     violations.push({
       rule: 'hasSubmitButton',
@@ -729,8 +810,13 @@ function validateContactContract(code: string, violations: ContractViolation[], 
   }
 }
 
-function validateCtaContract(code: string, violations: ContractViolation[], unifiedViolations: UnifiedViolation[]): void {
+function validateCtaContract(
+  code: string,
+  violations: ContractViolation[],
+  unifiedViolations: UnifiedViolation[],
+): void {
   const hasHeadline = /<h[1-3][\s>]/.test(code);
+
   if (!hasHeadline) {
     violations.push({
       rule: 'hasHeadline',
@@ -747,6 +833,7 @@ function validateCtaContract(code: string, violations: ContractViolation[], unif
   }
 
   const hasButton = /<button[\s>]|<Button[\s>]/.test(code);
+
   if (!hasButton) {
     violations.push({
       rule: 'hasActionButton',
@@ -767,7 +854,9 @@ function validateCtaContract(code: string, violations: ContractViolation[], unif
  * Generate contract hints for LLM prompt.
  */
 export function getContractHints(sectionType: SectionType): string {
-  const contract = getContractForSection(sectionType);
+  // Contract is retrieved but hints are hardcoded per section type
+  getContractForSection(sectionType);
+
   const hints: string[] = [];
 
   switch (sectionType) {

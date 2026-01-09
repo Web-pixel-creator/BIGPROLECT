@@ -454,9 +454,15 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               selectedModel={props.model || 'gemini-2.5-pro'}
               onModelChange={(modelId) => {
                 let providerName = 'Google';
+
                 // ModelScope models have specific prefixes (case-insensitive check)
                 const modelLower = modelId.toLowerCase();
-                if (modelLower.startsWith('iic/') || modelLower.startsWith('qwen/') || modelLower.startsWith('deepseek-ai/')) {
+
+                if (
+                  modelLower.startsWith('iic/') ||
+                  modelLower.startsWith('qwen/') ||
+                  modelLower.startsWith('deepseek-ai/')
+                ) {
                   providerName = 'ModelScope';
                 } else if (modelLower.includes('mistral')) {
                   providerName = 'Mistral';
@@ -465,12 +471,15 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
                 } else if (modelId.includes('llama')) {
                   providerName = 'Groq';
                 }
+
                 const providerInfo =
                   props.providerList.find((p) => p.name === providerName) ||
                   (PROVIDER_LIST as ProviderInfo[]).find((p) => p.name === providerName);
+
                 if (providerInfo && props.setProvider) {
                   props.setProvider(providerInfo);
                 }
+
                 props.setModel?.(modelId);
               }}
             />

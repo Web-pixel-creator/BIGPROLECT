@@ -37,7 +37,11 @@ describe('codeSanitizer', () => {
 
     const result = sanitizeGeneratedFile('src/lib/utils.ts', input);
 
-    expect(result.content.startsWith('import { clsx, type ClassValue } from "clsx";\nimport { twMerge } from "tailwind-merge";')).toBe(true);
+    expect(
+      result.content.startsWith(
+        'import { clsx, type ClassValue } from "clsx";\nimport { twMerge } from "tailwind-merge";',
+      ),
+    ).toBe(true);
     expect(result.content).toContain('export function formatPrice');
     expect(result.warnings.join('\n')).toMatch(/Fixed malformed imports in src\/lib\/utils\.ts/);
     expect(result.warnings.join('\n')).toMatch(/Added missing formatPrice export to src\/lib\/utils\.ts/);
@@ -102,6 +106,7 @@ describe('codeSanitizer', () => {
     const result = sanitizeGeneratedFile('src/App.tsx', input);
 
     expect(result.content).toMatch(/import \{ ChefHat, Star \} from \"lucide-react\";/);
+
     const idxImportReact = result.content.indexOf("import React from 'react';");
     const idxLateImport = result.content.indexOf('import { ChefHat, Star } from "lucide-react";');
     const idxExportDefault = result.content.indexOf('export default function App');
@@ -203,10 +208,7 @@ describe('codeSanitizer', () => {
   });
 
   it('closes unbalanced CSS braces to prevent PostCSS scope depth errors', () => {
-    const input = [
-      '.foo {',
-      '  color: red;',
-    ].join('\n');
+    const input = ['.foo {', '  color: red;'].join('\n');
 
     const result = sanitizeGeneratedFile('src/styles/custom.css', input);
 
@@ -225,8 +227,10 @@ describe('codeSanitizer', () => {
 
   // ============== NEW REGRESSION TESTS ==============
 
-  // Note: Arrow function fix (e) = /> -> (e) => is handled by fix 6c0c in sanitizeJsxSyntaxErrors
-  // This test is skipped because the fix is already covered by existing code
+  /*
+   * Note: Arrow function fix (e) = /> -> (e) => is handled by fix 6c0c in sanitizeJsxSyntaxErrors
+   * This test is skipped because the fix is already covered by existing code
+   */
   it.skip('fixes broken arrow function syntax = /> to =>', () => {
     const input = [
       "import React, { useState } from 'react';",
@@ -267,6 +271,7 @@ describe('codeSanitizer', () => {
     expect(result.content).toContain('<input type="text" />');
     expect(result.content).toContain('<img src="test.png" />');
     expect(result.content).toContain('<br />');
+
     // Should NOT have arrow function fix warning for normal JSX
     expect(result.warnings.join('\n')).not.toMatch(/Fixed broken arrow function syntax/);
   });
@@ -338,6 +343,7 @@ describe('codeSanitizer', () => {
     // Both should remain unchanged - they are different valid components
     expect(result.content).toContain('<Button />');
     expect(result.content).toContain('<ButtonPrimary />');
+
     // Should NOT have typo fix warning
     expect(result.warnings.join('\n')).not.toMatch(/Fixed component name typo/);
   });
@@ -435,6 +441,7 @@ describe('codeSanitizer', () => {
     it('fixes .</</span> with whitespace', () => {
       const input = `<span>Text.< </span>`;
       const result = sanitizeGeneratedFile('test.tsx', input);
+
       // This pattern should be handled - text followed by truncated tag
       expect(result.content).toContain('</span>');
     });
@@ -449,7 +456,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', input);
-      
+
       // Should NOT change - this is valid JSX
       expect(result.content).toContain('Hello world.</p>');
     });
@@ -465,7 +472,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', input);
-      
+
       // The comparison should remain (though this is invalid JS, sanitizer shouldn't break it more)
       expect(result.content).toContain('1.<2');
     });
@@ -480,7 +487,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', input);
-      
+
       expect(result.content).toContain('Loading...</p>');
     });
 
@@ -494,7 +501,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', input);
-      
+
       // Regex pattern should remain unchanged
       expect(result.content).toContain('.<\\/tag');
     });
@@ -513,7 +520,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', input);
-      
+
       expect(result.content).not.toContain('.</</p>');
       expect(result.content).not.toContain('.</</span>');
       expect(result.content).toContain('</p>');
@@ -522,10 +529,10 @@ describe('codeSanitizer', () => {
 
     it('idempotency: truncated tag fix is stable', () => {
       const input = `<p>Text.</</p>`;
-      
+
       const first = sanitizeGeneratedFile('test.tsx', input);
       const second = sanitizeGeneratedFile('test.tsx', first.content);
-      
+
       expect(second.content).toBe(first.content);
       expect(second.changed).toBe(false);
     });
@@ -641,7 +648,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', cleanCode);
-      
+
       expect(result.metrics).toBeDefined();
       expect(result.metrics!.riskLevel).toBe('low');
       expect(result.metrics!.highRiskFixes).toBe(0);
@@ -657,7 +664,7 @@ describe('codeSanitizer', () => {
       ].join('\n');
 
       const result = sanitizeGeneratedFile('src/App.tsx', brokenCode);
-      
+
       expect(result.metrics).toBeDefined();
       expect(result.metrics!.changedLinesPercent).toBeGreaterThan(0);
     });
@@ -665,8 +672,9 @@ describe('codeSanitizer', () => {
     it('tracks character changes', () => {
       const input = '<butt>Click</butt>';
       const result = sanitizeGeneratedFile('test.tsx', input);
-      
+
       expect(result.metrics).toBeDefined();
+
       // button is longer than butt, so chars added
       expect(result.metrics!.charsAdded).toBeGreaterThan(0);
     });
@@ -675,13 +683,15 @@ describe('codeSanitizer', () => {
       // This would trigger baseline replacement for malformed config
       const malformedConfig = 'garbage not a config';
       const result = sanitizeGeneratedFile('vite.config.ts', malformedConfig);
-      
-      // If baseline was replaced, should be high risk
-      // Note: early returns for baseline replacement may not include metrics
-      if (result.warnings.some(w => /baseline/i.test(w)) && result.metrics) {
+
+      /*
+       * If baseline was replaced, should be high risk
+       * Note: early returns for baseline replacement may not include metrics
+       */
+      if (result.warnings.some((w) => /baseline/i.test(w)) && result.metrics) {
         expect(result.metrics.riskLevel).toBe('high');
         expect(result.metrics.highRiskFixes).toBeGreaterThan(0);
-      } else if (result.warnings.some(w => /baseline/i.test(w))) {
+      } else if (result.warnings.some((w) => /baseline/i.test(w))) {
         // Baseline replacement happened via early return - that's also valid
         expect(result.changed).toBe(true);
       }
@@ -693,10 +703,10 @@ describe('codeSanitizer', () => {
     it('returns structured warnings with codes', () => {
       const brokenCode = '<butt>Click</butt>';
       const result = sanitizeGeneratedFile('test.tsx', brokenCode);
-      
+
       expect(result.structuredWarnings).toBeDefined();
       expect(result.structuredWarnings!.length).toBeGreaterThan(0);
-      
+
       // Each warning should have code, message, and risk
       for (const warning of result.structuredWarnings!) {
         expect(warning.code).toBeDefined();
@@ -708,13 +718,13 @@ describe('codeSanitizer', () => {
     it('maps truncated button fix to correct code', () => {
       const brokenCode = '<butt>Click</butt>';
       const result = sanitizeGeneratedFile('test.tsx', brokenCode);
-      
+
       const truncatedButtonWarning = result.structuredWarnings?.find(
-        w => w.code === 'SANITIZER_FIX_TRUNCATED_BUTTON'
+        (w) => w.code === 'SANITIZER_FIX_TRUNCATED_BUTTON',
       );
-      
+
       // May or may not have this specific warning depending on implementation
-      if (result.warnings.some(w => /butt/i.test(w))) {
+      if (result.warnings.some((w) => /butt/i.test(w))) {
         expect(truncatedButtonWarning).toBeDefined();
       }
     });
@@ -722,11 +732,9 @@ describe('codeSanitizer', () => {
     it('maps truncated closing tag fix to correct code', () => {
       const brokenCode = '<p>Text.</</p>';
       const result = sanitizeGeneratedFile('test.tsx', brokenCode);
-      
-      if (result.warnings.some(w => /truncated closing/i.test(w))) {
-        const warning = result.structuredWarnings?.find(
-          w => w.code === 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG'
-        );
+
+      if (result.warnings.some((w) => /truncated closing/i.test(w))) {
+        const warning = result.structuredWarnings?.find((w) => w.code === 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG');
         expect(warning).toBeDefined();
         expect(warning!.risk).toBe('low');
       }
@@ -741,8 +749,10 @@ describe('codeSanitizer', () => {
         { pattern: /truncated.*button/i, expectedRisk: 'low' },
       ];
 
-      // This is more of a documentation test - actual risk levels
-      // are defined in parseWarningsToStructured
+      /*
+       * This is more of a documentation test - actual risk levels
+       * are defined in parseWarningsToStructured
+       */
       expect(structuredWarnings.length).toBeGreaterThan(0);
     });
   });

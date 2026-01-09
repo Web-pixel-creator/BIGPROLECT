@@ -144,9 +144,7 @@ export function ExamplePrompts({ onSelect }: ExamplePromptsProps) {
           <Sparkles className="w-5 h-5 text-yellow-400" />
           Premium Design Templates
         </h3>
-        <p className="text-sm text-bolt-elements-textSecondary">
-          Готовые промпты для создания дизайнов уровня Webflow
-        </p>
+        <p className="text-sm text-bolt-elements-textSecondary">Готовые промпты для создания дизайнов уровня Webflow</p>
       </div>
 
       {/* Category Pills */}
@@ -154,14 +152,16 @@ export function ExamplePrompts({ onSelect }: ExamplePromptsProps) {
         {DESIGN_CATEGORIES.map((category, idx) => {
           const Icon = category.icon;
           const isSelected = selectedCategory === idx;
+
           return (
             <button
               key={idx}
               onClick={() => setSelectedCategory(idx)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${isSelected
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
+                isSelected
                   ? 'border-bolt-elements-focus bg-bolt-elements-focus/10 text-bolt-elements-textPrimary'
                   : 'border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 text-bolt-elements-textSecondary hover:border-bolt-elements-focus/50'
-                }`}
+              }`}
             >
               <Icon className={`w-4 h-4 ${isSelected ? category.color : ''}`} />
               <span className="text-sm font-medium">{category.title}</span>
@@ -210,7 +210,8 @@ export function ExamplePrompts({ onSelect }: ExamplePromptsProps) {
               💡 Pro Tip: Структура идеального промпта
             </p>
             <p className="text-xs text-bolt-elements-textSecondary leading-relaxed">
-              Для премиум-дизайна укажите: <strong>HERO</strong> (размер текста, CTA, фон) → <strong>СЕКЦИИ</strong> (Grid, Cards, Testimonials) → <strong>[Colors: hex, hex] | [Font: название]</strong>
+              Для премиум-дизайна укажите: <strong>HERO</strong> (размер текста, CTA, фон) → <strong>СЕКЦИИ</strong>{' '}
+              (Grid, Cards, Testimonials) → <strong>[Colors: hex, hex] | [Font: название]</strong>
             </p>
           </div>
         </div>

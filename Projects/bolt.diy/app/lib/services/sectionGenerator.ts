@@ -1,11 +1,11 @@
 /**
  * Section Generator - Modular code generation for website sections
- * 
+ *
  * Instead of generating entire App.tsx at once, this module:
  * 1. Plans which sections are needed
  * 2. Generates each section independently
  * 3. Composes them into final App.tsx
- * 
+ *
  * Benefits:
  * - Smaller LLM context per generation
  * - Easier to validate and fix individual sections
@@ -171,7 +171,6 @@ export const SECTION_DEFINITIONS: Record<SectionType, SectionDefinition> = {
   },
 };
 
-
 /**
  * Section plan - result of analyzing user prompt.
  */
@@ -238,6 +237,7 @@ export function planSections(userPrompt: string): SectionPlan {
 
   // Detect website type preset
   let preset: SectionType[] | null = null;
+
   for (const [type, sections] of Object.entries(WEBSITE_PRESETS)) {
     if (promptLower.includes(type)) {
       preset = sections;
@@ -257,6 +257,7 @@ export function planSections(userPrompt: string): SectionPlan {
 
   // Use preset if no specific sections detected, or merge with detected
   let finalSections: SectionType[];
+
   if (detectedSections.size === 0 && preset) {
     finalSections = preset;
   } else if (detectedSections.size === 0) {
@@ -266,24 +267,38 @@ export function planSections(userPrompt: string): SectionPlan {
     // Ensure navigation and footer are always included
     detectedSections.add('navigation');
     detectedSections.add('footer');
-    
+
     // Sort sections in logical order
     const sectionOrder: SectionType[] = [
-      'navigation', 'hero', 'features', 'services', 'about', 'stats',
-      'gallery', 'team', 'pricing', 'testimonials', 'blog', 'faq',
-      'cta', 'contact', 'footer'
+      'navigation',
+      'hero',
+      'features',
+      'services',
+      'about',
+      'stats',
+      'gallery',
+      'team',
+      'pricing',
+      'testimonials',
+      'blog',
+      'faq',
+      'cta',
+      'contact',
+      'footer',
     ];
-    finalSections = sectionOrder.filter(s => detectedSections.has(s));
+    finalSections = sectionOrder.filter((s) => detectedSections.has(s));
   }
 
   // Detect theme
   let theme: 'light' | 'dark' | 'auto' = 'light';
+
   if (promptLower.includes('dark') || promptLower.includes('тёмн') || promptLower.includes('темн')) {
     theme = 'dark';
   }
 
   // Detect style
   let style: 'modern' | 'minimal' | 'corporate' | 'playful' = 'modern';
+
   if (promptLower.includes('minimal') || promptLower.includes('минимал')) {
     style = 'minimal';
   } else if (promptLower.includes('corporate') || promptLower.includes('корпоратив')) {
@@ -313,20 +328,22 @@ export function planSections(userPrompt: string): SectionPlan {
 export function generateSectionPrompt(
   sectionType: SectionType,
   plan: SectionPlan,
-  context?: { previousSections?: string[]; colorScheme?: string }
+  context?: { previousSections?: string[]; colorScheme?: string },
 ): string {
   const definition = SECTION_DEFINITIONS[sectionType];
-  
+
   const styleGuide = {
     modern: 'Use modern design with gradients, shadows, and smooth animations. Rounded corners, clean typography.',
     minimal: 'Use minimal design with lots of whitespace, simple colors, and subtle interactions.',
-    corporate: 'Use professional corporate design with structured layouts, formal typography, and trust-building elements.',
+    corporate:
+      'Use professional corporate design with structured layouts, formal typography, and trust-building elements.',
     playful: 'Use playful design with vibrant colors, fun animations, and engaging micro-interactions.',
   };
 
-  const themeColors = plan.theme === 'dark' 
-    ? 'Use dark background (slate-900/950) with light text. Accent colors should be vibrant.'
-    : 'Use light background (white/gray-50) with dark text. Accent colors should be professional.';
+  const themeColors =
+    plan.theme === 'dark'
+      ? 'Use dark background (slate-900/950) with light text. Accent colors should be vibrant.'
+      : 'Use light background (white/gray-50) with dark text. Accent colors should be professional.';
 
   return `Generate a React ${definition.name} component for "${plan.projectName}".
 
@@ -351,10 +368,14 @@ TECHNICAL REQUIREMENTS:
 PROJECT CONTEXT:
 ${plan.projectDescription}
 
-${context?.previousSections?.length ? `
+${
+  context?.previousSections?.length
+    ? `
 PREVIOUS SECTIONS (for style consistency):
 ${context.previousSections.join(', ')}
-` : ''}
+`
+    : ''
+}
 
 Generate ONLY the component code, no explanations.`;
 }
@@ -362,10 +383,7 @@ Generate ONLY the component code, no explanations.`;
 /**
  * Compose multiple sections into a single App.tsx file.
  */
-export function composeSections(
-  sections: GeneratedSection[],
-  plan: SectionPlan
-): string {
+export function composeSections(sections: GeneratedSection[], plan: SectionPlan): string {
   // Collect all unique imports
   const allImports = new Set<string>();
   allImports.add("import React from 'react';");
@@ -378,13 +396,11 @@ export function composeSections(
 
   // Build component imports (internal)
   const componentImports = sections
-    .map(s => `import { ${s.componentName} } from './components/${s.componentName}';`)
+    .map((s) => `import { ${s.componentName} } from './components/${s.componentName}';`)
     .join('\n');
 
   // Build the App component
-  const sectionUsage = sections
-    .map(s => `      <${s.componentName} />`)
-    .join('\n');
+  const sectionUsage = sections.map((s) => `      <${s.componentName} />`).join('\n');
 
   const appCode = `${Array.from(allImports).join('\n')}
 ${componentImports}
@@ -410,6 +426,7 @@ export function extractImports(code: string): string[] {
 
   for (const line of lines) {
     const trimmed = line.trim();
+
     if (trimmed.startsWith('import ')) {
       // Skip React import (will be added in compose)
       if (!trimmed.includes("from 'react'") && !trimmed.includes('from "react"')) {
@@ -427,12 +444,14 @@ export function extractImports(code: string): string[] {
 export function extractComponentName(code: string, fallback: string): string {
   // Try to find export function Name
   const exportMatch = code.match(/export\s+(?:function|const)\s+([A-Z][A-Za-z0-9]*)/);
+
   if (exportMatch) {
     return exportMatch[1];
   }
 
   // Try to find function Name
   const funcMatch = code.match(/function\s+([A-Z][A-Za-z0-9]*)\s*\(/);
+
   if (funcMatch) {
     return funcMatch[1];
   }
@@ -450,12 +469,15 @@ export function stripImports(code: string): string {
 
   for (const line of lines) {
     const trimmed = line.trim();
+
     if (!pastImports && trimmed.startsWith('import ')) {
       continue;
     }
+
     if (!pastImports && trimmed === '') {
       continue;
     }
+
     pastImports = true;
     nonImportLines.push(line);
   }
@@ -466,7 +488,10 @@ export function stripImports(code: string): string {
 /**
  * Validate that a section has required structure.
  */
-export function validateSection(code: string, sectionType: SectionType): {
+export function validateSection(
+  code: string,
+  sectionType: SectionType,
+): {
   valid: boolean;
   issues: string[];
 } {

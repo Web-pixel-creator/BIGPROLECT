@@ -1,11 +1,5 @@
 import type { FC } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/Select';
 
 // Only show these specific models
 const CUSTOM_MODELS = [
@@ -31,7 +25,9 @@ export const CustomModelSelector: FC<CustomModelSelectorProps> = ({ selectedMode
 
   return (
     <Select value={selectedModel} onValueChange={onModelChange}>
-      <SelectTrigger className={`w-[160px] h-8 text-xs bg-bolt-elements-background-depth-2 border-bolt-elements-borderColor ${className}`}>
+      <SelectTrigger
+        className={`w-[160px] h-8 text-xs bg-bolt-elements-background-depth-2 border-bolt-elements-borderColor ${className}`}
+      >
         <SelectValue placeholder={currentLabel} />
       </SelectTrigger>
       <SelectContent>

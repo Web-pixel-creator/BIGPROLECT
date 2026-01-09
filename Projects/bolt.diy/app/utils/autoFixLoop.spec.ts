@@ -54,9 +54,9 @@ export default function App() {
       const errors: ValidationError[] = [
         { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
       ];
-      
+
       const prompt = buildRepairPrompt(code, errors, 'test.ts');
-      
+
       expect(prompt).toContain('test.ts');
       expect(prompt).toContain("'}' expected");
       expect(prompt).toContain('Line 1');
@@ -80,9 +80,9 @@ export default function App() {
       const errors: ValidationError[] = [
         { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
       ];
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.ts');
-      
+
       expect(prompt).toContain('test.ts');
       expect(prompt).toContain("'}' expected");
       expect(prompt).toContain('ERRORS:');
@@ -103,9 +103,9 @@ export default function App() {
           context: { line: 1, column: 12 },
         },
       ];
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.ts', { unifiedViolations });
-      
+
       expect(prompt).toContain('UNIFIED_VIOLATIONS:');
       expect(prompt).toContain('SYNTAX_BRACE_EXPECTED');
       expect(prompt).toContain('[auto-fixable]');
@@ -127,9 +127,9 @@ export default function App() {
           risk: 'medium',
         },
       ];
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.tsx', { sanitizerWarnings });
-      
+
       expect(prompt).toContain('SANITIZER_ALREADY_TRIED:');
       expect(prompt).toContain('SANITIZER_FIX_TRUNCATED_BUTTON');
       expect(prompt).toContain('low risk');
@@ -147,9 +147,9 @@ export default function App() {
         highRiskFixes: 2,
         riskLevel: 'medium',
       };
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.ts', { metrics });
-      
+
       expect(prompt).toContain('CHANGE_METRICS:');
       expect(prompt).toContain('Risk level: MEDIUM');
       expect(prompt).toContain('Changed lines: 25%');
@@ -168,9 +168,9 @@ export default function App() {
         highRiskFixes: 5,
         riskLevel: 'high',
       };
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.ts', { metrics });
-      
+
       expect(prompt).toContain('Risk level: HIGH');
       expect(prompt).toContain('WARNING: Previous fixes were aggressive');
       expect(prompt).toContain('Be CONSERVATIVE');
@@ -185,9 +185,7 @@ export default function App() {
         unifiedViolations: [
           { code: 'SYNTAX_BRACE_EXPECTED', severity: 'error', message: "'}' expected", autoFixable: true },
         ],
-        sanitizerWarnings: [
-          { code: 'SANITIZER_FIX_IMPORTS_HOISTED', message: 'Hoisted imports', risk: 'low' },
-        ],
+        sanitizerWarnings: [{ code: 'SANITIZER_FIX_IMPORTS_HOISTED', message: 'Hoisted imports', risk: 'low' }],
         metrics: {
           changedLinesPercent: 10,
           charsAdded: 20,
@@ -196,9 +194,9 @@ export default function App() {
           riskLevel: 'low',
         },
       };
-      
+
       const prompt = buildRepairPromptV2(code, errors, 'test.ts', context);
-      
+
       expect(prompt).toContain('ERRORS:');
       expect(prompt).toContain('UNIFIED_VIOLATIONS:');
       expect(prompt).toContain('SANITIZER_ALREADY_TRIED:');
@@ -217,7 +215,7 @@ export default function App() {
 
     it('high risk should have more restrictive instructions', () => {
       expect(REPAIR_BOUNDARIES.high.instructions.length).toBeGreaterThanOrEqual(
-        REPAIR_BOUNDARIES.low.instructions.length
+        REPAIR_BOUNDARIES.low.instructions.length,
       );
     });
   });
@@ -236,8 +234,8 @@ export default function App() {
     it('returns high risk instructions (Property 4: Boundary Enforcement)', () => {
       const instructions = getBoundaryInstructions('high');
       expect(instructions).toEqual(REPAIR_BOUNDARIES.high.instructions);
-      expect(instructions.some(i => i.includes('MINIMAL'))).toBe(true);
-      expect(instructions.some(i => i.includes('conservative'))).toBe(true);
+      expect(instructions.some((i) => i.includes('MINIMAL'))).toBe(true);
+      expect(instructions.some((i) => i.includes('conservative'))).toBe(true);
     });
   });
 
@@ -252,9 +250,9 @@ export default function App() {
           { code: 'SYNTAX_JSX_UNCLOSED', severity: 'error', message: 'Unclosed JSX tag', autoFixable: true },
         ],
       };
-      
+
       const prompt = buildRepairPromptWithFewShot(code, errors, 'test.tsx', context);
-      
+
       expect(prompt).toContain('SIMILAR FIXES');
       expect(prompt).toContain('SYNTAX_JSX_UNCLOSED');
       expect(prompt).toContain('BROKEN:');
@@ -269,9 +267,9 @@ export default function App() {
       const context: RepairContext = {
         metrics: { changedLinesPercent: 50, charsAdded: 200, charsRemoved: 150, highRiskFixes: 5, riskLevel: 'high' },
       };
-      
+
       const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts', context);
-      
+
       expect(prompt).toContain('MINIMAL');
       expect(prompt).toContain('conservative');
     });
@@ -279,9 +277,9 @@ export default function App() {
     it('works without context (defaults to low risk)', () => {
       const code = 'const x = 1;';
       const errors: ValidationError[] = [];
-      
+
       const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts');
-      
+
       expect(prompt).toContain('INSTRUCTIONS:');
       expect(prompt).toContain('BROKEN CODE:');
     });
@@ -294,9 +292,9 @@ export default function App() {
           { code: 'SYNTAX_BRACE_EXPECTED', severity: 'error', message: "'}' expected", autoFixable: true },
         ],
       };
-      
+
       const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts', context);
-      
+
       expect(prompt).toContain('VIOLATIONS:');
       expect(prompt).toContain('SYNTAX_BRACE_EXPECTED');
     });
@@ -328,7 +326,7 @@ const x = { a: 1 };
 \`\`\`
 
 This should work now.`;
-      
+
       const code = extractCodeFromResponse(response);
       expect(code).toBe('const x = { a: 1 };');
     });
@@ -337,7 +335,7 @@ This should work now.`;
       const response = `\`\`\`
 const x = 1;
 \`\`\``;
-      
+
       const code = extractCodeFromResponse(response);
       expect(code).toBe('const x = 1;');
     });
@@ -347,7 +345,7 @@ const x = 1;
 \`\`\`tsx
 export default function App() { return <div>Hello</div>; }
 \`\`\``;
-      
+
       const code = extractCodeFromResponse(response);
       expect(code).toBe('export default function App() { return <div>Hello</div>; }');
     });
@@ -363,7 +361,7 @@ export default function App() { return <div>Hello</div>; }
     it('fixes code and reports if changed', () => {
       const code = '<butt>Click</butt>';
       const result = quickFix(code, 'test.tsx');
-      
+
       expect(result.changed).toBe(true);
       expect(result.code).toContain('<button');
     });
@@ -376,6 +374,7 @@ export default function App() {
 }
 `;
       const result = quickFix(code, 'App.tsx');
+
       // May or may not change depending on sanitizer rules
       expect(typeof result.valid).toBe('boolean');
     });
@@ -387,7 +386,7 @@ export default function App() {
         { line: 1, column: 1, message: "'}' expected", code: 1005, severity: 'error' },
         { line: 2, column: 1, message: 'Unbalanced braces', code: 17003, severity: 'error' },
       ];
-      
+
       expect(areErrorsAutoFixable(errors)).toBe(true);
     });
 
@@ -396,7 +395,7 @@ export default function App() {
         { line: 1, column: 1, message: 'Unknown error', code: 9999, severity: 'error' },
         { line: 2, column: 1, message: 'Another unknown', code: 8888, severity: 'error' },
       ];
-      
+
       expect(areErrorsAutoFixable(errors)).toBe(false);
     });
 
@@ -404,7 +403,7 @@ export default function App() {
       const errors: ValidationError[] = [
         { line: 1, column: 1, message: 'Duplicate import', code: 17005, severity: 'warning' },
       ];
-      
+
       // No errors, so technically "fixable"
       expect(areErrorsAutoFixable(errors)).toBe(true);
     });
@@ -417,7 +416,7 @@ export default function App() {
         { line: 2, column: 1, message: "'}' expected", code: 1005, severity: 'error' },
         { line: 3, column: 1, message: 'Unterminated string', code: 1002, severity: 'error' },
       ];
-      
+
       const summary = getErrorSummary(errors);
       expect(summary).toContain("'}' expected (2)");
       expect(summary).toContain('Unterminated string (1)');
@@ -432,9 +431,9 @@ export default function App() {
         originalCode: code,
         validationResult: { valid: false, errors: [], fixable: true },
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       expect(result.code).toContain('<button');
       expect(result.usedFallback).toBe(false);
     });
@@ -442,10 +441,10 @@ export default function App() {
     it('calls LLM repair function when sanitizer fails', async () => {
       const brokenCode = 'const x = {';
       const fixedCode = 'const x = {};';
-      
+
       // Mock LLM repair function - now receives prompt string
       const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
-      
+
       const options: AutoFixOptions = {
         filename: 'test.ts',
         originalCode: brokenCode,
@@ -456,17 +455,18 @@ export default function App() {
         },
         llmRepairFn: mockLlmRepair,
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       // Verify LLM was called with a prompt string containing expected content
       expect(mockLlmRepair).toHaveBeenCalled();
+
       const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(typeof promptArg).toBe('string');
       expect(promptArg).toContain('ERRORS:');
       expect(promptArg).toContain('FILE:');
       expect(promptArg).toContain('test.ts');
-      
+
       expect(result.success).toBe(true);
       expect(result.code).toContain('const x = {}');
     });
@@ -474,11 +474,11 @@ export default function App() {
     it('tries fallback model when primary fails', async () => {
       const brokenCode = 'const x = {{{';
       const fixedCode = 'const x = {};';
-      
+
       // Mock LLM functions - now receive prompt string
       const mockPrimaryLlm: LlmRepairFn = vi.fn().mockResolvedValue('still broken {{{');
       const mockFallbackLlm: LlmRepairFn = vi.fn().mockResolvedValue(`\`\`\`ts\n${fixedCode}\n\`\`\``);
-      
+
       const options: AutoFixOptions = {
         filename: 'test.ts',
         originalCode: brokenCode,
@@ -490,23 +490,24 @@ export default function App() {
         llmRepairFn: mockPrimaryLlm,
         fallbackLlmRepairFn: mockFallbackLlm,
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       // Verify fallback was called with prompt string
       expect(mockFallbackLlm).toHaveBeenCalled();
+
       const promptArg = (mockFallbackLlm as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(typeof promptArg).toBe('string');
       expect(promptArg).toContain('ERRORS:');
-      
+
       expect(result.usedFallback).toBe(true);
     });
 
     it('passes prompt with correct structure to LLM', async () => {
       const brokenCode = 'export const x = {';
-      
+
       const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('export const x = {};');
-      
+
       const options: AutoFixOptions = {
         filename: 'utils.ts',
         originalCode: brokenCode,
@@ -520,11 +521,11 @@ export default function App() {
         },
         llmRepairFn: mockLlmRepair,
       };
-      
+
       await autoFixWithLlm(options);
-      
+
       const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      
+
       // Verify prompt structure
       expect(promptArg).toContain('FILE: utils.ts');
       expect(promptArg).toContain('ERRORS:');
@@ -537,17 +538,15 @@ export default function App() {
 
     it('uses fewshot-v1 prompt builder when variant is forced', async () => {
       const brokenCode = '<div><span>text</div>';
-      
+
       const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('<div><span>text</span></div>');
-      
+
       const options: AutoFixOptions = {
         filename: 'test.tsx',
         originalCode: brokenCode,
         validationResult: {
           valid: false,
-          errors: [
-            { line: 1, column: 1, message: 'JSX tag mismatch', code: 17001, severity: 'error' },
-          ],
+          errors: [{ line: 1, column: 1, message: 'JSX tag mismatch', code: 17001, severity: 'error' }],
           unifiedViolations: [
             { code: 'SYNTAX_JSX_UNCLOSED', severity: 'error', message: 'Unclosed JSX tag', autoFixable: true },
           ],
@@ -558,29 +557,28 @@ export default function App() {
           forceVariant: 'fewshot-v1',
         },
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       expect(result.promptVariant).toBe('fewshot-v1');
-      
+
       const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
       // fewshot-v1 should include SIMILAR FIXES section when violations match
       expect(promptArg).toContain('SIMILAR FIXES');
     });
 
     it('uses baseline prompt builder when variant is baseline', async () => {
       const brokenCode = 'const x = {';
-      
+
       const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('const x = {};');
-      
+
       const options: AutoFixOptions = {
         filename: 'test.ts',
         originalCode: brokenCode,
         validationResult: {
           valid: false,
-          errors: [
-            { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
-          ],
+          errors: [{ line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' }],
           fixable: true,
         },
         llmRepairFn: mockLlmRepair,
@@ -588,29 +586,28 @@ export default function App() {
           forceVariant: 'baseline',
         },
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       expect(result.promptVariant).toBe('baseline');
-      
+
       const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+
       // baseline should NOT include SIMILAR FIXES section
       expect(promptArg).not.toContain('SIMILAR FIXES');
     });
 
     it('returns promptVariant in result', async () => {
       const brokenCode = 'const x = {';
-      
+
       const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('const x = {};');
-      
+
       const options: AutoFixOptions = {
         filename: 'test.ts',
         originalCode: brokenCode,
         validationResult: {
           valid: false,
-          errors: [
-            { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
-          ],
+          errors: [{ line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' }],
           fixable: true,
         },
         llmRepairFn: mockLlmRepair,
@@ -618,9 +615,9 @@ export default function App() {
           forceVariant: 'fewshot-v1',
         },
       };
-      
+
       const result = await autoFixWithLlm(options);
-      
+
       expect(result.promptVariant).toBe('fewshot-v1');
     });
   });

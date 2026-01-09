@@ -46,6 +46,7 @@ export class RegistryService {
     if (!RegistryService._instance) {
       RegistryService._instance = new RegistryService();
     }
+
     return RegistryService._instance;
   }
 
@@ -58,6 +59,7 @@ export class RegistryService {
   private async fetchWithTimeout(url: string): Promise<Response> {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
     try {
       return await fetch(url, {
         headers: { Accept: 'application/json' },
@@ -69,12 +71,17 @@ export class RegistryService {
   }
 
   private loadRegistriesFromComponentsJson(): void {
-    if (this._loadedFromFile) return;
+    if (this._loadedFromFile) {
+      return;
+    }
+
     try {
       const componentsPath = path.resolve(process.cwd(), 'components.json');
+
       if (fs.existsSync(componentsPath)) {
         const content = fs.readFileSync(componentsPath, 'utf-8');
         const parsed = JSON.parse(content);
+
         if (parsed?.registries && typeof parsed.registries === 'object') {
           this._config.registries = {
             ...this._config.registries,
@@ -92,7 +99,9 @@ export class RegistryService {
 
   async fetchRegistryIndex(registryName: string, force = false): Promise<RegistryComponent[]> {
     this.loadRegistriesFromComponentsJson();
+
     const baseUrl = this._config.registries[registryName];
+
     if (!baseUrl) {
       logger.warn(`Registry "${registryName}" not configured`);
       return [];
@@ -100,6 +109,7 @@ export class RegistryService {
 
     // Check cache
     const cached = this._cache.get(registryName);
+
     if (!force && cached && Date.now() - cached.lastUpdated < CACHE_TTL) {
       return cached.components;
     }
@@ -117,18 +127,18 @@ export class RegistryService {
         // Try alternative endpoint
         const altUrl = `${baseUrl}/registry.json`;
         const altResponse = await this.fetchWithTimeout(altUrl);
-        
+
         if (!altResponse.ok) {
           throw new Error(`Failed to fetch registry: ${response.status}`);
         }
-        
+
         const data = await altResponse.json();
         components = this._parseRegistryData(registryName, data);
       } else {
         const data = await response.json();
         components = this._parseRegistryData(registryName, data);
       }
-      
+
       // Cap to avoid huge payloads
       const limited = (components || []).slice(0, MAX_COMPONENTS_PER_REGISTRY);
 
@@ -141,8 +151,10 @@ export class RegistryService {
       return limited;
     } catch (error) {
       logger.error(`Error fetching registry "${registryName}":`, error);
+
       // cache empty result to prevent repeated failures in short time
       this._cache.set(registryName, { components: [], lastUpdated: Date.now() });
+
       return [];
     }
   }
@@ -191,7 +203,9 @@ export class RegistryService {
 
   async fetchComponent(registryName: string, componentName: string): Promise<RegistryComponent | null> {
     this.loadRegistriesFromComponentsJson();
+
     const baseUrl = this._config.registries[registryName];
+
     if (!baseUrl) {
       logger.warn(`Registry "${registryName}" not configured`);
       return null;
@@ -207,8 +221,8 @@ export class RegistryService {
         throw new Error(`Failed to fetch component: ${response.status}`);
       }
 
-      const data = await response.json() as Record<string, any>;
-      
+      const data = (await response.json()) as Record<string, any>;
+
       return {
         name: data.name || componentName,
         type: data.type || 'registry:ui',
@@ -225,8 +239,9 @@ export class RegistryService {
 
   async getAllComponents(force = false): Promise<RegistryComponent[]> {
     this.loadRegistriesFromComponentsJson();
+
     const allComponents: RegistryComponent[] = [];
-    
+
     for (const registryName of Object.keys(this._config.registries)) {
       const components = await this.fetchRegistryIndex(registryName, force);
       allComponents.push(...components);
@@ -242,17 +257,19 @@ export class RegistryService {
   // Generate prompt section with available components
   async generateComponentsPromptSection(): Promise<string> {
     const components = await this.getAllComponents();
-    
+
     if (components.length === 0) {
       return '';
     }
 
     // Group by registry
     const byRegistry: Record<string, RegistryComponent[]> = {};
+
     for (const comp of components) {
       if (!byRegistry[comp.registry]) {
         byRegistry[comp.registry] = [];
       }
+
       byRegistry[comp.registry].push(comp);
     }
 
@@ -268,7 +285,9 @@ export class RegistryService {
 
     for (const [registry, comps] of Object.entries(byRegistry)) {
       prompt += `  ${registry.toUpperCase()} COMPONENTS:\n`;
-      for (const comp of comps.slice(0, 30)) { // Limit to 30 per registry
+
+      for (const comp of comps.slice(0, 30)) {
+        // Limit to 30 per registry
         prompt += `  - ${comp.name}${comp.description ? `: ${comp.description}` : ''}\n`;
       }
       prompt += '\n';

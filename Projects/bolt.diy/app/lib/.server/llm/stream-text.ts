@@ -33,23 +33,29 @@ const componentSelector = new SmartComponentSelector();
 const promptBuilder = new StructuredPromptBuilder();
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
+  return Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
 }
 
 function extractErrorText(error: any): string {
-  if (!error) return '';
-  if (typeof error === 'string') return error;
+  if (!error) {
+    return '';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
   const message = typeof error.message === 'string' ? error.message : '';
   const cause = typeof error.cause?.message === 'string' ? error.cause.message : '';
+
   return `${message} ${cause}`.trim();
 }
 
 function isGeminiMissingPartsError(error: any): boolean {
   const text = extractErrorText(error).toLowerCase();
-  return text.includes('invalid_type') && text.includes('candidates') && text.includes('content') && text.includes('parts');
+  return (
+    text.includes('invalid_type') && text.includes('candidates') && text.includes('content') && text.includes('parts')
+  );
 }
 
 function pickGoogleFallbackModel(current: string, models: Array<{ name: string }>): string | undefined {
@@ -62,11 +68,13 @@ function pickGoogleFallbackModel(current: string, models: Array<{ name: string }
   };
 
   const candidates = fallbackMap[current] || [];
+
   for (const name of candidates) {
     if (models.some((m) => m.name === name)) {
       return name;
     }
   }
+
   return undefined;
 }
 
@@ -106,14 +114,17 @@ function estimateMessageChars(message: Omit<Message, 'id'>): number {
     typeof content === 'string'
       ? content
       : Array.isArray(content)
-        ? (content.filter((item: any) => item?.type === 'text').map((item: any) => item.text).join('') as string)
+        ? (content
+            .filter((item: any) => item?.type === 'text')
+            .map((item: any) => item.text)
+            .join('') as string)
         : '';
 
   const partsText = Array.isArray((message as any).parts)
     ? ((message as any).parts as any[])
-      .filter((part) => part && part.type === 'text' && typeof part.text === 'string')
-      .map((part) => part.text)
-      .join('')
+        .filter((part) => part && part.type === 'text' && typeof part.text === 'string')
+        .map((part) => part.text)
+        .join('')
     : '';
 
   return contentText.length + partsText.length;
@@ -129,7 +140,9 @@ function pruneMessagesForBuild(messages: Omit<Message, 'id'>[], opts: { sliceId?
     result = messages.slice(sliceId);
   }
 
-  if (result.length <= 1) return result;
+  if (result.length <= 1) {
+    return result;
+  }
 
   let total = 0;
   const kept: Omit<Message, 'id'>[] = [];
@@ -138,7 +151,9 @@ function pruneMessagesForBuild(messages: Omit<Message, 'id'>[], opts: { sliceId?
     const message = result[i];
     const messageChars = estimateMessageChars(message);
 
-    if (kept.length > 0 && total + messageChars > maxChars) break;
+    if (kept.length > 0 && total + messageChars > maxChars) {
+      break;
+    }
 
     kept.push(message);
     total += messageChars;
@@ -159,9 +174,12 @@ function createFilesContextCapped(files: FileMap, opts: { maxTotalChars: number;
   for (const filePath of filePaths) {
     const dirent = files[filePath];
 
-    if (!dirent || dirent.type !== 'file' || dirent.isBinary) continue;
+    if (!dirent || dirent.type !== 'file' || dirent.isBinary) {
+      continue;
+    }
 
     const maxForThisFile = Math.min(maxFileChars, remaining);
+
     if (maxForThisFile <= 0) {
       truncated = true;
       break;
@@ -173,7 +191,9 @@ function createFilesContextCapped(files: FileMap, opts: { maxTotalChars: number;
 
     fileContexts.push(`<boltAction type="file" filePath="${filePath}">${content}</boltAction>`);
 
-    if (remaining <= 0) break;
+    if (remaining <= 0) {
+      break;
+    }
   }
 
   const note = truncated
@@ -209,7 +229,9 @@ function extractIntentFromPrompt(userPrompt: string): UserIntent {
     ];
 
     for (const [theme, needles] of pairs) {
-      if (needles.some((n) => lower.includes(n))) return theme;
+      if (needles.some((n) => lower.includes(n))) {
+        return theme;
+      }
     }
 
     return undefined;
@@ -227,7 +249,11 @@ function extractIntentFromPrompt(userPrompt: string): UserIntent {
         .filter((line) => line.length <= 48)
         .filter((line) => {
           const l = line.toLowerCase();
-          if (/^[a-z0-9][a-z0-9-]+$/.test(l)) return true; // slug id
+
+          if (/^[a-z0-9][a-z0-9-]+$/.test(l)) {
+            return true;
+          } // slug id
+
           // common human names from presets (EN+RU)
           return (
             l.includes('cursor') ||
@@ -303,8 +329,10 @@ export async function streamText(props: {
       currentProvider = provider;
       newMessage.content = sanitizeText(content);
 
-      // Important: `convertToCoreMessages` prioritizes `message.parts` over `message.content` for user messages.
-      // We intentionally strip UI parts here so the LLM receives the server-sanitized content (incl. llmPrompt annotation).
+      /*
+       * Important: `convertToCoreMessages` prioritizes `message.parts` over `message.content` for user messages.
+       * We intentionally strip UI parts here so the LLM receives the server-sanitized content (incl. llmPrompt annotation).
+       */
       delete (newMessage as any).parts;
     } else if (message.role == 'assistant') {
       newMessage.content = sanitizeText(message.content);
@@ -357,8 +385,10 @@ export async function streamText(props: {
 
   // Cap Google output tokens to reduce rate-limit/quota spikes (Gemini 2.5 can advertise very large output limits).
   let safeMaxTokens = dynamicMaxTokens;
-  const isGoogleProvider = (modelDetails?.provider || '').toLowerCase() === 'google' || provider.name.toLowerCase() === 'google';
-  const isModelScopeProvider = (modelDetails?.provider || '').toLowerCase() === 'modelscope' || provider.name.toLowerCase() === 'modelscope';
+  const isGoogleProvider =
+    (modelDetails?.provider || '').toLowerCase() === 'google' || provider.name.toLowerCase() === 'google';
+  const isModelScopeProvider =
+    (modelDetails?.provider || '').toLowerCase() === 'modelscope' || provider.name.toLowerCase() === 'modelscope';
 
   if (isGoogleProvider) {
     const googleCap = chatMode === 'build' ? 8192 : 16384;
@@ -402,56 +432,60 @@ export async function streamText(props: {
     }
   }
 
-  // Component selection + injection (MD component library + effects registry)
-  // DISABLED: Component injection causes token limit issues
-  // The system prompt + promptEnhancer already provides enough guidance
-  // Components are better handled by the baseline template + sanitizer
   /*
-  if (chatMode === 'build') {
-    try {
-      const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
-      const userPrompt = lastUserMessage?.content ?? '';
-      const intent = extractIntentFromPrompt(userPrompt);
-      const selection = componentSelector.select(intent);
- 
-      // Avoid overwhelming context (rough guard by chars)
-      let injection = promptBuilder.build(selection, userPrompt);
-      const maxContextChars = 15_000; // Reduced from 80k to avoid token limits
-      if (injection.length > maxContextChars) {
-        // Try a smaller injection (top few items) instead of skipping entirely.
-        const reduced = {
-          ...selection,
-          components: selection.components.slice(0, 2),
-          effects: selection.effects.slice(0, 1),
-        };
-        injection = promptBuilder.build(reduced, userPrompt);
-      }
- 
-      if (injection.length > maxContextChars) {
-        logger.warn(`Component injection skipped: too large (${injection.length} chars > ${maxContextChars})`);
-      } else {
-        systemPrompt = `${systemPrompt}\n\n${injection}\n`;
-        logger.info(
-          `Added component injection: ${selection.components.length} comps, ${selection.effects.length} effects (${selection.totalCodeLines} lines)`,
-        );
-      }
-    } catch (error) {
-      logger.warn('Failed to build component injection context:', error);
-    }
-  }
-  */
+   * Component selection + injection (MD component library + effects registry)
+   * DISABLED: Component injection causes token limit issues
+   * The system prompt + promptEnhancer already provides enough guidance
+   * Components are better handled by the baseline template + sanitizer
+   */
+  /*
+   *if (chatMode === 'build') {
+   *  try {
+   *    const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
+   *    const userPrompt = lastUserMessage?.content ?? '';
+   *    const intent = extractIntentFromPrompt(userPrompt);
+   *    const selection = componentSelector.select(intent);
+   *
+   *    // Avoid overwhelming context (rough guard by chars)
+   *    let injection = promptBuilder.build(selection, userPrompt);
+   *    const maxContextChars = 15_000; // Reduced from 80k to avoid token limits
+   *    if (injection.length > maxContextChars) {
+   *      // Try a smaller injection (top few items) instead of skipping entirely.
+   *      const reduced = {
+   *        ...selection,
+   *        components: selection.components.slice(0, 2),
+   *        effects: selection.effects.slice(0, 1),
+   *      };
+   *      injection = promptBuilder.build(reduced, userPrompt);
+   *    }
+   *
+   *    if (injection.length > maxContextChars) {
+   *      logger.warn(`Component injection skipped: too large (${injection.length} chars > ${maxContextChars})`);
+   *    } else {
+   *      systemPrompt = `${systemPrompt}\n\n${injection}\n`;
+   *      logger.info(
+   *        `Added component injection: ${selection.components.length} comps, ${selection.effects.length} effects (${selection.totalCodeLines} lines)`,
+   *      );
+   *    }
+   *  } catch (error) {
+   *    logger.warn('Failed to build component injection context:', error);
+   *  }
+   *}
+   */
 
-  // Registry components (shadcn-compatible registries)
-  // TEMPORARILY DISABLED: Same issue as above - components require dependencies
-  // try {
-  //   const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
-  //   if (registryContext) {
-  //     systemPrompt = `${systemPrompt}\n${registryContext}`;
-  //     logger.info('Added registry components to prompt context');
-  //   }
-  // } catch (error) {
-  //   logger.warn('Failed to load registry components for prompt:', error);
-  // }
+  /*
+   * Registry components (shadcn-compatible registries)
+   * TEMPORARILY DISABLED: Same issue as above - components require dependencies
+   * try {
+   *   const registryContext = await withTimeout(registryService.generateComponentsPromptSection(), 5_000, '');
+   *   if (registryContext) {
+   *     systemPrompt = `${systemPrompt}\n${registryContext}`;
+   *     logger.info('Added registry components to prompt context');
+   *   }
+   * } catch (error) {
+   *   logger.warn('Failed to load registry components for prompt:', error);
+   * }
+   */
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {
     const codeContext = createFilesContextCapped(contextFiles, {
@@ -536,25 +570,27 @@ export async function streamText(props: {
   const filteredOptions =
     isReasoning && options
       ? Object.fromEntries(
-        Object.entries(options).filter(
-          ([key]) =>
-            ![
-              'temperature',
-              'topP',
-              'presencePenalty',
-              'frequencyPenalty',
-              'logprobs',
-              'topLogprobs',
-              'logitBias',
-            ].includes(key),
-        ),
-      )
+          Object.entries(options).filter(
+            ([key]) =>
+              ![
+                'temperature',
+                'topP',
+                'presencePenalty',
+                'frequencyPenalty',
+                'logprobs',
+                'topLogprobs',
+                'logitBias',
+              ].includes(key),
+          ),
+        )
       : options || {};
 
   const adjustedOptions = { ...filteredOptions };
+
   if (!isReasoning && chatMode === 'build' && typeof adjustedOptions.temperature !== 'number') {
     adjustedOptions.temperature = 0.9;
   }
+
   const streamOnFinish = options?.onFinish;
 
   // DEBUG: Log filtered options
@@ -622,6 +658,7 @@ export async function streamText(props: {
     if (isGoogleProvider && isGeminiMissingPartsError(finalError)) {
       // Retry once on the same model for transient "missing parts" responses.
       logger.warn('Gemini response missing parts; retrying once on the same model');
+
       try {
         return await _streamText(streamParams);
       } catch (retryError: any) {
@@ -644,6 +681,7 @@ export async function streamText(props: {
         );
 
         const fallbackParams = buildStreamParams(fallbackName, fallbackTokens);
+
         return await _streamText(fallbackParams);
       }
     }
@@ -652,5 +690,7 @@ export async function streamText(props: {
   }
 }
 
-// Component selection functions removed - component injection is disabled
-// LLM now generates pure Tailwind CSS code based on system prompt rules
+/*
+ * Component selection functions removed - component injection is disabled
+ * LLM now generates pure Tailwind CSS code based on system prompt rules
+ */
