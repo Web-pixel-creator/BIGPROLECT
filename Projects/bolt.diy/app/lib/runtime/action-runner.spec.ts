@@ -241,8 +241,11 @@ export function HeroSection() {
     await runner.runAction(data);
 
     // Should NOT have any section contract alerts (no "missing sections" for modular file)
-    const sectionAlerts = alerts.filter((a) => a.type === 'sectionContract');
-    expect(sectionAlerts.length).toBe(0);
+    // Section contract alerts have type: 'validation' and title: 'Section Contract Mismatch'
+    const sectionContractAlerts = alerts.filter(
+      (a) => a.type === 'validation' && a.title === 'Section Contract Mismatch',
+    );
+    expect(sectionContractAlerts.length).toBe(0);
   });
 
   it('should still validate page contract for App.tsx with all sections', async () => {
@@ -322,7 +325,88 @@ export default function App() {
     await runner.runAction(data);
 
     // Should NOT have section contract alerts because all sections are present
-    const sectionAlerts = alerts.filter((a) => a.type === 'sectionContract');
-    expect(sectionAlerts.length).toBe(0);
+    // Section contract alerts have type: 'validation' and title: 'Section Contract Mismatch'
+    const sectionContractAlerts = alerts.filter(
+      (a) => a.type === 'validation' && a.title === 'Section Contract Mismatch',
+    );
+    expect(sectionContractAlerts.length).toBe(0);
   });
 });
+
+
+  it('should trigger section contract alert for App.tsx with missing sections', async () => {
+    // App.tsx missing some sections
+    const appContent = `
+export default function App() {
+  return (
+    <div>
+      <section data-section="hero">Hero content</section>
+    </div>
+  );
+}
+`;
+
+    (sanitizeGeneratedFile as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      content: appContent,
+      changed: false,
+      warnings: [],
+      structuredWarnings: [],
+      metrics: { changedLinesPercent: 0, charsAdded: 0, charsRemoved: 0, highRiskFixes: 0, riskLevel: 'low' },
+    });
+
+    (validateFile as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      valid: true,
+      errors: [],
+      unifiedViolations: [],
+      fixable: false,
+    });
+
+    const writeFile = vi.fn().mockResolvedValue(undefined);
+    const mkdir = vi.fn().mockResolvedValue(undefined);
+
+    const webcontainer = {
+      workdir: '/',
+      fs: { mkdir, writeFile },
+    } as any;
+
+    const alerts: any[] = [];
+
+    // Contract expects 4 sections but App.tsx only has 1
+    const sectionContract = {
+      order: ['navigation', 'hero', 'features', 'footer'],
+      labels: { navigation: 'Navigation', hero: 'Hero', features: 'Features', footer: 'Footer' },
+      imageSections: [],
+      imageMinCounts: {},
+      imageMap: {},
+    };
+
+    const runner = new ActionRunner(
+      Promise.resolve(webcontainer),
+      () => ({}) as any,
+      (alert) => alerts.push(alert),
+      undefined,
+      undefined,
+      sectionContract,
+    );
+
+    const data = {
+      artifactId: 'artifact_1',
+      messageId: 'message_1',
+      actionId: 'action_1',
+      action: {
+        type: 'file',
+        filePath: '/src/App.tsx',
+        content: appContent,
+      },
+    } as any;
+
+    runner.addAction(data);
+    await runner.runAction(data);
+
+    // SHOULD have section contract alert because sections are missing
+    const sectionContractAlerts = alerts.filter(
+      (a) => a.type === 'validation' && a.title === 'Section Contract Mismatch',
+    );
+    expect(sectionContractAlerts.length).toBe(1);
+    expect(sectionContractAlerts[0].content).toContain('Missing sections: Navigation, Features, Footer');
+  });
