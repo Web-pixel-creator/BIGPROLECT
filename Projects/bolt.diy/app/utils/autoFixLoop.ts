@@ -11,6 +11,8 @@
 import { sanitizeGeneratedFile } from './codeSanitizer';
 import { validateFile, type ValidationResult, type ValidationError } from './codeValidator';
 import { createScopedLogger } from './logger';
+import { selectVariant, type PromptVariant } from './promptVariants';
+import { getFewShotExamples, formatFewShotExamples } from './fewShotExamples';
 
 const logger = createScopedLogger('AutoFixLoop');
 
@@ -25,6 +27,7 @@ export interface AutoFixResult {
   /** Unified violations with structured codes (preferred) */
   unifiedViolations?: import('~/lib/services/sectionContracts').UnifiedViolation[];
   usedFallback: boolean;
+  promptVariant?: PromptVariant;
 }
 
 /**
@@ -42,12 +45,14 @@ export interface AutoFixOptions {
   filename: string;
   originalCode: string;
   validationResult: ValidationResult;
-  /** Primary LLM repair function - receives prompt, returns raw LLM response */
   llmRepairFn?: LlmRepairFn;
-  /** Fallback LLM repair function - used when primary fails */
   fallbackLlmRepairFn?: LlmRepairFn;
-  /** Optional context to enrich the repair prompt (unified violations, sanitizer warnings, risk metrics) */
   repairContext?: RepairContext;
+  variantSelection?: {
+    nowMs?: number;
+    timestampBucketMs?: number;
+    forceVariant?: PromptVariant;
+  };
 }
 
 /**
@@ -238,6 +243,130 @@ FIXED CODE:`;
 }
 
 /**
+ * Repair boundary instructions based on risk level.
+ */
+export const REPAIR_BOUNDARIES: Record<string, { instructions: string[] }> = {
+  low: {
+    instructions: [
+      'Fix the syntax errors',
+      'Prefer minimal changes',
+      'Restructure only if strictly necessary for correctness',
+    ],
+  },
+  medium: {
+    instructions: [
+      'Fix only the syntax errors',
+      'Preserve the existing structure',
+      'Avoid major refactoring',
+    ],
+  },
+  high: {
+    instructions: [
+      'Make MINIMAL changes only',
+      'Fix only the specific error locations',
+      'Do NOT restructure or reformat',
+      'Previous fixes were aggressive - be conservative',
+    ],
+  },
+};
+
+/**
+ * Get boundary instructions based on risk level.
+ */
+export function getBoundaryInstructions(riskLevel: 'low' | 'medium' | 'high'): string[] {
+  return REPAIR_BOUNDARIES[riskLevel]?.instructions ?? REPAIR_BOUNDARIES.low.instructions;
+}
+
+/**
+ * Build repair prompt with few-shot examples (fewshot-v1 variant).
+ * Includes relevant examples and risk-based boundary instructions.
+ */
+export function buildRepairPromptWithFewShot(
+  code: string,
+  errors: ValidationError[],
+  filename: string,
+  context?: RepairContext
+): string {
+  const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+  const fileType = ext === '.tsx' ? 'React TypeScript (TSX)' :
+                   ext === '.jsx' ? 'React JavaScript (JSX)' :
+                   ext === '.ts' ? 'TypeScript' :
+                   ext === '.js' ? 'JavaScript' :
+                   ext === '.css' ? 'CSS' : 'code';
+
+  // Build error list
+  const errorList = errors
+    .filter(e => e.severity === 'error')
+    .slice(0, 5)
+    .map(e => `- Line ${e.line}, Col ${e.column}: ${e.message}`)
+    .join('\n');
+
+  // Get violation codes for few-shot matching
+  const violationCodes = (context?.unifiedViolations?.map(v => v.code) ?? []) as import('~/lib/services/sectionContracts').ViolationCode[];
+  const fewShotExamples = getFewShotExamples(violationCodes, 3);
+  const fewShotSection = formatFewShotExamples(fewShotExamples);
+
+  // Build unified violations section
+  let unifiedSection = '';
+  if (context?.unifiedViolations && context.unifiedViolations.length > 0) {
+    const violationList = context.unifiedViolations
+      .slice(0, 8)
+      .map(v => {
+        const loc = v.context?.line ? ` (Line ${v.context.line})` : '';
+        return `- ${v.code}${loc}: ${v.message}`;
+      })
+      .join('\n');
+    
+    unifiedSection = `
+VIOLATIONS:
+${violationList}
+`;
+  }
+
+  // Get risk-based boundary instructions
+  const riskLevel = context?.metrics?.riskLevel ?? 'low';
+  const boundaryInstructions = getBoundaryInstructions(riskLevel);
+  const instructionsList = boundaryInstructions
+    .map((instr, i) => `${i + 1}. ${instr}`)
+    .join('\n');
+
+  // Add standard instructions
+  const standardInstructions = `
+${instructionsList}
+${boundaryInstructions.length + 1}. Return ONLY the fixed code, no explanations
+${boundaryInstructions.length + 2}. Ensure all brackets, braces, and tags are properly closed`;
+
+  return `Fix the following ${fileType} code that has syntax errors.
+
+FILE: ${filename}
+
+ERRORS:
+${errorList}
+${unifiedSection}${fewShotSection}
+BROKEN CODE:
+\`\`\`${ext.slice(1)}
+${code}
+\`\`\`
+
+INSTRUCTIONS:${standardInstructions}
+
+FIXED CODE:`;
+}
+
+/**
+ * Select prompt builder based on variant.
+ */
+export function getPromptBuilder(variant: PromptVariant): typeof buildRepairPromptV2 {
+  switch (variant) {
+    case 'fewshot-v1':
+      return buildRepairPromptWithFewShot;
+    case 'baseline':
+    default:
+      return buildRepairPromptV2;
+  }
+}
+
+/**
  * Extract code from LLM response (handles markdown code blocks).
  */
 export function extractCodeFromResponse(response: string): string {
@@ -307,14 +436,24 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
     };
   }
 
+  const promptVariant = selectVariant({
+    filename,
+    nowMs: options.variantSelection?.nowMs ?? Date.now(),
+    timestampBucketMs: options.variantSelection?.timestampBucketMs,
+    forceVariant: options.variantSelection?.forceVariant,
+  });
+
+  // Select prompt builder based on variant
+  const buildPrompt = getPromptBuilder(promptVariant);
+
   // Try LLM repair with primary model
   for (let i = 0; i < MAX_FIX_ATTEMPTS; i++) {
     attempts++;
-    logger.info(`Auto-fix attempt ${attempts}/${MAX_FIX_ATTEMPTS} for ${filename}`);
+    logger.info(`Auto-fix attempt ${attempts}/${MAX_FIX_ATTEMPTS} for ${filename} (variant: ${promptVariant})`);
 
     try {
-      // Build the repair prompt (single source of truth)
-      const repairPrompt = buildRepairPromptV2(currentCode, lastErrors, filename, {
+      // Build the repair prompt using variant-specific builder
+      const repairPrompt = buildPrompt(currentCode, lastErrors, filename, {
         unifiedViolations: lastUnifiedViolations,
         sanitizerWarnings,
         metrics,
@@ -342,6 +481,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
           errors: [],
           unifiedViolations: [],
           usedFallback: false,
+          promptVariant,
         };
       }
 
@@ -353,12 +493,12 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
 
   // Try fallback model if available
   if (fallbackLlmRepairFn) {
-    logger.info(`Trying fallback model for ${filename}`);
+    logger.info(`Trying fallback model for ${filename} (variant: ${promptVariant})`);
     usedFallback = true;
 
     try {
-      // Build prompt again with current state
-      const repairPrompt = buildRepairPromptV2(currentCode, lastErrors, filename, {
+      // Build prompt using variant-specific builder
+      const repairPrompt = buildPrompt(currentCode, lastErrors, filename, {
         unifiedViolations: lastUnifiedViolations,
         sanitizerWarnings,
         metrics,
@@ -382,6 +522,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
           errors: [],
           unifiedViolations: [],
           usedFallback: true,
+          promptVariant,
         };
       }
     } catch (error) {
@@ -398,6 +539,7 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
     errors: lastErrors,
     unifiedViolations: lastUnifiedViolations,
     usedFallback,
+    promptVariant,
   };
 }
 

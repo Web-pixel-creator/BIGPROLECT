@@ -8,6 +8,7 @@
 import type { PipelineResult } from './generationRouter';
 import type { UnifiedViolation } from './sectionContracts';
 import type { SanitizerWarning, ChangeMetrics } from '~/utils/codeSanitizer';
+import type { PromptVariant } from '~/utils/promptVariants';
 
 // ============================================================================
 // Event Types
@@ -18,6 +19,7 @@ import type { SanitizerWarning, ChangeMetrics } from '~/utils/codeSanitizer';
  */
 export interface PipelineRunEvent {
   timestamp: string; // ISO 8601
+  promptVariant?: PromptVariant;
   
   // File context (anonymized - extension only)
   fileExt: string;
@@ -57,6 +59,7 @@ export interface PipelineRunEvent {
  */
 export interface QuarantineEvent {
   timestamp: string;
+  promptVariant?: PromptVariant;
   fileExt: string;
   violationCodes: string[];
   sanitizerWarningCodes: string[];
@@ -75,6 +78,15 @@ interface TelemetryStore {
   failureCount: number;
   quarantineCount: number;
   fallbackUsedCount: number;
+  
+  variantStats: Map<string, {
+    totalRuns: number;
+    successRuns: number;
+    quarantineRuns: number;
+    totalAttempts: number;
+    totalRepairLatencyMs: number;
+    repairRunsWithTiming: number;
+  }>;
   
   // ViolationCode tracking
   violationFrequency: Map<string, number>;
@@ -107,6 +119,7 @@ function createEmptyStore(): TelemetryStore {
     failureCount: 0,
     quarantineCount: 0,
     fallbackUsedCount: 0,
+    variantStats: new Map(),
     violationFrequency: new Map(),
     violationQuarantineRate: new Map(),
     autoFixByCode: new Map(),
@@ -175,6 +188,7 @@ export interface EmitPipelineRunOptions {
   sectionType?: string;
   usedFallback?: boolean;
   quarantined?: boolean;
+  promptVariant?: PromptVariant;
   timings?: {
     sanitizer?: number;
     validator?: number;
@@ -187,13 +201,14 @@ export interface EmitPipelineRunOptions {
  * Emit a pipeline run event.
  */
 export function emitPipelineRun(options: EmitPipelineRunOptions): PipelineRunEvent {
-  const { result, sectionType, usedFallback = false, quarantined = false, timings = {} } = options;
+  const { result, sectionType, usedFallback = false, quarantined = false, promptVariant, timings = {} } = options;
   
   // Extract violations from final validation
   const violations = result.finalValidation.unifiedViolations ?? [];
   
   const event: PipelineRunEvent = {
     timestamp: new Date().toISOString(),
+    ...(promptVariant ? { promptVariant } : {}),
     fileExt: extractFileExt(result.filename),
     sectionType,
     success: result.success,
@@ -226,16 +241,18 @@ export interface EmitQuarantineOptions {
   sanitizerWarnings: SanitizerWarning[];
   metrics?: ChangeMetrics;
   autoFixAttempts?: number;
+  promptVariant?: PromptVariant;
 }
 
 /**
  * Emit a quarantine event.
  */
 export function emitQuarantineWritten(options: EmitQuarantineOptions): QuarantineEvent {
-  const { filename, violations, sanitizerWarnings, metrics, autoFixAttempts = 0 } = options;
+  const { filename, violations, sanitizerWarnings, metrics, autoFixAttempts = 0, promptVariant } = options;
   
   const event: QuarantineEvent = {
     timestamp: new Date().toISOString(),
+    ...(promptVariant ? { promptVariant } : {}),
     fileExt: extractFileExt(filename),
     violationCodes: extractViolationCodes(violations),
     sanitizerWarningCodes: extractSanitizerCodes(sanitizerWarnings),
@@ -266,6 +283,28 @@ function aggregatePipelineEvent(event: PipelineRunEvent, violations: UnifiedViol
   }
   if (event.usedFallback) store.fallbackUsedCount++;
   if (event.quarantined) store.quarantineCount++;
+
+  if (event.promptVariant) {
+    const current = store.variantStats.get(event.promptVariant) ?? {
+      totalRuns: 0,
+      successRuns: 0,
+      quarantineRuns: 0,
+      totalAttempts: 0,
+      totalRepairLatencyMs: 0,
+      repairRunsWithTiming: 0,
+    };
+
+    current.totalRuns++;
+    if (event.success) current.successRuns++;
+    if (event.quarantined) current.quarantineRuns++;
+    current.totalAttempts += event.autoFix.attempts;
+    if (event.timings.autoFix > 0) {
+      current.totalRepairLatencyMs += event.timings.autoFix;
+      current.repairRunsWithTiming++;
+    }
+
+    store.variantStats.set(event.promptVariant, current);
+  }
   
   // Update violation frequency
   for (const [code, count] of Object.entries(event.violationCounts.byCode)) {
@@ -308,6 +347,20 @@ function aggregateQuarantineEvent(event: QuarantineEvent): void {
   // Quarantine count already updated in pipeline event
   // Here we just track additional quarantine-specific data
   
+  if (event.promptVariant) {
+    const current = store.variantStats.get(event.promptVariant) ?? {
+      totalRuns: 0,
+      successRuns: 0,
+      quarantineRuns: 0,
+      totalAttempts: 0,
+      totalRepairLatencyMs: 0,
+      repairRunsWithTiming: 0,
+    };
+
+    current.quarantineRuns++;
+    store.variantStats.set(event.promptVariant, current);
+  }
+
   for (const code of event.violationCodes) {
     const rateData = store.violationQuarantineRate.get(code) || { total: 0, quarantined: 0 };
     // Don't double-count if already counted in pipeline event
@@ -404,6 +457,15 @@ export interface QuarantineStats {
   avgAutoFixAttempts: number;
 }
 
+export interface VariantStats {
+  variant: string;
+  totalRuns: number;
+  successRate: number;
+  avgAttempts: number;
+  quarantineRate: number;
+  avgRepairLatencyMs: number;
+}
+
 // Track quarantine-specific data
 let quarantineData = {
   byRiskLevel: { low: 0, medium: 0, high: 0 } as Record<string, number>,
@@ -430,6 +492,21 @@ export function getQuarantineStats(): QuarantineStats {
       ? quarantineData.totalAutoFixAttempts / quarantineData.quarantineCount 
       : 0,
   };
+}
+
+export function getVariantStats(): VariantStats[] {
+  return Array.from(store.variantStats.entries())
+    .map(([variant, data]) => {
+      return {
+        variant,
+        totalRuns: data.totalRuns,
+        successRate: data.totalRuns > 0 ? data.successRuns / data.totalRuns : 0,
+        avgAttempts: data.totalRuns > 0 ? data.totalAttempts / data.totalRuns : 0,
+        quarantineRate: data.totalRuns > 0 ? data.quarantineRuns / data.totalRuns : 0,
+        avgRepairLatencyMs: data.repairRunsWithTiming > 0 ? data.totalRepairLatencyMs / data.repairRunsWithTiming : 0,
+      };
+    })
+    .sort((a, b) => b.totalRuns - a.totalRuns);
 }
 
 /**

@@ -74,6 +74,7 @@ export async function routeThroughPipeline(
     autoFix: 0,
   };
   let usedFallback = false;
+  let promptVariant: import('~/utils/promptVariants').PromptVariant | undefined;
   
   const result: PipelineResult = {
     success: false,
@@ -181,6 +182,7 @@ export async function routeThroughPipeline(
       result.stages.autoFix.ran = true;
       result.stages.autoFix.success = autoFixResult.success;
       result.stages.autoFix.attempts = autoFixResult.attempts;
+      promptVariant = autoFixResult.promptVariant;
 
       if (autoFixResult.success) {
         currentCode = autoFixResult.code;
@@ -213,6 +215,7 @@ export async function routeThroughPipeline(
       sectionType: options.sectionType,
       usedFallback,
       quarantined: false, // Quarantine is handled by ActionRunner
+      promptVariant,
       timings,
     });
   } catch (telemetryError) {

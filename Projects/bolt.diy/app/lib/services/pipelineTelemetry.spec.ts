@@ -9,6 +9,7 @@ import {
   getTelemetrySummary,
   getTopViolations,
   getQuarantineStats,
+  getVariantStats,
   resetTelemetry,
   getRecentEvents,
   extractFileExt,
@@ -19,8 +20,8 @@ import {
   type QuarantineEvent,
 } from './pipelineTelemetry';
 import type { PipelineResult } from './generationRouter';
-import type { UnifiedViolation } from './sectionContracts';
-import type { SanitizerWarning } from '~/utils/codeSanitizer';
+import type { UnifiedViolation, ViolationCode } from './sectionContracts';
+import type { SanitizerWarning, SanitizerWarningCode } from '~/utils/codeSanitizer';
 
 // ============================================================================
 // Test Helpers
@@ -49,7 +50,7 @@ function createMockPipelineResult(overrides: Partial<PipelineResult> = {}): Pipe
   };
 }
 
-function createMockViolation(code: string, severity: 'error' | 'warning' = 'error'): UnifiedViolation {
+function createMockViolation(code: ViolationCode, severity: 'error' | 'warning' = 'error'): UnifiedViolation {
   return {
     code,
     severity,
@@ -58,12 +59,11 @@ function createMockViolation(code: string, severity: 'error' | 'warning' = 'erro
   };
 }
 
-function createMockSanitizerWarning(code: string): SanitizerWarning {
+function createMockSanitizerWarning(code: SanitizerWarningCode): SanitizerWarning {
   return {
     code,
     message: `Sanitizer warning: ${code}`,
-    severity: 'warning',
-    autoFixable: true,
+    risk: 'low',
   };
 }
 
@@ -93,13 +93,13 @@ describe('Privacy Filter', () => {
   describe('extractViolationCodes', () => {
     it('extracts only codes from violations', () => {
       const violations: UnifiedViolation[] = [
-        createMockViolation('SYNTAX_UNCLOSED_TAG'),
+        createMockViolation('SYNTAX_JSX_UNCLOSED'),
         createMockViolation('CONTRACT_HERO_MISSING_H1'),
       ];
       
       const codes = extractViolationCodes(violations);
       
-      expect(codes).toEqual(['SYNTAX_UNCLOSED_TAG', 'CONTRACT_HERO_MISSING_H1']);
+      expect(codes).toEqual(['SYNTAX_JSX_UNCLOSED', 'CONTRACT_HERO_MISSING_H1']);
     });
 
     it('returns empty array for no violations', () => {
@@ -110,22 +110,22 @@ describe('Privacy Filter', () => {
   describe('extractSanitizerCodes', () => {
     it('extracts only codes from sanitizer warnings', () => {
       const warnings: SanitizerWarning[] = [
-        createMockSanitizerWarning('SANITIZER_REMOVED_IMPORT'),
-        createMockSanitizerWarning('SANITIZER_FIXED_QUOTES'),
+        createMockSanitizerWarning('SANITIZER_FIX_IMPORTS_MALFORMED'),
+        createMockSanitizerWarning('SANITIZER_FIX_UNTERMINATED_STRING'),
       ];
       
       const codes = extractSanitizerCodes(warnings);
       
-      expect(codes).toEqual(['SANITIZER_REMOVED_IMPORT', 'SANITIZER_FIXED_QUOTES']);
+      expect(codes).toEqual(['SANITIZER_FIX_IMPORTS_MALFORMED', 'SANITIZER_FIX_UNTERMINATED_STRING']);
     });
   });
 
   describe('buildViolationCounts', () => {
     it('counts errors and warnings separately', () => {
       const violations: UnifiedViolation[] = [
-        createMockViolation('SYNTAX_ERROR_1', 'error'),
-        createMockViolation('SYNTAX_ERROR_2', 'error'),
-        createMockViolation('STYLE_WARNING', 'warning'),
+        createMockViolation('SYNTAX_BRACE_EXPECTED', 'error'),
+        createMockViolation('SYNTAX_PAREN_EXPECTED', 'error'),
+        createMockViolation('CONTRACT_OTHER', 'warning'),
       ];
       
       const counts = buildViolationCounts(violations);
@@ -136,16 +136,16 @@ describe('Privacy Filter', () => {
 
     it('groups by code', () => {
       const violations: UnifiedViolation[] = [
-        createMockViolation('SYNTAX_UNCLOSED_TAG'),
-        createMockViolation('SYNTAX_UNCLOSED_TAG'),
-        createMockViolation('CONTRACT_MISSING_H1'),
+        createMockViolation('SYNTAX_JSX_UNCLOSED'),
+        createMockViolation('SYNTAX_JSX_UNCLOSED'),
+        createMockViolation('CONTRACT_HERO_MISSING_H1'),
       ];
       
       const counts = buildViolationCounts(violations);
       
       expect(counts.byCode).toEqual({
-        'SYNTAX_UNCLOSED_TAG': 2,
-        'CONTRACT_MISSING_H1': 1,
+        'SYNTAX_JSX_UNCLOSED': 2,
+        'CONTRACT_HERO_MISSING_H1': 1,
       });
     });
   });
@@ -182,9 +182,9 @@ describe('Privacy Filter', () => {
       const result = createMockPipelineResult({
         finalValidation: {
           valid: false,
-          errors: [{ message: 'Sensitive error with code snippet: const x = 1', line: 1, column: 1, severity: 'error' }],
+          errors: [{ message: 'Sensitive error with code snippet: const x = 1', line: 1, column: 1, code: 1001, severity: 'error' }],
           fixable: true,
-          unifiedViolations: [createMockViolation('SYNTAX_ERROR')],
+          unifiedViolations: [createMockViolation('SYNTAX_OTHER')],
         },
       });
       
@@ -197,9 +197,9 @@ describe('Privacy Filter', () => {
     it('quarantine event does not contain code content', () => {
       const event = emitQuarantineWritten({
         filename: '/path/to/secret/file.tsx',
-        violations: [createMockViolation('SYNTAX_ERROR')],
+        violations: [createMockViolation('SYNTAX_OTHER')],
         sanitizerWarnings: [],
-        metrics: { riskLevel: 'high', linesAdded: 10, linesRemoved: 5, totalChanges: 15 },
+        metrics: { riskLevel: 'high', changedLinesPercent: 10, charsAdded: 100, charsRemoved: 50, highRiskFixes: 1 },
       });
       
       expect(event.fileExt).toBe('.tsx');
@@ -232,6 +232,12 @@ describe('Event Emitters', () => {
       expect(event).toHaveProperty('violationCounts');
       expect(event).toHaveProperty('autoFix');
       expect(event).toHaveProperty('timings');
+    });
+
+    it('includes promptVariant when provided', () => {
+      const result = createMockPipelineResult();
+      const event = emitPipelineRun({ result, promptVariant: 'baseline' });
+      expect(event.promptVariant).toBe('baseline');
     });
 
     it('includes section type when provided', () => {
@@ -288,18 +294,28 @@ describe('Event Emitters', () => {
     it('creates event with correct structure', () => {
       const event = emitQuarantineWritten({
         filename: 'test.tsx',
-        violations: [createMockViolation('SYNTAX_ERROR')],
-        sanitizerWarnings: [createMockSanitizerWarning('SANITIZER_WARNING')],
-        metrics: { riskLevel: 'high', linesAdded: 10, linesRemoved: 5, totalChanges: 15 },
+        violations: [createMockViolation('SYNTAX_OTHER')],
+        sanitizerWarnings: [createMockSanitizerWarning('SANITIZER_FIX_OTHER')],
+        metrics: { riskLevel: 'high', changedLinesPercent: 10, charsAdded: 100, charsRemoved: 50, highRiskFixes: 1 },
         autoFixAttempts: 3,
       });
       
       expect(event).toHaveProperty('timestamp');
       expect(event.fileExt).toBe('.tsx');
-      expect(event.violationCodes).toEqual(['SYNTAX_ERROR']);
-      expect(event.sanitizerWarningCodes).toEqual(['SANITIZER_WARNING']);
+      expect(event.violationCodes).toEqual(['SYNTAX_OTHER']);
+      expect(event.sanitizerWarningCodes).toEqual(['SANITIZER_FIX_OTHER']);
       expect(event.riskLevel).toBe('high');
       expect(event.autoFixAttempts).toBe(3);
+    });
+
+    it('includes promptVariant when provided', () => {
+      const event = emitQuarantineWritten({
+        filename: 'test.tsx',
+        violations: [],
+        sanitizerWarnings: [],
+        promptVariant: 'fewshot-v1',
+      });
+      expect(event.promptVariant).toBe('fewshot-v1');
     });
 
     it('defaults to low risk level', () => {
@@ -370,8 +386,8 @@ describe('Aggregator', () => {
           errors: [],
           fixable: true,
           unifiedViolations: [
-            createMockViolation('SYNTAX_UNCLOSED_TAG'),
-            createMockViolation('SYNTAX_UNCLOSED_TAG'),
+            createMockViolation('SYNTAX_JSX_UNCLOSED'),
+            createMockViolation('SYNTAX_JSX_UNCLOSED'),
           ],
         },
       });
@@ -382,8 +398,8 @@ describe('Aggregator', () => {
           errors: [],
           fixable: true,
           unifiedViolations: [
-            createMockViolation('SYNTAX_UNCLOSED_TAG'),
-            createMockViolation('CONTRACT_MISSING_H1'),
+            createMockViolation('SYNTAX_JSX_UNCLOSED'),
+            createMockViolation('CONTRACT_HERO_MISSING_H1'),
           ],
         },
       });
@@ -392,8 +408,8 @@ describe('Aggregator', () => {
       emitPipelineRun({ result: result2 });
       
       const top = getTopViolations(10);
-      const syntaxViolation = top.find(v => v.code === 'SYNTAX_UNCLOSED_TAG');
-      const contractViolation = top.find(v => v.code === 'CONTRACT_MISSING_H1');
+      const syntaxViolation = top.find(v => v.code === 'SYNTAX_JSX_UNCLOSED');
+      const contractViolation = top.find(v => v.code === 'CONTRACT_HERO_MISSING_H1');
       
       expect(syntaxViolation?.count).toBe(3);
       expect(contractViolation?.count).toBe(1);
@@ -406,10 +422,10 @@ describe('Aggregator', () => {
           errors: [],
           fixable: true,
           unifiedViolations: [
-            createMockViolation('CODE_A'),
-            createMockViolation('CODE_A'),
-            createMockViolation('CODE_A'),
-            createMockViolation('CODE_B'),
+            createMockViolation('SYNTAX_OTHER'),
+            createMockViolation('SYNTAX_OTHER'),
+            createMockViolation('SYNTAX_OTHER'),
+            createMockViolation('CONTRACT_OTHER'),
           ],
         },
       });
@@ -417,7 +433,7 @@ describe('Aggregator', () => {
       emitPipelineRun({ result });
       
       const top = getTopViolations(10);
-      const codeA = top.find(v => v.code === 'CODE_A');
+      const codeA = top.find(v => v.code === 'SYNTAX_OTHER');
       
       expect(codeA?.percentage).toBe(0.75);
     });
@@ -516,10 +532,10 @@ describe('Telemetry API', () => {
           errors: [],
           fixable: true,
           unifiedViolations: [
-            createMockViolation('RARE_CODE'),
-            createMockViolation('COMMON_CODE'),
-            createMockViolation('COMMON_CODE'),
-            createMockViolation('COMMON_CODE'),
+            createMockViolation('CONTRACT_OTHER'),
+            createMockViolation('SYNTAX_OTHER'),
+            createMockViolation('SYNTAX_OTHER'),
+            createMockViolation('SYNTAX_OTHER'),
           ],
         },
       });
@@ -528,16 +544,37 @@ describe('Telemetry API', () => {
       
       const top = getTopViolations(10);
       
-      expect(top[0].code).toBe('COMMON_CODE');
+      expect(top[0].code).toBe('SYNTAX_OTHER');
       expect(top[0].count).toBe(3);
-      expect(top[1].code).toBe('RARE_CODE');
+      expect(top[1].code).toBe('CONTRACT_OTHER');
       expect(top[1].count).toBe(1);
     });
 
     it('limits to N results', () => {
-      const violations = Array.from({ length: 20 }, (_, i) => 
-        createMockViolation(`CODE_${i}`)
-      );
+      const pool: ViolationCode[] = [
+        'SYNTAX_OTHER',
+        'SYNTAX_BRACE_EXPECTED',
+        'SYNTAX_PAREN_EXPECTED',
+        'SYNTAX_BRACKET_EXPECTED',
+        'SYNTAX_IDENTIFIER_EXPECTED',
+        'SYNTAX_EXPRESSION_EXPECTED',
+        'SYNTAX_DECLARATION_EXPECTED',
+        'SYNTAX_JSX_TAG_MISMATCH',
+        'SYNTAX_JSX_UNCLOSED',
+        'SYNTAX_UNBALANCED_BRACES',
+        'SYNTAX_UNBALANCED_PARENS',
+        'SYNTAX_DUPLICATE_IMPORT',
+        'SYNTAX_MULTIPLE_EXPORT_DEFAULT',
+        'CONTRACT_OTHER',
+        'CONTRACT_HERO_MISSING_H1',
+        'CONTRACT_HERO_MISSING_CTA',
+        'CONTRACT_HERO_MISSING_VISUAL',
+        'CONTRACT_MISSING_TAILWIND',
+        'CONTRACT_MISSING_RESPONSIVE',
+        'CONTRACT_MISSING_NAMED_EXPORT',
+      ];
+
+      const violations = pool.map(code => createMockViolation(code));
       
       const result = createMockPipelineResult({
         finalValidation: {
@@ -567,21 +604,21 @@ describe('Telemetry API', () => {
     it('tracks quarantine by risk level', () => {
       emitQuarantineWritten({
         filename: 'test1.tsx',
-        violations: [createMockViolation('ERROR_1')],
+        violations: [createMockViolation('SYNTAX_OTHER')],
         sanitizerWarnings: [],
-        metrics: { riskLevel: 'high', linesAdded: 10, linesRemoved: 5, totalChanges: 15 },
+        metrics: { riskLevel: 'high', changedLinesPercent: 10, charsAdded: 100, charsRemoved: 50, highRiskFixes: 1 },
       });
       emitQuarantineWritten({
         filename: 'test2.tsx',
-        violations: [createMockViolation('ERROR_2')],
+        violations: [createMockViolation('SYNTAX_BRACE_EXPECTED')],
         sanitizerWarnings: [],
-        metrics: { riskLevel: 'high', linesAdded: 10, linesRemoved: 5, totalChanges: 15 },
+        metrics: { riskLevel: 'high', changedLinesPercent: 12, charsAdded: 90, charsRemoved: 40, highRiskFixes: 1 },
       });
       emitQuarantineWritten({
         filename: 'test3.tsx',
-        violations: [createMockViolation('ERROR_3')],
+        violations: [createMockViolation('CONTRACT_OTHER')],
         sanitizerWarnings: [],
-        metrics: { riskLevel: 'low', linesAdded: 10, linesRemoved: 5, totalChanges: 15 },
+        metrics: { riskLevel: 'low', changedLinesPercent: 5, charsAdded: 20, charsRemoved: 10, highRiskFixes: 0 },
       });
       
       const stats = getQuarantineStats();
@@ -610,12 +647,91 @@ describe('Telemetry API', () => {
     });
   });
 
+  describe('getVariantStats', () => {
+    it('returns empty array when no variant-tagged events exist', () => {
+      emitPipelineRun({ result: createMockPipelineResult() });
+      expect(getVariantStats()).toEqual([]);
+    });
+
+    it('aggregates stats per promptVariant', () => {
+      emitPipelineRun({
+        result: createMockPipelineResult({
+          success: true,
+          stages: {
+            sanitizer: { ran: true, changed: false },
+            validator: { ran: true, valid: false, errors: 1 },
+            contract: { ran: false, valid: false, score: 0 },
+            autoFix: { ran: true, success: true, attempts: 2 },
+          },
+        }),
+        promptVariant: 'baseline',
+        quarantined: false,
+        timings: { autoFix: 100 },
+      });
+
+      emitPipelineRun({
+        result: createMockPipelineResult({
+          success: false,
+          stages: {
+            sanitizer: { ran: true, changed: false },
+            validator: { ran: true, valid: false, errors: 1 },
+            contract: { ran: false, valid: false, score: 0 },
+            autoFix: { ran: true, success: false, attempts: 3 },
+          },
+        }),
+        promptVariant: 'baseline',
+        quarantined: true,
+        timings: { autoFix: 200 },
+      });
+
+      emitPipelineRun({
+        result: createMockPipelineResult({
+          success: true,
+          stages: {
+            sanitizer: { ran: true, changed: false },
+            validator: { ran: true, valid: false, errors: 1 },
+            contract: { ran: false, valid: false, score: 0 },
+            autoFix: { ran: true, success: true, attempts: 1 },
+          },
+        }),
+        promptVariant: 'fewshot-v1',
+        quarantined: false,
+        timings: { autoFix: 50 },
+      });
+
+      emitQuarantineWritten({
+        filename: 'test.tsx',
+        violations: [createMockViolation('SYNTAX_OTHER')],
+        sanitizerWarnings: [],
+        promptVariant: 'fewshot-v1',
+      });
+
+      const stats = getVariantStats();
+      const baseline = stats.find(s => s.variant === 'baseline');
+      const fewshot = stats.find(s => s.variant === 'fewshot-v1');
+
+      expect(baseline).toBeTruthy();
+      expect(baseline!.totalRuns).toBe(2);
+      expect(baseline!.successRate).toBeCloseTo(0.5);
+      expect(baseline!.quarantineRate).toBeCloseTo(0.5);
+      expect(baseline!.avgAttempts).toBeCloseTo((2 + 3) / 2);
+      expect(baseline!.avgRepairLatencyMs).toBeCloseTo((100 + 200) / 2);
+
+      expect(fewshot).toBeTruthy();
+      expect(fewshot!.totalRuns).toBe(1);
+      expect(fewshot!.successRate).toBeCloseTo(1);
+      expect(fewshot!.quarantineRate).toBeCloseTo(1);
+      expect(fewshot!.avgAttempts).toBeCloseTo(1);
+      expect(fewshot!.avgRepairLatencyMs).toBeCloseTo(50);
+    });
+  });
+
   describe('resetTelemetry', () => {
     it('clears all data', () => {
       emitPipelineRun({ result: createMockPipelineResult() });
       emitQuarantineWritten({
         filename: 'test.tsx',
-        violations: [createMockViolation('ERROR')],
+        violations: [createMockViolation('SYNTAX_OTHER')],
         sanitizerWarnings: [],
       });
       
@@ -658,7 +774,7 @@ describe('Integration', () => {
         errors: [],
         fixable: true,
         unifiedViolations: [
-          createMockViolation('SYNTAX_UNCLOSED_TAG'),
+          createMockViolation('SYNTAX_JSX_UNCLOSED'),
           createMockViolation('CONTRACT_HERO_MISSING_H1'),
         ],
       },
@@ -676,11 +792,11 @@ describe('Integration', () => {
     emitQuarantineWritten({
       filename: 'hero.tsx',
       violations: [
-        createMockViolation('SYNTAX_UNCLOSED_TAG'),
+        createMockViolation('SYNTAX_JSX_UNCLOSED'),
         createMockViolation('CONTRACT_HERO_MISSING_H1'),
       ],
-      sanitizerWarnings: [createMockSanitizerWarning('SANITIZER_REMOVED_IMPORT')],
-      metrics: { riskLevel: 'high', linesAdded: 50, linesRemoved: 10, totalChanges: 60 },
+      sanitizerWarnings: [createMockSanitizerWarning('SANITIZER_FIX_IMPORTS_MALFORMED')],
+      metrics: { riskLevel: 'high', changedLinesPercent: 50, charsAdded: 500, charsRemoved: 100, highRiskFixes: 2 },
       autoFixAttempts: 3,
     });
     
@@ -693,7 +809,7 @@ describe('Integration', () => {
     // Verify top violations
     const top = getTopViolations(10);
     expect(top.length).toBe(2);
-    expect(top.some(v => v.code === 'SYNTAX_UNCLOSED_TAG')).toBe(true);
+    expect(top.some(v => v.code === 'SYNTAX_JSX_UNCLOSED')).toBe(true);
     
     // Verify quarantine stats
     const quarantine = getQuarantineStats();

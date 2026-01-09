@@ -3,6 +3,10 @@ import {
   attemptSanitizerFix,
   buildRepairPrompt,
   buildRepairPromptV2,
+  buildRepairPromptWithFewShot,
+  getBoundaryInstructions,
+  getPromptBuilder,
+  REPAIR_BOUNDARIES,
   extractCodeFromResponse,
   quickFix,
   areErrorsAutoFixable,
@@ -201,6 +205,117 @@ export default function App() {
       expect(prompt).toContain('CHANGE_METRICS:');
       expect(prompt).toContain('BROKEN CODE:');
       expect(prompt).toContain('INSTRUCTIONS:');
+    });
+  });
+
+  describe('REPAIR_BOUNDARIES', () => {
+    it('should have instructions for all risk levels', () => {
+      expect(REPAIR_BOUNDARIES.low.instructions.length).toBeGreaterThan(0);
+      expect(REPAIR_BOUNDARIES.medium.instructions.length).toBeGreaterThan(0);
+      expect(REPAIR_BOUNDARIES.high.instructions.length).toBeGreaterThan(0);
+    });
+
+    it('high risk should have more restrictive instructions', () => {
+      expect(REPAIR_BOUNDARIES.high.instructions.length).toBeGreaterThanOrEqual(
+        REPAIR_BOUNDARIES.low.instructions.length
+      );
+    });
+  });
+
+  describe('getBoundaryInstructions', () => {
+    it('returns low risk instructions', () => {
+      const instructions = getBoundaryInstructions('low');
+      expect(instructions).toEqual(REPAIR_BOUNDARIES.low.instructions);
+    });
+
+    it('returns medium risk instructions', () => {
+      const instructions = getBoundaryInstructions('medium');
+      expect(instructions).toEqual(REPAIR_BOUNDARIES.medium.instructions);
+    });
+
+    it('returns high risk instructions (Property 4: Boundary Enforcement)', () => {
+      const instructions = getBoundaryInstructions('high');
+      expect(instructions).toEqual(REPAIR_BOUNDARIES.high.instructions);
+      expect(instructions.some(i => i.includes('MINIMAL'))).toBe(true);
+      expect(instructions.some(i => i.includes('conservative'))).toBe(true);
+    });
+  });
+
+  describe('buildRepairPromptWithFewShot', () => {
+    it('builds prompt with few-shot examples when violations match', () => {
+      const code = '<div><span>text</div>';
+      const errors: ValidationError[] = [
+        { line: 1, column: 1, message: 'JSX tag mismatch', code: 17001, severity: 'error' },
+      ];
+      const context: RepairContext = {
+        unifiedViolations: [
+          { code: 'SYNTAX_JSX_UNCLOSED', severity: 'error', message: 'Unclosed JSX tag', autoFixable: true },
+        ],
+      };
+      
+      const prompt = buildRepairPromptWithFewShot(code, errors, 'test.tsx', context);
+      
+      expect(prompt).toContain('SIMILAR FIXES');
+      expect(prompt).toContain('SYNTAX_JSX_UNCLOSED');
+      expect(prompt).toContain('BROKEN:');
+      expect(prompt).toContain('FIXED:');
+    });
+
+    it('includes boundary instructions based on risk level', () => {
+      const code = 'const x = {';
+      const errors: ValidationError[] = [
+        { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+      ];
+      const context: RepairContext = {
+        metrics: { changedLinesPercent: 50, charsAdded: 200, charsRemoved: 150, highRiskFixes: 5, riskLevel: 'high' },
+      };
+      
+      const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts', context);
+      
+      expect(prompt).toContain('MINIMAL');
+      expect(prompt).toContain('conservative');
+    });
+
+    it('works without context (defaults to low risk)', () => {
+      const code = 'const x = 1;';
+      const errors: ValidationError[] = [];
+      
+      const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts');
+      
+      expect(prompt).toContain('INSTRUCTIONS:');
+      expect(prompt).toContain('BROKEN CODE:');
+    });
+
+    it('includes violations section when provided', () => {
+      const code = 'const x = {';
+      const errors: ValidationError[] = [];
+      const context: RepairContext = {
+        unifiedViolations: [
+          { code: 'SYNTAX_BRACE_EXPECTED', severity: 'error', message: "'}' expected", autoFixable: true },
+        ],
+      };
+      
+      const prompt = buildRepairPromptWithFewShot(code, errors, 'test.ts', context);
+      
+      expect(prompt).toContain('VIOLATIONS:');
+      expect(prompt).toContain('SYNTAX_BRACE_EXPECTED');
+    });
+  });
+
+  describe('getPromptBuilder', () => {
+    it('returns buildRepairPromptV2 for baseline variant', () => {
+      const builder = getPromptBuilder('baseline');
+      expect(builder).toBe(buildRepairPromptV2);
+    });
+
+    it('returns buildRepairPromptWithFewShot for fewshot-v1 variant', () => {
+      const builder = getPromptBuilder('fewshot-v1');
+      expect(builder).toBe(buildRepairPromptWithFewShot);
+    });
+
+    it('returns buildRepairPromptV2 for unknown variant', () => {
+      const builder = getPromptBuilder('unknown' as any);
+      expect(builder).toBe(buildRepairPromptV2);
     });
   });
 
@@ -418,6 +533,95 @@ export default function App() {
       expect(promptArg).toContain('export const x = {');
       expect(promptArg).toContain('INSTRUCTIONS:');
       expect(promptArg).toContain('FIXED CODE:');
+    });
+
+    it('uses fewshot-v1 prompt builder when variant is forced', async () => {
+      const brokenCode = '<div><span>text</div>';
+      
+      const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('<div><span>text</span></div>');
+      
+      const options: AutoFixOptions = {
+        filename: 'test.tsx',
+        originalCode: brokenCode,
+        validationResult: {
+          valid: false,
+          errors: [
+            { line: 1, column: 1, message: 'JSX tag mismatch', code: 17001, severity: 'error' },
+          ],
+          unifiedViolations: [
+            { code: 'SYNTAX_JSX_UNCLOSED', severity: 'error', message: 'Unclosed JSX tag', autoFixable: true },
+          ],
+          fixable: true,
+        },
+        llmRepairFn: mockLlmRepair,
+        variantSelection: {
+          forceVariant: 'fewshot-v1',
+        },
+      };
+      
+      const result = await autoFixWithLlm(options);
+      
+      expect(result.promptVariant).toBe('fewshot-v1');
+      
+      const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      // fewshot-v1 should include SIMILAR FIXES section when violations match
+      expect(promptArg).toContain('SIMILAR FIXES');
+    });
+
+    it('uses baseline prompt builder when variant is baseline', async () => {
+      const brokenCode = 'const x = {';
+      
+      const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('const x = {};');
+      
+      const options: AutoFixOptions = {
+        filename: 'test.ts',
+        originalCode: brokenCode,
+        validationResult: {
+          valid: false,
+          errors: [
+            { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+          ],
+          fixable: true,
+        },
+        llmRepairFn: mockLlmRepair,
+        variantSelection: {
+          forceVariant: 'baseline',
+        },
+      };
+      
+      const result = await autoFixWithLlm(options);
+      
+      expect(result.promptVariant).toBe('baseline');
+      
+      const promptArg = (mockLlmRepair as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      // baseline should NOT include SIMILAR FIXES section
+      expect(promptArg).not.toContain('SIMILAR FIXES');
+    });
+
+    it('returns promptVariant in result', async () => {
+      const brokenCode = 'const x = {';
+      
+      const mockLlmRepair: LlmRepairFn = vi.fn().mockResolvedValue('const x = {};');
+      
+      const options: AutoFixOptions = {
+        filename: 'test.ts',
+        originalCode: brokenCode,
+        validationResult: {
+          valid: false,
+          errors: [
+            { line: 1, column: 12, message: "'}' expected", code: 1005, severity: 'error' },
+          ],
+          fixable: true,
+        },
+        llmRepairFn: mockLlmRepair,
+        variantSelection: {
+          forceVariant: 'fewshot-v1',
+        },
+      };
+      
+      const result = await autoFixWithLlm(options);
+      
+      expect(result.promptVariant).toBe('fewshot-v1');
     });
   });
 });

@@ -702,6 +702,7 @@ export class ActionRunner {
         // Validation Gate: Check code validity before writing
         const validation = validateFile(contentToWrite, relativePath);
         let autoFixAttemptsCount = 0;
+        let promptVariant: import('~/utils/promptVariants').PromptVariant | undefined;
         if (!validation.valid) {
           const errorCount = getUnifiedErrorCount(validation.unifiedViolations);
           
@@ -741,6 +742,7 @@ export class ActionRunner {
                   });
                   
                   autoFixAttemptsCount += autoFixResult.attempts;
+                  promptVariant = autoFixResult.promptVariant;
                   
                   if (autoFixResult.success) {
                     logger.info(`LLM repair succeeded for ${relativePath} after ${autoFixResult.attempts} attempt(s)`);
@@ -803,6 +805,7 @@ export class ActionRunner {
                 sanitizerWarnings: structuredWarnings || [],
                 metrics,
                 autoFixAttempts: autoFixAttemptsCount,
+                promptVariant,
               });
             } catch (telemetryError) {
               // Telemetry errors should not affect quarantine
