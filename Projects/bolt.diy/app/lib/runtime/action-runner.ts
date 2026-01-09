@@ -56,6 +56,60 @@ const normalizeSectionValue = (value: string) =>
 const isAllowedSectionRoot = (normalizedPath: string) =>
   ALLOWED_SECTION_ROOTS.some((root) => normalizedPath.startsWith(root));
 
+/**
+ * Check if file is a modular section component file.
+ * Pattern: src/components/*Section.tsx or src/components/Navigation.tsx, Footer.tsx, etc.
+ */
+const isModularSectionFile = (normalizedPath: string): boolean => {
+  // Must be in src/components/
+  if (!normalizedPath.startsWith('src/components/')) {
+    return false;
+  }
+
+  // Must be a direct child (not nested)
+  const relativePath = normalizedPath.replace('src/components/', '');
+
+  if (relativePath.includes('/')) {
+    return false;
+  }
+
+  // Must be .tsx or .jsx
+  if (!relativePath.endsWith('.tsx') && !relativePath.endsWith('.jsx')) {
+    return false;
+  }
+
+  // Check for section-like naming patterns
+  const filename = relativePath.replace(/\.(tsx|jsx)$/, '');
+  const sectionPatterns = [
+    /Section$/i, // HeroSection, FeaturesSection
+    /^(Navigation|Nav|Header|Footer|Hero|Features|Pricing|Testimonials|Gallery|FAQ|CTA|Contact|About|Team|Blog|Newsletter)$/i,
+  ];
+
+  return sectionPatterns.some((pattern) => pattern.test(filename));
+};
+
+/**
+ * Check if file is the main App composition file.
+ */
+const isAppCompositionFile = (normalizedPath: string): boolean => {
+  return normalizedPath === 'src/App.tsx' || normalizedPath === 'src/App.jsx';
+};
+
+/**
+ * Detect if content is a single-section component (modular mode).
+ * Returns the section type if it's a single-section file, null otherwise.
+ */
+const detectSingleSectionType = (content: string): string | null => {
+  const dataSections = extractDataSectionValues(content);
+
+  // Single data-section = modular section file
+  if (dataSections.length === 1) {
+    return dataSections[0];
+  }
+
+  return null;
+};
+
 const extractDataSectionValues = (content: string): string[] => {
   const values: string[] = [];
   let match: RegExpExecArray | null;
@@ -1066,6 +1120,23 @@ export class ActionRunner {
     if (!sectionContract || sectionContract.order.length === 0) {
       return;
     }
+
+    // MODULAR MODE: Skip page-contract for individual section files
+    // They contain only one data-section and shouldn't be checked for "all sections"
+    if (isModularSectionFile(normalizedPath)) {
+      const singleSection = detectSingleSectionType(content);
+
+      if (singleSection) {
+        // This is a valid modular section file - skip page contract validation
+        // Per-section contract validation can be added in PR3
+        logger.debug(`Skipping page contract for modular section file: ${normalizedPath} (section: ${singleSection})`);
+        return;
+      }
+    }
+
+    // For App.tsx in modular mode, we could check composition
+    // For now, we still run the full page contract check
+    // This will be enhanced when we track observed sections across files
 
     const expectedKeys = sectionContract.order.map(normalizeSectionValue);
     const expectedLabels: Record<string, string> = sectionContract.labels ?? {};
