@@ -57,12 +57,16 @@ function validateTokenLimits(modelDetails: ModelInfo): { valid: boolean; error?:
 }
 
 async function llmCallAction({ context, request }: ActionFunctionArgs) {
-  const { system, message, model, provider, streamOutput } = await request.json<{
+  const { system, message, model, provider, streamOutput, purpose, stopSequences } = await request.json<{
     system: string;
     message: string;
     model: string;
     provider: ProviderInfo;
     streamOutput?: boolean;
+    /** Purpose: 'template' (1024 tokens) or 'repair' (8192 tokens) */
+    purpose?: 'template' | 'repair';
+    /** Stop sequences for code repair sentinel pattern */
+    stopSequences?: string[];
   }>();
 
   const { name: providerName } = provider;
@@ -201,9 +205,20 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       const isReasoning = isReasoningModel(modelDetails.name);
       logger.info(`DEBUG: Model "${modelDetails.name}" detected as reasoning model: ${isReasoning}`);
 
-      // Hard cap for template selection responses (we only need a tiny XML payload).
+      // Token limits depend on purpose:
+      // - 'template': small output for template selection XML (1024)
+      // - 'repair': larger output for code repair (8192)
       const TEMPLATE_SELECTION_MAX_TOKENS = 1024;
-      const safeMaxTokens = Math.max(1, Math.min(dynamicMaxTokens, TEMPLATE_SELECTION_MAX_TOKENS));
+      const REPAIR_MAX_TOKENS = 8192;
+
+      let safeMaxTokens: number;
+
+      if (purpose === 'repair') {
+        safeMaxTokens = Math.max(1, Math.min(dynamicMaxTokens, REPAIR_MAX_TOKENS));
+        logger.info(`Using repair token cap: ${safeMaxTokens}`);
+      } else {
+        safeMaxTokens = Math.max(1, Math.min(dynamicMaxTokens, TEMPLATE_SELECTION_MAX_TOKENS));
+      }
 
       // Use maxCompletionTokens for reasoning models (o1, GPT-5), maxTokens for traditional models
       const tokenParams = isReasoning ? { maxCompletionTokens: safeMaxTokens } : { maxTokens: safeMaxTokens };
@@ -228,9 +243,13 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
       };
 
       // For reasoning models, set temperature to 1 (required by OpenAI API)
+      // Add stopSequences if provided (for code repair sentinel pattern)
+      const stopParams =
+        stopSequences && stopSequences.length > 0 && !isReasoning ? { stopSequences } : {};
+
       const finalParams = isReasoning
         ? { ...baseParams, temperature: 1 } // Set to 1 for reasoning models (only supported value)
-        : { ...baseParams, temperature: 0 };
+        : { ...baseParams, temperature: 0, ...stopParams };
 
       // DEBUG: Log final parameters
       logger.info(

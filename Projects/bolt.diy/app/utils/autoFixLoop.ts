@@ -388,24 +388,39 @@ export function getPromptBuilder(variant: PromptVariant): typeof buildRepairProm
 }
 
 /**
- * Extract code from LLM response (handles markdown code blocks).
+ * Extract code from LLM response (handles markdown code blocks and sentinel).
+ * This is the SINGLE SOURCE OF TRUTH for response parsing.
  */
 export function extractCodeFromResponse(response: string): string {
-  // Try to extract from markdown code block
-  const codeBlockMatch = response.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
+  let cleaned = response;
+
+  // Step 1: Handle <<<END_CODE>>> sentinel (used by code repair)
+  // Remove everything AFTER the sentinel (not just at end)
+  const sentinelIndex = cleaned.indexOf('<<<END_CODE>>>');
+
+  if (sentinelIndex !== -1) {
+    cleaned = cleaned.substring(0, sentinelIndex);
+  }
+
+  // Step 2: Try to extract from markdown code block
+  const codeBlockMatch = cleaned.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
 
   if (codeBlockMatch) {
     return codeBlockMatch[1].trim();
   }
 
-  // Try to find code between common markers
+  // Step 3: Remove markdown fences if LLM added them without proper block format
+  cleaned = cleaned.replace(/^```(?:tsx?|jsx?|typescript|javascript)?\s*\n?/i, '');
+  cleaned = cleaned.replace(/\n?```\s*$/g, '');
+
+  // Step 4: Try to find code after common markers
   const startMarkers = ['FIXED CODE:', 'Here is the fixed code:', 'Fixed:'];
 
   for (const marker of startMarkers) {
-    const idx = response.indexOf(marker);
+    const idx = cleaned.indexOf(marker);
 
     if (idx !== -1) {
-      const afterMarker = response.substring(idx + marker.length).trim();
+      const afterMarker = cleaned.substring(idx + marker.length).trim();
 
       // Check if there's a code block after the marker
       const blockMatch = afterMarker.match(/```(?:\w+)?\s*\n([\s\S]*?)```/);
@@ -418,8 +433,8 @@ export function extractCodeFromResponse(response: string): string {
     }
   }
 
-  // Return as-is if no markers found
-  return response.trim();
+  // Return cleaned response
+  return cleaned.trim();
 }
 
 /**

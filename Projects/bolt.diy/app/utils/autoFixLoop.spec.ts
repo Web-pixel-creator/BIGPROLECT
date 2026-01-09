@@ -355,6 +355,39 @@ export default function App() { return <div>Hello</div>; }
       const code = extractCodeFromResponse(response);
       expect(code).toBe('const x = 1;');
     });
+
+    it('handles <<<END_CODE>>> sentinel at end', () => {
+      const response = `export function Fixed() {
+  return <div>Fixed</div>;
+}<<<END_CODE>>>`;
+
+      const code = extractCodeFromResponse(response);
+      expect(code).toBe(`export function Fixed() {
+  return <div>Fixed</div>;
+}`);
+    });
+
+    it('handles <<<END_CODE>>> sentinel with trailing content', () => {
+      const response = `const x = 1;<<<END_CODE>>>
+
+Some explanation after the code that should be removed.`;
+
+      const code = extractCodeFromResponse(response);
+      expect(code).toBe('const x = 1;');
+    });
+
+    it('handles sentinel inside markdown code block', () => {
+      const response = `\`\`\`tsx
+export default function App() {
+  return <div>Hello</div>;
+}
+\`\`\`<<<END_CODE>>>`;
+
+      const code = extractCodeFromResponse(response);
+      expect(code).toBe(`export default function App() {
+  return <div>Hello</div>;
+}`);
+    });
   });
 
   describe('quickFix', () => {

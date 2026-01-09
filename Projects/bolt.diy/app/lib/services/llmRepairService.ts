@@ -69,12 +69,23 @@ export function createLlmRepairFn(config: LlmRepairConfig = {}): LlmRepairFn {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          system:
-            'You are a code repair assistant. Fix syntax errors in code. Return ONLY the fixed code, no explanations.',
+          // Strict response contract with sentinel
+          system: `You are a code repair assistant. Fix syntax errors in code.
+
+STRICT RESPONSE CONTRACT:
+1. Return ONLY the fixed code, no explanations.
+2. Do NOT wrap the code in markdown fences.
+3. Start your response with the FIRST line of code.
+4. End your response with the LAST line of code, then write: <<<END_CODE>>>
+5. Do NOT include any text after <<<END_CODE>>>`,
           message: prompt,
           model: finalConfig.model,
           provider: { name: finalConfig.provider },
           streamOutput: false,
+          // Purpose: repair needs larger token cap (8192) vs template selection (1024)
+          purpose: 'repair',
+          // Stop sequence: only the sentinel to avoid false positives
+          stopSequences: ['<<<END_CODE>>>'],
         }),
         signal: controller.signal,
       });
