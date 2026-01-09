@@ -687,7 +687,7 @@ export class ActionRunner {
         const installProcess = await webcontainer.spawn('npm', ['install']);
         installProcess.output.pipeTo(
           new WritableStream({
-            write() {},
+            write() { },
           }),
         );
 
@@ -768,8 +768,8 @@ export class ActionRunner {
         if (metrics) {
           logger.debug(
             `Sanitizer change metrics for ${relativePath}: changedLinesPercent=${metrics.changedLinesPercent.toFixed(2)} ` +
-              `charsAdded=${metrics.charsAdded} charsRemoved=${metrics.charsRemoved} highRiskFixes=${metrics.highRiskFixes} ` +
-              `riskLevel=${metrics.riskLevel}`,
+            `charsAdded=${metrics.charsAdded} charsRemoved=${metrics.charsRemoved} highRiskFixes=${metrics.highRiskFixes} ` +
+            `riskLevel=${metrics.riskLevel}`,
           );
         }
 
@@ -1004,14 +1004,14 @@ export class ActionRunner {
         autoFix:
           attempts < 1
             ? {
-                key: autoFixKey,
-                message:
-                  `Fix the JSX/TSX parse error in ${normalizedPath}.\n` +
-                  `Code: ${firstErrorCode}\n` +
-                  `Error: ${firstErrorMessage}\n` +
-                  `Location: ${location}${snippet}\n\n` +
-                  `Please update the file so it compiles without JSX syntax errors.`,
-              }
+              key: autoFixKey,
+              message:
+                `Fix the JSX/TSX parse error in ${normalizedPath}.\n` +
+                `Code: ${firstErrorCode}\n` +
+                `Error: ${firstErrorMessage}\n` +
+                `Location: ${location}${snippet}\n\n` +
+                `Please update the file so it compiles without JSX syntax errors.`,
+            }
             : undefined,
 
         // Structured data for UI
@@ -1122,16 +1122,14 @@ export class ActionRunner {
     }
 
     // MODULAR MODE: Skip page-contract for individual section files
-    // They contain only one data-section and shouldn't be checked for "all sections"
+    // After PR3, section components don't contain data-section (it's in App.tsx)
+    // Skip based on file path pattern, not content
     if (isModularSectionFile(normalizedPath)) {
-      const singleSection = detectSingleSectionType(content);
+      logger.debug(`Skipping page contract for modular section file: ${normalizedPath}`);
 
-      if (singleSection) {
-        // This is a valid modular section file - skip page contract validation
-        // Per-section contract validation can be added in PR3
-        logger.debug(`Skipping page contract for modular section file: ${normalizedPath} (section: ${singleSection})`);
-        return;
-      }
+      // TODO: Per-section contract validation can be added here
+      // e.g. validateHeroSection(content) for HeroSection.tsx
+      return;
     }
 
     // For App.tsx in modular mode, we could check composition
@@ -1287,19 +1285,19 @@ export class ActionRunner {
       autoFix:
         attempts < 1
           ? {
-              key: autoFixKey,
-              message:
-                `Fix the section contract in ${normalizedPath}.\n` +
-                `Expected order: ${expectedOrderLabel}\n` +
-                `Actual order: ${actualOrderLabel}\n` +
-                `Missing sections: ${missingLabel}\n` +
-                `Out-of-order sections: ${outOfOrderLabel}\n` +
-                `Unknown sections: ${extrasLabel}\n` +
-                `Image counts below minimum: ${imageCountLabel}\n` +
-                `Duplicate images in section: ${imageDuplicateLabel}\n` +
-                `Images not in IMAGES list: ${invalidImageLabel}\n\n` +
-                `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
-            }
+            key: autoFixKey,
+            message:
+              `Fix the section contract in ${normalizedPath}.\n` +
+              `Expected order: ${expectedOrderLabel}\n` +
+              `Actual order: ${actualOrderLabel}\n` +
+              `Missing sections: ${missingLabel}\n` +
+              `Out-of-order sections: ${outOfOrderLabel}\n` +
+              `Unknown sections: ${extrasLabel}\n` +
+              `Image counts below minimum: ${imageCountLabel}\n` +
+              `Duplicate images in section: ${imageDuplicateLabel}\n` +
+              `Images not in IMAGES list: ${invalidImageLabel}\n\n` +
+              `Ensure every required section exists, appears in the expected order, and all <img> src values come from the IMAGES block.`,
+          }
           : undefined,
 
       // Structured data for UI

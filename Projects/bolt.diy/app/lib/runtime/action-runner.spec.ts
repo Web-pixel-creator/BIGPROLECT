@@ -170,15 +170,15 @@ describe('Modular section detection helpers', () => {
   // These tests verify that modular section files don't trigger false "missing sections" alerts.
 
   it('should not trigger page contract alert for single-section modular file', async () => {
-    // Valid single-section component
+    // Valid modular section component (PR3: no data-section, returns div)
     const heroSectionContent = `
 export function HeroSection() {
   return (
-    <section data-section="hero" className="min-h-screen">
+    <div className="min-h-screen">
       <h1>Welcome</h1>
       <p>Description</p>
       <button>Get Started</button>
-    </section>
+    </div>
   );
 }
 `;

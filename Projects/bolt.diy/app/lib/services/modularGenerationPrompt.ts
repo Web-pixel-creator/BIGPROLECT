@@ -47,12 +47,15 @@ export function buildModularGenerationAddon(userPrompt: string): ModularGenerati
 <modular_generation>
 MODULAR WEBSITE MODE (override for this request)
 
-- OVERRIDE: The earlier rule “Отдельные файлы компонентов (все класть в src/App.tsx)” does NOT apply here.
+- OVERRIDE: The earlier rule "Отдельные файлы компонентов (все класть в src/App.tsx)" does NOT apply here.
 - For a full website/landing page, create separate section component files under src/components/.
+
+SECTION COMPONENT RULES:
 - Each section component MUST:
-  - export a named component (no default export)
-  - return a single root <section data-section="..."> ... </section>
-  - keep all section markup inside that file (App.tsx only composes)
+  - export a named function (no default export)
+  - return a <div> (NOT <section> - App.tsx will wrap it)
+  - contain all section markup inside that file
+- Do NOT include data-section in section components
 
 CRITICAL OUTPUT ORDER (still required): package.json must be the FIRST file.
 You may insert additional section component files after src/App.tsx and before src/index.css.
@@ -60,13 +63,13 @@ You may insert additional section component files after src/App.tsx and before s
 RECOMMENDED SECTION FILES FOR THIS REQUEST:
 ${fileList}
 
-src/App.tsx composition pattern (adapt styling as needed):
+src/App.tsx MUST wrap each section with data-section:
 ${importList}
 
 export default function App() {
   return (
     <div className="min-h-screen">
-${usageList}
+${sectionFiles.map((s) => `      <section data-section="${s.sectionType}"><${s.componentName} /></section>`).join('\n')}
     </div>
   );
 }
