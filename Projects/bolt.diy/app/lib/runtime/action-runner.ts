@@ -338,6 +338,8 @@ export class ActionRunner {
   #autoFixAttempts = new Map<string, number>();
   #autoFixSectionAttempts = new Map<string, number>();
   #sectionContract?: SectionContract;
+  // Track quarantined files to prevent writing App.tsx with broken imports
+  #quarantinedFiles = new Set<string>();
   runnerId = atom<string>(`${Date.now()}`);
   actions: ActionsMap = map({});
   onAlert?: (alert: ActionAlert) => void;
@@ -866,6 +868,7 @@ export class ActionRunner {
 
             // Write the invalid file
             await webcontainer.fs.writeFile(quarantinePath, contentToWrite);
+            this.#quarantinedFiles.add(relativePath);
             logger.warn(`Quarantined invalid file to ${quarantinePath} (${errorCount} errors)`);
 
             // Write sidecar artifacts for debugging and analytics
@@ -921,6 +924,43 @@ export class ActionRunner {
         }
       }
 
+      // MODULAR MODE: Check if App.tsx imports any quarantined files
+      if (
+        isAppCompositionFile(relativePath) &&
+        typeof contentToWrite === 'string' &&
+        this.#quarantinedFiles.size > 0
+      ) {
+        const brokenImports = this.#findBrokenImports(contentToWrite);
+
+        if (brokenImports.length > 0) {
+          logger.warn(`App.tsx has broken imports: ${brokenImports.join(', ')}`);
+
+          // Quarantine App.tsx as well
+          const quarantinePath = `.history/${relativePath}.invalid`;
+          const quarantineFolder = nodePath.dirname(quarantinePath);
+
+          try {
+            await webcontainer.fs.mkdir(quarantineFolder, { recursive: true });
+            await webcontainer.fs.writeFile(quarantinePath, contentToWrite);
+            this.#quarantinedFiles.add(relativePath);
+            logger.warn(`Quarantined App.tsx due to broken imports`);
+          } catch {
+            logger.error('Failed to quarantine App.tsx');
+          }
+
+          this.onAlert?.({
+            type: 'validation',
+            title: 'Modular Build Failed',
+            description: `App.tsx cannot be written - imports missing: ${brokenImports.join(', ')}`,
+            content: `The following component files failed validation and were quarantined:\n${brokenImports.map((f: string) => `- ${f}`).join('\n')}\n\nApp.tsx was also quarantined to prevent broken builds.`,
+            source: 'validation',
+            filePath: relativePath,
+          });
+
+          return; // Don't write App.tsx
+        }
+      }
+
       await webcontainer.fs.writeFile(relativePath, contentToWrite);
       logger.debug(`File written ${relativePath}`);
 
@@ -931,6 +971,38 @@ export class ActionRunner {
     } catch (error) {
       logger.error('Failed to write file\n\n', error);
     }
+  }
+
+  /**
+   * Find imports in content that refer to quarantined files.
+   * Returns array of quarantined file paths that are imported.
+   */
+  #findBrokenImports(content: string): string[] {
+    const brokenImports: string[] = [];
+
+    // Match import statements: import { X } from './components/Y'
+    const importRegex = /import\s+.*?\s+from\s+['"]\.\/components\/([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = importRegex.exec(content)) !== null) {
+      const componentName = match[1];
+
+      // Check various possible file paths
+      const possiblePaths = [
+        `src/components/${componentName}.tsx`,
+        `src/components/${componentName}.jsx`,
+        `src/components/${componentName}`,
+      ];
+
+      for (const path of possiblePaths) {
+        if (this.#quarantinedFiles.has(path)) {
+          brokenImports.push(path);
+          break;
+        }
+      }
+    }
+
+    return brokenImports;
   }
 
   #updateAction(id: string, newState: ActionStateUpdate) {
