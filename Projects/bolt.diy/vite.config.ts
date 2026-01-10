@@ -82,6 +82,24 @@ export default defineConfig((config) => {
         '**/tests/preview/**', // Exclude preview tests that require Playwright
       ],
     },
+    optimizeDeps: {
+      // Force Vite to pre-bundle these dependencies
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        '@nanostores/react',
+        'nanostores',
+        'zustand',
+        'framer-motion',
+        'react-toastify',
+        '@ai-sdk/react',
+      ],
+      // Exclude problematic dependencies from optimization
+      exclude: ['@remix-run/cloudflare'],
+      // Force re-optimization on changes
+      force: true,
+    },
   };
 });
 
