@@ -50,4 +50,44 @@ describe('Prompt Enhancer Stability', () => {
     const result = await enhancePromptWithDesignSystem(prompt);
     expect(result.detectedTheme).toBe('furniture');
   });
+
+  it('does not treat generic text as a design request', () => {
+    expect(shouldEnhancePrompt('hello there')).toBe(false);
+  });
+
+  it('adds requirements block when prompt provides a list', async () => {
+    const prompt = [
+      'Landing page for a coffee shop.',
+      '- Add a pricing section.',
+      '- Include testimonials with short quotes.',
+    ].join('\n');
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+
+    expect(result.enhancedPrompt).toContain('REQUIREMENTS (must implement):');
+    expect(result.enhancedPrompt).toContain('Add a pricing section.');
+    expect(result.enhancedPrompt).toContain('Include testimonials with short quotes.');
+  });
+
+  it('builds image contract when image sections are requested', async () => {
+    const prompt = [
+      'Landing page for a furniture brand with rich photography.',
+      'Hero: large image and headline.',
+      'Gallery: product photos.',
+      'Products: grid of featured items.',
+    ].join('\n');
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    const contract = result.sectionContract;
+
+    expect(contract).toBeDefined();
+
+    const imageSections = contract?.imageSections ?? [];
+    expect(imageSections).toEqual(expect.arrayContaining(['hero', 'gallery', 'products']));
+
+    for (const section of imageSections) {
+      const images = contract?.imageMap?.[section] ?? [];
+      expect(images.length).toBeGreaterThan(0);
+    }
+  });
 });
