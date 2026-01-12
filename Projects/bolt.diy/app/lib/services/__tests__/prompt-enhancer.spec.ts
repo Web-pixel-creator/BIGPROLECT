@@ -101,6 +101,27 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.detectedTheme).toBe('realestate');
   });
 
+  it('detects hotel theme from Russian prompt', async () => {
+    const prompt = '\u0441\u0430\u0439\u0442 \u0431\u0443\u0442\u0438\u043a-\u043e\u0442\u0435\u043b\u044f \u0441 \u0431\u0440\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435\u043c \u043d\u043e\u043c\u0435\u0440\u043e\u0432';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('hotel');
+  });
+
+  it('detects industrial theme from Russian prompt', async () => {
+    const prompt = '\u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u043b\u044f \u043f\u0440\u043e\u043c\u044b\u0448\u043b\u0435\u043d\u043d\u043e\u0439 \u044d\u043d\u0435\u0440\u0433\u0435\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u0439 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('industrial');
+  });
+
+  it('detects photography theme from Russian prompt', async () => {
+    const prompt = '\u043f\u043e\u0440\u0442\u0444\u043e\u043b\u0438\u043e \u0444\u043e\u0442\u043e\u0433\u0440\u0430\u0444\u0430 \u0438 \u0444\u043e\u0442\u043e\u0441\u044a\u0451\u043c\u043a\u0430';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('photography');
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
