@@ -115,29 +115,50 @@ export interface ComponentMatch {
   relevance: number;
 }
 
-// Default keywords for component matching (ASCII fallback)
+// Default keywords for component matching (ASCII fallback + RU via \uXXXX)
 const DEFAULT_COMPONENT_KEYWORDS: Record<string, string[]> = {
-  header: ['header', 'head', 'top bar', 'top section', 'site header', 'page header'],
-  hero: ['hero', 'hero section', 'hero banner', 'main banner', 'landing section', 'above the fold', 'first screen', 'splash'],
-  navbar: ['navbar', 'navigation', 'nav', 'nav bar', 'navigation bar', 'top menu', 'main menu', 'site menu'],
-  features: ['features', 'feature', 'benefits', 'advantages', 'services', 'what we offer', 'capabilities'],
-  pricing: ['pricing', 'plans', 'prices', 'tiers', 'subscription'],
-  testimonials: ['testimonials', 'reviews', 'feedback', 'quotes'],
-  team: ['team', 'about us', 'our team', 'leadership', 'staff'],
-  contact: ['contact', 'contact form', 'get in touch', 'reach out'],
-  footer: ['footer', 'site footer', 'bottom section'],
-  cta: ['cta', 'call to action', 'call-to-action', 'signup', 'sign up', 'get started'],
-  faq: ['faq', 'questions', 'q&a', 'accordion'],
-  about: ['about', 'our story', 'mission', 'vision'],
-  stats: ['stats', 'metrics', 'numbers', 'kpis'],
-  services: ['services', 'offerings', 'what we do'],
-  projects: ['projects', 'case studies', 'work', 'portfolio'],
-  gallery: ['gallery', 'grid', 'masonry', 'carousel', 'slider'],
-  blog: ['blog', 'articles', 'news', 'posts'],
-  logos: ['logos', 'logo cloud', 'partners', 'clients'],
-  products: ['products', 'catalog', 'shop', 'store'],
-  categories: ['categories', 'collections', 'filters'],
-  newsletter: ['newsletter', 'subscribe', 'email signup']
+  header: ['header', 'head', 'top bar', 'top section', 'site header', 'page header',
+    '\u0448\u0430\u043f\u043a\u0430', '\u0432\u0435\u0440\u0445\u043d\u044f\u044f \u0447\u0430\u0441\u0442\u044c', '\u0437\u0430\u0433\u043e\u043b\u043e\u0432\u043e\u043a \u0441\u0430\u0439\u0442\u0430'], // шапка, верхняя часть, заголовок сайта
+  hero: ['hero', 'hero section', 'hero banner', 'main banner', 'landing section', 'above the fold', 'first screen', 'splash',
+    '\u0433\u0435\u0440\u043e\u0439', '\u0433\u043b\u0430\u0432\u043d\u044b\u0439 \u0431\u0430\u043d\u043d\u0435\u0440', '\u043f\u0435\u0440\u0432\u044b\u0439 \u044d\u043a\u0440\u0430\u043d', '\u0433\u043b\u0430\u0432\u043d\u044b\u0439 \u044d\u043a\u0440\u0430\u043d'], // герой, главный баннер, первый экран, главный экран
+  navbar: ['navbar', 'navigation', 'nav', 'nav bar', 'navigation bar', 'top menu', 'main menu', 'site menu',
+    '\u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044f', '\u043c\u0435\u043d\u044e', '\u0433\u043b\u0430\u0432\u043d\u043e\u0435 \u043c\u0435\u043d\u044e', '\u0432\u0435\u0440\u0445\u043d\u0435\u0435 \u043c\u0435\u043d\u044e'], // навигация, меню, главное меню, верхнее меню
+  features: ['features', 'feature', 'benefits', 'advantages', 'services', 'what we offer', 'capabilities',
+    '\u0444\u0438\u0447\u0438', '\u043f\u0440\u0435\u0438\u043c\u0443\u0449\u0435\u0441\u0442\u0432\u0430', '\u0432\u043e\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442\u0438', '\u0443\u0441\u043b\u0443\u0433\u0438'], // фичи, преимущества, возможности, услуги
+  pricing: ['pricing', 'plans', 'prices', 'tiers', 'subscription',
+    '\u0446\u0435\u043d\u044b', '\u0442\u0430\u0440\u0438\u0444\u044b', '\u043f\u043b\u0430\u043d\u044b', '\u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430'], // цены, тарифы, планы, подписка
+  testimonials: ['testimonials', 'reviews', 'feedback', 'quotes',
+    '\u043e\u0442\u0437\u044b\u0432\u044b', '\u0440\u0435\u0446\u0435\u043d\u0437\u0438\u0438', '\u043c\u043d\u0435\u043d\u0438\u044f \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432'], // отзывы, рецензии, мнения клиентов
+  team: ['team', 'about us', 'our team', 'leadership', 'staff',
+    '\u043a\u043e\u043c\u0430\u043d\u0434\u0430', '\u043d\u0430\u0448\u0430 \u043a\u043e\u043c\u0430\u043d\u0434\u0430', '\u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0438', '\u043e \u043d\u0430\u0441'], // команда, наша команда, сотрудники, о нас
+  contact: ['contact', 'contact form', 'get in touch', 'reach out',
+    '\u043a\u043e\u043d\u0442\u0430\u043a\u0442\u044b', '\u0441\u0432\u044f\u0437\u044c', '\u043e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c', '\u043d\u0430\u043f\u0438\u0448\u0438\u0442\u0435 \u043d\u0430\u043c'], // контакты, связь, обратная связь, напишите нам
+  footer: ['footer', 'site footer', 'bottom section',
+    '\u0444\u0443\u0442\u0435\u0440', '\u043f\u043e\u0434\u0432\u0430\u043b', '\u043d\u0438\u0436\u043d\u044f\u044f \u0447\u0430\u0441\u0442\u044c'], // футер, подвал, нижняя часть
+  cta: ['cta', 'call to action', 'call-to-action', 'signup', 'sign up', 'get started',
+    '\u043f\u0440\u0438\u0437\u044b\u0432 \u043a \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044e', '\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044f', '\u043d\u0430\u0447\u0430\u0442\u044c'], // призыв к действию, регистрация, начать
+  faq: ['faq', 'questions', 'q&a', 'accordion',
+    '\u0447\u0430\u0432\u043e', '\u0432\u043e\u043f\u0440\u043e\u0441\u044b', '\u0447\u0430\u0441\u0442\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b', '\u0432\u043e\u043f\u0440\u043e\u0441-\u043e\u0442\u0432\u0435\u0442'], // чаво, вопросы, частые вопросы, вопрос-ответ
+  about: ['about', 'our story', 'mission', 'vision',
+    '\u043e \u043d\u0430\u0441', '\u043d\u0430\u0448\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u044f', '\u043c\u0438\u0441\u0441\u0438\u044f', '\u043e \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438'], // о нас, наша история, миссия, о компании
+  stats: ['stats', 'metrics', 'numbers', 'kpis',
+    '\u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430', '\u043c\u0435\u0442\u0440\u0438\u043a\u0438', '\u0446\u0438\u0444\u0440\u044b', '\u043f\u043e\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u0438'], // статистика, метрики, цифры, показатели
+  services: ['services', 'offerings', 'what we do',
+    '\u0443\u0441\u043b\u0443\u0433\u0438', '\u0447\u0442\u043e \u043c\u044b \u0434\u0435\u043b\u0430\u0435\u043c', '\u043d\u0430\u0448\u0438 \u0443\u0441\u043b\u0443\u0433\u0438'], // услуги, что мы делаем, наши услуги
+  projects: ['projects', 'case studies', 'work', 'portfolio',
+    '\u043f\u0440\u043e\u0435\u043a\u0442\u044b', '\u043a\u0435\u0439\u0441\u044b', '\u0440\u0430\u0431\u043e\u0442\u044b', '\u043f\u043e\u0440\u0442\u0444\u043e\u043b\u0438\u043e'], // проекты, кейсы, работы, портфолио
+  gallery: ['gallery', 'grid', 'masonry', 'carousel', 'slider',
+    '\u0433\u0430\u043b\u0435\u0440\u0435\u044f', '\u0441\u0435\u0442\u043a\u0430', '\u043a\u0430\u0440\u0443\u0441\u0435\u043b\u044c', '\u0441\u043b\u0430\u0439\u0434\u0435\u0440'], // галерея, сетка, карусель, слайдер
+  blog: ['blog', 'articles', 'news', 'posts',
+    '\u0431\u043b\u043e\u0433', '\u0441\u0442\u0430\u0442\u044c\u0438', '\u043d\u043e\u0432\u043e\u0441\u0442\u0438', '\u043f\u043e\u0441\u0442\u044b'], // блог, статьи, новости, посты
+  logos: ['logos', 'logo cloud', 'partners', 'clients',
+    '\u043b\u043e\u0433\u043e\u0442\u0438\u043f\u044b', '\u043f\u0430\u0440\u0442\u043d\u0435\u0440\u044b', '\u043a\u043b\u0438\u0435\u043d\u0442\u044b'], // логотипы, партнеры, клиенты
+  products: ['products', 'catalog', 'shop', 'store',
+    '\u0442\u043e\u0432\u0430\u0440\u044b', '\u043a\u0430\u0442\u0430\u043b\u043e\u0433', '\u043c\u0430\u0433\u0430\u0437\u0438\u043d', '\u043f\u0440\u043e\u0434\u0443\u043a\u0442\u044b'], // товары, каталог, магазин, продукты
+  categories: ['categories', 'collections', 'filters',
+    '\u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u0438', '\u043a\u043e\u043b\u043b\u0435\u043a\u0446\u0438\u0438', '\u0444\u0438\u043b\u044c\u0442\u0440\u044b'], // категории, коллекции, фильтры
+  newsletter: ['newsletter', 'subscribe', 'email signup',
+    '\u0440\u0430\u0441\u0441\u044b\u043b\u043a\u0430', '\u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430', '\u043f\u043e\u0434\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f'] // рассылка, подписка, подписаться
 };
 
 // Default component keywords (fallback when component-aliases.json is missing)
