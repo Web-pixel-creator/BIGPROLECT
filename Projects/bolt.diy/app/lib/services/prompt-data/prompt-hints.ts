@@ -82,6 +82,14 @@ export const NAVIGATION_SIGNALS = [
   'wishlist',
   'cart',
   'profile',
+  'меню',
+  'навигация',
+  'верхняя панель',
+  'поиск',
+  'корзина',
+  'профиль',
+  'войти',
+  'личный кабинет',
 ];
 
 export const SECTION_LAYOUTS: Record<string, string[]> = {
@@ -114,13 +122,6 @@ export const SECTION_LAYOUTS: Record<string, string[]> = {
     'meal kit unboxing',
     'recipe box',
     'unbox',
-    'галерея',
-    'портфолио',
-    'фото',
-    'фотографии',
-    'изображения',
-    'распаковка',
-    'витрина',
   ],
   testimonials: [
     'Carousel of testimonial cards',
