@@ -1,90 +1,567 @@
 {
   "componentKeywords": {
-    "header": ["header", "top bar", "site header", "?????", "????", "??????? ??????"],
-    "hero": ["hero", "hero section", "banner", "?????? ?????", "??????", "?????"],
-    "navbar": ["navbar", "navigation", "menu", "nav", "????", "?????????"],
-    "features": ["features", "services", "benefits", "advantages", "????", "??????", "????????????"],
-    "pricing": ["pricing", "plans", "prices", "?????", "????", "?????"],
-    "testimonials": ["testimonials", "reviews", "feedback", "??????", "??????"],
-    "team": ["team", "about us", "our team", "???????", "? ???"],
-    "contact": ["contact", "contact form", "get in touch", "???????", "?????????", "?????"],
-    "footer": ["footer", "site footer", "??????", "??? ????????"],
-    "cta": ["cta", "call to action", "signup", "??????", "??????", "??????????"],
-    "faq": ["faq", "questions", "???????", "?????? ???????"],
-    "stats": ["stats", "statistics", "numbers", "metrics", "??????????", "?????"],
-    "logo": ["logo", "logos", "partners", "brands", "????", "??????", "???????"],
-    "card": ["card", "cards", "tile", "????????", "??????"],
-    "gallery": ["gallery", "portfolio", "showcase", "???????", "?????????"],
-    "grid": ["grid", "bento", "layout", "?????", "?????"],
-    "list": ["list", "listing", "??????"],
-    "carousel": ["carousel", "slider", "slideshow", "????????", "???????"],
-    "tabs": ["tabs", "tab", "???????"],
-    "accordion": ["accordion", "collapsible", "?????????", "???????"],
-    "modal": ["modal", "popup", "dialog", "?????", "?????", "??????"],
-    "tooltip": ["tooltip", "hint", "popover", "?????????"],
-    "dropdown": ["dropdown", "select", "combobox", "??????????", "??????"],
-    "form": ["form", "contact form", "login", "signup", "?????"],
-    "button": ["button", "cta button", "??????"],
-    "input": ["input", "text field", "search", "????", "?????", "?????"],
-    "checkbox": ["checkbox", "toggle", "switch", "???????", "?????????????"],
-    "animation": ["animation", "motion", "transition", "????????", "????"],
-    "gradient": ["gradient", "????????"],
-    "parallax": ["parallax", "?????????"],
-    "hover": ["hover", "hover effect", "??? ?????????"],
-    "scroll": ["scroll", "on scroll", "?????????"],
-    "loading": ["loading", "loader", "spinner", "????????", "??????"],
-    "sparkles": ["sparkles", "sparkle", "?????", "?????", "?????"],
-    "spotlight": ["spotlight", "highlight", "?????????", "?????????"],
-    "lamp": ["lamp", "glow", "????", "?????", "????????"],
-    "beams": ["beams", "rays", "beam", "????", "???????? ????"],
-    "stars": ["stars", "starfield", "??????", "?????? ????"],
-    "particles": ["particles", "dots", "???????", "?????", "???????"],
-    "meteor": ["meteor", "meteors", "shooting star", "??????", "???????? ??????"],
-    "tracing": ["tracing", "line", "beam trace", "?????", "?????"],
-    "reveal": ["reveal", "scroll reveal", "?????????", "?????????"],
-    "generate": ["generate", "typewriter", "typing", "??????", "??????????"],
-    "moving": ["moving", "marquee", "running line", "??????? ??????", "??????????"],
-    "sticky": ["sticky", "pinned", "??????"],
-    "pin": ["pin", "marker", "???", "?????"],
-    "mask": ["mask", "clip", "?????", "????"],
-    "evervault": ["evervault", "matrix", "?????", "???????"],
-    "container": ["container", "frame", "mockup", "?????", "?????????"],
-    "following": ["following", "follow cursor", "?????????", "???? ?? ????????"],
-    "dot": ["dot", "dots", "?????"],
-    "wave": ["wave", "?????"],
-    "blur": ["blur", "glassmorphism", "????????", "?????"],
-    "border": ["border", "glowing border", "?????", "???????", "???????"],
-    "background": ["background", "bg", "???", "background effect"],
-    "cursor": ["cursor", "blob cursor", "ghost cursor", "??????"],
-    "glitch": ["glitch", "noise", "??????", "?????"],
-    "aurora": ["aurora", "northern lights", "??????", "???????? ??????"],
-    "galaxy": ["galaxy", "cosmos", "??????", "?????????"],
-    "plasma": ["plasma", "liquid", "??????", "??????"],
-    "hyperspeed": ["hyperspeed", "warp", "????????", "????"],
-    "lightning": ["lightning", "thunder", "??????"],
-    "magnet": ["magnet", "??????", "??????????"],
-    "pixel": ["pixel", "retro", "8bit", "???????"],
-    "ribbon": ["ribbon", "?????", "????"],
-    "metaball": ["metaball", "blob", "???????", "???? ?????"],
-    "scramble": ["scramble", "decode", "??????????", "???????"],
-    "counter": ["counter", "count", "odometer", "???????"],
-    "dock": ["dock", "taskbar", "???", "??????"],
-    "masonry": ["masonry", "pinterest", "???????", "???????"],
-    "stack": ["stack", "card stack", "??????", "????"],
-    "tilt": ["tilt", "3d tilt", "??????", "???????????"],
-    "fluid": ["fluid", "liquid", "water", "??????", "?????"],
-    "lanyard": ["lanyard", "badge", "?????", "????????"],
-    "stepper": ["stepper", "steps", "wizard", "????", "??????"]
+    "header": [
+      "header",
+      "top bar",
+      "site header",
+      "шапка",
+      "хедер",
+      "верхняя панель"
+    ],
+    "hero": [
+      "hero",
+      "hero section",
+      "banner",
+      "главный экран",
+      "баннер",
+      "герой"
+    ],
+    "navbar": [
+      "navbar",
+      "navigation",
+      "menu",
+      "nav",
+      "меню",
+      "навигация"
+    ],
+    "features": [
+      "features",
+      "services",
+      "benefits",
+      "advantages",
+      "фичи",
+      "услуги",
+      "преимущества"
+    ],
+    "pricing": [
+      "pricing",
+      "plans",
+      "prices",
+      "цены",
+      "тарифы",
+      "планы"
+    ],
+    "testimonials": [
+      "testimonials",
+      "reviews",
+      "feedback",
+      "отзывы",
+      "обзоры"
+    ],
+    "team": [
+      "team",
+      "about us",
+      "our team",
+      "команда",
+      "о нас"
+    ],
+    "contact": [
+      "contact",
+      "contact form",
+      "get in touch",
+      "контакт",
+      "обратная связь",
+      "форма"
+    ],
+    "footer": [
+      "footer",
+      "site footer",
+      "футер",
+      "низ страницы"
+    ],
+    "cta": [
+      "cta",
+      "call to action",
+      "signup",
+      "призыв",
+      "кнопка",
+      "регистрация"
+    ],
+    "faq": [
+      "faq",
+      "questions",
+      "вопросы",
+      "частые вопросы"
+    ],
+    "stats": [
+      "stats",
+      "statistics",
+      "numbers",
+      "metrics",
+      "статистика",
+      "цифры"
+    ],
+    "logo": [
+      "logo",
+      "logos",
+      "partners",
+      "brands",
+      "лого",
+      "логотип",
+      "партнеры"
+    ],
+    "card": [
+      "card",
+      "cards",
+      "tile",
+      "карточка",
+      "плитка"
+    ],
+    "gallery": [
+      "gallery",
+      "portfolio",
+      "showcase",
+      "галерея",
+      "портфолио"
+    ],
+    "grid": [
+      "grid",
+      "bento",
+      "layout",
+      "сетка",
+      "бенто"
+    ],
+    "list": [
+      "list",
+      "listing",
+      "список"
+    ],
+    "carousel": [
+      "carousel",
+      "slider",
+      "slideshow",
+      "карусель",
+      "слайдер"
+    ],
+    "tabs": [
+      "tabs",
+      "tab",
+      "вкладки"
+    ],
+    "accordion": [
+      "accordion",
+      "collapsible",
+      "аккордеон",
+      "раскрыть"
+    ],
+    "modal": [
+      "modal",
+      "popup",
+      "dialog",
+      "модал",
+      "попап",
+      "диалог"
+    ],
+    "tooltip": [
+      "tooltip",
+      "hint",
+      "popover",
+      "подсказка"
+    ],
+    "dropdown": [
+      "dropdown",
+      "select",
+      "combobox",
+      "выпадающий",
+      "выбор"
+    ],
+    "form": [
+      "form",
+      "contact form",
+      "login",
+      "signup",
+      "форма"
+    ],
+    "button": [
+      "button",
+      "cta button",
+      "кнопка"
+    ],
+    "input": [
+      "input",
+      "text field",
+      "search",
+      "поле",
+      "ввод",
+      "поиск"
+    ],
+    "checkbox": [
+      "checkbox",
+      "toggle",
+      "switch",
+      "чекбокс",
+      "переключатель"
+    ],
+    "animation": [
+      "animation",
+      "motion",
+      "transition",
+      "анимация",
+      "движение"
+    ],
+    "gradient": [
+      "gradient",
+      "градиент"
+    ],
+    "parallax": [
+      "parallax",
+      "параллакс"
+    ],
+    "hover": [
+      "hover",
+      "hover effect",
+      "при наведении"
+    ],
+    "scroll": [
+      "scroll",
+      "on scroll",
+      "прокрутка"
+    ],
+    "loading": [
+      "loading",
+      "loader",
+      "spinner",
+      "загрузка",
+      "лоадер"
+    ],
+    "sparkles": [
+      "sparkles",
+      "sparkle",
+      "искры",
+      "блеск",
+      "сияние"
+    ],
+    "spotlight": [
+      "spotlight",
+      "highlight",
+      "прожектор",
+      "подсветка"
+    ],
+    "lamp": [
+      "lamp",
+      "glow",
+      "лампа",
+      "свечение",
+      "освещение"
+    ],
+    "beams": [
+      "beams",
+      "rays",
+      "beam",
+      "лучи",
+      "световые лучи"
+    ],
+    "stars": [
+      "stars",
+      "starfield",
+      "звезды",
+      "звездное небо"
+    ],
+    "particles": [
+      "particles",
+      "dots",
+      "частицы",
+      "точки",
+      "партиклы"
+    ],
+    "meteor": [
+      "meteor",
+      "meteors",
+      "shooting star",
+      "метеор",
+      "падающая звезда"
+    ],
+    "tracing": [
+      "tracing",
+      "line",
+      "beam trace",
+      "линия",
+      "трейс"
+    ],
+    "reveal": [
+      "reveal",
+      "scroll reveal",
+      "появление",
+      "раскрытие"
+    ],
+    "generate": [
+      "generate",
+      "typewriter",
+      "typing",
+      "печать",
+      "генерация"
+    ],
+    "moving": [
+      "moving",
+      "marquee",
+      "running line",
+      "бегущая строка",
+      "марквиз"
+    ],
+    "sticky": [
+      "sticky",
+      "pinned",
+      "липкий"
+    ],
+    "pin": [
+      "pin",
+      "marker",
+      "пин",
+      "маркер"
+    ],
+    "mask": [
+      "mask",
+      "clip",
+      "маска",
+      "клип"
+    ],
+    "evervault": [
+      "evervault",
+      "matrix",
+      "матрица",
+      "эффект"
+    ],
+    "container": [
+      "container",
+      "frame",
+      "mockup",
+      "рамка",
+      "контейнер"
+    ],
+    "following": [
+      "following",
+      "follow cursor",
+      "следящий",
+      "след за курсором"
+    ],
+    "dot": [
+      "dot",
+      "dots",
+      "точка"
+    ],
+    "wave": [
+      "wave",
+      "волна"
+    ],
+    "blur": [
+      "blur",
+      "glassmorphism",
+      "размытие",
+      "блюр"
+    ],
+    "border": [
+      "border",
+      "glowing border",
+      "рамка",
+      "граница",
+      "бордер"
+    ],
+    "background": [
+      "background",
+      "bg",
+      "фон",
+      "background effect"
+    ],
+    "cursor": [
+      "cursor",
+      "blob cursor",
+      "ghost cursor",
+      "курсор"
+    ],
+    "glitch": [
+      "glitch",
+      "noise",
+      "глитч",
+      "шум"
+    ],
+    "aurora": [
+      "aurora",
+      "northern lights",
+      "аврора",
+      "северное сияние"
+    ],
+    "galaxy": [
+      "galaxy",
+      "cosmos",
+      "галактика",
+      "космос"
+    ],
+    "plasma": [
+      "plasma",
+      "liquid",
+      "плазма",
+      "жидкий"
+    ],
+    "hyperspeed": [
+      "hyperspeed",
+      "warp",
+      "гиперскорость",
+      "варп"
+    ],
+    "lightning": [
+      "lightning",
+      "thunder",
+      "молния"
+    ],
+    "magnet": [
+      "magnet",
+      "магнит",
+      "притяжение"
+    ],
+    "pixel": [
+      "pixel",
+      "retro",
+      "8bit",
+      "пиксель"
+    ],
+    "ribbon": [
+      "ribbon",
+      "лента",
+      "бант"
+    ],
+    "metaball": [
+      "metaball",
+      "blob",
+      "метабол",
+      "капля жидкая"
+    ],
+    "scramble": [
+      "scramble",
+      "decode",
+      "перемешать",
+      "декодер"
+    ],
+    "counter": [
+      "counter",
+      "count",
+      "odometer",
+      "счетчик"
+    ],
+    "dock": [
+      "dock",
+      "taskbar",
+      "док",
+      "панель"
+    ],
+    "masonry": [
+      "masonry",
+      "pinterest",
+      "мэйсонри",
+      "кладка"
+    ],
+    "stack": [
+      "stack",
+      "card stack",
+      "стопка",
+      "стек"
+    ],
+    "tilt": [
+      "tilt",
+      "3d tilt",
+      "наклон",
+      "3д наклон"
+    ],
+    "fluid": [
+      "fluid",
+      "liquid",
+      "water",
+      "жидкий",
+      "вода"
+    ],
+    "lanyard": [
+      "lanyard",
+      "badge",
+      "бейдж",
+      "ленточка"
+    ],
+    "stepper": [
+      "stepper",
+      "steps",
+      "wizard",
+      "шаги",
+      "степпер"
+    ]
   },
   "themeKeywords": {
-    "auto": ["auto", "car", "cars", "vehicle", "авто", "автосалон", "машин", "автомоб"],
-    "tech": ["tech", "it", "software", "app", "saas", "startup", "тех", "айти", "софт"],
-    "food": ["food", "restaurant", "cafe", "delivery", "еда", "ресторан", "кафе", "доставка"],
-    "fashion": ["fashion", "style", "clothes", "apparel", "мода", "одежда", "бутик", "стиль"],
-    "health": ["health", "medical", "fitness", "sport", "clinic", "здоровье", "медицина", "спорт", "фитнес"],
-    "finance": ["finance", "bank", "crypto", "money", "финансы", "банк", "крипто", "деньги"],
-    "education": ["education", "courses", "learning", "school", "обучение", "курсы", "школа", "учеба"],
-    "photo": ["photo", "photography", "gallery", "portfolio", "фото", "фотограф", "галерея", "портфолио"],
-    "construction": ["construction", "builder", "development", "строй", "строительство", "застройщик"]
+    "tech": [
+      "tech",
+      "it",
+      "software",
+      "app",
+      "saas",
+      "startup",
+      "тех",
+      "айти",
+      "софт"
+    ],
+    "food": [
+      "food",
+      "restaurant",
+      "cafe",
+      "delivery",
+      "еда",
+      "ресторан",
+      "кафе",
+      "доставка"
+    ],
+    "fashion": [
+      "fashion",
+      "style",
+      "clothes",
+      "apparel",
+      "мода",
+      "одежда",
+      "бутик",
+      "стиль"
+    ],
+    "medical": [
+      "health",
+      "medical",
+      "fitness",
+      "sport",
+      "clinic",
+      "здоровье",
+      "медицина",
+      "спорт",
+      "фитнес"
+    ],
+    "finance": [
+      "finance",
+      "bank",
+      "crypto",
+      "money",
+      "финансы",
+      "банк",
+      "крипто",
+      "деньги"
+    ],
+    "education": [
+      "education",
+      "courses",
+      "learning",
+      "school",
+      "обучение",
+      "курсы",
+      "школа",
+      "учеба"
+    ],
+    "photography": [
+      "photo",
+      "photography",
+      "gallery",
+      "portfolio",
+      "фото",
+      "фотограф",
+      "галерея",
+      "портфолио"
+    ],
+    "realestate": [
+      "construction",
+      "builder",
+      "development",
+      "строй",
+      "строительство",
+      "застройщик"
+    ]
   }
 }

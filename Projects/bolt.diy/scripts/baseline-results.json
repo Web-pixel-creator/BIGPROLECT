@@ -1,0 +1,1979 @@
+{
+  "meta": {
+    "generatedAt": "2024-01-01T00:00:00.000Z",
+    "seed": 1337,
+    "promptsPath": "scripts\\baseline-prompts.json"
+  },
+  "runs": [
+    {
+      "id": "furniture-en",
+      "prompt": "Design a minimalist Scandinavian furniture store landing page. Brand name \"Oakline\". Sections: hero, features, products, testimonials, newsletter, footer. Use warm neutrals and avoid purple.",
+      "detectedTheme": "furniture",
+      "colors": {
+        "dark": "#1a1a1a",
+        "light": "#ffffff",
+        "accent": "#000000",
+        "accentName": "black",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1a1a1a"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [],
+      "sectionCount": 0,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": false,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": false,
+        "hasSectionOrder": false,
+        "hasSectionCount": false,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1122,
+        "displayPrompt": 84,
+        "imagePrompt": 0
+      },
+      "durationMs": 158.4726,
+      "enhancedPrompt": "Design a minimalist Scandinavian furniture store landing page. Brand name \"Oakline\".\n\nBRAND NAME (use exactly): name\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1a1a1a\n- Light: #ffffff\n- Accent: #000000\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1a1a1a.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #000000.\n- Do not introduce new dominant colors.\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a split layout with overlapping media and text\n- Use a bold typographic lockup with mixed weights\n- Add an asymmetric grid or off-center alignment\nEFFECTS (apply in UI): flickering-grid, warp-background\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: rj95gb (must vary layout, imagery, and composition from prior runs).\n[Style: furniture | Colors: #1a1a1a, #ffffff, #000000]",
+      "displayPrompt": "Design a minimalist Scandinavian furniture store landing page. Brand name \"Oakline\".",
+      "imagePrompt": ""
+    },
+    {
+      "id": "furniture-ru",
+      "prompt": "Сделай лендинг для мебельного бренда в скандинавском стиле. Название бренда «Сканди Дом». Секции: герой, преимущества, каталог, отзывы, newsletter, футер. Цвета: бежевый и графит, без фиолетового.",
+      "detectedTheme": "furniture",
+      "colors": {
+        "dark": "#1a1a1a",
+        "light": "#f5f5f0",
+        "accent": "#000000",
+        "accentName": "black",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1a1a1a"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "testimonials",
+        "footer",
+        "products",
+        "newsletter"
+      ],
+      "sectionCount": 6,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 4428,
+        "displayPrompt": 196,
+        "imagePrompt": 1155
+      },
+      "durationMs": 137.02290000000005,
+      "enhancedPrompt": "Сделай лендинг для мебельного бренда в скандинавском стиле. Название бренда «Сканди Дом». Секции: герой, преимущества, каталог, отзывы, newsletter, футер. Цвета: бежевый и графит, без фиолетового.\n\nBRAND NAME (use exactly): бренда\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1a1a1a\n- Light: #f5f5f0\n- Accent: #000000\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1a1a1a.\n- Primary text uses #f5f5f0.\n- Accents/underlines/badges/prices/buttons use #000000.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fneutral%2520interior%2520natural%2520light%26sig%3D1704068037980%26boltSeed%3Dcvedzv\nPRODUCTS: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fsideboard%2520white%2520background%26sig%3D1704067329788%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fshelf%2520white%2520background%26sig%3D1704067365070%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fchair%2520white%2520background%26sig%3D1704068017749%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Flamp%2520white%2520background%26sig%3D1704067688155%26boltSeed%3Dcvedzv\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Testimonials\n4. Footer\n5. Products\n6. Newsletter\nSECTIONS (must include all): Hero, Features, Testimonials, Footer, Products, Newsletter\nSECTION CONTRACT:\n- Render exactly 6 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Testimonials -> Footer -> Products -> Newsletter\nSECTION COUNT: 6\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\n- Products: Render at least 4 product cards using distinct images.\n- Products: Each card must include a real <img> using URLs from the IMAGES block (no icons/placeholders).\n- Products: Each card includes image, title, secondary text, price, and a clear CTA button.\nART DIRECTION: Boutique showroom\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use layered cards with staggered heights\n- Use a bold typographic lockup with mixed weights\n- Add an asymmetric grid or off-center alignment\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Split hero: text left (40%), image right (60%) with vertical divider\n- Features: Zigzag feature rows with alternating text/media\n- Footer: Newsletter card inset + 4 columns + bottom bar with inline icons\n- Products: Grid with spotlight featured card and secondary cards\n\nSECTION LAYOUTS (use these styles):\n- Hero: Full-screen hero with minimal headline\n- Features: Single column with large icons\n- Testimonials: Alternating quote/author layout\n- Footer: Minimal centered footer\n- Products: Angled album sleeves in a staggered grid with hover actions\n- Newsletter: Split: text left, form right\nEFFECTS (apply in UI): warp-background, aurora-text\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"features-01\" (shadcnui-blocks.md) — Features 01.\n- Hero: Use \"aurora-text\" (21st-dev-components-part2.md) — aurora text.\n- Footer: Use \"animated-subscribe-button\" (21st-dev-components.md) — animated subscribe button.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: cvedzv (must vary layout, imagery, and composition from prior runs).\n[Style: furniture | Colors: #1a1a1a, #f5f5f0, #000000]",
+      "displayPrompt": "Сделай лендинг для мебельного бренда в скандинавском стиле. Название бренда «Сканди Дом». Секции: герой, преимущества, каталог, отзывы, newsletter, футер. Цвета: бежевый и графит, без фиолетового.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fneutral%2520interior%2520natural%2520light%26sig%3D1704068037980%26boltSeed%3Dcvedzv\nPRODUCTS: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fsideboard%2520white%2520background%26sig%3D1704067329788%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fshelf%2520white%2520background%26sig%3D1704067365070%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fchair%2520white%2520background%26sig%3D1704068017749%26boltSeed%3Dcvedzv | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Flamp%2520white%2520background%26sig%3D1704067688155%26boltSeed%3Dcvedzv\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "testimonials",
+          "footer",
+          "products",
+          "newsletter"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero",
+          "products"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fneutral%2520interior%2520natural%2520light%26sig%3D1704068037980%26boltSeed%3Dcvedzv"
+          ],
+          "products": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fsideboard%2520white%2520background%26sig%3D1704067329788%26boltSeed%3Dcvedzv",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fshelf%2520white%2520background%26sig%3D1704067365070%26boltSeed%3Dcvedzv",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fchair%2520white%2520background%26sig%3D1704068017749%26boltSeed%3Dcvedzv",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Flamp%2520white%2520background%26sig%3D1704067688155%26boltSeed%3Dcvedzv"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1,
+          "products": 4
+        }
+      }
+    },
+    {
+      "id": "vinyl-en",
+      "prompt": "Create a landing page for a vinyl record shop called \"Groove Vault\". Include hero, featured releases, genres, store info, and newsletter.",
+      "detectedTheme": "vinyl",
+      "colors": {
+        "dark": "#0b0b0b",
+        "light": "#f7f2ea",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [
+        "hero",
+        "products",
+        "categories",
+        "newsletter"
+      ],
+      "sectionCount": 4,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 4544,
+        "displayPrompt": 137,
+        "imagePrompt": 1608
+      },
+      "durationMs": 29.23230000000001,
+      "enhancedPrompt": "Create a landing page for a vinyl record shop called \"Groove Vault\". Include hero, featured releases, genres, store info, and newsletter.\n\nBRAND NAME (use exactly): Groove Vault\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0b0b0b\n- Light: #f7f2ea\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0b0b0b.\n- Primary text uses #f7f2ea.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068122587%26boltSeed%3Dsgo96v\nPRODUCTS: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Frecord%2520sleeve%2520mockup%26sig%3D1704067456011%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520stack%26sig%3D1704067482852%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520album%26sig%3D1704068099841%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fturntable%2520accessory%26sig%3D1704067298723%26boltSeed%3Dsgo96v\nCATEGORIES (Seating): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fjazz%2520vinyl%2520record%26sig%3D1704067557659%26boltSeed%3Dsgo96v\nCATEGORIES (Tables): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Frock%2520vinyl%2520record%26sig%3D1704067631699%26boltSeed%3Dsgo96v\nCATEGORIES (Storage): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Felectronic%2520album%2520cover%26sig%3D1704067943749%26boltSeed%3Dsgo96v\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Products\n3. Categories\n4. Newsletter\nSECTIONS (must include all): Hero, Products, Categories, Newsletter\nSECTION CONTRACT:\n- Render exactly 4 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Products -> Categories -> Newsletter\nSECTION COUNT: 4\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\n- Products: Render at least 4 product cards using distinct images.\n- Products: Each card must include a real <img> using URLs from the IMAGES block (no icons/placeholders).\n- Products: Each card includes image, title, secondary text, price, and a clear CTA button.\nART DIRECTION: Record label press kit\nLAYOUT ARCHETYPE: Centered hero card over image + angled product sleeves grid + newsletter bar + deep footer\nSIGNATURE MOVES (must apply):\n- Add an asymmetric grid or off-center alignment\n- Include a distinctive callout banner or ribbon\n- Add thin gold pinline dividers and micro-label badges\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Full-width hero with layered glass panel and angled media strip\n- Products: Crate-style product grid with overlapping covers\n- Categories: Horizontal genre tag belt with scroll + gold outline\n\nSECTION LAYOUTS (use these styles):\n- Hero: Asymmetric diagonal split hero\n- Products: Product cards with tilted cover + price row + condition badge\n- Categories: Compact tag grid with hover glow\n- Newsletter: Compact bar with inline input\nEFFECTS (apply in UI): meteors, aurora-text\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"iphone-15-pro\" (21st-dev-components.md) — iphone 15 pro.\n- Products: Use \"blog-cards\" (21st-dev-components-part2.md) — blog cards.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: sgo96v (must vary layout, imagery, and composition from prior runs).\n[Style: vinyl | Colors: #0b0b0b, #f7f2ea, #C9A66B]",
+      "displayPrompt": "Create a landing page for a vinyl record shop called \"Groove Vault\". Include hero, featured releases, genres, store info, and newsletter.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068122587%26boltSeed%3Dsgo96v\nPRODUCTS: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Frecord%2520sleeve%2520mockup%26sig%3D1704067456011%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520stack%26sig%3D1704067482852%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520album%26sig%3D1704068099841%26boltSeed%3Dsgo96v | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fturntable%2520accessory%26sig%3D1704067298723%26boltSeed%3Dsgo96v\nCATEGORIES (Seating): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fjazz%2520vinyl%2520record%26sig%3D1704067557659%26boltSeed%3Dsgo96v\nCATEGORIES (Tables): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Frock%2520vinyl%2520record%26sig%3D1704067631699%26boltSeed%3Dsgo96v\nCATEGORIES (Storage): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Felectronic%2520album%2520cover%26sig%3D1704067943749%26boltSeed%3Dsgo96v\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "products",
+          "categories",
+          "newsletter"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero",
+          "products"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068122587%26boltSeed%3Dsgo96v"
+          ],
+          "products": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Frecord%2520sleeve%2520mockup%26sig%3D1704067456011%26boltSeed%3Dsgo96v",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520stack%26sig%3D1704067482852%26boltSeed%3Dsgo96v",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fvinyl%2520record%2520album%26sig%3D1704068099841%26boltSeed%3Dsgo96v",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F800x800%2F%3Fturntable%2520accessory%26sig%3D1704067298723%26boltSeed%3Dsgo96v"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1,
+          "products": 4
+        }
+      }
+    },
+    {
+      "id": "vinyl-ru",
+      "prompt": "Лендинг для магазина винила «Пластинка». Нужны секции: герой, новинки, жанры, магазин, подписка.",
+      "detectedTheme": "vinyl",
+      "colors": {
+        "dark": "#0b0b0b",
+        "light": "#f7f2ea",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [
+        "hero",
+        "categories",
+        "newsletter"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3438,
+        "displayPrompt": 96,
+        "imagePrompt": 1022
+      },
+      "durationMs": 21.142900000000054,
+      "enhancedPrompt": "Лендинг для магазина винила «Пластинка». Нужны секции: герой, новинки, жанры, магазин, подписка.\n\nBRAND NAME (use exactly): Record & Reel\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0b0b0b\n- Light: #f7f2ea\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0b0b0b.\n- Primary text uses #f7f2ea.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068136895%26boltSeed%3D91go6q\nCATEGORIES (Seating): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fjazz%2520album%2520cover%26sig%3D1704067964081%26boltSeed%3D91go6q\nCATEGORIES (Tables): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Frock%2520album%2520cover%26sig%3D1704067895291%26boltSeed%3D91go6q\nCATEGORIES (Storage): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Felectronic%2520album%2520cover%26sig%3D1704067562309%26boltSeed%3D91go6q\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Categories\n3. Newsletter\nSECTIONS (must include all): Hero, Categories, Newsletter\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Categories -> Newsletter\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Record label press kit\nLAYOUT ARCHETYPE: Diagonal split hero + horizontal genre tag belt + staggered product grid + multi-row footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Include a distinctive callout banner or ribbon\n- Add an asymmetric grid or off-center alignment\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Grid hero with 2x2 media mosaic and centered headline\n- Categories: Compact tag grid with staggered sizes and overflow fade\n\nSECTION LAYOUTS (use these styles):\n- Hero: Split hero: image left (60%), text right (40%)\n- Categories: Rounded pill carousel with gold outlines\n- Newsletter: Split: text left, form right\nEFFECTS (apply in UI): flickering-grid, aurora-text\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"text-hover-effect\" (21st-dev-components.md) — text hover effect.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 91go6q (must vary layout, imagery, and composition from prior runs).\n[Style: vinyl | Colors: #0b0b0b, #f7f2ea, #C9A66B]",
+      "displayPrompt": "Лендинг для магазина винила «Пластинка». Нужны секции: герой, новинки, жанры, магазин, подписка.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068136895%26boltSeed%3D91go6q\nCATEGORIES (Seating): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fjazz%2520album%2520cover%26sig%3D1704067964081%26boltSeed%3D91go6q\nCATEGORIES (Tables): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Frock%2520album%2520cover%26sig%3D1704067895291%26boltSeed%3D91go6q\nCATEGORIES (Storage): /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Felectronic%2520album%2520cover%26sig%3D1704067562309%26boltSeed%3D91go6q\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "categories",
+          "newsletter"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fvinyl%2520record%2520collection%26sig%3D1704068136895%26boltSeed%3D91go6q"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "ecommerce-en",
+      "prompt": "Build an e-commerce homepage for sustainable clothing. Highlight new arrivals, best sellers, and a clean checkout flow.",
+      "detectedTheme": "ecommerce",
+      "colors": {
+        "dark": "#1a1a1a",
+        "light": "#ffffff",
+        "accent": "#000000",
+        "accentName": "black",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1a1a1a"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [],
+      "sectionCount": 0,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": false,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": false,
+        "hasSectionOrder": false,
+        "hasSectionCount": false,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1162,
+        "displayPrompt": 119,
+        "imagePrompt": 0
+      },
+      "durationMs": 8.668999999999983,
+      "enhancedPrompt": "Build an e-commerce homepage for sustainable clothing. Highlight new arrivals, best sellers, and a clean checkout flow.\n\nBRAND NAME (use exactly): Marketly\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1a1a1a\n- Light: #ffffff\n- Accent: #000000\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1a1a1a.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #000000.\n- Do not introduce new dominant colors.\nART DIRECTION: Modern museum gallery\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Include a distinctive callout banner or ribbon\n- Use a split layout with overlapping media and text\n- Use a subtle pattern layer behind key sections\nEFFECTS (apply in UI): warp-background, aurora-text\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: icez7n (must vary layout, imagery, and composition from prior runs).\n[Style: ecommerce | Colors: #1a1a1a, #ffffff, #000000]",
+      "displayPrompt": "Build an e-commerce homepage for sustainable clothing. Highlight new arrivals, best sellers, and a clean checkout flow.",
+      "imagePrompt": ""
+    },
+    {
+      "id": "fashion-ru",
+      "prompt": "Сайт бутика модной одежды «Linea». Стиль: минимализм, премиум. Секции: герой, коллекции, lookbook, отзывы, футер.",
+      "detectedTheme": "fashion",
+      "colors": {
+        "dark": "#0f0f10",
+        "light": "#ffffff",
+        "accent": "#111827",
+        "accentName": "charcoal",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111827"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "hero",
+        "testimonials",
+        "footer",
+        "categories"
+      ],
+      "sectionCount": 4,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3199,
+        "displayPrompt": 113,
+        "imagePrompt": 533
+      },
+      "durationMs": 31.90719999999999,
+      "enhancedPrompt": "Сайт бутика модной одежды «Linea». Стиль: минимализм, премиум. Секции: герой, коллекции, lookbook, отзывы, футер.\n\nBRAND NAME (use exactly): Threadline\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0f0f10\n- Light: #ffffff\n- Accent: #111827\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0f0f10.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #111827.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067283890%26boltSeed%3D8ehubx\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Testimonials\n3. Footer\n4. Categories\nSECTIONS (must include all): Hero, Testimonials, Footer, Categories\nSECTION CONTRACT:\n- Render exactly 4 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Testimonials -> Footer -> Categories\nSECTION COUNT: 4\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Use a split layout with overlapping media and text\n- Use a subtle pattern layer behind key sections\n- Include a distinctive callout banner or ribbon\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Full-width hero with layered glass panel and angled media strip\n- Footer: Newsletter band on top, 4 columns center, bottom bar with payments and badge\n- Categories: Horizontal genre tag belt with scroll + gold outline\n\nSECTION LAYOUTS (use these styles):\n- Hero: Full-width hero with centered text and background image\n- Testimonials: Stacked cards with ratings\n- Footer: 3-column footer with newsletter\n- Categories: Rounded pill carousel with gold outlines\nEFFECTS (apply in UI): warp-background, grid-pattern\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Footer: Use \"animated-subscribe-button\" (21st-dev-components.md) — animated subscribe button.\n- Hero: Use \"timeline\" (21st-dev-components.md) — timeline.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 8ehubx (must vary layout, imagery, and composition from prior runs).\n[Style: fashion | Colors: #0f0f10, #ffffff, #111827]",
+      "displayPrompt": "Сайт бутика модной одежды «Linea». Стиль: минимализм, премиум. Секции: герой, коллекции, lookbook, отзывы, футер.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067283890%26boltSeed%3D8ehubx\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "testimonials",
+          "footer",
+          "categories"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067283890%26boltSeed%3D8ehubx"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "beauty-en",
+      "prompt": "Landing page for a skincare brand. Use soft light palette, include hero, ingredients, routine, testimonials, and CTA.",
+      "detectedTheme": "beauty",
+      "colors": {
+        "dark": "#111113",
+        "light": "#fdf7f2",
+        "accent": "#c084fc",
+        "accentName": "lavender",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1f1f1f"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "hero",
+        "testimonials",
+        "cta"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2860,
+        "displayPrompt": 117,
+        "imagePrompt": 529
+      },
+      "durationMs": 27.291200000000003,
+      "enhancedPrompt": "Landing page for a skincare brand. Use soft light palette, include hero, ingredients, routine, testimonials, and CTA.\n\nBRAND NAME (use exactly): Aura Botanica\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #fdf7f2\n- Accent: #c084fc\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #fdf7f2.\n- Accents/underlines/badges/prices/buttons use #c084fc.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fskincare%2520bottles%26sig%3D1704067812044%26boltSeed%3Dp5s48n\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Testimonials\n3. CTA\nSECTIONS (must include all): Hero, Testimonials, CTA\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Testimonials -> CTA\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Use a split layout with overlapping media and text\n- Use layered cards with staggered heights\n- Use a bold typographic lockup with mixed weights\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Split hero: image left (60%), text right (40%) + stacked badges\n\nSECTION LAYOUTS (use these styles):\n- Hero: Hero with floating card on the right\n- Testimonials: Stacked cards with ratings\n- Cta: Centered card with glow effect\nEFFECTS (apply in UI): flickering-grid, warp-background\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"text-hover-effect-aceternity\" (21st-dev-components.md) — text hover effect aceternity.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: p5s48n (must vary layout, imagery, and composition from prior runs).\n[Style: beauty | Colors: #111113, #fdf7f2, #c084fc]",
+      "displayPrompt": "Landing page for a skincare brand. Use soft light palette, include hero, ingredients, routine, testimonials, and CTA.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fskincare%2520bottles%26sig%3D1704067812044%26boltSeed%3Dp5s48n\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "testimonials",
+          "cta"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fskincare%2520bottles%26sig%3D1704067812044%26boltSeed%3Dp5s48n"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "electronics-ru",
+      "prompt": "Лендинг для бренда электроники «Nova Tech». Секции: герой, продукты, преимущества, отзывы, FAQ, футер.",
+      "detectedTheme": "tech",
+      "colors": {
+        "dark": "#0f172a",
+        "light": "#f8fafc",
+        "accent": "#3b82f6",
+        "accentName": "blue",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1e293b"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "testimonials",
+        "faq",
+        "footer",
+        "products"
+      ],
+      "sectionCount": 6,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3671,
+        "displayPrompt": 102,
+        "imagePrompt": 538
+      },
+      "durationMs": 114.76249999999993,
+      "enhancedPrompt": "Лендинг для бренда электроники «Nova Tech». Секции: герой, продукты, преимущества, отзывы, FAQ, футер.\n\nBRAND NAME (use exactly): Horizon Works\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0f172a\n- Light: #f8fafc\n- Accent: #3b82f6\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0f172a.\n- Primary text uses #f8fafc.\n- Accents/underlines/badges/prices/buttons use #3b82f6.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcloud%2520server%26sig%3D1704068142405%26boltSeed%3Dwhnlvv\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Testimonials\n4. FAQ\n5. Footer\n6. Products\nSECTIONS (must include all): Hero, Features, Testimonials, FAQ, Footer, Products\nSECTION CONTRACT:\n- Render exactly 6 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Testimonials -> FAQ -> Footer -> Products\nSECTION COUNT: 6\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\n- Products: Render at least 4 product cards using distinct images.\n- Products: Each card must include a real <img> using URLs from the IMAGES block (no icons/placeholders).\n- Products: Each card includes image, title, secondary text, price, and a clear CTA button.\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Use a split layout with overlapping media and text\n- Include a distinctive callout banner or ribbon\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Asymmetric grid hero with text tile and image tiles\n- Features: Timeline-style feature steps with connecting line\n- Footer: Newsletter card inset + 4 columns + bottom bar with inline icons\n- Products: Angled album sleeves in a staggered grid with hover actions\n\nSECTION LAYOUTS (use these styles):\n- Hero: Asymmetric diagonal split hero\n- Features: Bento-style grid\n- Testimonials: Featured quote with side cards\n- Faq: Tabbed FAQ sections\n- Footer: 4-column footer with links\n- Products: Angled album sleeves in a staggered grid with hover actions\nEFFECTS (apply in UI): grid-pattern, warp-background\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"features-02\" (shadcnui-blocks.md) — Features 02.\n- Products: Use \"flickering-grid\" (21st-dev-components.md) — flickering grid.\n- Footer: Use \"animated-subscribe-button\" (21st-dev-components.md) — animated subscribe button.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: whnlvv (must vary layout, imagery, and composition from prior runs).\n[Style: tech | Colors: #0f172a, #f8fafc, #3b82f6]",
+      "displayPrompt": "Лендинг для бренда электроники «Nova Tech». Секции: герой, продукты, преимущества, отзывы, FAQ, футер.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcloud%2520server%26sig%3D1704068142405%26boltSeed%3Dwhnlvv\nIMAGE COUNTS (minimum): HERO>=1, PRODUCTS>=4\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "testimonials",
+          "faq",
+          "footer",
+          "products"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero",
+          "products"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcloud%2520server%26sig%3D1704068142405%26boltSeed%3Dwhnlvv"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "restaurant-en",
+      "prompt": "Restaurant website for a modern bistro. Include menu highlights, chef story, reservations, and location.",
+      "detectedTheme": "food",
+      "colors": {
+        "dark": "#1c1a17",
+        "light": "#fffdf7",
+        "accent": "#d97706",
+        "accentName": "amber",
+        "textOnDark": "#fef3c7",
+        "textOnLight": "#1f1f1f"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "navigation",
+        "features",
+        "about"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2407,
+        "displayPrompt": 104,
+        "imagePrompt": 0
+      },
+      "durationMs": 16.05869999999993,
+      "enhancedPrompt": "Restaurant website for a modern bistro. Include menu highlights, chef story, reservations, and location.\n\nBRAND NAME (use exactly): meal kit\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1c1a17\n- Light: #fffdf7\n- Accent: #d97706\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1c1a17.\n- Primary text uses #fffdf7.\n- Accents/underlines/badges/prices/buttons use #d97706.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. Navigation\n2. Features\n3. About\nSECTIONS (must include all): Navigation, Features, About\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Navigation -> Features -> About\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Navigation: Menu links use text-sm or text-base (14-16px). Avoid oversized headline typography.\nART DIRECTION: Meal kit unboxing experience\nLAYOUT ARCHETYPE: доставка еды\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Add recipe card style layouts for product descriptions\n- Use a split layout with overlapping media and text\nSECTION VARIANTS (must apply, keep user requirements):\n- Navigation: Compact top bar with search expand + icons cluster\n- Features: Card row with icon highlights and hover lift\n\nSECTION LAYOUTS (use these styles):\n- Navigation: Minimal top nav: logo left, links center, icons right\n- Features: 3-column icon cards\n- About: Story with stats row\nEFFECTS (apply in UI): еда, готовка\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"timeline-07\" (shadcnui-blocks.md) — Timeline 07.\n- Navigation: Use \"modern-mobile-menu\" (21st-dev-components-part2.md) — modern mobile menu.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: s697mp (must vary layout, imagery, and composition from prior runs).\n[Style: food | Colors: #1c1a17, #fffdf7, #d97706]",
+      "displayPrompt": "Restaurant website for a modern bistro. Include menu highlights, chef story, reservations, and location.",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "navigation",
+          "features",
+          "about"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "food-ru",
+      "prompt": "Сайт для сервиса доставки еды «ВкусноДень». Нужны секции: герой, как работает, меню, отзывы, доставка, футер.",
+      "detectedTheme": "food",
+      "colors": {
+        "dark": "#1c1a17",
+        "light": "#fffdf7",
+        "accent": "#d97706",
+        "accentName": "amber",
+        "textOnDark": "#fef3c7",
+        "textOnLight": "#1f1f1f"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "navigation",
+        "hero",
+        "testimonials",
+        "footer"
+      ],
+      "sectionCount": 4,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3290,
+        "displayPrompt": 109,
+        "imagePrompt": 523
+      },
+      "durationMs": 21.78469999999993,
+      "enhancedPrompt": "Сайт для сервиса доставки еды «ВкусноДень». Нужны секции: герой, как работает, меню, отзывы, доставка, футер.\n\nBRAND NAME (use exactly): рецепт\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1c1a17\n- Light: #fffdf7\n- Accent: #d97706\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1c1a17.\n- Primary text uses #fffdf7.\n- Accents/underlines/badges/prices/buttons use #d97706.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcoffee%2520bar%26sig%3D1704067460504%26boltSeed%3D31mkk8\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Navigation\n2. Hero\n3. Testimonials\n4. Footer\nSECTIONS (must include all): Navigation, Hero, Testimonials, Footer\nSECTION CONTRACT:\n- Render exactly 4 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Navigation -> Hero -> Testimonials -> Footer\nSECTION COUNT: 4\nSECTION GUARDRAILS (must follow):\n- Navigation: Menu links use text-sm or text-base (14-16px). Avoid oversized headline typography.\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Meal kit unboxing experience\nLAYOUT ARCHETYPE: наборы еды\nSIGNATURE MOVES (must apply):\n- Use earthy color accents and organic shapes\n- Include ingredient icons and nutritional highlights\n- Add an asymmetric grid or off-center alignment\nSECTION VARIANTS (must apply, keep user requirements):\n- Navigation: Split nav: logo left, links center, utility icons right\n- Hero: Full-screen hero with minimal headline and ambient light haze\n- Footer: Newsletter band on top, 4 columns center, bottom bar with payments and badge\n\nSECTION LAYOUTS (use these styles):\n- Navigation: Centered nav with logo above links\n- Hero: Split hero: text left (40%), large image right (60%)\n- Testimonials: 3-column testimonial cards\n- Footer: 3-column footer with newsletter\nEFFECTS (apply in UI): готовка, кулинария\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Navigation: Use \"easemize\" (21st-dev-components-part2.md) — modern-mobile-menu.\n- Footer: Use \"animated-subscribe-button\" (21st-dev-components.md) — animated subscribe button.\n- Hero: Use \"cool-mode\" (21st-dev-components.md) — cool mode.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 31mkk8 (must vary layout, imagery, and composition from prior runs).\n[Style: food | Colors: #1c1a17, #fffdf7, #d97706]",
+      "displayPrompt": "Сайт для сервиса доставки еды «ВкусноДень». Нужны секции: герой, как работает, меню, отзывы, доставка, футер.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcoffee%2520bar%26sig%3D1704067460504%26boltSeed%3D31mkk8\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "navigation",
+          "hero",
+          "testimonials",
+          "footer"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcoffee%2520bar%26sig%3D1704067460504%26boltSeed%3D31mkk8"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "photography-en",
+      "prompt": "Portfolio site for a photographer. Include hero, gallery, services, about, and contact.",
+      "detectedTheme": "photography",
+      "colors": {
+        "dark": "#0a0a0a",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "gallery",
+        "about",
+        "contact"
+      ],
+      "sectionCount": 5,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3497,
+        "displayPrompt": 87,
+        "imagePrompt": 965
+      },
+      "durationMs": 5.397099999999909,
+      "enhancedPrompt": "Portfolio site for a photographer. Include hero, gallery, services, about, and contact.\n\nBRAND NAME (use exactly): Frame Stories\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0a0a0a\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0a0a0a.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fphotographer%2520studio%26sig%3D1704068116036%26boltSeed%3Delw82y\nGALLERY: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fportfolio%2520photography%26sig%3D1704067410960%26boltSeed%3Delw82y | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Flandscape%2520photography%26sig%3D1704067949387%26boltSeed%3Delw82y | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fstudio%2520portrait%26sig%3D1704067222375%26boltSeed%3Delw82y\nIMAGE COUNTS (minimum): HERO>=1, GALLERY>=2\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Gallery\n4. About\n5. Contact\nSECTIONS (must include all): Hero, Features, Gallery, About, Contact\nSECTION CONTRACT:\n- Render exactly 5 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Gallery -> About -> Contact\nSECTION COUNT: 5\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Full-bleed hero + modular sections + layered cards + slim footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Add an asymmetric grid or off-center alignment\n- Break the grid with one oversized feature card\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Full-width hero with split headline + tag rail overlay\n- Features: Zigzag feature rows with alternating text/media\n\nSECTION LAYOUTS (use these styles):\n- Hero: Split hero: image left (60%), text right (40%)\n- Features: 3-column icon cards\n- Gallery: meal kit\n- About: Split: text left, image right\n- Contact: Minimal contact cards\nEFFECTS (apply in UI): grid-pattern, warp-background\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"interactive-text-particle\" (21st-dev-components-part2.md) — interactive text particle.\n- Features: Use \"timeline-05\" (shadcnui-blocks.md) — Timeline 05.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: elw82y (must vary layout, imagery, and composition from prior runs).\n[Style: photography | Colors: #0a0a0a, #ffffff, #C9A66B]",
+      "displayPrompt": "Portfolio site for a photographer. Include hero, gallery, services, about, and contact.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fphotographer%2520studio%26sig%3D1704068116036%26boltSeed%3Delw82y\nGALLERY: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fportfolio%2520photography%26sig%3D1704067410960%26boltSeed%3Delw82y | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Flandscape%2520photography%26sig%3D1704067949387%26boltSeed%3Delw82y | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fstudio%2520portrait%26sig%3D1704067222375%26boltSeed%3Delw82y\nIMAGE COUNTS (minimum): HERO>=1, GALLERY>=2\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "gallery",
+          "about",
+          "contact"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero",
+          "gallery"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fphotographer%2520studio%26sig%3D1704068116036%26boltSeed%3Delw82y"
+          ],
+          "gallery": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fportfolio%2520photography%26sig%3D1704067410960%26boltSeed%3Delw82y",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Flandscape%2520photography%26sig%3D1704067949387%26boltSeed%3Delw82y",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fstudio%2520portrait%26sig%3D1704067222375%26boltSeed%3Delw82y"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1,
+          "gallery": 2
+        }
+      }
+    },
+    {
+      "id": "hotel-ru",
+      "prompt": "Сайт бутик-отеля «Aurora». Секции: герой, номера, удобства, отзывы, бронирование.",
+      "detectedTheme": "fashion",
+      "colors": {
+        "dark": "#0f0f10",
+        "light": "#ffffff",
+        "accent": "#111827",
+        "accentName": "charcoal",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111827"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "hero",
+        "testimonials"
+      ],
+      "sectionCount": 2,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2751,
+        "displayPrompt": 81,
+        "imagePrompt": 533
+      },
+      "durationMs": 3.2170000000000982,
+      "enhancedPrompt": "Сайт бутик-отеля «Aurora». Секции: герой, номера, удобства, отзывы, бронирование.\n\nBRAND NAME (use exactly): Threadline\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0f0f10\n- Light: #ffffff\n- Accent: #111827\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0f0f10.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #111827.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067301263%26boltSeed%3Dewz31q\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Testimonials\nSECTIONS (must include all): Hero, Testimonials\nSECTION CONTRACT:\n- Render exactly 2 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Testimonials\nSECTION COUNT: 2\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a split layout with overlapping media and text\n- Add an asymmetric grid or off-center alignment\n- Use a bold typographic lockup with mixed weights\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Bento hero with large media tile + two supporting cards\n\nSECTION LAYOUTS (use these styles):\n- Hero: Full-width hero with centered text and background image\n- Testimonials: Stacked cards with ratings\nEFFECTS (apply in UI): grid-pattern, warp-background\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"reveal-text\" (21st-dev-components-part2.md) — reveal text.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: ewz31q (must vary layout, imagery, and composition from prior runs).\n[Style: fashion | Colors: #0f0f10, #ffffff, #111827]",
+      "displayPrompt": "Сайт бутик-отеля «Aurora». Секции: герой, номера, удобства, отзывы, бронирование.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067301263%26boltSeed%3Dewz31q\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "testimonials"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fstreetwear%2520editorial%26sig%3D1704067301263%26boltSeed%3Dewz31q"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "saas-en",
+      "prompt": "SaaS landing page for a product analytics platform. Include hero, features, integrations, pricing, and FAQ.",
+      "detectedTheme": "ecommerce",
+      "colors": {
+        "dark": "#1a1a1a",
+        "light": "#ffffff",
+        "accent": "#000000",
+        "accentName": "black",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1a1a1a"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 1,
+        "categories": {
+          "seating": 1,
+          "tables": 1,
+          "storage": 1
+        }
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "pricing",
+        "faq"
+      ],
+      "sectionCount": 4,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2969,
+        "displayPrompt": 107,
+        "imagePrompt": 539
+      },
+      "durationMs": 3.0535999999999603,
+      "enhancedPrompt": "SaaS landing page for a product analytics platform. Include hero, features, integrations, pricing, and FAQ.\n\nBRAND NAME (use exactly): Storeline\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1a1a1a\n- Light: #ffffff\n- Accent: #000000\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1a1a1a.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #000000.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520retail%2520interior%26sig%3D1704067325972%26boltSeed%3Dbmf4az\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Pricing\n4. FAQ\nSECTIONS (must include all): Hero, Features, Pricing, FAQ\nSECTION CONTRACT:\n- Render exactly 4 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Pricing -> FAQ\nSECTION COUNT: 4\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Add an asymmetric grid or off-center alignment\n- Break the grid with one oversized feature card\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Asymmetric grid hero with text tile and image tiles\n- Features: Card row with icon highlights and hover lift\n\nSECTION LAYOUTS (use these styles):\n- Hero: Hero with floating card on the right\n- Features: Single column with large icons\n- Pricing: 3-column pricing cards\n- Faq: Tabbed FAQ sections\nEFFECTS (apply in UI): grid-pattern, warp-background\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"fade-text\" (21st-dev-components.md) — fade text.\n- Features: Use \"features-01\" (shadcnui-blocks.md) — Features 01.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: bmf4az (must vary layout, imagery, and composition from prior runs).\n[Style: ecommerce | Colors: #1a1a1a, #ffffff, #000000]",
+      "displayPrompt": "SaaS landing page for a product analytics platform. Include hero, features, integrations, pricing, and FAQ.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520retail%2520interior%26sig%3D1704067325972%26boltSeed%3Dbmf4az\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "pricing",
+          "faq"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520retail%2520interior%26sig%3D1704067325972%26boltSeed%3Dbmf4az"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "medical-ru",
+      "prompt": "Лендинг для частной клиники. Секции: герой, услуги, врачи, отзывы, запись. Тон: спокойный, медицинский.",
+      "detectedTheme": "medical",
+      "colors": {
+        "dark": "#1e3a5f",
+        "light": "#f0f9ff",
+        "accent": "#0ea5e9",
+        "accentName": "cyan",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#0c4a6e"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "testimonials"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2946,
+        "displayPrompt": 103,
+        "imagePrompt": 532
+      },
+      "durationMs": 62.12919999999997,
+      "enhancedPrompt": "Лендинг для частной клиники. Секции: герой, услуги, врачи, отзывы, запись. Тон: спокойный, медицинский.\n\nBRAND NAME (use exactly): Baseline Labs\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1e3a5f\n- Light: #f0f9ff\n- Accent: #0ea5e9\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1e3a5f.\n- Primary text uses #f0f9ff.\n- Accents/underlines/badges/prices/buttons use #0ea5e9.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fdoctor%2520consultation%26sig%3D1704067268008%26boltSeed%3Dopbncp\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Testimonials\nSECTIONS (must include all): Hero, Features, Testimonials\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Testimonials\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Break the grid with one oversized feature card\n- Use layered cards with staggered heights\n- Use a bold typographic lockup with mixed weights\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Full-width hero with cinematic overlay and floating CTA card\n- Features: Timeline-style feature steps with connecting line\n\nSECTION LAYOUTS (use these styles):\n- Hero: Full-screen hero with minimal headline\n- Features: 3-column icon cards\n- Testimonials: Carousel of testimonial cards\nEFFECTS (apply in UI): grid-pattern, aurora-text\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"features-01\" (shadcnui-blocks.md) — Features 01.\n- Hero: Use \"aurora-text\" (21st-dev-components-part2.md) — aurora text.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: opbncp (must vary layout, imagery, and composition from prior runs).\n[Style: medical | Colors: #1e3a5f, #f0f9ff, #0ea5e9]",
+      "displayPrompt": "Лендинг для частной клиники. Секции: герой, услуги, врачи, отзывы, запись. Тон: спокойный, медицинский.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fdoctor%2520consultation%26sig%3D1704067268008%26boltSeed%3Dopbncp\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "testimonials"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fdoctor%2520consultation%26sig%3D1704067268008%26boltSeed%3Dopbncp"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "finance-en",
+      "prompt": "Fintech homepage for a personal budgeting app. Emphasize security, dashboards, and CTA to start free.",
+      "detectedTheme": "tech",
+      "colors": {
+        "dark": "#0f172a",
+        "light": "#f8fafc",
+        "accent": "#3b82f6",
+        "accentName": "blue",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1e293b"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "cta"
+      ],
+      "sectionCount": 1,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1526,
+        "displayPrompt": 101,
+        "imagePrompt": 0
+      },
+      "durationMs": 13.672199999999975,
+      "enhancedPrompt": "Fintech homepage for a personal budgeting app. Emphasize security, dashboards, and CTA to start free.\n\nBRAND NAME (use exactly): Form & Field\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0f172a\n- Light: #f8fafc\n- Accent: #3b82f6\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0f172a.\n- Primary text uses #f8fafc.\n- Accents/underlines/badges/prices/buttons use #3b82f6.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. CTA\nSECTIONS (must include all): CTA\nSECTION CONTRACT:\n- Render exactly 1 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): CTA\nSECTION COUNT: 1\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Add an asymmetric grid or off-center alignment\n- Use a split layout with overlapping media and text\n\nSECTION LAYOUTS (use these styles):\n- Cta: Full-width banner with button\nEFFECTS (apply in UI): warp-background, grid-pattern\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 5vfdmb (must vary layout, imagery, and composition from prior runs).\n[Style: tech | Colors: #0f172a, #f8fafc, #3b82f6]",
+      "displayPrompt": "Fintech homepage for a personal budgeting app. Emphasize security, dashboards, and CTA to start free.",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "cta"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "realestate-ru",
+      "prompt": "Сайт агентства недвижимости «Город Дом». Секции: герой, объекты, преимущества, отзывы, контакты.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "testimonials",
+        "contact"
+      ],
+      "sectionCount": 4,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2998,
+        "displayPrompt": 96,
+        "imagePrompt": 541
+      },
+      "durationMs": 67.20859999999993,
+      "enhancedPrompt": "Сайт агентства недвижимости «Город Дом». Секции: герой, объекты, преимущества, отзывы, контакты.\n\nBRAND NAME (use exactly): Studio North\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067956493%26boltSeed%3D3nm1j6\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Testimonials\n4. Contact\nSECTIONS (must include all): Hero, Features, Testimonials, Contact\nSECTION CONTRACT:\n- Render exactly 4 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Testimonials -> Contact\nSECTION COUNT: 4\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Studio catalog spread\nLAYOUT ARCHETYPE: Full-bleed hero + modular sections + layered cards + slim footer\nSIGNATURE MOVES (must apply):\n- Use layered cards with staggered heights\n- Add an asymmetric grid or off-center alignment\n- Use a subtle pattern layer behind key sections\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Grid hero with 2x2 media mosaic and centered headline\n- Features: Bento feature grid with 4 tiles and micro-icons\n\nSECTION LAYOUTS (use these styles):\n- Hero: Asymmetric diagonal split hero\n- Features: 3-column icon cards\n- Testimonials: Alternating quote/author layout\n- Contact: Split: map left, form right\nEFFECTS (apply in UI): warp-background, aurora-text\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"features-01\" (shadcnui-blocks.md) — Features 01.\n- Hero: Use \"safari\" (21st-dev-components-part2.md) — safari.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 3nm1j6 (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #C9A66B]",
+      "displayPrompt": "Сайт агентства недвижимости «Город Дом». Секции: герой, объекты, преимущества, отзывы, контакты.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067956493%26boltSeed%3D3nm1j6\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "testimonials",
+          "contact"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067956493%26boltSeed%3D3nm1j6"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "education-en",
+      "prompt": "Online course landing page for a UI design bootcamp. Include curriculum, mentors, testimonials, and enrollment CTA.",
+      "detectedTheme": "education",
+      "colors": {
+        "dark": "#1e1b4b",
+        "light": "#faf5ff",
+        "accent": "#8b5cf6",
+        "accentName": "purple",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#3b0764"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "testimonials",
+        "cta"
+      ],
+      "sectionCount": 2,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1634,
+        "displayPrompt": 115,
+        "imagePrompt": 0
+      },
+      "durationMs": 25.05219999999997,
+      "enhancedPrompt": "Online course landing page for a UI design bootcamp. Include curriculum, mentors, testimonials, and enrollment CTA.\n\nBRAND NAME (use exactly): Horizon Works\nCOLOR PALETTE (must use exact hex values):\n- Dark: #1e1b4b\n- Light: #faf5ff\n- Accent: #8b5cf6\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #1e1b4b.\n- Primary text uses #faf5ff.\n- Accents/underlines/badges/prices/buttons use #8b5cf6.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. Testimonials\n2. CTA\nSECTIONS (must include all): Testimonials, CTA\nSECTION CONTRACT:\n- Render exactly 2 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Testimonials -> CTA\nSECTION COUNT: 2\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Use layered cards with staggered heights\n- Use a split layout with overlapping media and text\n- Include a distinctive callout banner or ribbon\n\nSECTION LAYOUTS (use these styles):\n- Testimonials: 3-column testimonial cards\n- Cta: Full-width banner with button\nEFFECTS (apply in UI): grid-pattern, flickering-grid\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: jcmx0e (must vary layout, imagery, and composition from prior runs).\n[Style: education | Colors: #1e1b4b, #faf5ff, #8b5cf6]",
+      "displayPrompt": "Online course landing page for a UI design bootcamp. Include curriculum, mentors, testimonials, and enrollment CTA.",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "testimonials",
+          "cta"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "industrial-ru",
+      "prompt": "Сайт для промышленной компании в сфере энергетики. Секции: герой, решения, кейсы, безопасность, контакты.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "contact"
+      ],
+      "sectionCount": 2,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2769,
+        "displayPrompt": 105,
+        "imagePrompt": 541
+      },
+      "durationMs": 28.349900000000048,
+      "enhancedPrompt": "Сайт для промышленной компании в сфере энергетики. Секции: герой, решения, кейсы, безопасность, контакты.\n\nBRAND NAME (use exactly): Studio North\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704068190544%26boltSeed%3Dvnru4k\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Contact\nSECTIONS (must include all): Hero, Contact\nSECTION CONTRACT:\n- Render exactly 2 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Contact\nSECTION COUNT: 2\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Boutique showroom\nLAYOUT ARCHETYPE: Full-bleed hero + modular sections + layered cards + slim footer\nSIGNATURE MOVES (must apply):\n- Use layered cards with staggered heights\n- Use a bold typographic lockup with mixed weights\n- Include a distinctive callout banner or ribbon\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Split hero: text left (40%), image right (60%) with vertical divider\n\nSECTION LAYOUTS (use these styles):\n- Hero: Hero with floating card on the right\n- Contact: Minimal contact cards\nEFFECTS (apply in UI): warp-background, grid-pattern\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"container-scroll-animation\" (21st-dev-components.md) — container scroll animation.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: vnru4k (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #C9A66B]",
+      "displayPrompt": "Сайт для промышленной компании в сфере энергетики. Секции: герой, решения, кейсы, безопасность, контакты.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704068190544%26boltSeed%3Dvnru4k\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "contact"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704068190544%26boltSeed%3Dvnru4k"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "default-en",
+      "prompt": "Create a clean landing page for a creative studio. Use bold typography and a clear CTA.",
+      "detectedTheme": "photography",
+      "colors": {
+        "dark": "#0a0a0a",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "cta"
+      ],
+      "sectionCount": 1,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1513,
+        "displayPrompt": 87,
+        "imagePrompt": 0
+      },
+      "durationMs": 1.1136000000000195,
+      "enhancedPrompt": "Create a clean landing page for a creative studio. Use bold typography and a clear CTA.\n\nBRAND NAME (use exactly): Frame Stories\nCOLOR PALETTE (must use exact hex values):\n- Dark: #0a0a0a\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #0a0a0a.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. CTA\nSECTIONS (must include all): CTA\nSECTION CONTRACT:\n- Render exactly 1 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): CTA\nSECTION COUNT: 1\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Full-bleed hero + modular sections + layered cards + slim footer\nSIGNATURE MOVES (must apply):\n- Break the grid with one oversized feature card\n- Add an asymmetric grid or off-center alignment\n- Use layered cards with staggered heights\n\nSECTION LAYOUTS (use these styles):\n- Cta: Full-width banner with button\nEFFECTS (apply in UI): warp-background, grid-pattern\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 7h77qt (must vary layout, imagery, and composition from prior runs).\n[Style: photography | Colors: #0a0a0a, #ffffff, #C9A66B]",
+      "displayPrompt": "Create a clean landing page for a creative studio. Use bold typography and a clear CTA.",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "cta"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "default-ru",
+      "prompt": "Сделай современный лендинг для агентства брендинга. Важно: четкий призыв к действию.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "cta"
+      ],
+      "sectionCount": 1,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1523,
+        "displayPrompt": 84,
+        "imagePrompt": 0
+      },
+      "durationMs": 6.708899999999971,
+      "enhancedPrompt": "Сделай современный лендинг для агентства брендинга. Важно: четкий призыв к действию.\n\nBRAND NAME (use exactly): Horizon Works\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. CTA\nSECTIONS (must include all): CTA\nSECTION CONTRACT:\n- Render exactly 1 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): CTA\nSECTION COUNT: 1\nART DIRECTION: Modern museum gallery\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Use a bold typographic lockup with mixed weights\n- Break the grid with one oversized feature card\n- Add an asymmetric grid or off-center alignment\n\nSECTION LAYOUTS (use these styles):\n- Cta: Centered card with glow effect\nEFFECTS (apply in UI): warp-background, flickering-grid\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 45zcpi (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #C9A66B]",
+      "displayPrompt": "Сделай современный лендинг для агентства брендинга. Важно: четкий призыв к действию.",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "cta"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "beauty-salon-en",
+      "prompt": "Landing page for a luxury beauty salon called \"Glow Studio\". Include hero, services, team, gallery, booking, and testimonials. Use soft pink and gold accents.",
+      "detectedTheme": "beauty",
+      "colors": {
+        "dark": "#111113",
+        "light": "#fdf7f2",
+        "accent": "#C9A66B",
+        "accentName": "lavender",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1f1f1f"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 4,
+        "editorial": 0
+      },
+      "sectionOrder": [
+        "hero",
+        "features",
+        "gallery",
+        "testimonials",
+        "team"
+      ],
+      "sectionCount": 5,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 3545,
+        "displayPrompt": 158,
+        "imagePrompt": 961
+      },
+      "durationMs": 1.958599999999933,
+      "enhancedPrompt": "Landing page for a luxury beauty salon called \"Glow Studio\". Include hero, services, team, gallery, booking, and testimonials. Use soft pink and gold accents.\n\nBRAND NAME (use exactly): Glow Studio\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #fdf7f2\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #fdf7f2.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcosmetics%2520flat%2520lay%26sig%3D1704068108630%26boltSeed%3Dq72iay\nGALLERY: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fperfume%2520close%2520up%26sig%3D1704068023354%26boltSeed%3Dq72iay | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fskincare%2520routine%26sig%3D1704067327144%26boltSeed%3Dq72iay | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fmakeup%2520palette%26sig%3D1704067805038%26boltSeed%3Dq72iay\nIMAGE COUNTS (minimum): HERO>=1, GALLERY>=2\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Features\n3. Gallery\n4. Testimonials\n5. Team\nSECTIONS (must include all): Hero, Features, Gallery, Testimonials, Team\nSECTION CONTRACT:\n- Render exactly 5 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Features -> Gallery -> Testimonials -> Team\nSECTION COUNT: 5\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Add an asymmetric grid or off-center alignment\n- Break the grid with one oversized feature card\n- Use a subtle pattern layer behind key sections\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Split hero: image left (60%), text right (40%) + stacked badges\n- Features: Timeline-style feature steps with connecting line\n\nSECTION LAYOUTS (use these styles):\n- Hero: Hero with floating card on the right\n- Features: 4-column compact feature grid\n- Gallery: gallery\n- Testimonials: 3-column testimonial cards\n- Team: Split: portrait + bio\nEFFECTS (apply in UI): flickering-grid, grid-pattern\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Features: Use \"timeline\" (21st-dev-components.md) — timeline.\n- Hero: Use \"iphone-15-pro\" (21st-dev-components.md) — iphone 15 pro.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: q72iay (must vary layout, imagery, and composition from prior runs).\n[Style: beauty | Colors: #111113, #fdf7f2, #C9A66B]",
+      "displayPrompt": "Landing page for a luxury beauty salon called \"Glow Studio\". Include hero, services, team, gallery, booking, and testimonials. Use soft pink and gold accents.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcosmetics%2520flat%2520lay%26sig%3D1704068108630%26boltSeed%3Dq72iay\nGALLERY: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fperfume%2520close%2520up%26sig%3D1704068023354%26boltSeed%3Dq72iay | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fskincare%2520routine%26sig%3D1704067327144%26boltSeed%3Dq72iay | /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fmakeup%2520palette%26sig%3D1704067805038%26boltSeed%3Dq72iay\nIMAGE COUNTS (minimum): HERO>=1, GALLERY>=2\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "features",
+          "gallery",
+          "testimonials",
+          "team"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero",
+          "gallery"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fcosmetics%2520flat%2520lay%26sig%3D1704068108630%26boltSeed%3Dq72iay"
+          ],
+          "gallery": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fperfume%2520close%2520up%26sig%3D1704068023354%26boltSeed%3Dq72iay",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fskincare%2520routine%26sig%3D1704067327144%26boltSeed%3Dq72iay",
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F900x900%2F%3Fmakeup%2520palette%26sig%3D1704067805038%26boltSeed%3Dq72iay"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1,
+          "gallery": 2
+        }
+      }
+    },
+    {
+      "id": "travel-en",
+      "prompt": "Travel agency website for adventure tours. Brand name \"Wanderlust Expeditions\". Sections: hero, destinations, packages, testimonials, about us, contact. Use vibrant colors.",
+      "detectedTheme": "hotel",
+      "colors": {
+        "dark": "#111113",
+        "light": "#FAF9F6",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#1a1a1a"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 0,
+        "editorial": 1
+      },
+      "sectionOrder": [],
+      "sectionCount": 0,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": false,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": false,
+        "hasSectionOrder": false,
+        "hasSectionCount": false,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1108,
+        "displayPrompt": 79,
+        "imagePrompt": 0
+      },
+      "durationMs": 1.5594999999998436,
+      "enhancedPrompt": "Travel agency website for adventure tours. Brand name \"Wanderlust Expeditions\".\n\nBRAND NAME (use exactly): name\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #FAF9F6\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #FAF9F6.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nART DIRECTION: Modern museum gallery\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Include a distinctive callout banner or ribbon\n- Use a subtle pattern layer behind key sections\n- Use layered cards with staggered heights\nEFFECTS (apply in UI): warp-background, flickering-grid\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: qjti1m (must vary layout, imagery, and composition from prior runs).\n[Style: hotel | Colors: #111113, #FAF9F6, #C9A66B]",
+      "displayPrompt": "Travel agency website for adventure tours. Brand name \"Wanderlust Expeditions\".",
+      "imagePrompt": ""
+    },
+    {
+      "id": "sports-en",
+      "prompt": "Fitness gym landing page for \"Iron Peak Fitness\". Include hero, membership plans, trainers, classes schedule, testimonials, and location. Bold and energetic design.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "testimonials",
+        "pricing"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2902,
+        "displayPrompt": 164,
+        "imagePrompt": 541
+      },
+      "durationMs": 11.621000000000095,
+      "enhancedPrompt": "Fitness gym landing page for \"Iron Peak Fitness\". Include hero, membership plans, trainers, classes schedule, testimonials, and location. Bold and energetic design.\n\nBRAND NAME (use exactly): Studio North\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067484077%26boltSeed%3Dimh81r\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. Testimonials\n3. Pricing\nSECTIONS (must include all): Hero, Testimonials, Pricing\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> Testimonials -> Pricing\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Boutique showroom\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Break the grid with one oversized feature card\n- Use a split layout with overlapping media and text\n- Use a bold typographic lockup with mixed weights\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Asymmetric grid hero with text tile and image tiles\n\nSECTION LAYOUTS (use these styles):\n- Hero: Full-width hero with centered text and background image\n- Testimonials: Carousel of testimonial cards\n- Pricing: 2-column comparison table\nEFFECTS (apply in UI): warp-background, grid-pattern\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"timeline\" (21st-dev-components.md) — timeline.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: imh81r (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #C9A66B]",
+      "displayPrompt": "Fitness gym landing page for \"Iron Peak Fitness\". Include hero, membership plans, trainers, classes schedule, testimonials, and location. Bold and energetic design.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067484077%26boltSeed%3Dimh81r\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "testimonials",
+          "pricing"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067484077%26boltSeed%3Dimh81r"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    },
+    {
+      "id": "gaming-en",
+      "prompt": "Gaming community website for an esports team called \"Nexus Gaming\". Sections: hero, team roster, achievements, sponsors, news, and join us CTA. Dark theme with neon accents.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#C9A66B",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "team"
+      ],
+      "sectionCount": 1,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": false,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 1502,
+        "displayPrompt": 67,
+        "imagePrompt": 0
+      },
+      "durationMs": 3.6194000000000415,
+      "enhancedPrompt": "Gaming community website for an esports team called \"Nexus Gaming\".\n\nBRAND NAME (use exactly): Nexus Gaming\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #C9A66B\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #C9A66B.\n- Do not introduce new dominant colors.\nSECTION BLUEPRINT (follow exactly):\n1. Team\nSECTIONS (must include all): Team\nSECTION CONTRACT:\n- Render exactly 1 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Team\nSECTION COUNT: 1\nART DIRECTION: Modern museum gallery\nLAYOUT ARCHETYPE: Split hero + bento feature grid + stacked cards + multi-row footer\nSIGNATURE MOVES (must apply):\n- Add an asymmetric grid or off-center alignment\n- Use a split layout with overlapping media and text\n- Include a distinctive callout banner or ribbon\n\nSECTION LAYOUTS (use these styles):\n- Team: Stacked list with avatars\nEFFECTS (apply in UI): flickering-grid, aurora-text\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 4h9ewf (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #C9A66B]",
+      "displayPrompt": "Gaming community website for an esports team called \"Nexus Gaming\".",
+      "imagePrompt": "",
+      "sectionContract": {
+        "order": [
+          "team"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [],
+        "imageMap": {},
+        "imageMinCounts": {}
+      }
+    },
+    {
+      "id": "nonprofit-en",
+      "prompt": "Nonprofit organization landing page for environmental charity \"Green Future\". Include hero, mission, impact stats, programs, donate CTA, and volunteer signup. Earthy green palette.",
+      "detectedTheme": "default",
+      "colors": {
+        "dark": "#111113",
+        "light": "#ffffff",
+        "accent": "#22c55e",
+        "accentName": "gold",
+        "textOnDark": "#ffffff",
+        "textOnLight": "#111113"
+      },
+      "imageCounts": {
+        "hero": 1,
+        "gallery": 3,
+        "products": 2,
+        "editorial": 1
+      },
+      "sectionOrder": [
+        "hero",
+        "cta",
+        "about"
+      ],
+      "sectionCount": 3,
+      "blockFlags": {
+        "hasCreativeDirection": false,
+        "hasSectionBlueprint": true,
+        "hasSectionDetails": false,
+        "hasSectionGuardrails": true,
+        "hasSectionContract": true,
+        "hasSectionOrder": true,
+        "hasSectionCount": true,
+        "hasImageSuggestions": false,
+        "hasRequirements": false
+      },
+      "lengths": {
+        "enhancedPrompt": 2875,
+        "displayPrompt": 180,
+        "imagePrompt": 541
+      },
+      "durationMs": 4.658899999999903,
+      "enhancedPrompt": "Nonprofit organization landing page for environmental charity \"Green Future\". Include hero, mission, impact stats, programs, donate CTA, and volunteer signup. Earthy green palette.\n\nBRAND NAME (use exactly): Horizon Works\nCOLOR PALETTE (must use exact hex values):\n- Dark: #111113\n- Light: #ffffff\n- Accent: #22c55e\nCOLOR USAGE (strict):\nUse Tailwind arbitrary values, e.g. bg-[#1A1A1A], text-[#F5F5DC], border-[#D4AF37].\n- Backgrounds use #111113.\n- Primary text uses #ffffff.\n- Accents/underlines/badges/prices/buttons use #22c55e.\n- Do not introduce new dominant colors.\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067988162%26boltSeed%3D1g1jf0\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.\nSECTION BLUEPRINT (follow exactly):\n1. Hero\n2. CTA\n3. About\nSECTIONS (must include all): Hero, CTA, About\nSECTION CONTRACT:\n- Render exactly 3 sections.\n- Add a comment {/** SECTION: <label> */} before each section.\n- If output length is a concern, shorten sections but DO NOT omit any.\nSECTION ORDER (render in this order): Hero -> CTA -> About\nSECTION COUNT: 3\nSECTION GUARDRAILS (must follow):\n- Hero: Include a real <img> from the IMAGES block (no gradient-only hero).\nART DIRECTION: Editorial showcase\nLAYOUT ARCHETYPE: Centered hero + staggered grid + banner CTA + column footer\nSIGNATURE MOVES (must apply):\n- Use a subtle pattern layer behind key sections\n- Add an asymmetric grid or off-center alignment\n- Use layered cards with staggered heights\nSECTION VARIANTS (must apply, keep user requirements):\n- Hero: Full-width hero with layered glass panel and angled media strip\n\nSECTION LAYOUTS (use these styles):\n- Hero: Split hero: text left (40%), large image right (60%)\n- Cta: Two-column CTA with image\n- About: Timeline-style story\nEFFECTS (apply in UI): flickering-grid, grid-pattern\nCOMPONENT DIRECTIVES (required):\n- Implement 2-3 advanced components inspired by the registry below.\n- At least one component must add a distinctive background or motion effect (grid, aurora, beams, dots).\n- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.\n- Hero: Use \"text-hover-effect\" (21st-dev-components.md) — text hover effect.\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.\nVARIATION SEED: 1g1jf0 (must vary layout, imagery, and composition from prior runs).\n[Style: default | Colors: #111113, #ffffff, #22c55e]",
+      "displayPrompt": "Nonprofit organization landing page for environmental charity \"Green Future\". Include hero, mission, impact stats, programs, donate CTA, and volunteer signup. Earthy green palette.",
+      "imagePrompt": "\nIMAGES:\n(Use these exact proxied URLs. Do NOT invent URLs.)\nHERO: /__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067988162%26boltSeed%3D1g1jf0\nIMAGE COUNTS (minimum): HERO>=1\nIMAGES REQUIRED: If a section mentions images, it MUST include at least one <img> using the URLs above.\nDo NOT replace image sections with gradients/placeholders when IMAGES block exists.\nDo NOT use data:image placeholders or icon-only cards for image slots.\nAdd loading=\"lazy\" to all <img> tags.",
+      "sectionContract": {
+        "order": [
+          "hero",
+          "cta",
+          "about"
+        ],
+        "labels": {
+          "navigation": "Navigation",
+          "hero": "Hero",
+          "features": "Features",
+          "gallery": "Gallery",
+          "testimonials": "Testimonials",
+          "pricing": "Pricing",
+          "cta": "CTA",
+          "faq": "FAQ",
+          "footer": "Footer",
+          "about": "About",
+          "team": "Team",
+          "contact": "Contact",
+          "blog": "Blog",
+          "logo": "Logo",
+          "products": "Products",
+          "categories": "Categories",
+          "editorial": "Editorial",
+          "newsletter": "Newsletter"
+        },
+        "imageSections": [
+          "hero"
+        ],
+        "imageMap": {
+          "hero": [
+            "/__image_proxy__?url=https%3A%2F%2Fsource.unsplash.com%2F1600x900%2F%3Fmodern%2520abstract%2520interior%26sig%3D1704067988162%26boltSeed%3D1g1jf0"
+          ]
+        },
+        "imageMinCounts": {
+          "hero": 1
+        }
+      }
+    }
+  ]
+}

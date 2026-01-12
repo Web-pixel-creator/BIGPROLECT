@@ -1020,15 +1020,15 @@ for (const [key, aliases] of Object.entries(EXTRA_KEYWORDS)) {
 
 // Industry/theme keywords
 const THEME_KEYWORDS: Record<string, string[]> = {
-  auto: ['auto', 'car', 'cars', 'vehicle', 'automotive', '????', '?????', '?????????', '???????'],
-  tech: ['tech', 'it', 'software', 'app', 'saas', 'startup', '???', '????', '????'],
-  food: ['food', 'restaurant', 'cafe', 'delivery', '???', '????????', '????', '????????'],
-  fashion: ['fashion', 'style', 'clothes', 'apparel', '????', '?????', '?????', '?????'],
-  health: ['health', 'medical', 'fitness', 'sport', 'clinic', '??????', '?????', '?????', '??????'],
-  finance: ['finance', 'bank', 'crypto', 'money', '??????', '????', '??????', '?????'],
-  education: ['education', 'courses', 'learning', 'school', '??????', '?????', '????', '????'],
-  photo: ['photo', 'photography', 'gallery', '?????????', '????', '????????', '???????'],
-  construction: ['construction', 'builder', 'development', '?????', '????????', '??????????'],
+  auto: ['auto', 'car', 'cars', 'vehicle', 'automotive', 'авто', 'автосалон', 'автомобиль', 'машина'],
+  tech: ['tech', 'it', 'software', 'app', 'saas', 'startup', 'тех', 'айти', 'софт'],
+  food: ['food', 'restaurant', 'cafe', 'delivery', 'еда', 'ресторан', 'кафе', 'доставка'],
+  fashion: ['fashion', 'style', 'clothes', 'apparel', 'мода', 'одежда', 'бутик', 'стиль'],
+  health: ['health', 'medical', 'fitness', 'sport', 'clinic', 'здоровье', 'медицина', 'спорт', 'фитнес'],
+  finance: ['finance', 'bank', 'crypto', 'money', 'финансы', 'банк', 'крипто', 'деньги'],
+  education: ['education', 'courses', 'learning', 'school', 'обучение', 'курсы', 'школа', 'учеба'],
+  photo: ['photo', 'photography', 'gallery', 'портфолио', 'фото', 'фотограф', 'галерея'],
+  construction: ['construction', 'builder', 'development', 'строй', 'строительство', 'застройщик'],
 };
 
 // Эффекты (из пресетов) → какие типы компонентов / ключевые слова искать

@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "generatedAt": "2024-01-01T00:00:00.000Z",
+    "seed": 1337,
+    "promptsPath": "scripts\\baseline-prompts.json"
+  },
+  "summary": {
+    "promptCount": 25,
+    "durationMs": {
+      "median": 16.05869999999993,
+      "min": 1.1136000000000195,
+      "max": 158.4726
+    },
+    "enhancedPromptLength": {
+      "median": 2875,
+      "min": 1108,
+      "max": 4544
+    },
+    "themeCounts": {
+      "furniture": 2,
+      "vinyl": 2,
+      "ecommerce": 2,
+      "fashion": 2,
+      "beauty": 2,
+      "tech": 2,
+      "food": 2,
+      "photography": 2,
+      "medical": 1,
+      "default": 6,
+      "education": 1,
+      "hotel": 1
+    }
+  },
+  "coldImportTimeMs": 52.22500000000001,
+  "bundleSizeBytes": 80749
+}

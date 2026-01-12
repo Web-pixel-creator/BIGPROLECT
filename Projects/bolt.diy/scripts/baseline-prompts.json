@@ -1,0 +1,102 @@
+[
+  {
+    "id": "furniture-en",
+    "prompt": "Design a minimalist Scandinavian furniture store landing page. Brand name \"Oakline\". Sections: hero, features, products, testimonials, newsletter, footer. Use warm neutrals and avoid purple."
+  },
+  {
+    "id": "furniture-ru",
+    "prompt": "Сделай лендинг для мебельного бренда в скандинавском стиле. Название бренда «Сканди Дом». Секции: герой, преимущества, каталог, отзывы, newsletter, футер. Цвета: бежевый и графит, без фиолетового."
+  },
+  {
+    "id": "vinyl-en",
+    "prompt": "Create a landing page for a vinyl record shop called \"Groove Vault\". Include hero, featured releases, genres, store info, and newsletter."
+  },
+  {
+    "id": "vinyl-ru",
+    "prompt": "Лендинг для магазина винила «Пластинка». Нужны секции: герой, новинки, жанры, магазин, подписка."
+  },
+  {
+    "id": "ecommerce-en",
+    "prompt": "Build an e-commerce homepage for sustainable clothing. Highlight new arrivals, best sellers, and a clean checkout flow."
+  },
+  {
+    "id": "fashion-ru",
+    "prompt": "Сайт бутика модной одежды «Linea». Стиль: минимализм, премиум. Секции: герой, коллекции, lookbook, отзывы, футер."
+  },
+  {
+    "id": "beauty-en",
+    "prompt": "Landing page for a skincare brand. Use soft light palette, include hero, ingredients, routine, testimonials, and CTA."
+  },
+  {
+    "id": "electronics-ru",
+    "prompt": "Лендинг для бренда электроники «Nova Tech». Секции: герой, продукты, преимущества, отзывы, FAQ, футер."
+  },
+  {
+    "id": "restaurant-en",
+    "prompt": "Restaurant website for a modern bistro. Include menu highlights, chef story, reservations, and location."
+  },
+  {
+    "id": "food-ru",
+    "prompt": "Сайт для сервиса доставки еды «ВкусноДень». Нужны секции: герой, как работает, меню, отзывы, доставка, футер."
+  },
+  {
+    "id": "photography-en",
+    "prompt": "Portfolio site for a photographer. Include hero, gallery, services, about, and contact."
+  },
+  {
+    "id": "hotel-ru",
+    "prompt": "Сайт бутик-отеля «Aurora». Секции: герой, номера, удобства, отзывы, бронирование."
+  },
+  {
+    "id": "saas-en",
+    "prompt": "SaaS landing page for a product analytics platform. Include hero, features, integrations, pricing, and FAQ."
+  },
+  {
+    "id": "medical-ru",
+    "prompt": "Лендинг для частной клиники. Секции: герой, услуги, врачи, отзывы, запись. Тон: спокойный, медицинский."
+  },
+  {
+    "id": "finance-en",
+    "prompt": "Fintech homepage for a personal budgeting app. Emphasize security, dashboards, and CTA to start free."
+  },
+  {
+    "id": "realestate-ru",
+    "prompt": "Сайт агентства недвижимости «Город Дом». Секции: герой, объекты, преимущества, отзывы, контакты."
+  },
+  {
+    "id": "education-en",
+    "prompt": "Online course landing page for a UI design bootcamp. Include curriculum, mentors, testimonials, and enrollment CTA."
+  },
+  {
+    "id": "industrial-ru",
+    "prompt": "Сайт для промышленной компании в сфере энергетики. Секции: герой, решения, кейсы, безопасность, контакты."
+  },
+  {
+    "id": "default-en",
+    "prompt": "Create a clean landing page for a creative studio. Use bold typography and a clear CTA."
+  },
+  {
+    "id": "default-ru",
+    "prompt": "Сделай современный лендинг для агентства брендинга. Важно: четкий призыв к действию."
+  },
+  {
+    "id": "beauty-salon-en",
+    "prompt": "Landing page for a luxury beauty salon called \"Glow Studio\". Include hero, services, team, gallery, booking, and testimonials. Use soft pink and gold accents."
+  },
+  {
+    "id": "travel-en",
+    "prompt": "Travel agency website for adventure tours. Brand name \"Wanderlust Expeditions\". Sections: hero, destinations, packages, testimonials, about us, contact. Use vibrant colors."
+  },
+  {
+    "id": "sports-en",
+    "prompt": "Fitness gym landing page for \"Iron Peak Fitness\". Include hero, membership plans, trainers, classes schedule, testimonials, and location. Bold and energetic design."
+  },
+  {
+    "id": "gaming-en",
+    "prompt": "Gaming community website for an esports team called \"Nexus Gaming\". Sections: hero, team roster, achievements, sponsors, news, and join us CTA. Dark theme with neon accents."
+  },
+  {
+    "id": "nonprofit-en",
+    "prompt": "Nonprofit organization landing page for environmental charity \"Green Future\". Include hero, mission, impact stats, programs, donate CTA, and volunteer signup. Earthy green palette."
+  }
+]
