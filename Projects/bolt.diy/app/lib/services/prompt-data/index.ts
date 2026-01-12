@@ -89,6 +89,15 @@ export {
 // Style cues
 export { STYLE_CUE_TOKENS } from './style-cues';
 
+// Prompt hints (layout/navigation/image keywords)
+export {
+  IMAGE_KEYWORDS,
+  LAYOUT_KEYWORDS,
+  NAVIGATION_SIGNALS,
+  SECTION_LAYOUTS,
+  SECTION_LABELS,
+} from './prompt-hints';
+
 // Component keywords (for UI component matching)
 export {
   COMPONENT_KEYWORDS_EN,

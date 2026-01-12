@@ -4,7 +4,9 @@
  *
  * Property 1: Theme keywords consistency
  * Property 2: Color mappings validity
- * Property 3: Seeded RNG determinism
+ * Property 3: Image queries validity
+ * Property 4: Prompt hints validity
+ * Property 5: Seeded RNG determinism
  */
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
@@ -20,6 +22,11 @@ import {
   THEME_IMAGE_QUERIES,
   IMAGE_SIZES,
   MAX_IMAGE_COUNTS,
+  IMAGE_KEYWORDS,
+  LAYOUT_KEYWORDS,
+  NAVIGATION_SIGNALS,
+  SECTION_LAYOUTS,
+  SECTION_LABELS,
   createSeededRandom,
   setGlobalSeed,
   resetGlobalRng,
@@ -143,7 +150,37 @@ describe('Prompt Data Property Tests', () => {
     });
   });
 
-  describe('Property 4: Seeded RNG determinism', () => {
+  describe('Property 4: Prompt hints validity', () => {
+    it('image keywords are non-empty strings', () => {
+      for (const keyword of IMAGE_KEYWORDS) {
+        expect(typeof keyword).toBe('string');
+        expect(keyword.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it('layout keywords are non-empty strings', () => {
+      for (const keyword of LAYOUT_KEYWORDS) {
+        expect(typeof keyword).toBe('string');
+        expect(keyword.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it('navigation signals are non-empty strings', () => {
+      for (const keyword of NAVIGATION_SIGNALS) {
+        expect(typeof keyword).toBe('string');
+        expect(keyword.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it('section layouts have labels', () => {
+      for (const key of Object.keys(SECTION_LAYOUTS)) {
+        expect(SECTION_LABELS).toHaveProperty(key);
+        expect(SECTION_LAYOUTS[key]?.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Property 5: Seeded RNG determinism', () => {
     it('same seed produces same sequence', () => {
       fc.assert(
         fc.property(fc.integer({ min: 0, max: 0xffffffff }), (seed) => {

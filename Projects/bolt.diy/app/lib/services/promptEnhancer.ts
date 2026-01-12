@@ -37,6 +37,11 @@ import {
   THEME_LAYOUT_ARCHETYPES,
   FALLBACK_BRANDS,
   STYLE_CUE_TOKENS,
+  IMAGE_KEYWORDS,
+  LAYOUT_KEYWORDS,
+  NAVIGATION_SIGNALS,
+  SECTION_LAYOUTS,
+  SECTION_LABELS,
   type ImageSet,
 } from './prompt-data';
 import { pickRandomUnique } from './prompt-random-utils';
@@ -117,44 +122,13 @@ type SectionSpecs = {
 function wantsImages(prompt: string, mentionedSections: string[]): boolean {
   const lowerPrompt = prompt.toLowerCase();
 
-  const imageKeywords = [
-    'image',
-    'photo',
-    'photography',
-    'gallery',
-    'picture',
-    'background image',
-    'hero image',
-    'cover',
-    'banner',
-    'lifestyle',
-    'product photo',
-    'album cover',
-    'cover art',
-    'photo shoot',
-    'изображение',
-    'картинка',
-    'фото',
-    'фотография',
-    'галерея',
-    'фон',
-    'обложка',
-    'баннер',
-    'лайфстайл',
-    'товарное фото',
-    'обложка альбома',
-    'съёмка',
-    'съемка',
-    'фотосессия',
-  ];
-
   if (
     mentionedSections.some((section) => ['hero', 'gallery', 'products', 'categories', 'editorial'].includes(section))
   ) {
     return true;
   }
 
-  return imageKeywords.some((keyword) => matchesKeyword(lowerPrompt, keyword));
+  return IMAGE_KEYWORDS.some((keyword) => matchesKeyword(lowerPrompt, keyword));
 }
 
 function buildImageSuggestions(mentionedSections: string[], images: ImageSet): string {
@@ -470,45 +444,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   const lowerPrompt = analysisPrompt.toLowerCase();
 
-  const layoutKeywords = [
-    'split',
-    'left',
-    'right',
-    'two column',
-    'two-column',
-    'two columns',
-    '2 column',
-    '2-column',
-    'image on left',
-    'image on right',
-    'text on left',
-    'text on right',
-    'grid',
-    'masonry',
-    'carousel',
-    'slider',
-    'horizontal scroll',
-    'full-width',
-    'full width',
-    'full screen',
-    'fullscreen',
-    'слева',
-    'справа',
-    'две колонки',
-    '2 колонки',
-    'двухколоночный',
-    'сетка',
-    'мозаика',
-    'мейсонри',
-    'карусель',
-    'слайдер',
-    'горизонтальный скролл',
-    'на всю ширину',
-    'на весь экран',
-    'полноэкранный',
-  ];
-
-  const hasSpecificLayout = layoutKeywords.some((keyword) => matchesKeyword(lowerPrompt, keyword));
+  const hasSpecificLayout = LAYOUT_KEYWORDS.some((keyword) => matchesKeyword(lowerPrompt, keyword));
 
   // Helper to pick random item
 
@@ -540,18 +476,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     }
   }
 
-  const navigationSignals = [
-    'menu',
-    'navigation',
-    'navbar',
-    'top bar',
-    'header',
-    'search icon',
-    'wishlist',
-    'cart',
-    'profile',
-  ];
-  const wantsNavigation = navigationSignals.some((signal) => matchesKeyword(lowerPrompt, signal));
+  const wantsNavigation = NAVIGATION_SIGNALS.some((signal) => matchesKeyword(lowerPrompt, signal));
 
   if (wantsNavigation && !mentionedSections.includes('navigation')) {
     mentionedSections.unshift('navigation');
@@ -584,204 +509,6 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Section layout variants
 
-  const sectionLayouts: Record<string, string[]> = {
-    navigation: ['Minimal top nav: logo left, links center, icons right', 'Centered nav with logo above links'],
-
-    hero: [
-      'Full-width hero with centered text and background image',
-
-      'Split hero: text left (40%), large image right (60%)',
-
-      'Split hero: image left (60%), text right (40%)',
-
-      'Full-screen hero with minimal headline',
-
-      'Hero with floating card on the right',
-
-      'Asymmetric diagonal split hero',
-    ],
-
-    features: [
-      '3-column icon cards',
-
-      '4-column compact feature grid',
-
-      'Alternating image/text rows',
-
-      'Bento-style grid',
-
-      'Single column with large icons',
-    ],
-
-    gallery: [
-      'gallery',
-      'portfolio',
-      'photos',
-      'images',
-      'work',
-      'showcase',
-      'media',
-      'unboxing',
-      'meal kit',
-      'meal kit unboxing',
-      'recipe box',
-      'unbox',
-      'галерея',
-      'портфолио',
-      'фото',
-      'фотографии',
-      'изображения',
-      'распаковка',
-      'витрина',
-    ],
-
-    testimonials: [
-      'Carousel of testimonial cards',
-
-      '3-column testimonial cards',
-
-      'Featured quote with side cards',
-
-      'Alternating quote/author layout',
-
-      'Stacked cards with ratings',
-    ],
-
-    pricing: [
-      '3-column pricing cards',
-
-      '2-column comparison table',
-
-      'Toggle monthly/annual with cards',
-
-      'Expandable pricing tiers',
-    ],
-
-    cta: [
-      'Centered card with glow effect',
-
-      'Split: text left, form right',
-
-      'Full-width banner with button',
-
-      'Minimal text with button',
-
-      'Two-column CTA with image',
-    ],
-
-    faq: ['Accordion list', '2-column FAQ grid', 'Card-based FAQ', 'Tabbed FAQ sections'],
-
-    footer: [
-      '4-column footer with links',
-
-      'Minimal centered footer',
-
-      '3-column footer with newsletter',
-
-      'Dark gradient footer',
-    ],
-
-    about: [
-      'Split: text left, image right',
-
-      'Story with stats row',
-
-      'Timeline-style story',
-
-      'Centered story with highlights',
-    ],
-
-    team: [
-      '3-column team cards',
-
-      'Horizontal scroll team slider',
-
-      'Split: portrait + bio',
-
-      'Stacked list with avatars',
-    ],
-
-    contact: [
-      'Form left, contact info right',
-
-      'Centered form with map below',
-
-      'Split: map left, form right',
-
-      'Minimal contact cards',
-    ],
-
-    blog: ['Featured post + 3 cards', '3-column blog grid', 'Masonry cards', 'List with thumbnails'],
-
-    logo: ['Logo bar row', 'Marquee logo strip', 'Grid of partner logos'],
-
-    products: [
-      'Angled album sleeves in a staggered grid with hover actions',
-
-      'Product cards with tilted cover + price row + condition badge',
-
-      'Crate-style product grid with overlapping covers',
-
-      'Grid with filters sidebar and spotlight card',
-    ],
-
-    categories: [
-      'Horizontal genre tag belt with scroll',
-
-      'Rounded pill carousel with gold outlines',
-
-      'Compact tag grid with hover glow',
-    ],
-
-    editorial: [
-      'Full-width image with text overlay',
-
-      'Split: image left, story text right',
-
-      'Story card with quote and author',
-    ],
-
-    newsletter: ['Centered form with input + button', 'Split: text left, form right', 'Compact bar with inline input'],
-  };
-
-  const sectionLabels: Record<string, string> = {
-    navigation: 'Navigation',
-
-    hero: 'Hero',
-
-    features: 'Features',
-
-    gallery: 'Gallery',
-
-    testimonials: 'Testimonials',
-
-    pricing: 'Pricing',
-
-    cta: 'CTA',
-
-    faq: 'FAQ',
-
-    footer: 'Footer',
-
-    about: 'About',
-
-    team: 'Team',
-
-    contact: 'Contact',
-
-    blog: 'Blog',
-
-    logo: 'Logo',
-
-    products: 'Products',
-
-    categories: 'Categories',
-
-    editorial: 'Editorial',
-
-    newsletter: 'Newsletter',
-  };
-
   // Generate layouts only for mentioned sections
 
   let layoutSuggestions = '';
@@ -789,10 +516,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   if (!hasSpecificLayout && mentionedSections.length > 0) {
     const layouts = mentionedSections
 
-      .filter((section) => sectionLayouts[section])
+      .filter((section) => SECTION_LAYOUTS[section])
 
       .map(
-        (section) => `- ${section.charAt(0).toUpperCase() + section.slice(1)}: ${pickRandom(sectionLayouts[section])}`,
+        (section) =>
+          `- ${section.charAt(0).toUpperCase() + section.slice(1)}: ${pickRandom(SECTION_LAYOUTS[section])}`,
       )
 
       .join('\n');
@@ -805,7 +533,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const sectionChecklist =
     mentionedSections.length > 0
       ? `\nSECTIONS (must include all): ${mentionedSections
-          .map((section) => sectionLabels[section] ?? section)
+          .map((section) => SECTION_LABELS[section] ?? section)
           .join(', ')}`
       : '';
 
@@ -817,18 +545,18 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const sectionOrderLine =
     mentionedSections.length > 0
       ? `\nSECTION ORDER (render in this order): ${mentionedSections
-          .map((section) => sectionLabels[section] ?? section)
+          .map((section) => SECTION_LABELS[section] ?? section)
           .join(' -> ')}`
       : '';
 
   const sectionCountLine = mentionedSections.length > 0 ? `\nSECTION COUNT: ${mentionedSections.length}` : '';
 
-  const sectionDetailsBlock = buildSectionDetailsBlock(sectionSpecs.details, sectionLabels);
+  const sectionDetailsBlock = buildSectionDetailsBlock(sectionSpecs.details, SECTION_LABELS);
   const sectionGuardrails = buildSectionGuardrails(mentionedSections, sectionSpecs.details);
   const artDirectionLine = buildArtDirectionLine(detectedTheme);
   const layoutArchetypeLine = buildLayoutArchetypeLine(detectedTheme);
   const signatureMovesBlock = buildSignatureMovesBlock(detectedTheme);
-  const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, sectionLabels);
+  const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, SECTION_LABELS);
   let effectDirectiveBlock = '';
 
   try {
@@ -857,8 +585,8 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const imagePrompt = imageSuggestions ? `\n${imageSuggestions}` : '';
   const colorDirectiveBlock = buildColorDirectiveBlock(finalColors);
 
-  const sectionVariantBlock = buildSectionVariantBlock(mentionedSections, lowerPrompt, sectionLabels);
-  const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, sectionLabels);
+  const sectionVariantBlock = buildSectionVariantBlock(mentionedSections, lowerPrompt, SECTION_LABELS);
+  const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, SECTION_LABELS);
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
@@ -879,7 +607,7 @@ ${layoutSuggestions}`
 
   const shortSectionsLine =
     mentionedSections.length > 0
-      ? `\nSections: ${mentionedSections.map((section) => sectionLabels[section] ?? section).join(', ')}`
+      ? `\nSections: ${mentionedSections.map((section) => SECTION_LABELS[section] ?? section).join(', ')}`
       : '';
   console.log('[promptEnhancer] shortSectionsLine result:', shortSectionsLine);
 
@@ -929,7 +657,7 @@ ${layoutSuggestions}`
     mentionedSections.length > 0
       ? {
           order: mentionedSections,
-          labels: sectionLabels,
+          labels: SECTION_LABELS,
           imageSections: imageSectionKeys,
           imageMap,
           imageMinCounts,
