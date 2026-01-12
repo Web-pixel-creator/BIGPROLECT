@@ -90,4 +90,43 @@ describe('Prompt Enhancer Stability', () => {
       expect(images.length).toBeGreaterThan(0);
     }
   });
+
+  it('keeps section contract invariants consistent', async () => {
+    const prompt = [
+      'Landing page for a furniture brand with rich photography.',
+      'Navigation: logo, links, and cart icon.',
+      'Hero: full-width image and headline.',
+      'Gallery: product photos.',
+      'Products: grid of featured items.',
+      'Pricing: three tiers with CTAs.',
+    ].join('\n');
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    const contract = result.sectionContract;
+
+    expect(contract).toBeDefined();
+
+    const order = contract?.order ?? [];
+    const uniqueOrder = new Set(order);
+    expect(order.length).toBe(uniqueOrder.size);
+
+    for (const section of order) {
+      expect(contract?.labels?.[section]).toBeDefined();
+    }
+
+    const imageSections = contract?.imageSections ?? [];
+    for (const section of imageSections) {
+      expect(order).toContain(section);
+    }
+
+    const imageMap = contract?.imageMap ?? {};
+    for (const [section, images] of Object.entries(imageMap)) {
+      expect(images.length).toBeGreaterThan(0);
+      const minCount = contract?.imageMinCounts?.[section];
+      if (typeof minCount === 'number') {
+        expect(minCount).toBeGreaterThan(0);
+        expect(minCount).toBeLessThanOrEqual(images.length);
+      }
+    }
+  });
 });
