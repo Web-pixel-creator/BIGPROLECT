@@ -79,6 +79,28 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.detectedTheme).toBe('finance');
   });
 
+  it('detects beauty theme from Russian prompt', async () => {
+    const prompt = '\u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u043b\u044f \u0441\u0430\u043b\u043e\u043d\u0430 \u043a\u0440\u0430\u0441\u043e\u0442\u044b \u0438 \u043a\u043e\u0441\u043c\u0435\u0442\u043e\u043b\u043e\u0433\u0438\u0438';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('beauty');
+  });
+
+  it('detects food theme from Russian prompt', async () => {
+    const prompt = '\u0441\u0430\u0439\u0442 \u0434\u043b\u044f \u0441\u0435\u0440\u0432\u0438\u0441\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0438 \u0435\u0434\u044b \u0438 \u043f\u0435\u043a\u0430\u0440\u043d\u0438';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('food');
+  });
+
+  it('detects realestate theme from Russian prompt', async () => {
+    const prompt =
+      '\u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u043b\u044f \u0430\u0433\u0435\u043d\u0442\u0441\u0442\u0432\u0430 \u043d\u0435\u0434\u0432\u0438\u0436\u0438\u043c\u043e\u0441\u0442\u0438 \u0438 \u0436\u0438\u043b\u043e\u0433\u043e \u043a\u043e\u043c\u043f\u043b\u0435\u043a\u0441\u0430';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('realestate');
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
