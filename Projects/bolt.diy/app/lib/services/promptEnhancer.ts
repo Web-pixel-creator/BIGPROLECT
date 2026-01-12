@@ -79,6 +79,7 @@ import {
   applyImageSeed,
   fetchImageSetFromApi,
 } from './prompt-image-utils';
+import { promptLog, promptWarn } from './prompt-logger';
 
 // Merged keywords (EN + RU)
 const THEME_KEYWORDS = getMergedKeywords();
@@ -132,7 +133,7 @@ function wantsImages(prompt: string, mentionedSections: string[]): boolean {
 }
 
 function buildImageSuggestions(mentionedSections: string[], images: ImageSet): string {
-  console.log('[buildImageSuggestions] Called with:', {
+  promptLog('[buildImageSuggestions] Called with:', {
     mentionedSections,
     hasHero: !!images.hero?.length,
     hasProducts: !!images.products?.length,
@@ -155,7 +156,7 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
       return;
     }
 
-    console.log(`[buildImageSuggestions] Adding ${label}:`, proxied.length, 'images');
+    promptLog(`[buildImageSuggestions] Adding ${label}:`, proxied.length, 'images');
     lines.push(`${label}: ${proxied.join(' | ')}`);
   };
 
@@ -279,7 +280,7 @@ function buildStyleCueRegex(): RegExp {
   try {
     return new RegExp(pattern, 'i');
   } catch (error) {
-    console.warn('[promptEnhancer] Failed to build style cue regex', error);
+    promptWarn('[promptEnhancer] Failed to build style cue regex', error);
     return /style:/i;
   }
 }
@@ -356,7 +357,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
       );
 
       if (apiImages) {
-        console.log('[promptEnhancer] Got images from API:', {
+        promptLog('[promptEnhancer] Got images from API:', {
           heroCount: apiImages.hero?.length,
           galleryCount: apiImages.gallery?.length,
           productsCount: apiImages.products?.length,
@@ -364,11 +365,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
         images = mergeImageSets(apiImages, fallbackImages);
       }
     } catch (error) {
-      console.warn('[promptEnhancer] Failed to fetch images from API, using fallback:', error);
+      promptWarn('[promptEnhancer] Failed to fetch images from API, using fallback:', error);
     }
   }
 
-  console.log('[promptEnhancer] Final images result:', {
+  promptLog('[promptEnhancer] Final images result:', {
     theme: detectedTheme,
     heroCount: images.hero?.length,
     galleryCount: images.gallery?.length,
@@ -376,6 +377,8 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   });
 
   const brandName = extractBrandName(analysisPrompt) ?? generateBrandName(detectedTheme, analysisPrompt);
+  const lowerPrompt = analysisPrompt.toLowerCase();
+  const hasUserColors = hasUserSpecifiedColors(analysisPrompt);
 
   // Check if user already specified colors (priority: HEX codes > color words > theme defaults)
 
@@ -383,7 +386,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // First, try to extract HEX codes from prompt
 
-  if (hasUserSpecifiedColors(analysisPrompt)) {
+  if (hasUserColors) {
     const userColors = extractUserColors(analysisPrompt);
 
     if (userColors) {
@@ -402,11 +405,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
     // Only override dark/light if not already set by HEX codes
 
-    if (wordColors.dark && !hasUserSpecifiedColors(analysisPrompt)) {
+    if (wordColors.dark && !hasUserColors) {
       finalColors.dark = wordColors.dark;
     }
 
-    if (wordColors.light && !hasUserSpecifiedColors(analysisPrompt)) {
+    if (wordColors.light && !hasUserColors) {
       finalColors.light = wordColors.light;
     }
 
@@ -423,26 +426,22 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
       'primary color',
       'main color',
       'accent color',
-      'акцент',
-      'акцентный цвет',
-      'основной цвет',
-      'главный цвет',
+      '\u0430\u043a\u0446\u0435\u043d\u0442',
+      '\u0430\u043a\u0446\u0435\u043d\u0442\u043d\u044b\u0439 \u0446\u0432\u0435\u0442',
+      '\u043e\u0441\u043d\u043e\u0432\u043d\u043e\u0439 \u0446\u0432\u0435\u0442',
+      '\u0433\u043b\u0430\u0432\u043d\u044b\u0439 \u0446\u0432\u0435\u0442',
     ];
-
-    const lowerPrompt = analysisPrompt.toLowerCase();
 
     const hasExplicitAccent = [...accentKeywords, ...accentMetaKeywords].some((keyword) =>
       matchesKeyword(lowerPrompt, keyword),
     );
 
-    if (wordColors.accent && hasExplicitAccent && !hasUserSpecifiedColors(analysisPrompt)) {
+    if (wordColors.accent && hasExplicitAccent && !hasUserColors) {
       finalColors.accent = wordColors.accent;
     }
   }
 
   // Check if user specified specific layouts
-
-  const lowerPrompt = analysisPrompt.toLowerCase();
 
   const hasSpecificLayout = LAYOUT_KEYWORDS.some((keyword) => matchesKeyword(lowerPrompt, keyword));
 
@@ -456,11 +455,11 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Find which sections are mentioned
   const sectionSpecs = extractSectionSpecs(analysisPrompt, sectionKeywords);
-  console.log('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
+  promptLog('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
 
   const orderedSections =
     sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(analysisPrompt, sectionKeywords);
-  console.log('[promptEnhancer] orderedSections:', orderedSections);
+  promptLog('[promptEnhancer] orderedSections:', orderedSections);
 
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
 
@@ -469,7 +468,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     for (const [section, keywords] of Object.entries(sectionKeywords)) {
       if (!mentionedSections.includes(section)) {
         if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
-          console.log('[promptEnhancer] Fallback found section:', section);
+          promptLog('[promptEnhancer] Fallback found section:', section);
           mentionedSections.push(section);
         }
       }
@@ -482,22 +481,23 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
     mentionedSections.unshift('navigation');
   }
 
-  console.log('[promptEnhancer] Detected theme:', detectedTheme);
-  console.log('[promptEnhancer] Mentioned sections:', mentionedSections);
-  console.log('[promptEnhancer] Wants images:', wantsImages(analysisPrompt, mentionedSections));
+  promptLog('[promptEnhancer] Detected theme:', detectedTheme);
+  promptLog('[promptEnhancer] Mentioned sections:', mentionedSections);
+  const wantsImagesResult = wantsImages(analysisPrompt, mentionedSections);
+  promptLog('[promptEnhancer] Wants images:', wantsImagesResult);
 
-  if (wantsImages(analysisPrompt, mentionedSections)) {
+  if (wantsImagesResult) {
     const queries = buildImageSearchQueries(detectedTheme, mentionedSections);
     const counts = buildImageSearchCounts(mentionedSections);
-    console.log('[promptEnhancer] Image queries:', JSON.stringify(queries));
-    console.log('[promptEnhancer] Image counts:', JSON.stringify(counts));
+    promptLog('[promptEnhancer] Image queries:', JSON.stringify(queries));
+    promptLog('[promptEnhancer] Image counts:', JSON.stringify(counts));
 
     const apiImages = await fetchImageSetFromApi(detectedTheme, queries, counts);
-    console.log('[promptEnhancer] API returned images:', apiImages ? 'yes' : 'no');
+    promptLog('[promptEnhancer] API returned images:', apiImages ? 'yes' : 'no');
 
     if (apiImages) {
       images = mergeImageSets(apiImages, fallbackImages);
-      console.log('[promptEnhancer] Using API images, hero count:', images.hero?.length);
+      promptLog('[promptEnhancer] Using API images, hero count:', images.hero?.length);
     }
   }
 
@@ -562,14 +562,14 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   try {
     effectDirectiveBlock = buildEffectDirectiveBlock(detectedTheme);
   } catch (error) {
-    console.warn('[promptEnhancer] Failed to build effect directive block', error);
+    promptWarn('[promptEnhancer] Failed to build effect directive block', error);
   }
 
   const requirements = extractRequirementLines(analysisPrompt).slice(0, 20);
   const requirementsBlock =
     requirements.length > 0 ? `\nREQUIREMENTS (must implement):\n- ${requirements.join('\n- ')}` : '';
 
-  console.log('[promptEnhancer] Before buildImageSuggestions:', {
+  promptLog('[promptEnhancer] Before buildImageSuggestions:', {
     mentionedSections,
     wantsImagesResult: wantsImages(analysisPrompt, mentionedSections),
     imagesHero: images.hero?.slice(0, 1),
@@ -580,7 +580,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const imageSuggestions = wantsImages(analysisPrompt, mentionedSections)
     ? buildImageSuggestions(mentionedSections, images)
     : '';
-  console.log('[promptEnhancer] imageSuggestions result:', imageSuggestions?.substring(0, 200));
+  promptLog('[promptEnhancer] imageSuggestions result:', imageSuggestions?.substring(0, 200));
 
   const imagePrompt = imageSuggestions ? `\n${imageSuggestions}` : '';
   const colorDirectiveBlock = buildColorDirectiveBlock(finalColors);
@@ -601,19 +601,19 @@ ${layoutSuggestions}`
   }${effectDirectiveBlock}${componentDirectivesBlock}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
-  console.log('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
-  console.log('[promptEnhancer] sectionSpecs.order was:', JSON.stringify(sectionSpecs.order));
-  console.log('[promptEnhancer] orderedSections was:', JSON.stringify(orderedSections));
+  promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
+  promptLog('[promptEnhancer] sectionSpecs.order was:', JSON.stringify(sectionSpecs.order));
+  promptLog('[promptEnhancer] orderedSections was:', JSON.stringify(orderedSections));
 
   const shortSectionsLine =
     mentionedSections.length > 0
       ? `\nSections: ${mentionedSections.map((section) => SECTION_LABELS[section] ?? section).join(', ')}`
       : '';
-  console.log('[promptEnhancer] shortSectionsLine result:', shortSectionsLine);
+  promptLog('[promptEnhancer] shortSectionsLine result:', shortSectionsLine);
 
   const displayPrompt = analysisPrompt;
 
-  console.log('[promptEnhancer] FINAL RESULT:', {
+  promptLog('[promptEnhancer] FINAL RESULT:', {
     hasImagePrompt: !!imagePrompt,
     imagePromptLength: imagePrompt?.length,
     imagePromptPreview: imagePrompt?.substring(0, 200),
@@ -712,20 +712,20 @@ export function shouldEnhancePrompt(prompt: string): boolean {
     'app',
     'screen',
     'wireframe',
-    'сайт',
-    'лендинг',
-    'главная',
-    'страница',
-    'дизайн',
-    'интерфейс',
-    'шапка',
-    'секция',
-    'экран',
-    'макет',
-    'прототип',
-    'создай',
-    'сделай',
-    'сверстай',
+    '\u0441\u0430\u0439\u0442',
+    '\u043b\u0435\u043d\u0434\u0438\u043d\u0433',
+    '\u0433\u043b\u0430\u0432\u043d\u0430\u044f',
+    '\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430',
+    '\u0434\u0438\u0437\u0430\u0439\u043d',
+    '\u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441',
+    '\u0448\u0430\u043f\u043a\u0430',
+    '\u0441\u0435\u043a\u0446\u0438\u044f',
+    '\u044d\u043a\u0440\u0430\u043d',
+    '\u043c\u0430\u043a\u0435\u0442',
+    '\u043f\u0440\u043e\u0442\u043e\u0442\u0438\u043f',
+    '\u0441\u043e\u0437\u0434\u0430\u0439',
+    '\u0441\u0434\u0435\u043b\u0430\u0439',
+    '\u0441\u0432\u0435\u0440\u0441\u0442\u0430\u0439',
   ];
 
   const lowerPrompt = prompt.toLowerCase();

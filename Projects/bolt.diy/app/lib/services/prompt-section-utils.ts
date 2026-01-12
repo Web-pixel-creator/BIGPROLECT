@@ -4,6 +4,7 @@
  */
 
 import { matchesKeyword } from './prompt-color-utils';
+import { promptLog } from './prompt-logger';
 
 export type SectionSpecs = {
   order: string[];
@@ -71,7 +72,7 @@ export function extractSectionOrder(prompt: string, sectionKeywords: Record<stri
  */
 export function inferSectionKey(text: string, sectionKeywords: Record<string, string[]>): string | null {
   const lower = text.toLowerCase();
-  console.log('[inferSectionKey] Checking text:', {
+  promptLog('[inferSectionKey] Checking text:', {
     original: text,
     lower,
     keywordSectionsCount: Object.keys(sectionKeywords).length,
@@ -79,11 +80,11 @@ export function inferSectionKey(text: string, sectionKeywords: Record<string, st
 
   for (const [section, keywords] of Object.entries(sectionKeywords)) {
     if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
-      console.log('[inferSectionKey] MATCHED:', { text, section, lower });
+      promptLog('[inferSectionKey] MATCHED:', { text, section, lower });
       return section;
     }
   }
-  console.log('[inferSectionKey] NO MATCH:', { text, lower });
+  promptLog('[inferSectionKey] NO MATCH:', { text, lower });
   return null;
 }
 
@@ -96,12 +97,12 @@ export function inferAllSections(text: string, sectionKeywords: Record<string, s
 
   for (const [section, keywords] of Object.entries(sectionKeywords)) {
     if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
-      console.log('[inferAllSections] MATCHED:', { section, text: text.substring(0, 50) });
+      promptLog('[inferAllSections] MATCHED:', { section, text: text.substring(0, 50) });
       found.push(section);
     }
   }
 
-  console.log('[inferAllSections] Found sections:', found);
+  promptLog('[inferAllSections] Found sections:', found);
   return found;
 }
 
@@ -110,23 +111,23 @@ export function inferAllSections(text: string, sectionKeywords: Record<string, s
  * Extract section specs from prompt (order and details)
  */
 export function extractSectionSpecs(prompt: string, sectionKeywords: Record<string, string[]>): SectionSpecs {
-  console.log('[extractSectionSpecs] Parsing prompt:', prompt.substring(0, 200));
+  promptLog('[extractSectionSpecs] Parsing prompt:', prompt.substring(0, 200));
 
   const lines = prompt
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  console.log('[extractSectionSpecs] Found lines:', lines.length, lines);
+  promptLog('[extractSectionSpecs] Found lines:', lines.length, lines);
 
   const order: string[] = [];
   const details: Record<string, string[]> = {};
   let currentSection: string | null = null;
   let footerLocked = false;
-  const explicitSectionCue = /\b(section|block|area|раздел|секция|блок)\b/i;
+  const explicitSectionCue = /\b(section|block|area|\u0440\u0430\u0437\u0434\u0435\u043b|\u0441\u0435\u043a\u0446\u0438\u044f|\u0431\u043b\u043e\u043a)\b/i;
 
   const pushSection = (section: string) => {
-    console.log('[extractSectionSpecs] Pushing section:', section);
+    promptLog('[extractSectionSpecs] Pushing section:', section);
     if (!order.includes(section)) {
       order.push(section);
     }
@@ -141,7 +142,7 @@ export function extractSectionSpecs(prompt: string, sectionKeywords: Record<stri
     const headingText = parts[0]?.trim() ?? trimmed;
     const detailText = parts.length > 1 ? parts.slice(1).join(': ').trim() : '';
     const key = inferSectionKey(headingText, sectionKeywords);
-    console.log('[extractSectionSpecs] parseHeading:', { rawText, headingText, key });
+    promptLog('[extractSectionSpecs] parseHeading:', { rawText, headingText, key });
     return key ? { key, detail: detailText } : null;
   };
 
@@ -151,7 +152,7 @@ export function extractSectionSpecs(prompt: string, sectionKeywords: Record<stri
     const hasColon = rawLine.includes(':');
     const headingCandidate = (!bulletMatch && (rawLine.endsWith(':') || hasColon)) || (bulletMatch && hasColon);
 
-    console.log('[extractSectionSpecs] LINE:', {
+    promptLog('[extractSectionSpecs] LINE:', {
       line: line.substring(0, 60),
       bulletMatch: !!bulletMatch,
       rawLine: rawLine.substring(0, 60),
@@ -161,7 +162,7 @@ export function extractSectionSpecs(prompt: string, sectionKeywords: Record<stri
 
     if (headingCandidate) {
       const parsed = parseHeading(rawLine);
-      console.log('[extractSectionSpecs] parseHeading result:', parsed);
+      promptLog('[extractSectionSpecs] parseHeading result:', parsed);
 
       if (parsed) {
         if (footerLocked && parsed.key !== 'footer' && !explicitSectionCue.test(rawLine)) {
@@ -199,9 +200,9 @@ export function extractSectionSpecs(prompt: string, sectionKeywords: Record<stri
     }
 
     // If not a heading, try to infer ALL sections from the whole line
-    console.log('[extractSectionSpecs] Trying inferAllSections for:', rawLine.substring(0, 60));
+    promptLog('[extractSectionSpecs] Trying inferAllSections for:', rawLine.substring(0, 60));
     const inferredSections = inferAllSections(rawLine, sectionKeywords);
-    console.log('[extractSectionSpecs] inferAllSections result:', inferredSections);
+    promptLog('[extractSectionSpecs] inferAllSections result:', inferredSections);
 
     if (inferredSections.length > 0) {
       for (const inferredSection of inferredSections) {
@@ -334,3 +335,4 @@ export function buildSectionBlueprint(
 
   return `\nSECTION BLUEPRINT (follow exactly):\n${lines.join('\n')}`;
 }
+

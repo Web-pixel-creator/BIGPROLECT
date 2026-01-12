@@ -5,6 +5,7 @@
 
 import { getMergedKeywords, FALLBACK_BRANDS } from './prompt-data';
 import { matchesKeyword } from './prompt-color-utils';
+import { promptLog } from './prompt-logger';
 
 // Merged keywords (EN + RU)
 const THEME_KEYWORDS = getMergedKeywords();
@@ -13,20 +14,20 @@ const THEME_KEYWORDS = getMergedKeywords();
  * Detect theme from user prompt
  */
 export function detectTheme(prompt: string): string {
-  console.log('[detectTheme] Input prompt:', prompt.substring(0, 300));
+  promptLog('[detectTheme] Input prompt:', prompt.substring(0, 300));
   const lowerPrompt = prompt.toLowerCase();
-  console.log('[detectTheme] Lower prompt:', lowerPrompt.substring(0, 200));
+  promptLog('[detectTheme] Lower prompt:', lowerPrompt.substring(0, 200));
 
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
     for (const keyword of keywords) {
       if (matchesKeyword(lowerPrompt, keyword)) {
-        console.log('[detectTheme] MATCHED theme:', theme, 'keyword:', keyword);
+        promptLog('[detectTheme] MATCHED theme:', theme, 'keyword:', keyword);
         return theme;
       }
     }
   }
 
-  console.log('[detectTheme] NO THEME MATCHED - returning default');
+  promptLog('[detectTheme] NO THEME MATCHED - returning default');
   return 'default';
 }
 
@@ -36,7 +37,8 @@ export function detectTheme(prompt: string): string {
 export function extractBrandName(prompt: string): string | null {
   // Patterns for brand name extraction (EN and RU)
   const enPattern = /(?:called|named|brand(?: website)?|website called|brand name|project name)\s+["']?([\w\s&-]{2,60})["']?/i;
-  const ruPattern = /(?:название|бренд|название бренда|сайт\s*под\s*названием|сайт\s*назван|магазин\s*под\s*названием|проект\s*под\s*названием)\s+["']?([\w\s&-]{2,60})["']?/iu;
+  const ruPattern =
+    /(?:\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435|\u0431\u0440\u0435\u043D\u0434|\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0431\u0440\u0435\u043D\u0434\u0430|\u0441\u0430\u0439\u0442\s*\u043F\u043E\u0434\s*\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435\u043C|\u0441\u0430\u0439\u0442\s*\u043D\u0430\u0437\u0432\u0430\u043D|\u043C\u0430\u0433\u0430\u0437\u0438\u043D\s*\u043F\u043E\u0434\s*\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435\u043C|\u043F\u0440\u043E\u0435\u043A\u0442\s*\u043F\u043E\u0434\s*\u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435\u043C)\s+["']?([\p{L}\p{N}&\-\s]{2,60})["']?/iu;
 
   const patterns = [enPattern, ruPattern];
 

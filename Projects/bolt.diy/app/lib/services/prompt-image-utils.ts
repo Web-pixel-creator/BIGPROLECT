@@ -9,6 +9,7 @@ import {
   type ImageSearchCounts,
 } from './prompt-data';
 import { pickRandomUnique, shuffleList } from './prompt-random-utils';
+import { promptLog, promptWarn } from './prompt-logger';
 
 const IMAGE_PROXY_PREFIX = '/__image_proxy__?url=';
 const IMAGE_SEARCH_ENDPOINT = '/api/image-search';
@@ -407,12 +408,12 @@ async function fetchImageSetFromApi(
     const cached = imageCache.get(cacheKey);
 
     if (cached && cached.expiresAt > Date.now()) {
-      console.log('[fetchImageSetFromApi] Using cached images');
+      promptLog('[fetchImageSetFromApi] Using cached images');
       return cached.data;
     }
   }
 
-  console.log('[fetchImageSetFromApi] Fetching images from API:', { theme, queries, counts });
+  promptLog('[fetchImageSetFromApi] Fetching images from API:', { theme, queries, counts });
 
   try {
     const response = await fetch(IMAGE_SEARCH_ENDPOINT, {
@@ -421,15 +422,15 @@ async function fetchImageSetFromApi(
       body: JSON.stringify({ theme, queries, counts }),
     });
 
-    console.log('[fetchImageSetFromApi] Response status:', response.status);
+    promptLog('[fetchImageSetFromApi] Response status:', response.status);
 
     if (!response.ok) {
-      console.error('[fetchImageSetFromApi] API returned error:', response.status, response.statusText);
+      promptWarn('[fetchImageSetFromApi] API returned error:', response.status, response.statusText);
       return null;
     }
 
     const data = (await response.json()) as Partial<ImageSet>;
-    console.log('[fetchImageSetFromApi] Got images:', data);
+    promptLog('[fetchImageSetFromApi] Got images:', data);
 
     const normalized = normalizeImageSet(data);
     const proxied = proxyImageSet(normalized);
@@ -441,7 +442,7 @@ async function fetchImageSetFromApi(
 
     return proxied;
   } catch (error) {
-    console.error('[fetchImageSetFromApi] Error fetching images:', error);
+    promptWarn('[fetchImageSetFromApi] Error fetching images:', error);
     return null;
   }
 }
@@ -460,3 +461,4 @@ export {
   applyImageSeed,
   fetchImageSetFromApi,
 };
+
