@@ -7,9 +7,9 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 14.249400000000037,
-      "min": 1.3309000000000424,
-      "max": 144.3159
+      "median": 26.084100000000035,
+      "min": 0.8709999999998672,
+      "max": 257.33729999999997
     },
     "enhancedPromptLength": {
       "median": 2641,
@@ -31,6 +31,6 @@
       "hotel": 1
     }
   },
-  "coldImportTimeMs": 61.023399999999995,
-  "bundleSizeBytes": 23666
+  "coldImportTimeMs": 134.32029999999997,
+  "bundleSizeBytes": 24016
 }
