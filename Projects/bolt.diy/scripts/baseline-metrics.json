@@ -7,14 +7,14 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 16.05869999999993,
-      "min": 1.1136000000000195,
-      "max": 158.4726
+      "median": 14.249400000000037,
+      "min": 1.3309000000000424,
+      "max": 144.3159
     },
     "enhancedPromptLength": {
-      "median": 2875,
-      "min": 1108,
-      "max": 4544
+      "median": 2641,
+      "min": 874,
+      "max": 4433
     },
     "themeCounts": {
       "furniture": 2,
@@ -31,6 +31,6 @@
       "hotel": 1
     }
   },
-  "coldImportTimeMs": 52.22500000000001,
-  "bundleSizeBytes": 80749
+  "coldImportTimeMs": 61.023399999999995,
+  "bundleSizeBytes": 23666
 }
