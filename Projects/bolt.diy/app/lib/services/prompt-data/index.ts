@@ -75,6 +75,14 @@ export {
 // Style cues
 export { STYLE_CUE_TOKENS } from './style-cues';
 
+// Component keywords (for UI component matching)
+export {
+  COMPONENT_KEYWORDS_EN,
+  COMPONENT_KEYWORDS_RU,
+  COMPONENT_KEYWORDS,
+  getMergedComponentKeywords,
+} from './component-keywords';
+
 // Seeded random utilities
 export {
   createSeededRandom,
