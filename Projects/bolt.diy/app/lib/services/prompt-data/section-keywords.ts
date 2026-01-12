@@ -84,6 +84,7 @@ export const SECTION_KEYWORDS: Record<string, string[]> = {
     'feedback',
     'client stories',
     'отзывы',
+    'отзывами',
     'мнения',
     'рекомендации',
     'истории клиентов',

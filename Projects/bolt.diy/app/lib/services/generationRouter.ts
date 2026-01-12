@@ -14,7 +14,8 @@ import { sanitizeGeneratedFile } from '~/utils/codeSanitizer';
 import { validateFile, type ValidationResult } from '~/utils/codeValidator';
 import { quickFix, autoFixWithLlm, areErrorsAutoFixable, type LlmRepairFn } from '~/utils/autoFixLoop';
 import { validateAgainstContract, getContractHints, type ContractValidationResult } from './sectionContracts';
-import { planSections, type SectionPlan, type SectionType } from './sectionGenerator';
+import { planSections, type SectionPlan } from './sectionGenerator';
+import type { SectionType } from './prompt-data';
 import { emitPipelineRun } from './pipelineTelemetry';
 import { createScopedLogger } from '~/utils/logger';
 

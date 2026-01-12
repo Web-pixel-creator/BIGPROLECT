@@ -47,6 +47,20 @@ export {
 // Section keywords
 export { SECTION_KEYWORDS } from './section-keywords';
 
+// Section definitions
+export {
+  SECTION_DEFINITIONS,
+  type SectionType,
+  type SectionDefinition,
+} from './section-definitions';
+
+// Website presets
+export {
+  WEBSITE_PRESETS,
+  SECTION_ORDER,
+  SECTION_PRIORITY,
+} from './website-presets';
+
 // Section variants and component keywords
 export {
   COMPONENT_SECTION_KEYWORDS,

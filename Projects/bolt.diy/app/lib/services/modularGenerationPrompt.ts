@@ -1,5 +1,6 @@
 import { determineStrategy } from './generationRouter';
-import { SECTION_DEFINITIONS, type SectionPlan } from './sectionGenerator';
+import { type SectionPlan } from './sectionGenerator';
+import { SECTION_DEFINITIONS } from './prompt-data';
 
 export type ModularGenerationAddon = {
   enabled: boolean;

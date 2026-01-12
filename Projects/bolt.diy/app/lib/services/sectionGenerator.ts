@@ -13,163 +13,20 @@
  */
 
 import { createScopedLogger } from '~/utils/logger';
+import {
+  SECTION_KEYWORDS,
+  SECTION_DEFINITIONS,
+  WEBSITE_PRESETS,
+  SECTION_PRIORITY,
+  type SectionType,
+  type SectionDefinition,
+} from './prompt-data';
 
 const logger = createScopedLogger('SectionGenerator');
 
-/**
- * Standard website sections that can be generated independently.
- */
-export type SectionType =
-  | 'hero'
-  | 'navigation'
-  | 'features'
-  | 'pricing'
-  | 'testimonials'
-  | 'gallery'
-  | 'cta'
-  | 'faq'
-  | 'contact'
-  | 'footer'
-  | 'about'
-  | 'team'
-  | 'stats'
-  | 'blog'
-  | 'services';
-
-export interface SectionDefinition {
-  type: SectionType;
-  name: string;
-  description: string;
-  requiredProps: string[];
-  optionalProps: string[];
-  defaultExport: boolean;
-}
-
-/**
- * Section definitions with metadata for generation.
- */
-export const SECTION_DEFINITIONS: Record<SectionType, SectionDefinition> = {
-  hero: {
-    type: 'hero',
-    name: 'HeroSection',
-    description: 'Main hero banner with headline, subheadline, and CTA buttons',
-    requiredProps: ['title', 'subtitle'],
-    optionalProps: ['ctaText', 'ctaLink', 'backgroundImage'],
-    defaultExport: false,
-  },
-  navigation: {
-    type: 'navigation',
-    name: 'Navigation',
-    description: 'Top navigation bar with logo and menu items',
-    requiredProps: ['logo'],
-    optionalProps: ['menuItems', 'ctaButton'],
-    defaultExport: false,
-  },
-  features: {
-    type: 'features',
-    name: 'FeaturesSection',
-    description: 'Grid of feature cards highlighting key benefits',
-    requiredProps: ['features'],
-    optionalProps: ['title', 'subtitle', 'columns'],
-    defaultExport: false,
-  },
-  pricing: {
-    type: 'pricing',
-    name: 'PricingSection',
-    description: 'Pricing plans comparison with tiers',
-    requiredProps: ['plans'],
-    optionalProps: ['title', 'subtitle', 'currency'],
-    defaultExport: false,
-  },
-  testimonials: {
-    type: 'testimonials',
-    name: 'TestimonialsSection',
-    description: 'Customer testimonials and reviews',
-    requiredProps: ['testimonials'],
-    optionalProps: ['title', 'layout'],
-    defaultExport: false,
-  },
-  gallery: {
-    type: 'gallery',
-    name: 'GallerySection',
-    description: 'Image gallery or portfolio showcase',
-    requiredProps: ['images'],
-    optionalProps: ['title', 'columns', 'lightbox'],
-    defaultExport: false,
-  },
-  cta: {
-    type: 'cta',
-    name: 'CTASection',
-    description: 'Call-to-action section with prominent button',
-    requiredProps: ['title', 'buttonText'],
-    optionalProps: ['subtitle', 'buttonLink', 'background'],
-    defaultExport: false,
-  },
-  faq: {
-    type: 'faq',
-    name: 'FAQSection',
-    description: 'Frequently asked questions with accordion',
-    requiredProps: ['questions'],
-    optionalProps: ['title', 'subtitle'],
-    defaultExport: false,
-  },
-  contact: {
-    type: 'contact',
-    name: 'ContactSection',
-    description: 'Contact form with fields',
-    requiredProps: [],
-    optionalProps: ['title', 'subtitle', 'email', 'phone', 'address'],
-    defaultExport: false,
-  },
-  footer: {
-    type: 'footer',
-    name: 'Footer',
-    description: 'Site footer with links and copyright',
-    requiredProps: [],
-    optionalProps: ['logo', 'links', 'social', 'copyright'],
-    defaultExport: false,
-  },
-  about: {
-    type: 'about',
-    name: 'AboutSection',
-    description: 'About us section with company story',
-    requiredProps: ['content'],
-    optionalProps: ['title', 'image', 'stats'],
-    defaultExport: false,
-  },
-  team: {
-    type: 'team',
-    name: 'TeamSection',
-    description: 'Team members grid with photos and bios',
-    requiredProps: ['members'],
-    optionalProps: ['title', 'subtitle'],
-    defaultExport: false,
-  },
-  stats: {
-    type: 'stats',
-    name: 'StatsSection',
-    description: 'Statistics and metrics display',
-    requiredProps: ['stats'],
-    optionalProps: ['title', 'animated'],
-    defaultExport: false,
-  },
-  blog: {
-    type: 'blog',
-    name: 'BlogSection',
-    description: 'Blog posts preview grid',
-    requiredProps: ['posts'],
-    optionalProps: ['title', 'showMore'],
-    defaultExport: false,
-  },
-  services: {
-    type: 'services',
-    name: 'ServicesSection',
-    description: 'Services offered with descriptions',
-    requiredProps: ['services'],
-    optionalProps: ['title', 'subtitle', 'layout'],
-    defaultExport: false,
-  },
-};
+// Re-export types for consumers
+export type { SectionType, SectionDefinition };
+export { SECTION_DEFINITIONS };
 
 /**
  * Section plan - result of analyzing user prompt.
@@ -195,40 +52,6 @@ export interface GeneratedSection {
 }
 
 /**
- * Keywords that indicate specific sections should be included.
- */
-const SECTION_KEYWORDS: Record<SectionType, string[]> = {
-  hero: ['hero', 'banner', 'landing', 'главная', 'баннер', 'заголовок'],
-  navigation: ['nav', 'menu', 'header', 'навигация', 'меню', 'шапка'],
-  features: ['features', 'benefits', 'функции', 'преимущества', 'возможности'],
-  pricing: ['pricing', 'plans', 'subscription', 'цены', 'тарифы', 'подписка', 'ценами'],
-  testimonials: ['testimonials', 'reviews', 'отзыв', 'рекомендации'],
-  gallery: ['gallery', 'portfolio', 'images', 'галерея', 'портфолио'],
-  cta: ['cta', 'call to action', 'signup', 'призыв', 'регистрация'],
-  faq: ['faq', 'questions', 'вопросы', 'чаво'],
-  contact: ['contact', 'form', 'контакты', 'форма', 'связь'],
-  footer: ['footer', 'подвал', 'футер'],
-  about: ['about', 'story', 'о нас', 'история', 'компания'],
-  team: ['team', 'members', 'команда', 'сотрудники'],
-  stats: ['stats', 'numbers', 'metrics', 'статистика', 'цифры'],
-  blog: ['blog', 'articles', 'news', 'блог', 'статьи', 'новости'],
-  services: ['services', 'offerings', 'услуги', 'сервисы'],
-};
-
-/**
- * Default section sets for common website types.
- */
-const WEBSITE_PRESETS: Record<string, SectionType[]> = {
-  landing: ['navigation', 'hero', 'features', 'cta', 'footer'],
-  saas: ['navigation', 'hero', 'features', 'pricing', 'testimonials', 'faq', 'cta', 'footer'],
-  portfolio: ['navigation', 'hero', 'gallery', 'about', 'contact', 'footer'],
-  business: ['navigation', 'hero', 'services', 'about', 'team', 'contact', 'footer'],
-  ecommerce: ['navigation', 'hero', 'features', 'gallery', 'testimonials', 'cta', 'footer'],
-  blog: ['navigation', 'hero', 'blog', 'about', 'contact', 'footer'],
-  startup: ['navigation', 'hero', 'features', 'stats', 'pricing', 'testimonials', 'cta', 'footer'],
-};
-
-/**
  * Analyze user prompt and determine which sections are needed.
  */
 export function planSections(userPrompt: string): SectionPlan {
@@ -247,8 +70,13 @@ export function planSections(userPrompt: string): SectionPlan {
 
   // Detect individual sections from keywords
   for (const [sectionType, keywords] of Object.entries(SECTION_KEYWORDS)) {
+    // Only process known section types
+    if (!(sectionType in SECTION_DEFINITIONS)) {
+      continue;
+    }
+
     for (const keyword of keywords) {
-      if (promptLower.includes(keyword)) {
+      if (promptLower.includes(keyword.toLowerCase())) {
         detectedSections.add(sectionType as SectionType);
         break;
       }
@@ -268,47 +96,32 @@ export function planSections(userPrompt: string): SectionPlan {
     detectedSections.add('navigation');
     detectedSections.add('footer');
 
-    // Sort sections in logical order
-    const sectionOrder: SectionType[] = [
-      'navigation',
-      'hero',
-      'features',
-      'services',
-      'about',
-      'stats',
-      'gallery',
-      'team',
-      'pricing',
-      'testimonials',
-      'blog',
-      'faq',
-      'cta',
-      'contact',
-      'footer',
-    ];
-    finalSections = sectionOrder.filter((s) => detectedSections.has(s));
+    // Sort sections by priority
+    finalSections = Array.from(detectedSections).sort(
+      (a, b) => (SECTION_PRIORITY[a] ?? 99) - (SECTION_PRIORITY[b] ?? 99),
+    );
   }
 
   // Detect theme
   let theme: 'light' | 'dark' | 'auto' = 'light';
 
-  if (promptLower.includes('dark') || promptLower.includes('тёмн') || promptLower.includes('темн')) {
+  if (promptLower.includes('dark') || promptLower.includes('\u0442\u0451\u043c\u043d') || promptLower.includes('\u0442\u0435\u043c\u043d')) {
     theme = 'dark';
   }
 
   // Detect style
   let style: 'modern' | 'minimal' | 'corporate' | 'playful' = 'modern';
 
-  if (promptLower.includes('minimal') || promptLower.includes('минимал')) {
+  if (promptLower.includes('minimal') || promptLower.includes('\u043c\u0438\u043d\u0438\u043c\u0430\u043b')) {
     style = 'minimal';
-  } else if (promptLower.includes('corporate') || promptLower.includes('корпоратив')) {
+  } else if (promptLower.includes('corporate') || promptLower.includes('\u043a\u043e\u0440\u043f\u043e\u0440\u0430\u0442\u0438\u0432')) {
     style = 'corporate';
-  } else if (promptLower.includes('playful') || promptLower.includes('игрив') || promptLower.includes('весёл')) {
+  } else if (promptLower.includes('playful') || promptLower.includes('\u0438\u0433\u0440\u0438\u0432') || promptLower.includes('\u0432\u0435\u0441\u0451\u043b')) {
     style = 'playful';
   }
 
   // Extract project name (simple heuristic)
-  const nameMatch = userPrompt.match(/(?:called?|named?|для|название)\s+["']?([A-Za-zА-Яа-я0-9\s]+)["']?/i);
+  const nameMatch = userPrompt.match(/(?:called?|named?|\u0434\u043b\u044f|\u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435)\s+["']?([A-Za-z\u0410-\u042f\u0430-\u044f0-9\s]+)["']?/i);
   const projectName = nameMatch ? nameMatch[1].trim() : 'MyApp';
 
   logger.debug(`Planned sections: ${finalSections.join(', ')}`);
@@ -496,7 +309,6 @@ export function validateSection(
   issues: string[];
 } {
   const issues: string[] = [];
-  const definition = SECTION_DEFINITIONS[sectionType];
 
   // Check for export
   if (!code.includes('export ')) {
@@ -528,24 +340,5 @@ export function validateSection(
  * Get section generation order (some sections depend on others for style consistency).
  */
 export function getSectionOrder(sections: SectionType[]): SectionType[] {
-  // Navigation first (sets the tone), then hero, then others, footer last
-  const priority: Record<SectionType, number> = {
-    navigation: 0,
-    hero: 1,
-    features: 2,
-    services: 2,
-    about: 3,
-    stats: 3,
-    gallery: 4,
-    team: 4,
-    pricing: 5,
-    testimonials: 5,
-    blog: 6,
-    faq: 6,
-    cta: 7,
-    contact: 7,
-    footer: 8,
-  };
-
-  return [...sections].sort((a, b) => priority[a] - priority[b]);
+  return [...sections].sort((a, b) => (SECTION_PRIORITY[a] ?? 99) - (SECTION_PRIORITY[b] ?? 99));
 }

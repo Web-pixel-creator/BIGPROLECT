@@ -8,7 +8,7 @@
  * 3. Enable automatic repair when structure is wrong
  */
 
-import type { SectionType } from './sectionGenerator';
+import type { SectionType } from './prompt-data';
 
 /**
  * Base contract that all sections must satisfy.
