@@ -571,13 +571,13 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   promptLog('[promptEnhancer] Before buildImageSuggestions:', {
     mentionedSections,
-    wantsImagesResult: wantsImages(analysisPrompt, mentionedSections),
+    wantsImagesResult,
     imagesHero: images.hero?.slice(0, 1),
     imagesProducts: images.products?.slice(0, 1),
     imagesGallery: images.gallery?.slice(0, 1),
   });
 
-  const imageSuggestions = wantsImages(analysisPrompt, mentionedSections)
+  const imageSuggestions = wantsImagesResult
     ? buildImageSuggestions(mentionedSections, images)
     : '';
   promptLog('[promptEnhancer] imageSuggestions result:', imageSuggestions?.substring(0, 200));
@@ -620,7 +620,7 @@ ${layoutSuggestions}`
     mentionedSections,
   });
 
-  const imageSectionKeys = wantsImages(analysisPrompt, mentionedSections)
+  const imageSectionKeys = wantsImagesResult
     ? mentionedSections.filter((section) => ['hero', 'gallery', 'products', 'editorial'].includes(section))
     : [];
 
