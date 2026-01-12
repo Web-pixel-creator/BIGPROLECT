@@ -65,6 +65,20 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.detectedTheme).toBe('education');
   });
 
+  it('detects tech theme from Russian prompt', async () => {
+    const prompt = '\u0441\u0430\u0439\u0442 \u0434\u043b\u044f \u0430\u0439\u0442\u0438 \u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u044b \u0441 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u043e\u0439';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('tech');
+  });
+
+  it('detects finance theme from Russian prompt', async () => {
+    const prompt = '\u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u043b\u044f \u0431\u0430\u043d\u043a\u043e\u0432\u0441\u043a\u043e\u0433\u043e \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('finance');
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
