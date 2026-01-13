@@ -85,6 +85,10 @@ const THEME_PRIORITY: string[] = [
   'realestate',
   'finance',
   'education',
+  'automotive',
+  'travel',
+  'gaming',
+  'sports',
   // More generic
   'food',
   'ecommerce',

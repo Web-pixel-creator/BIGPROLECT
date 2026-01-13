@@ -188,6 +188,29 @@ export const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet> = {
     gallery: ['students studying', 'lecture hall', 'books', 'study group'],
     editorial: ['teacher mentoring', 'student collaboration'],
   },
+  automotive: {
+    hero: ['luxury car showroom', 'sports car on road', 'car dealership interior'],
+    gallery: ['car interior', 'car engine', 'car wheels', 'car dashboard'],
+    products: ['car white background', 'tire white background', 'car parts white background'],
+    editorial: ['mechanic at work', 'car service center'],
+  },
+  travel: {
+    hero: ['tropical beach destination', 'mountain landscape travel', 'city skyline travel'],
+    gallery: ['travel destination', 'airplane window view', 'hotel pool', 'adventure hiking'],
+    editorial: ['traveler with backpack', 'travel planning map'],
+  },
+  gaming: {
+    hero: ['gaming setup rgb', 'esports arena', 'gaming pc setup'],
+    gallery: ['gaming controller', 'gaming headset', 'gaming keyboard', 'gaming monitor'],
+    products: ['gaming mouse white background', 'gaming headset white background', 'gaming chair white background'],
+    editorial: ['gamer streaming', 'esports team'],
+  },
+  sports: {
+    hero: ['fitness gym interior', 'athlete training', 'sports stadium'],
+    gallery: ['workout equipment', 'running track', 'sports team', 'fitness class'],
+    products: ['sports shoes white background', 'fitness equipment white background', 'sportswear white background'],
+    editorial: ['personal trainer', 'athlete portrait'],
+  },
   default: {
     hero: ['minimal hero background', 'modern abstract interior'],
     gallery: ['clean minimal interior', 'neutral texture background', 'studio backdrop'],

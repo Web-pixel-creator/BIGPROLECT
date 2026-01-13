@@ -7,13 +7,13 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 2.081399999999917,
-      "min": 0.60450000000003,
-      "max": 314.7938
+      "median": 2.2672000000000025,
+      "min": 0.6309999999998581,
+      "max": 384.28960000000006
     },
     "enhancedPromptLength": {
-      "median": 2648,
-      "min": 871,
+      "median": 2636,
+      "min": 872,
       "max": 4433
     },
     "themeCounts": {
@@ -26,16 +26,19 @@
       "restaurant": 1,
       "food": 1,
       "photography": 2,
-      "hotel": 2,
+      "hotel": 1,
       "tech": 1,
       "medical": 1,
       "finance": 1,
       "realestate": 1,
       "education": 1,
       "industrial": 1,
-      "default": 4
+      "default": 2,
+      "travel": 1,
+      "sports": 1,
+      "gaming": 1
     }
   },
-  "coldImportTimeMs": 62.40520000000001,
+  "coldImportTimeMs": 62.44199999999999,
   "bundleSizeBytes": 23897
 }

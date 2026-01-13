@@ -115,5 +115,9 @@ export const FALLBACK_BRANDS: Record<string, string[]> = {
   photography: ['Frame Stories', 'Northlight', 'Aperture Lane', 'Mono Studio', 'Lumen Studio'],
   industrial: ['Forge Works', 'Fieldline', 'Atlas Energy', 'Iron Ridge', 'Core Industrial'],
   hotel: ['Aurum House', 'Crestline', 'Velvet Suites', 'Noir Retreat', 'Luxe Haven'],
+  automotive: ['Apex Motors', 'Velocity Auto', 'Ironclad Cars', 'Driveline', 'Motorcraft'],
+  travel: ['Wanderlust Co', 'Horizon Travels', 'Nomad Routes', 'Vista Journeys', 'Pathfinder'],
+  gaming: ['Pixel Forge', 'Neon Arena', 'Apex Gaming', 'Vortex Studios', 'Quantum Play'],
+  sports: ['Peak Performance', 'Ironfit', 'Velocity Sports', 'Apex Athletics', 'Titan Fitness'],
   default: ['Studio North', 'Horizon Works', 'Vista & Co', 'Form & Field', 'Baseline Labs'],
 };

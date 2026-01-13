@@ -153,6 +153,59 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.detectedTheme).toBe('ecommerce');
   });
 
+  // New themes: automotive, travel, gaming, sports
+  it('detects automotive theme from EN prompt', async () => {
+    const prompt = 'car dealership website with vehicle catalog';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('automotive');
+  });
+
+  it('detects automotive theme from RU prompt', async () => {
+    // "автосалон с каталогом автомобилей"
+    const prompt = '\u0430\u0432\u0442\u043e\u0441\u0430\u043b\u043e\u043d \u0441 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u043e\u043c \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u0435\u0439';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('automotive');
+  });
+
+  it('detects travel theme from EN prompt', async () => {
+    const prompt = 'travel agency website with tour packages and destinations';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('travel');
+  });
+
+  it('detects travel theme from RU prompt', async () => {
+    // "турагентство с турами и направлениями"
+    const prompt = '\u0442\u0443\u0440\u0430\u0433\u0435\u043d\u0442\u0441\u0442\u0432\u043e \u0441 \u0442\u0443\u0440\u0430\u043c\u0438 \u0438 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f\u043c\u0438';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('travel');
+  });
+
+  it('detects gaming theme from EN prompt', async () => {
+    const prompt = 'esports team website with gaming tournaments';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('gaming');
+  });
+
+  it('detects gaming theme from RU prompt', async () => {
+    // "игровая студия с видеоиграми"
+    const prompt = '\u0438\u0433\u0440\u043e\u0432\u0430\u044f \u0441\u0442\u0443\u0434\u0438\u044f \u0441 \u0432\u0438\u0434\u0435\u043e\u0438\u0433\u0440\u0430\u043c\u0438';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('gaming');
+  });
+
+  it('detects sports theme from EN prompt', async () => {
+    const prompt = 'fitness gym website with workout programs';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('sports');
+  });
+
+  it('detects sports theme from RU prompt', async () => {
+    // "фитнес-клуб с программами тренировок"
+    const prompt = '\u0444\u0438\u0442\u043d\u0435\u0441-\u043a\u043b\u0443\u0431 \u0441 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430\u043c\u0438 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043e\u043a';
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('sports');
+  });
+
   // Conflict resolution tests - keywords that overlap between themes
   describe('theme conflict resolution', () => {
     it('prefers hotel over beauty when spa is in hotel context', async () => {
