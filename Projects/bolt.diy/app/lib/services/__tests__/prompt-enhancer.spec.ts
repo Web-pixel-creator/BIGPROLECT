@@ -196,6 +196,69 @@ describe('Prompt Enhancer Stability', () => {
       const result = await enhancePromptWithDesignSystem(prompt);
       expect(result.detectedTheme).toBe('beauty');
     });
+
+    it('prefers vinyl over ecommerce for music store', async () => {
+      // "vinyl record store with turntables"
+      const prompt = 'vinyl record store with turntables';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('vinyl');
+    });
+
+    it('prefers food over restaurant for coffee/bakery', async () => {
+      // "bakery and coffee brand" - food theme
+      const prompt = 'bakery and coffee brand';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('food');
+    });
+
+    it('prefers restaurant over food for dining context', async () => {
+      // "restaurant with menu and dining reservations"
+      const prompt = 'restaurant with menu and dining reservations';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('restaurant');
+    });
+
+    it('prefers photography over electronics for camera context', async () => {
+      // "photographer portfolio with photo gallery"
+      const prompt = 'photographer portfolio with photo gallery';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('photography');
+    });
+
+    it('prefers electronics over photography for gadget context', async () => {
+      // "electronics store with smartphones and cameras"
+      const prompt = 'electronics store with smartphones and cameras';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('electronics');
+    });
+
+    it('prefers fashion over ecommerce for clothing context', async () => {
+      // "fashion boutique with clothing and accessories"
+      const prompt = 'fashion boutique with clothing and accessories';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('fashion');
+    });
+
+    it('resolves RU music conflict: vinyl context', async () => {
+      // "магазин виниловых пластинок и музыки"
+      const prompt = '\u043c\u0430\u0433\u0430\u0437\u0438\u043d \u0432\u0438\u043d\u0438\u043b\u043e\u0432\u044b\u0445 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u043e\u043a \u0438 \u043c\u0443\u0437\u044b\u043a\u0438';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('vinyl');
+    });
+
+    it('resolves RU coffee conflict: food context', async () => {
+      // "пекарня и кофейня с доставкой"
+      const prompt = '\u043f\u0435\u043a\u0430\u0440\u043d\u044f \u0438 \u043a\u043e\u0444\u0435\u0439\u043d\u044f \u0441 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u043e\u0439';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('food');
+    });
+
+    it('resolves RU restaurant conflict: restaurant context', async () => {
+      // "ресторан с меню и бронированием столиков"
+      const prompt = '\u0440\u0435\u0441\u0442\u043e\u0440\u0430\u043d \u0441 \u043c\u0435\u043d\u044e \u0438 \u0431\u0440\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435\u043c \u0441\u0442\u043e\u043b\u0438\u043a\u043e\u0432';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('restaurant');
+    });
   });
 
   // Noisy keywords tests - generic words should not trigger specific themes
