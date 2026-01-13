@@ -7,33 +7,35 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 22.32490000000007,
-      "min": 0.5210999999999331,
-      "max": 152.5104
+      "median": 2.2046000000000276,
+      "min": 0.6094000000000506,
+      "max": 322.7581
     },
     "enhancedPromptLength": {
-      "median": 2652,
-      "min": 865,
+      "median": 2648,
+      "min": 871,
       "max": 4433
     },
     "themeCounts": {
       "furniture": 2,
       "vinyl": 2,
-      "ecommerce": 2,
+      "ecommerce": 1,
       "fashion": 1,
       "beauty": 2,
       "electronics": 1,
-      "food": 2,
+      "restaurant": 1,
+      "food": 1,
       "photography": 2,
       "hotel": 2,
-      "medical": 1,
       "tech": 1,
+      "medical": 1,
+      "finance": 1,
       "realestate": 1,
       "education": 1,
       "industrial": 1,
       "default": 4
     }
   },
-  "coldImportTimeMs": 63.372000000000014,
+  "coldImportTimeMs": 63.799899999999994,
   "bundleSizeBytes": 23897
 }

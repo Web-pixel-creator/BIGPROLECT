@@ -11,24 +11,145 @@ import { promptLog } from './prompt-logger';
 const THEME_KEYWORDS = getMergedKeywords();
 
 /**
- * Detect theme from user prompt
+ * Noisy/ambiguous keywords that need additional context to avoid false positives.
+ * These words are too generic on their own.
+ */
+const NOISY_KEYWORDS = new Set([
+  // EN - too generic
+  'app',
+  'site',
+  'page',
+  'design',
+  'store',
+  'shop',
+  'menu',
+  'form',
+  'gallery',
+  'portfolio',
+  'booking',
+  'spa',
+  'music',
+  'photo',
+  'creative',
+  'visual',
+  // RU - too generic
+  '\u0441\u0430\u0439\u0442', // сайт
+  '\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430', // страница
+  '\u0434\u0438\u0437\u0430\u0439\u043d', // дизайн
+  '\u043c\u0430\u0433\u0430\u0437\u0438\u043d', // магазин
+  '\u043c\u0435\u043d\u044e', // меню
+  '\u0444\u043e\u0440\u043c\u0430', // форма
+  '\u0433\u0430\u043b\u0435\u0440\u0435\u044f', // галерея
+  '\u043f\u043e\u0440\u0442\u0444\u043e\u043b\u0438\u043e', // портфолио
+  '\u0431\u0440\u043e\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435', // бронирование
+  '\u0441\u043f\u0430', // спа
+  '\u043c\u0443\u0437\u044b\u043a\u0430', // музыка
+  '\u0444\u043e\u0442\u043e', // фото
+]);
+
+/**
+ * Theme priority order - more specific themes should be checked first.
+ * This prevents generic themes from matching before specific ones.
+ */
+const THEME_PRIORITY: string[] = [
+  // Most specific first
+  'vinyl',
+  'restaurant',
+  'hotel',
+  'medical',
+  'industrial',
+  'photography',
+  'beauty',
+  'fashion',
+  'furniture',
+  'electronics',
+  'realestate',
+  'finance',
+  'education',
+  // More generic
+  'food',
+  'ecommerce',
+  'tech',
+  // Fallback
+  'default',
+];
+
+/**
+ * Check if a keyword is noisy and needs more context
+ */
+function isNoisyKeyword(keyword: string): boolean {
+  return NOISY_KEYWORDS.has(keyword.toLowerCase());
+}
+
+/**
+ * Count how many theme-specific keywords match in the prompt
+ */
+function countThemeMatches(prompt: string, keywords: string[]): number {
+  let count = 0;
+  for (const keyword of keywords) {
+    if (matchesKeyword(prompt, keyword)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Detect theme from user prompt with noise filtering
  */
 export function detectTheme(prompt: string): string {
   promptLog('[detectTheme] Input prompt:', prompt.substring(0, 300));
   const lowerPrompt = prompt.toLowerCase();
   promptLog('[detectTheme] Lower prompt:', lowerPrompt.substring(0, 200));
 
+  // Score each theme by number of matching keywords
+  const themeScores: Record<string, { score: number; firstKeyword: string }> = {};
+
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
+    if (theme === 'default') continue;
+
     for (const keyword of keywords) {
       if (matchesKeyword(lowerPrompt, keyword)) {
-        promptLog('[detectTheme] MATCHED theme:', theme, 'keyword:', keyword);
-        return theme;
+        // Noisy keywords get lower score
+        const score = isNoisyKeyword(keyword) ? 0.5 : 1;
+
+        if (!themeScores[theme]) {
+          themeScores[theme] = { score: 0, firstKeyword: keyword };
+        }
+        themeScores[theme].score += score;
       }
     }
   }
 
-  promptLog('[detectTheme] NO THEME MATCHED - returning default');
-  return 'default';
+  // Find best theme by priority order (for ties) and score
+  let bestTheme = 'default';
+  let bestScore = 0;
+
+  for (const theme of THEME_PRIORITY) {
+    const entry = themeScores[theme];
+    if (entry && entry.score > bestScore) {
+      bestScore = entry.score;
+      bestTheme = theme;
+      promptLog('[detectTheme] New best:', theme, 'score:', entry.score, 'keyword:', entry.firstKeyword);
+    }
+  }
+
+  // Also check themes not in priority list
+  for (const [theme, entry] of Object.entries(themeScores)) {
+    if (!THEME_PRIORITY.includes(theme) && entry.score > bestScore) {
+      bestScore = entry.score;
+      bestTheme = theme;
+      promptLog('[detectTheme] New best (unlisted):', theme, 'score:', entry.score);
+    }
+  }
+
+  if (bestTheme === 'default') {
+    promptLog('[detectTheme] NO THEME MATCHED - returning default');
+  } else {
+    promptLog('[detectTheme] FINAL theme:', bestTheme, 'score:', bestScore);
+  }
+
+  return bestTheme;
 }
 
 /**
