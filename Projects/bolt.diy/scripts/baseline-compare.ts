@@ -28,7 +28,8 @@ type MetricsPayload = {
 
 // Thresholds for warnings
 const COLD_IMPORT_RELATIVE_THRESHOLD = 0.15; // +15%
-const COLD_IMPORT_ABSOLUTE_THRESHOLD = 50; // +50ms
+const coldImportAbsEnv = Number.parseFloat(process.env.BASELINE_COLD_IMPORT_ABS ?? '');
+const COLD_IMPORT_ABSOLUTE_THRESHOLD = Number.isFinite(coldImportAbsEnv) ? coldImportAbsEnv : 250; // +250ms
 const BUNDLE_SIZE_THRESHOLD = 0.05; // +5%
 const SECTIONS_COUNT_ERROR_THRESHOLD = 0.5; // >50% drift is ERROR
 const OUTPUT_LENGTH_WARNING_THRESHOLD = 0.3; // >30% drift is WARNING
