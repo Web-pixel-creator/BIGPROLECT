@@ -11,6 +11,52 @@ export type SectionSpecs = {
   details: Record<string, string[]>;
 };
 
+type SectionMatch = {
+  section: string;
+  score: number;
+  matches: number;
+};
+
+const scoreKeyword = (keyword: string): number => {
+  const tokenCount = keyword.split(/\s+/).filter(Boolean).length;
+  return tokenCount > 1 ? 1.5 : 1;
+};
+
+const scoreSectionMatches = (
+  text: string,
+  sectionKeywords: Record<string, string[]>,
+): SectionMatch[] => {
+  const lower = text.toLowerCase();
+  const priority = new Map(Object.keys(sectionKeywords).map((section, index) => [section, index]));
+  const matches: SectionMatch[] = [];
+
+  for (const [section, keywords] of Object.entries(sectionKeywords)) {
+    let score = 0;
+    let hitCount = 0;
+
+    for (const keyword of keywords) {
+      if (matchesKeyword(lower, keyword)) {
+        hitCount += 1;
+        score += scoreKeyword(keyword);
+      }
+    }
+
+    if (hitCount > 0) {
+      matches.push({ section, score, matches: hitCount });
+    }
+  }
+
+  matches.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+
+    return (priority.get(a.section) ?? 0) - (priority.get(b.section) ?? 0);
+  });
+
+  return matches;
+};
+
 /**
  * Extract requirement lines from prompt (bullet points, numbered lists)
  */
@@ -56,11 +102,10 @@ export function extractSectionOrder(prompt: string, sectionKeywords: Record<stri
   };
 
   for (const line of lines) {
-    const lowerLine = line.toLowerCase();
-    for (const [section, keywords] of Object.entries(sectionKeywords)) {
-      if (keywords.some((keyword) => matchesKeyword(lowerLine, keyword))) {
-        pushUnique(section);
-      }
+    const matches = scoreSectionMatches(line, sectionKeywords);
+
+    for (const match of matches) {
+      pushUnique(match.section);
     }
   }
 
@@ -78,12 +123,14 @@ export function inferSectionKey(text: string, sectionKeywords: Record<string, st
     keywordSectionsCount: Object.keys(sectionKeywords).length,
   });
 
-  for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
-      promptLog('[inferSectionKey] MATCHED:', { text, section, lower });
-      return section;
-    }
+  const matches = scoreSectionMatches(text, sectionKeywords);
+  const best = matches[0];
+
+  if (best) {
+    promptLog('[inferSectionKey] MATCHED:', { text, section: best.section, score: best.score, lower });
+    return best.section;
   }
+
   promptLog('[inferSectionKey] NO MATCH:', { text, lower });
   return null;
 }
@@ -92,14 +139,11 @@ export function inferSectionKey(text: string, sectionKeywords: Record<string, st
  * Find ALL sections matching in a text, not just the first one
  */
 export function inferAllSections(text: string, sectionKeywords: Record<string, string[]>): string[] {
-  const lower = text.toLowerCase();
-  const found: string[] = [];
+  const matches = scoreSectionMatches(text, sectionKeywords);
+  const found = matches.map((match) => match.section);
 
-  for (const [section, keywords] of Object.entries(sectionKeywords)) {
-    if (keywords.some((keyword) => matchesKeyword(lower, keyword))) {
-      promptLog('[inferAllSections] MATCHED:', { section, text: text.substring(0, 50) });
-      found.push(section);
-    }
+  for (const match of matches) {
+    promptLog('[inferAllSections] MATCHED:', { section: match.section, score: match.score, text: text.substring(0, 50) });
   }
 
   promptLog('[inferAllSections] Found sections:', found);
@@ -208,7 +252,7 @@ export function extractSectionSpecs(prompt: string, sectionKeywords: Record<stri
       for (const inferredSection of inferredSections) {
         pushSection(inferredSection);
       }
-      currentSection = inferredSections[inferredSections.length - 1];
+      currentSection = inferredSections[0];
 
       if (bulletMatch) {
         details[inferredSections[0]].push(rawLine);
