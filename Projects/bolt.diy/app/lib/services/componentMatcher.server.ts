@@ -113,6 +113,8 @@ export interface ComponentMatch {
   description: string;
   code: string;
   relevance: number;
+  source?: string;
+  tags?: string[];
 }
 
 // Default keywords for component matching (imported from prompt-data)
@@ -147,6 +149,164 @@ const GALLERY_TYPES = ['gallery', 'grid', 'list', 'carousel'];
 // Aliases override when external file is present
 let ALIAS_COMPONENT_KEYWORDS = DEFAULT_COMPONENT_KEYWORDS;
 let ALIAS_THEME_KEYWORDS = DEFAULT_THEME_KEYWORDS;
+
+const COMPONENT_SECTION_PRIORITY: Record<string, number> = {
+  hero: 10,
+  navigation: 9,
+  navbar: 9,
+  header: 8,
+  features: 7,
+  products: 7,
+  categories: 6,
+  pricing: 6,
+  testimonials: 5,
+  gallery: 5,
+  team: 4,
+  contact: 4,
+  faq: 4,
+  footer: 3,
+  cta: 3,
+  about: 2,
+  stats: 2,
+  services: 2,
+  projects: 2,
+  blog: 2,
+  logos: 1,
+  newsletter: 1,
+};
+
+const NOISY_COMPONENT_KEYWORDS = new Set([
+  'card',
+  'grid',
+  'list',
+  'text',
+  'button',
+  'icon',
+  'image',
+  'link',
+  'container',
+  'wrapper',
+  'section',
+  'block',
+  'item',
+  'box',
+]);
+
+const STRONG_SECTION_KEYWORDS: Record<string, string[]> = {
+  hero: ['hero', 'banner', 'spotlight', 'landing', 'splash', 'above-fold'],
+  navigation: ['navbar', 'navigation', 'nav-bar', 'site-nav', 'main-nav'],
+  navbar: ['navbar', 'navigation', 'nav-bar', 'site-nav', 'main-nav'],
+  header: ['header', 'page-header', 'site-header', 'top-bar'],
+  features: ['feature', 'benefit', 'advantage', 'capability'],
+  products: ['product', 'catalog', 'shop', 'store', 'merchandise'],
+  pricing: ['pricing', 'price', 'plan', 'tier', 'subscription'],
+  testimonials: ['testimonial', 'review', 'feedback', 'quote', 'customer-story'],
+  footer: ['footer', 'site-footer', 'page-footer'],
+};
+
+function addTypeScore(scores: Map<string, number>, type: string, score: number): void {
+  const current = scores.get(type) ?? 0;
+  scores.set(type, current + score);
+}
+
+function getTypePriority(type: string): number {
+  return COMPONENT_SECTION_PRIORITY[type] ?? 0;
+}
+
+function scoreComponentTypeRequest(requestLower: string, componentType: string, keywords: string[]): number {
+  let score = 0;
+  const strongKeywords = STRONG_SECTION_KEYWORDS[componentType] ?? [];
+
+  for (const keyword of strongKeywords) {
+    if (matchesKeyword(requestLower, keyword)) {
+      score += 5;
+    }
+  }
+
+  for (const keyword of keywords) {
+    if (matchesKeyword(requestLower, keyword)) {
+      const keywordScore = NOISY_COMPONENT_KEYWORDS.has(keyword) ? 1 : 3;
+      score += keywordScore;
+    }
+  }
+
+  if (score > 0) {
+    score += getTypePriority(componentType) * 0.3;
+  }
+
+  return score;
+}
+
+function buildComponentSearchText(component: ComponentMatch): string {
+  const parts = [
+    component.name,
+    component.description,
+    component.category,
+    component.source,
+    ...(component.tags ?? []),
+  ];
+
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+function scoreComponentForType(component: ComponentMatch, componentType: string, theme: string | null): number {
+  const text = buildComponentSearchText(component);
+  const keywords = ALIAS_COMPONENT_KEYWORDS[componentType] || [componentType];
+  const strongKeywords = STRONG_SECTION_KEYWORDS[componentType] ?? [];
+  let score = 0;
+
+  for (const keyword of strongKeywords) {
+    if (text.includes(keyword)) {
+      score += 5;
+    }
+  }
+
+  for (const keyword of keywords) {
+    if (text.includes(keyword)) {
+      const keywordScore = NOISY_COMPONENT_KEYWORDS.has(keyword) ? 1 : 3;
+      score += keywordScore;
+    }
+  }
+
+  if (score === 0) {
+    return 0;
+  }
+
+  if (theme && text.includes(theme.toLowerCase())) {
+    score += 2;
+  }
+
+  const priority = getTypePriority(componentType);
+  score += priority * 0.5;
+
+  const source = (component.source || '').toLowerCase();
+  if (source.includes('magicui')) score += 2;
+  if (source.includes('aceternity')) score += 2;
+  if (source.includes('reactbits')) score += 1;
+  if (source.includes('shadcn')) score += 1;
+
+  if (text.includes('install') || text.includes('cli')) {
+    score -= 2;
+  }
+
+  if (text.includes('utility') || text.includes('helper')) {
+    score -= 1;
+  }
+
+  return Math.max(0, score);
+}
+
+function sortComponentTypes(scores: Map<string, number>): string[] {
+  return [...scores.entries()]
+    .sort((a, b) => {
+      if (b[1] !== a[1]) {
+        return b[1] - a[1];
+      }
+
+      return getTypePriority(b[0]) - getTypePriority(a[0]);
+    })
+    .map(([type]) => type);
+}
 
 try {
   const aliasPath = path.resolve(BOLT_ROOT, 'app/lib/services/component-aliases.json');
@@ -227,6 +387,8 @@ export class ComponentMatcher {
             description: meta.description,
             code: meta.code,
             relevance: 0,
+            source: meta.source,
+            tags: meta.tags,
           });
         }
         logger.info(`Loaded prebuilt component index: ${idx.total} items`);
@@ -257,6 +419,8 @@ export class ComponentMatcher {
         description: meta.description,
         code: meta.code,
         relevance: 0,
+        source: meta.source,
+        tags: meta.tags,
       });
     }
 
@@ -339,21 +503,16 @@ export class ComponentMatcher {
 
   analyzeUserRequest(request: string): { components: string[]; theme: string | null } {
     const requestLower = request.toLowerCase();
-    const matchedComponents: string[] = [];
+    const typeScores = new Map<string, number>();
     let matchedTheme: string | null = null;
 
     const wantsSingleImageHero = SINGLE_IMAGE_HINTS.some((h) => requestLower.includes(h));
 
     // Find matching component types
     for (const [componentType, keywords] of Object.entries(ALIAS_COMPONENT_KEYWORDS)) {
-      for (const keyword of keywords) {
-        if (matchesKeyword(requestLower, keyword)) {
-          if (!matchedComponents.includes(componentType)) {
-            matchedComponents.push(componentType);
-          }
-
-          break;
-        }
+      const score = scoreComponentTypeRequest(requestLower, componentType, keywords);
+      if (score > 0) {
+        addTypeScore(typeScores, componentType, score);
       }
     }
 
@@ -374,68 +533,65 @@ export class ComponentMatcher {
     for (const [effectLabel, types] of Object.entries(EFFECT_KEYWORDS_MAP)) {
       if (requestLower.includes(effectLabel)) {
         for (const t of types) {
-          if (!matchedComponents.includes(t)) {
-            matchedComponents.push(t);
-          }
+          addTypeScore(typeScores, t, 2);
         }
       }
     }
 
     if (wantsSingleImageHero) {
       for (const g of GALLERY_TYPES) {
-        const idx = matchedComponents.indexOf(g);
-
-        if (idx >= 0) {
-          matchedComponents.splice(idx, 1);
-        }
+        typeScores.delete(g);
       }
 
-      if (!matchedComponents.includes('hero')) {
-        matchedComponents.push('hero');
+      if (!typeScores.has('hero')) {
+        addTypeScore(typeScores, 'hero', 2);
       }
     }
 
     // Default components for landing page requests
     if (
-      matchedComponents.length === 0 &&
+      typeScores.size === 0 &&
       (requestLower.includes('landing') ||
         requestLower.includes('\u043b\u0435\u043d\u0434\u0438\u043d\u0433') ||
         requestLower.includes('\u0433\u043b\u0430\u0432\u043d\u0430\u044f') ||
         requestLower.includes('\u0441\u0430\u0439\u0442'))
     ) {
-      matchedComponents.push('hero', 'header', 'features', 'footer');
+      addTypeScore(typeScores, 'hero', 3);
+      addTypeScore(typeScores, 'header', 2);
+      addTypeScore(typeScores, 'features', 2);
+      addTypeScore(typeScores, 'footer', 1);
     }
 
+    const matchedComponents = sortComponentTypes(typeScores);
     return { components: matchedComponents, theme: matchedTheme };
   }
 
-  findMatchingComponents(componentTypes: string[], limit: number = 3): ComponentMatch[] {
+  findMatchingComponents(componentTypes: string[], theme: string | null, limit: number = 3): ComponentMatch[] {
     const results: ComponentMatch[] = [];
+    const byName = new Map<string, ComponentMatch>();
 
     for (const [category, components] of this._componentsIndex) {
       for (const component of components) {
-        const nameLower = component.name.toLowerCase();
-        const descLower = component.description.toLowerCase();
+        let bestScore = 0;
 
         for (const type of componentTypes) {
-          const keywords = ALIAS_COMPONENT_KEYWORDS[type] || [type];
+          const score = scoreComponentForType(component, type, theme);
+          if (score > bestScore) {
+            bestScore = score;
+          }
+        }
 
-          for (const keyword of keywords) {
-            if (nameLower.includes(keyword) || descLower.includes(keyword)) {
-              component.relevance = 10;
-
-              if (!results.find((r) => r.name === component.name)) {
-                results.push({ ...component });
-              }
-
-              break;
-            }
+        if (bestScore > 0) {
+          const existing = byName.get(component.name);
+          if (!existing || bestScore > existing.relevance) {
+            byName.set(component.name, { ...component, relevance: bestScore });
           }
         }
       }
     }
 
-    // Sort by relevance and limit
+    results.push(...byName.values());
+
     return results.sort((a, b) => b.relevance - a.relevance).slice(0, limit * componentTypes.length);
   }
 
@@ -448,7 +604,7 @@ export class ComponentMatcher {
 
     const seed = hashString(request.toLowerCase());
     const rng = makeRng(seed);
-    const matchedComponents = shuffleArraySeeded(this.findMatchingComponents(componentTypes, maxComponents), rng);
+    const matchedComponents = shuffleArraySeeded(this.findMatchingComponents(componentTypes, theme, maxComponents), rng);
 
     if (matchedComponents.length === 0) {
       return '';
