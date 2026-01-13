@@ -153,6 +153,51 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.detectedTheme).toBe('ecommerce');
   });
 
+  // Conflict resolution tests - keywords that overlap between themes
+  describe('theme conflict resolution', () => {
+    it('prefers hotel over beauty when spa is in hotel context', async () => {
+      // "boutique hotel with spa and wellness center"
+      const prompt = 'boutique hotel with spa and wellness center';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('hotel');
+    });
+
+    it('prefers beauty over hotel when spa is in beauty context', async () => {
+      // "beauty salon and spa treatments"
+      const prompt = 'beauty salon and spa treatments';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('beauty');
+    });
+
+    it('prefers medical over beauty when wellness is in medical context', async () => {
+      // "medical clinic with wellness programs"
+      const prompt = 'medical clinic with wellness programs';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('medical');
+    });
+
+    it('prefers beauty over medical when wellness is in beauty context', async () => {
+      // "beauty and wellness cosmetics brand"
+      const prompt = 'beauty and wellness cosmetics brand';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('beauty');
+    });
+
+    it('resolves RU spa conflict: hotel context', async () => {
+      // "бутик-отель со спа и бассейном"
+      const prompt = '\u0431\u0443\u0442\u0438\u043a-\u043e\u0442\u0435\u043b\u044c \u0441\u043e \u0441\u043f\u0430 \u0438 \u0431\u0430\u0441\u0441\u0435\u0439\u043d\u043e\u043c';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('hotel');
+    });
+
+    it('resolves RU spa conflict: beauty context', async () => {
+      // "салон красоты и спа процедуры"
+      const prompt = '\u0441\u0430\u043b\u043e\u043d \u043a\u0440\u0430\u0441\u043e\u0442\u044b \u0438 \u0441\u043f\u0430 \u043f\u0440\u043e\u0446\u0435\u0434\u0443\u0440\u044b';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('beauty');
+    });
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
