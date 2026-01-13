@@ -87,11 +87,6 @@ export const THEME_KEYWORDS: Record<string, string[]> = {
     'tea',
     'snack',
     'bakery',
-    'restaurant',
-    'cafe',
-    'menu',
-    'delivery',
-    'takeaway',
   ],
   photography: [
     'photography',

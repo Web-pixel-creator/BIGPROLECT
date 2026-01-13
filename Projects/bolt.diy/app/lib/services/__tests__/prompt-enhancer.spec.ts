@@ -42,6 +42,13 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.enhancedPrompt).toContain('SECTION COUNT: 3');
   });
 
+  it('detects food theme from English prompt', async () => {
+    const prompt = 'Landing page for a bakery and coffee brand with a small product lineup.';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('food');
+  });
+
   it('recognizes Russian design intent and theme keywords', async () => {
     const prompt = '\u0441\u0430\u0439\u0442 \u043c\u0435\u0431\u0435\u043b\u044c';
 
