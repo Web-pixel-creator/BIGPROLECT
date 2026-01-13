@@ -52,31 +52,26 @@ describe('ComponentMatcher', () => {
 
     describe('RU component type detection', () => {
       it('detects hero from RU request', () => {
-        // "главный баннер"
         const result = matcher.analyzeUserRequest('\u0433\u043b\u0430\u0432\u043d\u044b\u0439 \u0431\u0430\u043d\u043d\u0435\u0440');
         expect(result.components).toContain('hero');
       });
 
       it('detects navigation from RU request', () => {
-        // "навигация"
         const result = matcher.analyzeUserRequest('\u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044f');
         expect(result.components.some(c => c === 'navbar' || c === 'navigation' || c === 'header')).toBe(true);
       });
 
       it('detects features from RU request', () => {
-        // "преимущества"
         const result = matcher.analyzeUserRequest('\u043f\u0440\u0435\u0438\u043c\u0443\u0449\u0435\u0441\u0442\u0432\u0430');
         expect(result.components).toContain('features');
       });
 
       it('detects pricing from RU request', () => {
-        // "тарифы"
         const result = matcher.analyzeUserRequest('\u0442\u0430\u0440\u0438\u0444\u044b');
         expect(result.components).toContain('pricing');
       });
 
       it('detects testimonials from RU request', () => {
-        // "отзывы"
         const result = matcher.analyzeUserRequest('\u043e\u0442\u0437\u044b\u0432\u044b');
         expect(result.components).toContain('testimonials');
       });
@@ -110,16 +105,14 @@ describe('ComponentMatcher', () => {
         expect(result.theme).toBe('tech');
       });
 
-      it('detects food theme', () => {
-        // component-aliases.json has "food" theme with restaurant/cafe keywords
+      it('detects restaurant theme', () => {
         const result = matcher.analyzeUserRequest('restaurant cafe delivery website');
-        expect(result.theme).toBe('food');
+        expect(result.theme).toBe('restaurant');
       });
 
-      it('detects fashion theme', () => {
-        // component-aliases.json has "fashion" theme
-        const result = matcher.analyzeUserRequest('fashion style clothes apparel');
-        expect(result.theme).toBe('fashion');
+      it('detects ecommerce theme', () => {
+        const result = matcher.analyzeUserRequest('online marketplace with checkout and cart');
+        expect(result.theme).toBe('ecommerce');
       });
 
       it('detects photography theme', () => {
@@ -150,7 +143,6 @@ describe('ComponentMatcher', () => {
       });
 
       it('returns default components for RU landing request', () => {
-        // "лендинг"
         const result = matcher.analyzeUserRequest('\u043b\u0435\u043d\u0434\u0438\u043d\u0433');
         expect(result.components.length).toBeGreaterThan(0);
       });

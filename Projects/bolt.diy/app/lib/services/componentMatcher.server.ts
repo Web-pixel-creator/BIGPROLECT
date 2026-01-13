@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BOLT_ROOT, buildIndex, type ComponentMeta } from './component-index.server';
 import { matchesKeyword } from './prompt-color-utils';
-import { getMergedKeywords, COMPONENT_KEYWORDS } from './prompt-data';
+import { COMPONENT_KEYWORDS } from './prompt-data';
+import { detectTheme } from './prompt-theme-utils';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
@@ -120,10 +121,6 @@ export interface ComponentMatch {
 // Default keywords for component matching (imported from prompt-data)
 const DEFAULT_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
 
-// Default component keywords (fallback when component-aliases.json is missing)
-// Industry/theme keywords
-const DEFAULT_THEME_KEYWORDS = getMergedKeywords();
-
 // Effects map for optional component hints
 const EFFECT_KEYWORDS_MAP: Record<string, string[]> = {
   'blob cursor': ['cursor', 'blob'],
@@ -148,7 +145,6 @@ const GALLERY_TYPES = ['gallery', 'grid', 'list', 'carousel'];
 
 // Aliases override when external file is present
 let ALIAS_COMPONENT_KEYWORDS = DEFAULT_COMPONENT_KEYWORDS;
-let ALIAS_THEME_KEYWORDS = DEFAULT_THEME_KEYWORDS;
 
 const COMPONENT_SECTION_PRIORITY: Record<string, number> = {
   hero: 10,
@@ -315,16 +311,12 @@ try {
     const raw = fs.readFileSync(aliasPath, 'utf8');
     const parsed = JSON.parse(raw) as {
       componentKeywords?: Record<string, string[]>;
-      themeKeywords?: Record<string, string[]>;
     };
 
     if (parsed.componentKeywords) {
       ALIAS_COMPONENT_KEYWORDS = parsed.componentKeywords;
     }
 
-    if (parsed.themeKeywords) {
-      ALIAS_THEME_KEYWORDS = parsed.themeKeywords;
-    }
   }
 } catch (error) {
   logger.warn('Failed to load component-aliases.json, using built-in keywords');
@@ -504,7 +496,8 @@ export class ComponentMatcher {
   analyzeUserRequest(request: string): { components: string[]; theme: string | null } {
     const requestLower = request.toLowerCase();
     const typeScores = new Map<string, number>();
-    let matchedTheme: string | null = null;
+    const detectedTheme = detectTheme(request);
+    const matchedTheme = detectedTheme === 'default' ? null : detectedTheme;
 
     const wantsSingleImageHero = SINGLE_IMAGE_HINTS.some((h) => requestLower.includes(h));
 
@@ -513,20 +506,6 @@ export class ComponentMatcher {
       const score = scoreComponentTypeRequest(requestLower, componentType, keywords);
       if (score > 0) {
         addTypeScore(typeScores, componentType, score);
-      }
-    }
-
-    // Find theme
-    for (const [theme, keywords] of Object.entries(ALIAS_THEME_KEYWORDS)) {
-      for (const keyword of keywords) {
-        if (matchesKeyword(requestLower, keyword)) {
-          matchedTheme = theme;
-          break;
-        }
-      }
-
-      if (matchedTheme) {
-        break;
       }
     }
 
