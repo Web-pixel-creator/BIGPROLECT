@@ -118,6 +118,12 @@ export interface ComponentMatch {
   tags?: string[];
 }
 
+type ComponentIndexCache = {
+  components: ComponentMeta[];
+  generatedAt: number | null;
+  byCategory: Map<string, ComponentMatch[]>;
+};
+
 // Default keywords for component matching (imported from prompt-data)
 const DEFAULT_COMPONENT_KEYWORDS = COMPONENT_KEYWORDS;
 
@@ -145,6 +151,45 @@ const GALLERY_TYPES = ['gallery', 'grid', 'list', 'carousel'];
 
 // Aliases override when external file is present
 let ALIAS_COMPONENT_KEYWORDS = DEFAULT_COMPONENT_KEYWORDS;
+let SHARED_COMPONENT_INDEX: ComponentIndexCache | null = null;
+
+function buildComponentIndexCache(components: ComponentMeta[], generatedAt: number | null): ComponentIndexCache {
+  const byCategory = new Map<string, ComponentMatch[]>();
+
+  for (const meta of components) {
+    const cat = meta.category || 'other';
+
+    if (!byCategory.has(cat)) {
+      byCategory.set(cat, []);
+    }
+
+    byCategory.get(cat)!.push({
+      name: meta.name,
+      category: cat,
+      description: meta.description,
+      code: meta.code,
+      relevance: 0,
+      source: meta.source,
+      tags: meta.tags,
+    });
+  }
+
+  return {
+    components,
+    generatedAt,
+    byCategory,
+  };
+}
+
+function cloneComponentIndexMap(source: Map<string, ComponentMatch[]>): Map<string, ComponentMatch[]> {
+  const clone = new Map<string, ComponentMatch[]>();
+
+  for (const [category, list] of source.entries()) {
+    clone.set(category, list.slice());
+  }
+
+  return clone;
+}
 
 const COMPONENT_SECTION_PRIORITY: Record<string, number> = {
   hero: 10,
@@ -361,28 +406,19 @@ export class ComponentMatcher {
     // Try prebuilt index first
     if (!this._prebuilt) {
       try {
-        const idx = buildIndex(BOLT_ROOT, true);
-        this._prebuilt = idx.components;
-        this._prebuiltGeneratedAt = idx.generatedAt || null;
-        this._componentsIndex.clear();
-
-        for (const meta of idx.components) {
-          const cat = meta.category || 'other';
-
-          if (!this._componentsIndex.has(cat)) {
-            this._componentsIndex.set(cat, []);
-          }
-
-          this._componentsIndex.get(cat)!.push({
-            name: meta.name,
-            category: cat,
-            description: meta.description,
-            code: meta.code,
-            relevance: 0,
-            source: meta.source,
-            tags: meta.tags,
-          });
+        if (SHARED_COMPONENT_INDEX) {
+          this._prebuilt = SHARED_COMPONENT_INDEX.components;
+          this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
+          this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
+          logger.info(`Loaded cached component index: ${SHARED_COMPONENT_INDEX.components.length} items`);
+          return;
         }
+
+        const idx = buildIndex(BOLT_ROOT, true);
+        SHARED_COMPONENT_INDEX = buildComponentIndexCache(idx.components, idx.generatedAt || null);
+        this._prebuilt = SHARED_COMPONENT_INDEX.components;
+        this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
+        this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
         logger.info(`Loaded prebuilt component index: ${idx.total} items`);
 
         return;
@@ -396,25 +432,11 @@ export class ComponentMatcher {
      * load from registry/index instead of raw MD (already deduped and cached)
      */
     const index = buildIndex(BOLT_ROOT, true);
-    this._componentsIndex.clear();
-
-    for (const meta of index.components) {
-      const cat = meta.category || 'other';
-
-      if (!this._componentsIndex.has(cat)) {
-        this._componentsIndex.set(cat, []);
-      }
-
-      this._componentsIndex.get(cat)!.push({
-        name: meta.name,
-        category: cat,
-        description: meta.description,
-        code: meta.code,
-        relevance: 0,
-        source: meta.source,
-        tags: meta.tags,
-      });
-    }
+    const fallbackCache = SHARED_COMPONENT_INDEX ?? buildComponentIndexCache(index.components, index.generatedAt || null);
+    SHARED_COMPONENT_INDEX = fallbackCache;
+    this._prebuilt = fallbackCache.components;
+    this._prebuiltGeneratedAt = fallbackCache.generatedAt;
+    this._componentsIndex = cloneComponentIndexMap(fallbackCache.byCategory);
 
     const stats = this.getStats();
     logger.info(`Total loaded: ${stats.totalComponents} components in ${stats.categories} categories (registry)`);
