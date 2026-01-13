@@ -15,7 +15,7 @@ const THEME_KEYWORDS = getMergedKeywords();
  * These words are too generic on their own.
  */
 const NOISY_KEYWORDS = new Set([
-  // EN - too generic
+  // EN - too generic single words
   'app',
   'site',
   'page',
@@ -32,7 +32,17 @@ const NOISY_KEYWORDS = new Set([
   'photo',
   'creative',
   'visual',
-  // RU - too generic
+  'platform',
+  'service',
+  'services',
+  'product',
+  'products',
+  'brand',
+  'company',
+  'business',
+  'website',
+  'landing',
+  // RU - too generic single words
   '\u0441\u0430\u0439\u0442', // сайт
   '\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430', // страница
   '\u0434\u0438\u0437\u0430\u0439\u043d', // дизайн
@@ -45,6 +55,15 @@ const NOISY_KEYWORDS = new Set([
   '\u0441\u043f\u0430', // спа
   '\u043c\u0443\u0437\u044b\u043a\u0430', // музыка
   '\u0444\u043e\u0442\u043e', // фото
+  '\u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0430', // платформа
+  '\u0441\u0435\u0440\u0432\u0438\u0441', // сервис
+  '\u0443\u0441\u043b\u0443\u0433\u0438', // услуги
+  '\u0442\u043e\u0432\u0430\u0440', // товар
+  '\u0442\u043e\u0432\u0430\u0440\u044b', // товары
+  '\u0431\u0440\u0435\u043d\u0434', // бренд
+  '\u043a\u043e\u043c\u043f\u0430\u043d\u0438\u044f', // компания
+  '\u0431\u0438\u0437\u043d\u0435\u0441', // бизнес
+  '\u043b\u0435\u043d\u0434\u0438\u043d\u0433', // лендинг
 ]);
 
 /**
@@ -79,19 +98,6 @@ const THEME_PRIORITY: string[] = [
  */
 function isNoisyKeyword(keyword: string): boolean {
   return NOISY_KEYWORDS.has(keyword.toLowerCase());
-}
-
-/**
- * Count how many theme-specific keywords match in the prompt
- */
-function countThemeMatches(prompt: string, keywords: string[]): number {
-  let count = 0;
-  for (const keyword of keywords) {
-    if (matchesKeyword(prompt, keyword)) {
-      count++;
-    }
-  }
-  return count;
 }
 
 /**
