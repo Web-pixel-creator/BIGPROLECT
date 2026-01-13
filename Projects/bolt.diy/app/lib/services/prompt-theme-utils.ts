@@ -70,6 +70,15 @@ const NOISY_KEYWORDS = new Set([
  * Theme priority order - more specific themes should be checked first.
  * This prevents generic themes from matching before specific ones.
  */
+const FUZZY_MIN_LEN = 5;
+const FUZZY_MAX_LEN = 18;
+const FUZZY_SCORE = 0.75;
+
+type ThemeScore = {
+  score: number;
+  firstKeyword: string;
+};
+
 const THEME_PRIORITY: string[] = [
   // Most specific first
   'vinyl',
@@ -104,6 +113,133 @@ function isNoisyKeyword(keyword: string): boolean {
   return NOISY_KEYWORDS.has(keyword.toLowerCase());
 }
 
+function shouldFuzzyMatchKeyword(keyword: string): boolean {
+  if (keyword.includes(' ')) {
+    return false;
+  }
+
+  if (isNoisyKeyword(keyword)) {
+    return false;
+  }
+
+  const length = keyword.length;
+  return length >= FUZZY_MIN_LEN && length <= FUZZY_MAX_LEN;
+}
+
+function maxFuzzyDistance(length: number): number {
+  return length <= 7 ? 1 : 2;
+}
+
+function tokenizeForFuzzy(prompt: string): string[] {
+  const tokens = prompt
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim().toLowerCase())
+    .filter((token) => token.length >= FUZZY_MIN_LEN && token.length <= 24)
+    .filter((token) => /\p{L}/u.test(token));
+
+  return Array.from(new Set(tokens));
+}
+
+function isEditDistanceWithin(a: string, b: string, max: number): boolean {
+  if (a === b) {
+    return true;
+  }
+
+  const aChars = Array.from(a);
+  const bChars = Array.from(b);
+  const aLen = aChars.length;
+  const bLen = bChars.length;
+
+  if (Math.abs(aLen - bLen) > max) {
+    return false;
+  }
+
+  let prev = new Array(bLen + 1).fill(0);
+  let curr = new Array(bLen + 1).fill(0);
+
+  for (let j = 0; j <= bLen; j += 1) {
+    prev[j] = j;
+  }
+
+  for (let i = 1; i <= aLen; i += 1) {
+    curr[0] = i;
+    let rowMin = curr[0];
+
+    for (let j = 1; j <= bLen; j += 1) {
+      const cost = aChars[i - 1] === bChars[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+
+      if (curr[j] < rowMin) {
+        rowMin = curr[j];
+      }
+    }
+
+    if (rowMin > max) {
+      return false;
+    }
+
+    const swap = prev;
+    prev = curr;
+    curr = swap;
+  }
+
+  return prev[bLen] <= max;
+}
+
+function hasFuzzyMatch(keyword: string, tokens: string[]): boolean {
+  if (!shouldFuzzyMatchKeyword(keyword)) {
+    return false;
+  }
+
+  const target = keyword.toLowerCase();
+  const maxDistance = maxFuzzyDistance(target.length);
+
+  for (const token of tokens) {
+    if (Math.abs(token.length - target.length) > maxDistance) {
+      continue;
+    }
+
+    if (isEditDistanceWithin(token, target, maxDistance)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function addThemeScore(themeScores: Record<string, ThemeScore>, theme: string, keyword: string, score: number) {
+  if (!themeScores[theme]) {
+    themeScores[theme] = { score: 0, firstKeyword: keyword };
+  }
+
+  themeScores[theme].score += score;
+}
+
+function pickBestTheme(themeScores: Record<string, ThemeScore>): { theme: string; score: number; keyword: string } {
+  let bestTheme = 'default';
+  let bestScore = 0;
+  let bestKeyword = '';
+
+  for (const theme of THEME_PRIORITY) {
+    const entry = themeScores[theme];
+    if (entry && entry.score > bestScore) {
+      bestScore = entry.score;
+      bestTheme = theme;
+      bestKeyword = entry.firstKeyword;
+    }
+  }
+
+  for (const [theme, entry] of Object.entries(themeScores)) {
+    if (!THEME_PRIORITY.includes(theme) && entry.score > bestScore) {
+      bestScore = entry.score;
+      bestTheme = theme;
+      bestKeyword = entry.firstKeyword;
+    }
+  }
+
+  return { theme: bestTheme, score: bestScore, keyword: bestKeyword };
+}
+
 /**
  * Detect theme from user prompt with noise filtering
  */
@@ -113,7 +249,7 @@ export function detectTheme(prompt: string): string {
   promptLog('[detectTheme] Lower prompt:', lowerPrompt.substring(0, 200));
 
   // Score each theme by number of matching keywords
-  const themeScores: Record<string, { score: number; firstKeyword: string }> = {};
+  const themeScores: Record<string, ThemeScore> = {};
 
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
     if (theme === 'default') continue;
@@ -123,33 +259,34 @@ export function detectTheme(prompt: string): string {
         // Noisy keywords get lower score
         const score = isNoisyKeyword(keyword) ? 0.5 : 1;
 
-        if (!themeScores[theme]) {
-          themeScores[theme] = { score: 0, firstKeyword: keyword };
-        }
-        themeScores[theme].score += score;
+        addThemeScore(themeScores, theme, keyword, score);
       }
     }
   }
 
-  // Find best theme by priority order (for ties) and score
-  let bestTheme = 'default';
-  let bestScore = 0;
-
-  for (const theme of THEME_PRIORITY) {
-    const entry = themeScores[theme];
-    if (entry && entry.score > bestScore) {
-      bestScore = entry.score;
-      bestTheme = theme;
-      promptLog('[detectTheme] New best:', theme, 'score:', entry.score, 'keyword:', entry.firstKeyword);
-    }
+  let { theme: bestTheme, score: bestScore, keyword: bestKeyword } = pickBestTheme(themeScores);
+  if (bestScore > 0) {
+    promptLog('[detectTheme] New best:', bestTheme, 'score:', bestScore, 'keyword:', bestKeyword);
   }
 
-  // Also check themes not in priority list
-  for (const [theme, entry] of Object.entries(themeScores)) {
-    if (!THEME_PRIORITY.includes(theme) && entry.score > bestScore) {
-      bestScore = entry.score;
-      bestTheme = theme;
-      promptLog('[detectTheme] New best (unlisted):', theme, 'score:', entry.score);
+  if (bestScore < 1) {
+    const tokens = tokenizeForFuzzy(lowerPrompt);
+    if (tokens.length > 0) {
+      for (const [theme, keywords] of Object.entries(THEME_KEYWORDS)) {
+        if (theme === 'default') continue;
+
+        for (const keyword of keywords) {
+          if (matchesKeyword(lowerPrompt, keyword)) {
+            continue;
+          }
+
+          if (hasFuzzyMatch(keyword, tokens)) {
+            addThemeScore(themeScores, theme, keyword, FUZZY_SCORE);
+          }
+        }
+      }
+
+      ({ theme: bestTheme, score: bestScore, keyword: bestKeyword } = pickBestTheme(themeScores));
     }
   }
 

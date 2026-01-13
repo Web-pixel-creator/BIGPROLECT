@@ -352,6 +352,27 @@ describe('Prompt Enhancer Stability', () => {
     });
   });
 
+  describe('fuzzy keyword matching', () => {
+    it('detects theme from an English typo', async () => {
+      const prompt = 'restuarant booking page with menu';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('restaurant');
+    });
+
+    it('detects theme from a Russian typo', async () => {
+      // "sait restaran s menyu"
+      const prompt = '\u0441\u0430\u0439\u0442 \u0440\u0435\u0441\u0442\u0430\u0440\u0430\u043d \u0441 \u043c\u0435\u043d\u044e';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('restaurant');
+    });
+
+    it('does not treat noisy typos as a theme signal', async () => {
+      const prompt = 'platfrom servise websit landing';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('default');
+    });
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
