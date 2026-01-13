@@ -3,7 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BOLT_ROOT, buildIndex, type ComponentMeta } from './component-index.server';
 import { matchesKeyword } from './prompt-color-utils';
-import { COMPONENT_KEYWORDS } from './prompt-data';
+import {
+  COMPONENT_KEYWORDS,
+  SECTION_SCORING_PRIORITY,
+  NOISY_COMPONENT_KEYWORDS,
+  STRONG_SECTION_KEYWORDS,
+} from './prompt-data';
 import { detectTheme } from './prompt-theme-utils';
 
 const logger = createScopedLogger('component-matcher');
@@ -191,67 +196,13 @@ function cloneComponentIndexMap(source: Map<string, ComponentMatch[]>): Map<stri
   return clone;
 }
 
-const COMPONENT_SECTION_PRIORITY: Record<string, number> = {
-  hero: 10,
-  navigation: 9,
-  navbar: 9,
-  header: 8,
-  features: 7,
-  products: 7,
-  categories: 6,
-  pricing: 6,
-  testimonials: 5,
-  gallery: 5,
-  team: 4,
-  contact: 4,
-  faq: 4,
-  footer: 3,
-  cta: 3,
-  about: 2,
-  stats: 2,
-  services: 2,
-  projects: 2,
-  blog: 2,
-  logos: 1,
-  newsletter: 1,
-};
-
-const NOISY_COMPONENT_KEYWORDS = new Set([
-  'card',
-  'grid',
-  'list',
-  'text',
-  'button',
-  'icon',
-  'image',
-  'link',
-  'container',
-  'wrapper',
-  'section',
-  'block',
-  'item',
-  'box',
-]);
-
-const STRONG_SECTION_KEYWORDS: Record<string, string[]> = {
-  hero: ['hero', 'banner', 'spotlight', 'landing', 'splash', 'above-fold'],
-  navigation: ['navbar', 'navigation', 'nav-bar', 'site-nav', 'main-nav'],
-  navbar: ['navbar', 'navigation', 'nav-bar', 'site-nav', 'main-nav'],
-  header: ['header', 'page-header', 'site-header', 'top-bar'],
-  features: ['feature', 'benefit', 'advantage', 'capability'],
-  products: ['product', 'catalog', 'shop', 'store', 'merchandise'],
-  pricing: ['pricing', 'price', 'plan', 'tier', 'subscription'],
-  testimonials: ['testimonial', 'review', 'feedback', 'quote', 'customer-story'],
-  footer: ['footer', 'site-footer', 'page-footer'],
-};
-
 function addTypeScore(scores: Map<string, number>, type: string, score: number): void {
   const current = scores.get(type) ?? 0;
   scores.set(type, current + score);
 }
 
 function getTypePriority(type: string): number {
-  return COMPONENT_SECTION_PRIORITY[type] ?? 0;
+  return SECTION_SCORING_PRIORITY[type] ?? 0;
 }
 
 function scoreComponentTypeRequest(requestLower: string, componentType: string, keywords: string[]): number {

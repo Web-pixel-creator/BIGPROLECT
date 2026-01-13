@@ -118,3 +118,13 @@ export {
   randomSeedString,
   randomImageSeed,
 } from './seeded-random';
+
+// Section scoring priorities (for component matching)
+export {
+  SECTION_SCORING_PRIORITY,
+  NOISY_COMPONENT_KEYWORDS,
+  STRONG_SECTION_KEYWORDS,
+  getSectionScoringPriority,
+  isNoisyKeyword,
+  getStrongKeywords,
+} from './section-priorities';

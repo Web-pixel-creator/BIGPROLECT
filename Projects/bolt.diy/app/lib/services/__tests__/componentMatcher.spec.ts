@@ -77,6 +77,41 @@ describe('ComponentMatcher', () => {
       });
     });
 
+    describe('ambiguous RU/EN keywords', () => {
+      it('detects menu as navigation (EN)', () => {
+        const result = matcher.analyzeUserRequest('website with menu');
+        expect(result.components.some(c => c === 'navbar' || c === 'navigation')).toBe(true);
+      });
+
+      it('detects menu as navigation (RU: \u043c\u0435\u043d\u044e)', () => {
+        const result = matcher.analyzeUserRequest('\u0441\u0430\u0439\u0442 \u0441 \u043c\u0435\u043d\u044e');
+        expect(result.components.some(c => c === 'navbar' || c === 'navigation')).toBe(true);
+      });
+
+      it('detects services as features (EN)', () => {
+        const result = matcher.analyzeUserRequest('page with services section');
+        expect(result.components.some(c => c === 'features' || c === 'services')).toBe(true);
+      });
+
+      it('detects services as features (RU: \u0443\u0441\u043b\u0443\u0433\u0438)', () => {
+        // Use nominative case for exact keyword match
+        const result = matcher.analyzeUserRequest('\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u0443\u0441\u043b\u0443\u0433\u0438');
+        expect(result.components.some(c => c === 'features' || c === 'services')).toBe(true);
+      });
+
+      it('detects footer (RU: \u0444\u0443\u0442\u0435\u0440)', () => {
+        // Use nominative case for exact keyword match
+        const result = matcher.analyzeUserRequest('\u0441\u0430\u0439\u0442 \u0444\u0443\u0442\u0435\u0440');
+        expect(result.components).toContain('footer');
+      });
+
+      it('detects gallery (RU: \u0433\u0430\u043b\u0435\u0440\u0435\u044f)', () => {
+        // Use nominative case for exact keyword match
+        const result = matcher.analyzeUserRequest('\u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u0433\u0430\u043b\u0435\u0440\u0435\u044f');
+        expect(result.components).toContain('gallery');
+      });
+    });
+
     describe('priority ordering', () => {
       it('hero has higher priority than header', () => {
         const result = matcher.analyzeUserRequest('page with hero banner and header');
