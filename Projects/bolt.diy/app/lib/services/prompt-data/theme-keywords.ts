@@ -240,7 +240,6 @@ export const THEME_KEYWORDS_RU: Record<string, string[]> = {
     'музыкальный магазин',
     'музыка',
     'хай-фай',
-    'hi-fi',
     'грампластинка',
     'грампластинки',
   ],
@@ -409,7 +408,6 @@ export const THEME_KEYWORDS_RU: Record<string, string[]> = {
     'айти',
     'it',
     'стартап',
-    'saas',
     'софт',
     'приложение',
     'разработка',
@@ -532,7 +530,6 @@ export const THEME_KEYWORDS_RU: Record<string, string[]> = {
     'обучающий',
     'онлайн курс',
     'онлайн-курс',
-    'e-learning',
     'учебный',
   ],
   default: [
