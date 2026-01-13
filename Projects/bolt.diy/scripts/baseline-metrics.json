@@ -7,9 +7,9 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 2.2046000000000276,
-      "min": 0.6094000000000506,
-      "max": 322.7581
+      "median": 2.1322000000000116,
+      "min": 0.6105000000000018,
+      "max": 297.4109
     },
     "enhancedPromptLength": {
       "median": 2648,
@@ -36,6 +36,6 @@
       "default": 4
     }
   },
-  "coldImportTimeMs": 63.799899999999994,
+  "coldImportTimeMs": 67.3092,
   "bundleSizeBytes": 23897
 }
