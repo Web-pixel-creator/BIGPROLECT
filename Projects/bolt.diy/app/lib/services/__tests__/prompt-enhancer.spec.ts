@@ -198,6 +198,44 @@ describe('Prompt Enhancer Stability', () => {
     });
   });
 
+  // Noisy keywords tests - generic words should not trigger specific themes
+  describe('noisy keywords handling', () => {
+    it('returns default for prompt with only noisy EN words', async () => {
+      // Only generic words: "website landing page design"
+      const prompt = 'website landing page design';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('default');
+    });
+
+    it('returns default for prompt with only noisy RU words', async () => {
+      // Only generic words: "сайт лендинг дизайн страница"
+      const prompt = '\u0441\u0430\u0439\u0442 \u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u0438\u0437\u0430\u0439\u043d \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0430';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('default');
+    });
+
+    it('specific keyword wins over noisy words', async () => {
+      // "website landing page for furniture brand" - furniture is specific
+      const prompt = 'website landing page for furniture brand';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('furniture');
+    });
+
+    it('specific RU keyword wins over noisy words', async () => {
+      // "сайт лендинг для мебельного бренда" - мебельного is specific
+      const prompt = '\u0441\u0430\u0439\u0442 \u043b\u0435\u043d\u0434\u0438\u043d\u0433 \u0434\u043b\u044f \u043c\u0435\u0431\u0435\u043b\u044c\u043d\u043e\u0433\u043e \u0431\u0440\u0435\u043d\u0434\u0430';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('furniture');
+    });
+
+    it('multiple noisy words do not outweigh single specific keyword', async () => {
+      // "platform service product company website for restaurant"
+      const prompt = 'platform service product company website for restaurant';
+      const result = await enhancePromptWithDesignSystem(prompt);
+      expect(result.detectedTheme).toBe('restaurant');
+    });
+  });
+
   it('does not treat generic text as a design request', () => {
     expect(shouldEnhancePrompt('hello there')).toBe(false);
   });
