@@ -87,7 +87,7 @@ globalThis.fetch = async () => {
   throw new Error('baseline fetch disabled');
 };
 
-const { enhancePromptWithDesignSystem } = await import('../app/lib/services/promptEnhancer.ts');
+const { enhancePromptWithDesignSystem } = await import('../app/lib/services/promptEnhancer.js');
 
 // Separate errors (exit 1) from warnings (exit 0)
 const errors: string[] = [];

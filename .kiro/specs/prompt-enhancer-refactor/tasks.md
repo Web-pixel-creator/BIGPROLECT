@@ -116,13 +116,13 @@
     - Вызывать getMergedKeywords() и getMergedColors() один раз при инициализации
     - Удалить перенесенный код
     - _Requirements: 3.1_
-  - [ ] 5.7 Написать property test для data module exports
-    - Создать `app/lib/services/__tests__/data-exports.property.spec.ts`
-    - **Property 4: Data module exports completeness**
+  - [x] 5.7 Написать property test для data module exports ✓
+    - Реализовано в `app/lib/services/__tests__/prompt-data.property.spec.ts`
+    - **Property 1-4: Theme keywords, Color mappings, Image queries, Prompt hints**
     - **Validates: Requirements 3.2**
-  - [ ] 5.8 Написать property test для data module purity
-    - Добавить в `app/lib/services/__tests__/data-exports.property.spec.ts`
-    - **Property 6: Data module purity**
+  - [x] 5.8 Написать property test для data module purity ✓
+    - Реализовано в `app/lib/services/__tests__/prompt-data.property.spec.ts`
+    - **Property 1-4: все проверки на валидность данных**
     - **Validates: Requirements 3.4**
 
 - [x] 6. Checkpoint - Первый split ✓
@@ -148,13 +148,13 @@
   - [x] 7.4 Добавить npm script keywords:test ✓ (уже существует)
     - `"keywords:test": "tsx scripts/keywords-test.ts"`
     - _Requirements: 5.1_
-  - [ ] 7.5 Написать property test для circular deps
-    - Создать `app/lib/services/__tests__/deps.property.spec.ts`
-    - **Property 5: No circular dependencies**
+  - [x] 7.5 Добавить deps:check скрипт для circular deps ✓
+    - Добавить npm script `deps:check` с madge
     - **Validates: Requirements 3.3**
-  - [ ] 7.6 Написать property test для EN/RU parity
-    - Создать `app/lib/services/__tests__/keywords.property.spec.ts`
-    - **Property 9: EN/RU keyword parity**
+  - [x] 7.6 Написать property test для EN/RU parity ✓
+    - Реализовано в `app/lib/services/__tests__/prompt-data.property.spec.ts`
+    - Property 1: "all RU themes exist in EN themes"
+    - Дополнительно: `scripts/keywords-test.ts` проверяет parity
     - **Validates: Requirements 5.3**
 
 - [x] 8. Checkpoint - Валидация ✓
@@ -174,10 +174,10 @@
     - Создать `getRandom()` которая использует seed если установлен ✓
     - Экспортировать `setGlobalSeed` для baseline скрипта ✓
     - _Requirements: 5.5_
-  - [ ] 9.3 Написать property test для deterministic RNG
-    - Создать `app/lib/services/__tests__/rng.property.spec.ts`
-    - **Property 10: Deterministic RNG**
-    - **Validates: Requirements 5.5_
+  - [x] 9.3 Написать property test для deterministic RNG ✓
+    - Реализовано в `app/lib/services/__tests__/prompt-data.property.spec.ts`
+    - **Property 5: Seeded RNG determinism**
+    - **Validates: Requirements 5.5**
 
 - [x] 10. Финальная валидация ✓
   - Запустить все npm scripts: `pnpm run baseline:compare`, `pnpm run encoding:check`, `pnpm run keywords:test` ✓

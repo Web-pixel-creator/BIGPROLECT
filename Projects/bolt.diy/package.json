@@ -44,7 +44,8 @@
                     "electron:build:win":  "rm -rf dist \u0026\u0026 pnpm electron:build:renderer \u0026\u0026 pnpm electron:build:deps \u0026\u0026 electron-builder --win",
                     "electron:build:linux":  "rm -rf dist \u0026\u0026 pnpm electron:build:renderer \u0026\u0026 pnpm electron:build:deps \u0026\u0026 electron-builder --linux",
                     "electron:build:dist":  "rm -rf dist \u0026\u0026 pnpm electron:build:renderer \u0026\u0026 pnpm electron:build:deps \u0026\u0026 electron-builder --mwl",
-                    "keywords:test":  "tsx scripts/keywords-test.ts"
+                    "keywords:test":  "tsx scripts/keywords-test.ts",
+                    "deps:check":  "madge --circular --extensions ts --ts-config tsconfig.json app/lib/services/prompt-data/"
                 },
     "engines":  {
                     "node":  "\u003e=18.18.0"
