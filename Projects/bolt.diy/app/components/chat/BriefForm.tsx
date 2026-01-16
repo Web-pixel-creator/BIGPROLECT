@@ -3,9 +3,11 @@
  * Converts structured input into a Brief object for PromptGenerator
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { classNames } from '~/utils/classNames';
 import type { Brief, SiteType, DesignStyle } from '~/lib/services/promptGenerator';
+
+type Locale = 'en' | 'ru';
 
 interface BriefFormProps {
   onSubmit: (brief: Brief) => void;
@@ -40,6 +42,7 @@ const PRESET_COLORS = [
 ];
 
 export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormProps) {
+  const [locale, setLocale] = useState<Locale>('en');
   const [siteType, setSiteType] = useState<SiteType>('landing');
   const [theme, setTheme] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -47,6 +50,12 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   const [style, setStyle] = useState<DesignStyle>('modern');
   const [wishes, setWishes] = useState('');
 
+  useEffect(() => {
+    const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
+    setLocale(browserLang?.startsWith('ru') ? 'ru' : 'en');
+  }, []);
+
+  const t = useCallback((en: string, ru: string) => locale === 'ru' ? ru : en, [locale]);
   const handleColorToggle = useCallback((hex: string) => {
     setSelectedColors(prev => {
       if (prev.includes(hex)) {
@@ -99,20 +108,23 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
     >
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-bolt-elements-textPrimary mb-2">
-          Create Your Website
+          {t('Create Your Website', '\u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0441\u0432\u043E\u0439 \u0441\u0430\u0439\u0442')}
         </h2>
         <p className="text-bolt-elements-textSecondary text-sm">
-          Fill in the details and we'll generate a professional website for you
+          {t(
+            'Fill in the details and we\'ll generate a professional website for you',
+            '\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u0434\u0430\u043D\u043D\u044B\u0435, \u0438 \u043C\u044B \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u043C \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0441\u0430\u0439\u0442'
+          )}
         </p>
       </div>
 
       {/* Site Type */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
-          Website Type
+          {t('Website Type', '\u0422\u0438\u043F \u0441\u0430\u0439\u0442\u0430')}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-          {SITE_TYPES.map(({ value, label }) => (
+          {SITE_TYPES.map(({ value, label, labelRu }) => (
             <button
               key={value}
               type="button"
@@ -125,7 +137,7 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
                   : 'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive'
               )}
             >
-              {label}
+              {locale === 'ru' ? labelRu : label}
             </button>
           ))}
         </div>
@@ -134,13 +146,16 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       {/* Theme/Niche */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
-          Business Theme / Niche *
+          {t('Business Theme / Niche *', '\u0422\u0435\u043C\u0430 / \u041D\u0438\u0448\u0430 *')}
         </label>
         <input
           type="text"
           value={theme}
           onChange={(e) => setTheme(e.target.value)}
-          placeholder="e.g., furniture store, medical clinic, photography studio..."
+          placeholder={t(
+            'e.g., furniture store, medical clinic, photography studio...',
+            '\u043D\u0430\u043F\u0440., \u043C\u0435\u0431\u0435\u043B\u044C\u043D\u044B\u0439 \u043C\u0430\u0433\u0430\u0437\u0438\u043D, \u043A\u043B\u0438\u043D\u0438\u043A\u0430, \u0444\u043E\u0442\u043E\u0441\u0442\u0443\u0434\u0438\u044F...'
+          )}
           className={classNames(
             'w-full px-4 py-3 rounded-lg text-sm',
             'bg-bolt-elements-background-depth-3 text-bolt-elements-textPrimary',
@@ -154,10 +169,10 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       {/* Design Style */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
-          Design Style
+          {t('Design Style', '\u0421\u0442\u0438\u043B\u044C \u0434\u0438\u0437\u0430\u0439\u043D\u0430')}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {DESIGN_STYLES.map(({ value, label, icon }) => (
+          {DESIGN_STYLES.map(({ value, label, labelRu, icon }) => (
             <button
               key={value}
               type="button"
@@ -171,7 +186,7 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
               )}
             >
               <span className={icon} />
-              {label}
+              {locale === 'ru' ? labelRu : label}
             </button>
           ))}
         </div>
@@ -180,7 +195,7 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       {/* Colors */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
-          Brand Colors (optional, up to 3)
+          {t('Brand Colors (optional, up to 3)', '\u0426\u0432\u0435\u0442\u0430 \u0431\u0440\u0435\u043D\u0434\u0430 (\u043D\u0435\u043E\u0431\u044F\u0437., \u0434\u043E 3)')}
         </label>
         <div className="flex flex-wrap gap-2">
           {PRESET_COLORS.map(({ name, hex }) => (
@@ -224,13 +239,13 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
-              Add
+              {t('Add', '\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C')}
             </button>
           </div>
         </div>
         {selectedColors.length > 0 && (
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-bolt-elements-textTertiary">Selected:</span>
+            <span className="text-xs text-bolt-elements-textTertiary">{t('Selected:', '\u0412\u044B\u0431\u0440\u0430\u043D\u043E:')}</span>
             {selectedColors.map(hex => (
               <div
                 key={hex}
@@ -257,12 +272,15 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       {/* Additional Wishes */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
-          Additional Requirements (optional)
+          {t('Additional Requirements (optional)', '\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F (\u043D\u0435\u043E\u0431\u044F\u0437.)')}
         </label>
         <textarea
           value={wishes}
           onChange={(e) => setWishes(e.target.value)}
-          placeholder="Any specific features, sections, or requirements..."
+          placeholder={t(
+            'Any specific features, sections, or requirements...',
+            '\u041B\u044E\u0431\u044B\u0435 \u043E\u0441\u043E\u0431\u044B\u0435 \u0444\u0443\u043D\u043A\u0446\u0438\u0438, \u0441\u0435\u043A\u0446\u0438\u0438 \u0438\u043B\u0438 \u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F...'
+          )}
           rows={3}
           className={classNames(
             'w-full px-4 py-3 rounded-lg text-sm resize-none',
@@ -289,12 +307,12 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
         {isLoading ? (
           <>
             <span className="i-svg-spinners:90-ring-with-bg" />
-            Generating...
+            {t('Generating...', '\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F...')}
           </>
         ) : (
           <>
             <span className="i-ph:rocket-launch" />
-            Generate Website
+            {t('Generate Website', '\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u0430\u0439\u0442')}
           </>
         )}
       </button>
