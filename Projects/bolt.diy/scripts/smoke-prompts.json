@@ -1,0 +1,42 @@
+[
+  {
+    "id": "smoke-furniture-en",
+    "prompt": "Landing page for a modern furniture brand. Sections: hero, gallery, products, testimonials, contact. Colors: cream, charcoal, gold."
+  },
+  {
+    "id": "smoke-saas-en",
+    "prompt": "SaaS landing page for a finance app. Include pricing, FAQ, and CTA. Minimal style."
+  },
+  {
+    "id": "smoke-medical-en",
+    "prompt": "Website for a medical clinic. Clean, trustworthy, include services, team, contact."
+  },
+  {
+    "id": "smoke-photo-en",
+    "prompt": "Portfolio site for a travel photographer. Emphasis on gallery and editorial."
+  },
+  {
+    "id": "smoke-ecommerce-en",
+    "prompt": "E-commerce site for fitness gear. Include hero, categories, products, reviews."
+  },
+  {
+    "id": "smoke-furniture-ru",
+    "prompt": "Сайт мебельной фабрики. Секции: hero, gallery, products, testimonials, contact. Цвета: бежевый, графит, золото."
+  },
+  {
+    "id": "smoke-finance-ru",
+    "prompt": "Лендинг для финтех-сервиса. Нужны pricing, FAQ, CTA. Стиль минимализм."
+  },
+  {
+    "id": "smoke-medical-ru",
+    "prompt": "Сайт клиники. Услуги, команда, отзывы, контакты."
+  },
+  {
+    "id": "smoke-travel-ru",
+    "prompt": "Сайт тревел-студии. Акцент на gallery и фото."
+  },
+  {
+    "id": "smoke-fitness-ru",
+    "prompt": "Лендинг для фитнес-клуба. Нужны hero, расписание, цены, тренеры."
+  }
+]
