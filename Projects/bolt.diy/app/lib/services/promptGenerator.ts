@@ -62,7 +62,13 @@ export interface GeneratedPrompt {
   /** Generated sections */
   sections: SectionSpec[];
   /** Color palette used */
-  palette: typeof THEME_PALETTES.default;
+  palette: {
+    dark: string;
+    light: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
   /** Seed used for generation */
   seed: number;
 }
@@ -183,20 +189,27 @@ export class PromptGenerator {
   /**
    * Select color palette based on user colors or theme
    */
-  private selectPalette(userColors: string[], themeKey: string): typeof THEME_PALETTES.default {
+  private selectPalette(userColors: string[], themeKey: string): GeneratedPrompt['palette'] {
     // If user specified colors, use them
     if (userColors.length >= 2) {
       return {
-        primary: userColors[0],
-        secondary: userColors[1] || userColors[0],
-        accent: userColors[2] || userColors[0],
+        dark: '#1a1a1a',
+        light: '#ffffff',
+        accent: userColors[0],
         background: '#ffffff',
         text: '#1a1a1a',
       };
     }
 
     // Otherwise use theme palette
-    return THEME_PALETTES[themeKey] ?? THEME_PALETTES.default;
+    const themePalette = THEME_PALETTES[themeKey] ?? THEME_PALETTES.default;
+    return {
+      dark: themePalette.dark,
+      light: themePalette.light,
+      accent: themePalette.accent,
+      background: themePalette.light,
+      text: themePalette.textOnLight,
+    };
   }
 
   /**
@@ -236,7 +249,7 @@ export class PromptGenerator {
   private buildPrompt(
     brief: Brief,
     themeKey: string,
-    palette: typeof THEME_PALETTES.default,
+    palette: GeneratedPrompt['palette'],
     sections: SectionSpec[]
   ): string {
     const typeLabel = SITE_TYPE_LABELS[brief.type].en;
@@ -247,8 +260,8 @@ export class PromptGenerator {
       '',
       'DESIGN:',
       `- Style: ${styleLabel}`,
-      `- Primary color: ${palette.primary}`,
-      `- Secondary color: ${palette.secondary}`,
+      `- Dark color: ${palette.dark}`,
+      `- Light color: ${palette.light}`,
       `- Accent color: ${palette.accent}`,
       `- Background: ${palette.background}`,
       `- Text: ${palette.text}`,

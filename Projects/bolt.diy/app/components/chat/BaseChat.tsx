@@ -36,6 +36,9 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { workbenchStore } from '~/lib/stores/workbench';
+import { BriefForm } from './BriefForm';
+import { InputModeSelector, type InputMode } from './InputModeSelector';
+import { PromptGenerator, type Brief } from '~/lib/services/promptGenerator';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 const STREAMING_CONTENT_MAX_CHARS = 8000;
@@ -150,12 +153,28 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [transcript, setTranscript] = useState('');
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
+    const [inputMode, setInputMode] = useState<InputMode>('brief');
+    const [isBriefLoading, setIsBriefLoading] = useState(false);
     const progressKeyRef = useRef('');
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const showWorkbench = useStore(workbenchStore.showWorkbench);
     const isSmallViewport = useViewport(1024);
     const constrainChatWidth = showWorkbench && !isSmallViewport;
+
+    // Handle BriefForm submission
+    const handleBriefSubmit = useCallback(async (brief: Brief) => {
+      if (!sendMessage) return;
+      
+      setIsBriefLoading(true);
+      try {
+        const generator = new PromptGenerator(Date.now());
+        const result = generator.generate(brief);
+        await sendMessage({} as React.UIEvent, result.prompt);
+      } finally {
+        setIsBriefLoading(false);
+      }
+    }, [sendMessage]);
 
     useEffect(() => {
       if (expoUrl) {
@@ -636,23 +655,35 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   <RecentChats />
                 </div>
                 <div className="flex flex-col justify-center">
-                  <div className="flex justify-center gap-2">
+                  <div className="flex justify-center gap-2 mb-4">
                     {ImportButtons(importChat)}
                     <GitCloneButton importChat={importChat} />
                   </div>
-                  <div className="flex flex-col gap-5">
-                    <ExamplePrompts
-                      onSelect={(prompt) => {
-                        if (isStreaming) {
-                          handleStop?.();
-                          return;
-                        }
-
-                        handleSendMessage?.({} as unknown as React.UIEvent, prompt);
-                      }}
-                    />
-                    <StarterTemplates />
+                  
+                  {/* Input Mode Selector */}
+                  <div className="flex justify-center mb-6">
+                    <InputModeSelector mode={inputMode} onChange={setInputMode} />
                   </div>
+                  
+                  {inputMode === 'brief' ? (
+                    <div className="max-w-xl mx-auto w-full px-4">
+                      <BriefForm onSubmit={handleBriefSubmit} isLoading={isBriefLoading} />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-5">
+                      <ExamplePrompts
+                        onSelect={(prompt) => {
+                          if (isStreaming) {
+                            handleStop?.();
+                            return;
+                          }
+
+                          handleSendMessage?.({} as unknown as React.UIEvent, prompt);
+                        }}
+                      />
+                      <StarterTemplates />
+                    </div>
+                  )}
                 </div>
               </>
             )}

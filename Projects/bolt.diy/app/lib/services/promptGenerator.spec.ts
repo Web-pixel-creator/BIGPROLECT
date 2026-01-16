@@ -32,9 +32,7 @@ describe('PromptGenerator', () => {
 
       const result = generator.generate(brief);
 
-      expect(result.palette.primary).toBe('#FF5733');
-      expect(result.palette.secondary).toBe('#33FF57');
-      expect(result.palette.accent).toBe('#3357FF');
+      expect(result.palette.accent).toBe('#FF5733');
     });
 
     it('includes additional wishes in prompt', () => {
