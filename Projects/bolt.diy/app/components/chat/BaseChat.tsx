@@ -155,6 +155,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
     const [inputMode, setInputMode] = useState<InputMode>('brief');
     const [isBriefLoading, setIsBriefLoading] = useState(false);
+    const [lastGeneratedSeed, setLastGeneratedSeed] = useState<number | null>(null);
     const progressKeyRef = useRef('');
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -168,13 +169,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       
       setIsBriefLoading(true);
       try {
-        const generator = new PromptGenerator(Date.now());
+        const generator = new PromptGenerator();
         const result = generator.generate(brief);
+        setLastGeneratedSeed(result.seed);
         await sendMessage({} as React.UIEvent, result.prompt);
       } finally {
         setIsBriefLoading(false);
       }
     }, [sendMessage]);
+
+    const handleCopySeed = useCallback(() => {
+      if (lastGeneratedSeed !== null) {
+        navigator.clipboard.writeText(String(lastGeneratedSeed));
+      }
+    }, [lastGeneratedSeed]);
 
     useEffect(() => {
       if (expoUrl) {
@@ -668,6 +676,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   {inputMode === 'brief' ? (
                     <div className="max-w-xl mx-auto w-full px-4">
                       <BriefForm onSubmit={handleBriefSubmit} isLoading={isBriefLoading} />
+                      {lastGeneratedSeed !== null && (
+                        <div className="flex items-center justify-center gap-2 mt-3 text-xs text-bolt-elements-textTertiary">
+                          <span>Seed: {lastGeneratedSeed}</span>
+                          <button
+                            type="button"
+                            onClick={handleCopySeed}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded bg-bolt-elements-background-depth-3 hover:bg-bolt-elements-background-depth-4 transition-colors"
+                            title="Copy seed for reproducibility"
+                          >
+                            <span className="i-ph:copy text-xs" />
+                            Copy
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col gap-5">
