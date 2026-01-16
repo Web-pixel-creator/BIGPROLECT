@@ -245,6 +245,7 @@ export const ChatImpl = memo(
       addToolResult,
     } = useChat({
       api: '/api/chat',
+      maxRetries: 0,
       experimental_throttle: streamThrottle,
       body: {
         apiKeys,
