@@ -17,6 +17,36 @@ import type { BoltShell } from '~/utils/shell';
 
 const logger = createScopedLogger('ActionRunner');
 
+/**
+ * Global rate limiter for LLM repair calls.
+ * Prevents excessive API usage when multiple files have errors.
+ */
+const LLM_REPAIR_RATE_LIMIT = {
+  maxCallsPerSession: 5, // Max LLM repair calls per generation session
+  callCount: 0,
+  sessionId: '',
+
+  reset(newSessionId: string) {
+    if (this.sessionId !== newSessionId) {
+      this.sessionId = newSessionId;
+      this.callCount = 0;
+    }
+  },
+
+  canCall(): boolean {
+    return this.callCount < this.maxCallsPerSession;
+  },
+
+  recordCall() {
+    this.callCount++;
+    logger.info(`LLM repair call ${this.callCount}/${this.maxCallsPerSession}`);
+  },
+
+  getRemainingCalls(): number {
+    return Math.max(0, this.maxCallsPerSession - this.callCount);
+  },
+};
+
 const ALLOWED_SECTION_ROOTS = ['src/', 'app/', 'components/'];
 
 const SECTION_ALIASES: Record<string, string[]> = {
@@ -726,6 +756,11 @@ export class ActionRunner {
       unreachable('Expected file action');
     }
 
+    // Reset rate limiter for new generation session
+    // Use current minute as session boundary (new session every minute)
+    const sessionId = Math.floor(Date.now() / 60000).toString();
+    LLM_REPAIR_RATE_LIMIT.reset(sessionId);
+
     const webcontainer = await this.#webcontainer;
     const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
 
@@ -799,8 +834,12 @@ export class ActionRunner {
               const isImportantFile =
                 relativePath.endsWith('.tsx') || relativePath.endsWith('.jsx') || relativePath.includes('App.');
 
-              if (isImportantFile && errorCount <= 10) {
-                logger.info(`Attempting LLM repair for ${relativePath}`);
+              // Check rate limit before attempting LLM repair
+              const canUseLlmRepair = LLM_REPAIR_RATE_LIMIT.canCall();
+
+              if (isImportantFile && errorCount <= 10 && canUseLlmRepair) {
+                logger.info(`Attempting LLM repair for ${relativePath} (${LLM_REPAIR_RATE_LIMIT.getRemainingCalls()} calls remaining)`);
+                LLM_REPAIR_RATE_LIMIT.recordCall();
 
                 try {
                   const llmRepairFn = createLlmRepairFn();
@@ -836,6 +875,10 @@ export class ActionRunner {
                   // Fall back to quick fix result
                   contentToWrite = quickFixResult.code;
                 }
+              } else if (!canUseLlmRepair) {
+                // Rate limit reached - skip LLM repair
+                logger.warn(`LLM repair rate limit reached, skipping repair for ${relativePath}`);
+                contentToWrite = quickFixResult.code;
               } else {
                 // Not important file or too many errors - use quick fix result
                 const errorSummary = formatUnifiedErrorsSummary(validation.unifiedViolations, 3).replace(/\n/g, '; ');
