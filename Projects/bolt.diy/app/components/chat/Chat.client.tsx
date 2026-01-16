@@ -824,23 +824,83 @@ export const ChatImpl = memo(
           }
         }
 
-        // If autoSelectTemplate is disabled or template selection failed, proceed with normal message
-        const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-        const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
+        // First message without template - use setMessages + reload
+        if (!chatStarted) {
+          const userMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+          const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+          const attachments = uploadedFiles.length > 0 ? await filesToAttachments(uploadedFiles) : undefined;
 
-        setMessages([
-          {
-            id: `${new Date().getTime()}`,
-            role: 'user',
-            content: userMessageText,
-            parts: createMessageParts(userMessageText, imageDataList),
-            experimental_attachments: attachments,
-            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-          },
-        ]);
-        reload(attachments ? { experimental_attachments: attachments } : undefined);
-        setFakeLoading(false);
+          setMessages([
+            {
+              id: `${new Date().getTime()}`,
+              role: 'user',
+              content: userMessageText,
+              parts: createMessageParts(userMessageText, imageDataList),
+              experimental_attachments: attachments,
+              annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+            },
+          ]);
+          reload(attachments ? { experimental_attachments: attachments } : undefined);
+          setFakeLoading(false);
+          setInput('');
+          Cookies.remove(PROMPT_COOKIE_KEY);
+
+          setUploadedFiles([]);
+          setImageDataList([]);
+
+          resetEnhancer();
+
+          textareaRef.current?.blur();
+
+          return true;
+        }
+
+        // Chat already started - use append for subsequent messages
+        const modifiedFiles = workbenchStore.getModifiedFiles();
+
+        chatStore.setKey('aborted', false);
+
+        if (modifiedFiles !== undefined) {
+          const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+          const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+              annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+            },
+            attachmentOptions,
+          );
+
+          workbenchStore.resetAllFileModifications();
+        } else {
+          const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
+          const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+
+          const attachmentOptions =
+            uploadedFiles.length > 0
+              ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
+              : undefined;
+
+          append(
+            {
+              role: 'user',
+              content: messageText,
+              parts: createMessageParts(messageText, imageDataList),
+              annotations: [{ type: 'llmPrompt', value: llmMessageText }],
+            },
+            attachmentOptions,
+          );
+        }
+
         setInput('');
         Cookies.remove(PROMPT_COOKIE_KEY);
 
@@ -851,68 +911,8 @@ export const ChatImpl = memo(
 
         textareaRef.current?.blur();
 
-        // Return early - reload() already started the LLM call
         return true;
-      }
-
-      // Chat already started - use append for subsequent messages
-      const modifiedFiles = workbenchStore.getModifiedFiles();
-
-      chatStore.setKey('aborted', false);
-
-      if (modifiedFiles !== undefined) {
-        const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0
-            ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
-            : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-          },
-          attachmentOptions,
-        );
-
-        workbenchStore.resetAllFileModifications();
-      } else {
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${displayMessageContent}`;
-        const llmMessageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
-
-        const attachmentOptions =
-          uploadedFiles.length > 0
-            ? { experimental_attachments: await filesToAttachments(uploadedFiles) }
-            : undefined;
-
-        append(
-          {
-            role: 'user',
-            content: messageText,
-            parts: createMessageParts(messageText, imageDataList),
-            annotations: [{ type: 'llmPrompt', value: llmMessageText }],
-          },
-          attachmentOptions,
-        );
-      }
-
-      setInput('');
-      Cookies.remove(PROMPT_COOKIE_KEY);
-
-      setUploadedFiles([]);
-      setImageDataList([]);
-
-      resetEnhancer();
-
-      textareaRef.current?.blur();
-
-      return true;
-    } catch (sendError: any) {
+      } catch (sendError: any) {
         logger.error('sendMessage failed', sendError);
         setFakeLoading(false);
         setInput(originalInput);
