@@ -36,9 +36,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { BriefForm } from './BriefForm';
-import { InputModeSelector, type InputMode } from './InputModeSelector';
-import { PromptGenerator, type Brief } from '~/lib/services/promptGenerator';
+
 
 const TEXTAREA_MIN_HEIGHT = 76;
 const STREAMING_CONTENT_MAX_CHARS = 8000;
@@ -153,36 +151,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [transcript, setTranscript] = useState('');
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
-    const [inputMode, setInputMode] = useState<InputMode>('brief');
-    const [isBriefLoading, setIsBriefLoading] = useState(false);
-    const [lastGeneratedSeed, setLastGeneratedSeed] = useState<number | null>(null);
     const progressKeyRef = useRef('');
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const showWorkbench = useStore(workbenchStore.showWorkbench);
     const isSmallViewport = useViewport(1024);
     const constrainChatWidth = showWorkbench && !isSmallViewport;
-
-    // Handle BriefForm submission
-    const handleBriefSubmit = useCallback(async (brief: Brief) => {
-      if (!sendMessage) return;
-      
-      setIsBriefLoading(true);
-      try {
-        const generator = new PromptGenerator();
-        const result = generator.generate(brief);
-        setLastGeneratedSeed(result.seed);
-        await sendMessage({} as React.UIEvent, result.prompt);
-      } finally {
-        setIsBriefLoading(false);
-      }
-    }, [sendMessage]);
-
-    const handleCopySeed = useCallback(() => {
-      if (lastGeneratedSeed !== null) {
-        navigator.clipboard.writeText(String(lastGeneratedSeed));
-      }
-    }, [lastGeneratedSeed]);
 
     useEffect(() => {
       if (expoUrl) {
@@ -668,44 +642,20 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                     <GitCloneButton importChat={importChat} />
                   </div>
                   
-                  {/* Input Mode Selector */}
-                  <div className="flex justify-center mb-6">
-                    <InputModeSelector mode={inputMode} onChange={setInputMode} />
-                  </div>
-                  
-                  {inputMode === 'brief' ? (
-                    <div className="max-w-xl mx-auto w-full px-4">
-                      <BriefForm onSubmit={handleBriefSubmit} isLoading={isBriefLoading} />
-                      {lastGeneratedSeed !== null && (
-                        <div className="flex items-center justify-center gap-2 mt-3 text-xs text-bolt-elements-textTertiary">
-                          <span>Seed: {lastGeneratedSeed}</span>
-                          <button
-                            type="button"
-                            onClick={handleCopySeed}
-                            className="flex items-center gap-1 px-2 py-0.5 rounded bg-bolt-elements-background-depth-3 hover:bg-bolt-elements-background-depth-4 transition-colors"
-                            title="Copy seed for reproducibility"
-                          >
-                            <span className="i-ph:copy text-xs" />
-                            Copy
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-5">
-                      <ExamplePrompts
-                        onSelect={(prompt) => {
-                          if (isStreaming) {
-                            handleStop?.();
-                            return;
-                          }
+                  {/* Mode selector hidden - keeping only Advanced Mode for now */}
+                  <div className="flex flex-col gap-5">
+                    <ExamplePrompts
+                      onSelect={(prompt) => {
+                        if (isStreaming) {
+                          handleStop?.();
+                          return;
+                        }
 
-                          handleSendMessage?.({} as unknown as React.UIEvent, prompt);
-                        }}
-                      />
-                      <StarterTemplates />
-                    </div>
-                  )}
+                        handleSendMessage?.({} as unknown as React.UIEvent, prompt);
+                      }}
+                    />
+                    <StarterTemplates />
+                  </div>
                 </div>
               </>
             )}
