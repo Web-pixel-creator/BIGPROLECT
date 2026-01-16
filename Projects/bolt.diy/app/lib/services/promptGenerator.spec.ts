@@ -33,6 +33,36 @@ describe('PromptGenerator', () => {
       const result = generator.generate(brief);
 
       expect(result.palette.accent).toBe('#FF5733');
+      expect(result.palette.supportingColors).toEqual(['#33FF57', '#3357FF']);
+    });
+
+    it('includes supporting colors in prompt output', () => {
+      const generator = new PromptGenerator(12345);
+      const brief: Brief = {
+        type: 'landing',
+        theme: 'furniture',
+        colors: ['#FF5733', '#33FF57', '#3357FF'],
+        style: 'modern',
+      };
+
+      const result = generator.generate(brief);
+
+      expect(result.prompt).toContain('Supporting colors: #33FF57, #3357FF');
+    });
+
+    it('returns empty supportingColors when only one color provided', () => {
+      const generator = new PromptGenerator(12345);
+      const brief: Brief = {
+        type: 'landing',
+        theme: 'furniture',
+        colors: ['#FF5733'],
+        style: 'modern',
+      };
+
+      const result = generator.generate(brief);
+
+      expect(result.palette.accent).toBe('#FF5733');
+      expect(result.palette.supportingColors).toEqual([]);
     });
 
     it('includes additional wishes in prompt', () => {

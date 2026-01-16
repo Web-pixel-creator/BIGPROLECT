@@ -68,6 +68,7 @@ export interface GeneratedPrompt {
     accent: string;
     background: string;
     text: string;
+    supportingColors: string[];
   };
   /** Seed used for generation */
   seed: number;
@@ -191,13 +192,14 @@ export class PromptGenerator {
    */
   private selectPalette(userColors: string[], themeKey: string): GeneratedPrompt['palette'] {
     // If user specified colors, use them
-    if (userColors.length >= 2) {
+    if (userColors.length >= 1) {
       return {
         dark: '#1a1a1a',
         light: '#ffffff',
         accent: userColors[0],
         background: '#ffffff',
         text: '#1a1a1a',
+        supportingColors: userColors.slice(1), // Additional colors for prompt
       };
     }
 
@@ -209,6 +211,7 @@ export class PromptGenerator {
       accent: themePalette.accent,
       background: themePalette.light,
       text: themePalette.textOnLight,
+      supportingColors: [],
     };
   }
 
@@ -266,6 +269,10 @@ export class PromptGenerator {
       `- Background: ${palette.background}`,
       `- Text: ${palette.text}`,
     ];
+
+    if (palette.supportingColors.length > 0) {
+      lines.push(`- Supporting colors: ${palette.supportingColors.join(', ')}`);
+    }
 
     if (brief.screenshotAnalysis) {
       lines.push(`- Typography: ${brief.screenshotAnalysis.typography}`);
