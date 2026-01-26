@@ -89,6 +89,28 @@ export {
 // Style cues
 export { STYLE_CUE_TOKENS } from './style-cues';
 
+// Design quality data
+export {
+  STYLE_PACKS,
+  STYLE_PACK_INDEX,
+  DEFAULT_STYLE_PACK_ID,
+  getStylePackById,
+  type StylePack,
+} from './style-packs';
+
+export {
+  buildDesignQualityScore,
+  type DesignCues,
+  type DesignCueCoverage,
+  type DesignQualityInput,
+  type DesignQualityScoreResult,
+} from './design-quality';
+
+export {
+  COMPONENT_MEMORY_ENTRIES,
+  type ComponentMemoryEntry,
+} from './component-memory';
+
 // Prompt hints (layout/navigation/image keywords)
 export {
   IMAGE_KEYWORDS,
