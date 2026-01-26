@@ -20,7 +20,11 @@ import { useSearchParams } from '@remix-run/react';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
 import { logStore } from '~/lib/stores/logs';
-import { enhancePromptWithDesignSystem, shouldEnhancePrompt, type EnhancedPrompt } from '~/lib/services/promptEnhancer';
+import {
+  generateAndRankDesignVariants,
+  shouldEnhancePrompt,
+  type EnhancedPrompt,
+} from '~/lib/services/promptEnhancer';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
 import { supabaseConnection } from '~/lib/stores/supabase';
@@ -33,7 +37,7 @@ import { createLayoutSeed, generateLayoutStrategy, getLayoutInstructions } from 
 import type { GenerationSummary } from './GenerationSummaryCard';
 
 const logger = createScopedLogger('Chat');
-const STREAM_STALL_MS = 60000;
+const STREAM_STALL_MS = 180000;
 const STREAM_STALL_CHECK_MS = 5000;
 
 const decodePromptValue = (value: string): string => {
@@ -707,22 +711,27 @@ export const ChatImpl = memo(
             // Append instructions invisibly to the enhancer
             const mutatedContent = `${messageContent}\n\n${layoutInstructions}`;
 
-            const enhanced = await enhancePromptWithDesignSystem(mutatedContent);
-            finalMessageContent = enhanced.enhancedPrompt;
-            displayMessageContent = enhanced.displayPrompt ?? messageContent;
-            summary = buildGenerationSummary(messageContent, enhanced);
+            const variantResult = await generateAndRankDesignVariants(mutatedContent, {
+              variantCount: 3,
+              variantSalt: `${baseSeed}-${variation.toFixed(2)}`,
+            });
+            const selectedVariant = variantResult.selected;
+            finalMessageContent = selectedVariant.enhancedPrompt;
+            displayMessageContent = selectedVariant.displayPrompt ?? messageContent;
+            summary = buildGenerationSummary(messageContent, selectedVariant);
 
-            if (enhanced.sectionContract?.order?.length) {
-              workbenchStore.setPendingSectionContract(enhanced.sectionContract);
+            if (selectedVariant.sectionContract?.order?.length) {
+              workbenchStore.setPendingSectionContract(selectedVariant.sectionContract);
             } else {
               workbenchStore.clearPendingSectionContract();
             }
 
             console.log('=== PROMPT ENHANCER DEBUG ===');
-            console.log('Theme:', enhanced.detectedTheme);
-            console.log('Images:', JSON.stringify(enhanced.images, null, 2));
-            console.log('Image prompt:', enhanced.imagePrompt);
-            console.log('Enhanced prompt (first 800 chars):', enhanced.enhancedPrompt?.substring(0, 800));
+            console.log('Theme:', selectedVariant.detectedTheme);
+            console.log('Images:', JSON.stringify(selectedVariant.images, null, 2));
+            console.log('Image prompt:', selectedVariant.imagePrompt);
+            console.log('Variant ranking:', variantResult.ranking);
+            console.log('Enhanced prompt (first 800 chars):', selectedVariant.enhancedPrompt?.substring(0, 800));
             console.log('=============================');
           } catch (enhanceError: any) {
             logger.error('prompt enhancer failed', enhanceError);

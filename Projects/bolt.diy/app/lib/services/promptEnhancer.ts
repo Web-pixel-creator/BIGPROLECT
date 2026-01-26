@@ -42,6 +42,16 @@ import {
   NAVIGATION_SIGNALS,
   SECTION_LAYOUTS,
   SECTION_LABELS,
+  STYLE_PACKS,
+  DEFAULT_STYLE_PACK_ID,
+  getStylePackById,
+  buildDesignQualityScore,
+  COMPONENT_MEMORY_ENTRIES,
+  createSeededRandom,
+  type StylePack,
+  type DesignCues,
+  type DesignCueCoverage,
+  type ComponentMemoryEntry,
   type ImageSet,
 } from './prompt-data';
 import { pickRandomUnique } from './prompt-random-utils';
@@ -53,7 +63,7 @@ import {
   hasColorWords,
   buildColorDirectiveBlock,
 } from './prompt-color-utils';
-import { detectTheme, extractBrandName, generateBrandName } from './prompt-theme-utils';
+import { detectTheme, extractBrandName, generateBrandName, hashString } from './prompt-theme-utils';
 import {
   extractRequirementLines,
   extractSectionOrder,
@@ -62,7 +72,7 @@ import {
   buildSectionGuardrails,
   buildSectionBlueprint,
 } from './prompt-section-utils';
-import { buildEffectDirectiveBlock, buildSectionVariantBlock } from './prompt-variant-utils';
+import { buildSectionVariantBlock, pickEffectIds } from './prompt-variant-utils';
 import { buildComponentDirectives, SAFE_COMPONENT_REGISTRY } from './prompt-component-utils';
 
 import {
@@ -230,25 +240,98 @@ function buildImageSuggestions(mentionedSections: string[], images: ImageSet): s
   ].join('\n');
 }
 
-function buildArtDirectionLine(theme: string): string {
+function pickArtDirection(theme: string, rng?: () => number): string {
   const directions = THEME_ART_DIRECTIONS[theme] ?? THEME_ART_DIRECTIONS.default;
-  const pick = pickRandomUnique(directions, 1)[0];
-
-  return pick ? `\nART DIRECTION: ${pick}` : '';
+  return pickRandomUnique(directions, 1, rng)[0] ?? '';
 }
 
-function buildLayoutArchetypeLine(theme: string): string {
+function buildArtDirectionLine(direction: string): string {
+  return direction ? `\nART DIRECTION: ${direction}` : '';
+}
+
+function pickLayoutArchetype(theme: string, rng?: () => number): string {
   const archetypes = THEME_LAYOUT_ARCHETYPES[theme] ?? THEME_LAYOUT_ARCHETYPES.default;
-  const pick = pickRandomUnique(archetypes, 1)[0];
-
-  return pick ? `\nLAYOUT ARCHETYPE: ${pick}` : '';
+  return pickRandomUnique(archetypes, 1, rng)[0] ?? '';
 }
 
-function buildSignatureMovesBlock(theme: string): string {
-  const themeMoves = THEME_SIGNATURE_MOVES[theme] ?? THEME_SIGNATURE_MOVES.default;
-  const picks = pickRandomUnique([...themeMoves, ...GLOBAL_SIGNATURE_MOVES], 3);
+function buildLayoutArchetypeLine(archetype: string): string {
+  return archetype ? `\nLAYOUT ARCHETYPE: ${archetype}` : '';
+}
 
-  return picks.length > 0 ? `\nSIGNATURE MOVES (must apply):\n- ${picks.join('\n- ')}` : '';
+function pickSignatureMoves(theme: string, rng?: () => number): string[] {
+  const themeMoves = THEME_SIGNATURE_MOVES[theme] ?? THEME_SIGNATURE_MOVES.default;
+  return pickRandomUnique([...themeMoves, ...GLOBAL_SIGNATURE_MOVES], 3, rng);
+}
+
+function buildSignatureMovesBlock(moves: string[]): string {
+  return moves.length > 0 ? `\nSIGNATURE MOVES (must apply):\n- ${moves.join('\n- ')}` : '';
+}
+
+function buildDesignCues(stylePack: StylePack, sectionOrder: string[]): DesignCues {
+  const primarySection = sectionOrder[0] ?? 'hero';
+  const primaryLabel = SECTION_LABELS[primarySection] ?? primarySection;
+  const secondarySection = sectionOrder[1] ?? '';
+  const secondaryLabel = secondarySection ? SECTION_LABELS[secondarySection] ?? secondarySection : '';
+  const hierarchyNote = secondaryLabel
+    ? `Primary focus on ${primaryLabel}; secondary emphasis on ${secondaryLabel}.`
+    : `Primary focus on ${primaryLabel}.`;
+
+  return {
+    typography: `${stylePack.fontPairing}. ${stylePack.typeScale}.`,
+    layout: `${stylePack.gridStyle}. ${stylePack.spacingScale}.`,
+    visualHierarchy: `${hierarchyNote} CTA must be prominent. Shape language: ${stylePack.shapeLanguage}.`,
+    motion: stylePack.motionNotes.join('; '),
+  };
+}
+
+function buildDesignDnaBlock(stylePack: StylePack, designCues: DesignCues): string {
+  return [
+    '\nDESIGN DNA (must follow):',
+    `STYLE PACK: ${stylePack.label} (${stylePack.id})`,
+    `TYPOGRAPHY: ${designCues.typography}`,
+    `LAYOUT: ${designCues.layout}`,
+    `VISUAL HIERARCHY: ${designCues.visualHierarchy}`,
+    `EFFECTS: ${stylePack.effects.join(', ')}`,
+    `MOTION: ${designCues.motion}`,
+  ].join('\n');
+}
+
+function pickComponentMemoryEntries(theme: string, sections: string[], rng?: () => number): ComponentMemoryEntry[] {
+  const matches = COMPONENT_MEMORY_ENTRIES.filter((entry) => {
+    const themeMatch = entry.themes.includes(theme) || entry.themes.includes('default');
+    return themeMatch && sections.includes(entry.section);
+  });
+
+  if (matches.length === 0) {
+    return [];
+  }
+
+  return pickRandomUnique(matches, Math.min(3, matches.length), rng);
+}
+
+function buildComponentMemoryBlock(entries: ComponentMemoryEntry[]): string {
+  if (entries.length === 0) {
+    return '';
+  }
+
+  const lines = entries.map((entry) => {
+    const label = SECTION_LABELS[entry.section] ?? entry.section;
+    return `- ${label}: ${entry.snippet}`;
+  });
+
+  return `\nCOMPONENT MEMORY (use as inspiration, adapt to the chosen style pack):\n${lines.join('\n')}`;
+}
+
+function buildLayoutUniquenessHash(payload: {
+  stylePackId: string;
+  layoutArchetype: string;
+  sectionOrder: string[];
+  sectionVariants: string;
+  effectIds: string[];
+  signatureMoves: string[];
+}): string {
+  const raw = JSON.stringify(payload);
+  return hashString(raw).toString(36);
 }
 
 export interface EnhancedPrompt {
@@ -266,10 +349,147 @@ export interface EnhancedPrompt {
 
   images: ImageSet;
 
+  variantIndex?: number;
+
+  variantSeed?: string;
+
+  stylePackId: string;
+
+  stylePack: StylePack;
+
+  designCues: DesignCues;
+
+  designCueCoverage: DesignCueCoverage;
+
+  designQualityScore: number;
+
+  designQualityReasons: string[];
+
+  layoutArchetype: string;
+
+  layoutUniquenessHash: string;
+
+  signatureMoves: string[];
+
+  effectIds: string[];
+
+  componentMemory: ComponentMemoryEntry[];
+
   sectionContract?: SectionContract;
 }
 
+export type EnhancePromptOptions = {
+  variationSeed?: string;
+  variantIndex?: number;
+  variantSalt?: string;
+};
+
+export type DesignVariantRanking = {
+  variantIndex: number;
+  score: number;
+  reasons: string[];
+  designQualityScore: number;
+  stylePackId: string;
+  layoutUniquenessHash: string;
+};
+
+export type DesignVariantResult = {
+  selected: EnhancedPrompt;
+  variants: EnhancedPrompt[];
+  ranking: DesignVariantRanking[];
+};
+
+export type DesignVariantOptions = {
+  variantCount?: number;
+  variantSalt?: string;
+};
+
 const LAYOUT_MARKER = 'CREATIVE DIRECTION (Unique Layout Strategy):';
+
+const DEFAULT_VARIANT_COUNT = 3;
+const MAX_VARIANT_COUNT = 5;
+
+function resolveVariationSeed(prompt: string, options?: EnhancePromptOptions): string {
+  if (options?.variationSeed) {
+    return options.variationSeed;
+  }
+
+  const variantIndex = options?.variantIndex;
+  const variantSalt = options?.variantSalt ?? '';
+
+  if (variantIndex !== undefined || variantSalt) {
+    const seedKey = `${prompt}|${variantIndex ?? 0}|${variantSalt}`;
+    const rng = createSeededRandom(hashString(seedKey));
+    return randomSeedString(6, rng);
+  }
+
+  return randomSeedString(6);
+}
+
+function hasFullCueCoverage(coverage?: DesignCueCoverage): boolean {
+  return !!coverage && Object.values(coverage).every(Boolean);
+}
+
+function rankDesignVariants(variants: EnhancedPrompt[]): DesignVariantRanking[] {
+  const hashCounts = variants.reduce<Record<string, number>>((acc, variant) => {
+    const key = variant.layoutUniquenessHash || 'unknown';
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const rankings = variants.map((variant, index) => {
+    const variantIndex = variant.variantIndex ?? index;
+    const reasons: string[] = [];
+    let score = variant.designQualityScore ?? 0;
+    reasons.push(`design quality ${variant.designQualityScore ?? 0}`);
+
+    if (hasFullCueCoverage(variant.designCueCoverage)) {
+      score += 4;
+      reasons.push('full design cue coverage');
+    }
+
+    if (variant.signatureMoves?.length) {
+      score += Math.min(3, variant.signatureMoves.length);
+      reasons.push('signature moves');
+    }
+
+    if (variant.effectIds?.length) {
+      score += Math.min(2, variant.effectIds.length);
+      reasons.push('effects');
+    }
+
+    if (variant.componentMemory?.length) {
+      score += 1;
+      reasons.push('component memory');
+    }
+
+    if (hashCounts[variant.layoutUniquenessHash] > 1) {
+      score -= 5;
+      reasons.push('duplicate layout hash');
+    }
+
+    return {
+      variantIndex,
+      score,
+      reasons,
+      designQualityScore: variant.designQualityScore ?? 0,
+      stylePackId: variant.stylePackId,
+      layoutUniquenessHash: variant.layoutUniquenessHash,
+    };
+  });
+
+  return rankings.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+
+    if (b.designQualityScore !== a.designQualityScore) {
+      return b.designQualityScore - a.designQualityScore;
+    }
+
+    return a.variantIndex - b.variantIndex;
+  });
+}
 
 function buildStyleCueRegex(): RegExp {
   const escaped = STYLE_CUE_TOKENS.map((token) => token.trim())
@@ -320,13 +540,25 @@ function splitPromptForEnhancer(prompt: string) {
  *
  */
 
-export async function enhancePromptWithDesignSystem(userPrompt: string): Promise<EnhancedPrompt> {
+export async function enhancePromptWithDesignSystem(
+  userPrompt: string,
+  options?: EnhancePromptOptions,
+): Promise<EnhancedPrompt> {
   const { basePrompt, layoutBlock } = splitPromptForEnhancer(userPrompt);
   const analysisPrompt = basePrompt;
   const promptWithLayout = layoutBlock ? `${analysisPrompt}\n\n${layoutBlock}` : analysisPrompt;
 
   const detectedTheme = detectTheme(analysisPrompt);
-  const variationSeed = randomSeedString(6);
+  const variationSeed = resolveVariationSeed(analysisPrompt, options);
+  const designSeed = hashString(`${analysisPrompt}:${variationSeed}`);
+  const designRng = createSeededRandom(designSeed);
+  const stylePackId =
+    pickRandomUnique(
+      STYLE_PACKS.map((pack) => pack.id),
+      1,
+      designRng,
+    )[0] ?? DEFAULT_STYLE_PACK_ID;
+  const stylePack = getStylePackById(stylePackId) ?? STYLE_PACKS[0];
 
   const palette = THEME_PALETTES[detectedTheme as keyof typeof THEME_PALETTES] || THEME_PALETTES.default;
 
@@ -447,7 +679,7 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   // Helper to pick random item
 
-  const pickRandom = <T>(arr: T[]): T => pickRandomFromData(arr);
+  const pickRandom = <T>(arr: T[]): T => pickRandomFromData(arr, designRng);
 
   // Detect which sections user mentioned in prompt
 
@@ -553,17 +785,16 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
 
   const sectionDetailsBlock = buildSectionDetailsBlock(sectionSpecs.details, SECTION_LABELS);
   const sectionGuardrails = buildSectionGuardrails(mentionedSections, sectionSpecs.details);
-  const artDirectionLine = buildArtDirectionLine(detectedTheme);
-  const layoutArchetypeLine = buildLayoutArchetypeLine(detectedTheme);
-  const signatureMovesBlock = buildSignatureMovesBlock(detectedTheme);
+  const artDirection = pickArtDirection(detectedTheme, designRng);
+  const layoutArchetype = pickLayoutArchetype(detectedTheme, designRng);
+  const signatureMoves = pickSignatureMoves(detectedTheme, designRng);
+  const effectIds = pickEffectIds(detectedTheme, 2, designRng);
+  const artDirectionLine = buildArtDirectionLine(artDirection);
+  const layoutArchetypeLine = buildLayoutArchetypeLine(layoutArchetype);
+  const signatureMovesBlock = buildSignatureMovesBlock(signatureMoves);
   const sectionBlueprint = buildSectionBlueprint(mentionedSections, sectionSpecs.details, SECTION_LABELS);
-  let effectDirectiveBlock = '';
-
-  try {
-    effectDirectiveBlock = buildEffectDirectiveBlock(detectedTheme);
-  } catch (error) {
-    promptWarn('[promptEnhancer] Failed to build effect directive block', error);
-  }
+  const effectDirectiveBlock =
+    effectIds.length > 0 ? `\nEFFECTS (apply in UI): ${effectIds.join(', ')}` : '';
 
   const requirements = extractRequirementLines(analysisPrompt).slice(0, 20);
   const requirementsBlock =
@@ -585,7 +816,30 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const imagePrompt = imageSuggestions ? `\n${imageSuggestions}` : '';
   const colorDirectiveBlock = buildColorDirectiveBlock(finalColors);
 
-  const sectionVariantBlock = buildSectionVariantBlock(mentionedSections, lowerPrompt, SECTION_LABELS);
+  const sectionVariantBlock = buildSectionVariantBlock(mentionedSections, lowerPrompt, SECTION_LABELS, designRng);
+  const designCues = buildDesignCues(stylePack, mentionedSections);
+  const designDnaBlock = buildDesignDnaBlock(stylePack, designCues);
+  const componentMemoryEntries = pickComponentMemoryEntries(detectedTheme, mentionedSections, designRng);
+  const componentMemoryBlock = buildComponentMemoryBlock(componentMemoryEntries);
+  const layoutUniquenessHash = buildLayoutUniquenessHash({
+    stylePackId,
+    layoutArchetype,
+    sectionOrder: mentionedSections,
+    sectionVariants: sectionVariantBlock,
+    effectIds,
+    signatureMoves,
+  });
+  const designQualityResult = buildDesignQualityScore({
+    designCues,
+    stylePackId,
+    layoutArchetype,
+    layoutUniquenessHash,
+    signatureMoves,
+    effectIds,
+    sectionOrder: mentionedSections,
+  });
+  const layoutUniquenessLine = `\nLAYOUT UNIQUENESS HASH: ${layoutUniquenessHash}`;
+  const designQualityLine = `\nDESIGN QUALITY SCORE (informational): ${designQualityResult.score}/100`;
   const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, SECTION_LABELS);
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
@@ -593,12 +847,12 @@ export async function enhancePromptWithDesignSystem(userPrompt: string): Promise
   const variationLine = `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
 
   const enhancedPrompt = `${promptWithLayout}
-${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${sectionVariantBlock}${requirementsBlock}${
+${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChecklist}${sectionContract}${sectionOrderLine}${sectionCountLine}${sectionDetailsBlock}${sectionGuardrails}${artDirectionLine}${layoutArchetypeLine}${signatureMovesBlock}${designDnaBlock}${sectionVariantBlock}${requirementsBlock}${
     layoutSuggestions
       ? `
 ${layoutSuggestions}`
       : ''
-  }${effectDirectiveBlock}${componentDirectivesBlock}${templateGuard}${variationLine}
+  }${effectDirectiveBlock}${componentMemoryBlock}${componentDirectivesBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
@@ -678,7 +932,62 @@ ${layoutSuggestions}`
 
     images,
 
+    variantIndex: options?.variantIndex,
+
+    variantSeed: variationSeed,
+
+    stylePackId,
+
+    stylePack,
+
+    designCues,
+
+    designCueCoverage: designQualityResult.coverage,
+
+    designQualityScore: designQualityResult.score,
+
+    designQualityReasons: designQualityResult.reasons,
+
+    layoutArchetype,
+
+    layoutUniquenessHash,
+
+    signatureMoves,
+
+    effectIds,
+
+    componentMemory: componentMemoryEntries,
+
     sectionContract: sectionContractData,
+  };
+}
+
+export async function generateAndRankDesignVariants(
+  userPrompt: string,
+  options?: DesignVariantOptions,
+): Promise<DesignVariantResult> {
+  const requestedCount = options?.variantCount ?? DEFAULT_VARIANT_COUNT;
+  const variantCount = Math.min(Math.max(1, requestedCount), MAX_VARIANT_COUNT);
+  const variantSalt = options?.variantSalt ?? randomSeedString(4);
+  const variants: EnhancedPrompt[] = [];
+
+  for (let i = 0; i < variantCount; i += 1) {
+    const variant = await enhancePromptWithDesignSystem(userPrompt, {
+      variantIndex: i,
+      variantSalt,
+    });
+    variants.push(variant);
+  }
+
+  const ranking = rankDesignVariants(variants);
+  const topVariantIndex = ranking[0]?.variantIndex ?? variants[0]?.variantIndex ?? 0;
+  const selected =
+    variants.find((variant) => (variant.variantIndex ?? 0) === topVariantIndex) ?? variants[0];
+
+  return {
+    selected,
+    variants,
+    ranking,
   };
 }
 

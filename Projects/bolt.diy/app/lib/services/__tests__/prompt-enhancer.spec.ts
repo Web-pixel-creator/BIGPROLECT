@@ -3,7 +3,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { enhancePromptWithDesignSystem, shouldEnhancePrompt } from '../promptEnhancer';
+import {
+  enhancePromptWithDesignSystem,
+  generateAndRankDesignVariants,
+  shouldEnhancePrompt,
+} from '../promptEnhancer';
 import { resetGlobalRng, setGlobalSeed } from '../prompt-data';
 
 const originalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
@@ -40,6 +44,26 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.sectionContract?.order).toEqual(['hero', 'features', 'pricing']);
     expect(result.enhancedPrompt).toContain('SECTION ORDER');
     expect(result.enhancedPrompt).toContain('SECTION COUNT: 3');
+    expect(result.stylePackId.length).toBeGreaterThan(0);
+    expect(result.layoutUniquenessHash.length).toBeGreaterThan(0);
+    expect(result.designQualityScore).toBeGreaterThan(0);
+  });
+
+  it('generates and ranks design variants', async () => {
+    const prompt = 'Landing page for a furniture brand with hero, features, and pricing.';
+
+    const result = await generateAndRankDesignVariants(prompt, {
+      variantCount: 3,
+      variantSalt: 'test-seed',
+    });
+
+    expect(result.variants).toHaveLength(3);
+    expect(result.ranking).toHaveLength(3);
+    expect(result.selected).toBeDefined();
+
+    expect(result.variants.map((variant) => variant.variantIndex)).toEqual([0, 1, 2]);
+    expect(result.selected.variantIndex).toBe(result.ranking[0].variantIndex);
+    expect(result.variants[0].variantSeed?.length).toBeGreaterThan(0);
   });
 
   it('detects food theme from English prompt', async () => {
@@ -47,6 +71,14 @@ describe('Prompt Enhancer Stability', () => {
 
     const result = await enhancePromptWithDesignSystem(prompt);
     expect(result.detectedTheme).toBe('food');
+  });
+
+  it('detects food theme from meal kit prompt and avoids default brand', async () => {
+    const prompt = 'Hero section meal kit unboxing order box CTA footer.';
+
+    const result = await enhancePromptWithDesignSystem(prompt);
+    expect(result.detectedTheme).toBe('food');
+    expect(result.enhancedPrompt).not.toContain('Studio North');
   });
 
   it('recognizes Russian design intent and theme keywords', async () => {
