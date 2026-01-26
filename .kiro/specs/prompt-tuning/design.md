@@ -19,6 +19,12 @@ graph TD
         FS[fewshot-v1]
         FUT[future variants...]
     end
+
+    subgraph "Design Variants"
+        DV[design-variants]
+        DS[design selector]
+        DR[design ranking]
+    end
     
     subgraph "Few-Shot Registry"
         FSR[FewShotPacks]
@@ -38,6 +44,8 @@ graph TD
     FSR --> VCM
     AFL --> TE
     TE --> VS2
+    DS --> DV
+    DR --> DV
 ```
 
 ## Components and Interfaces
@@ -177,6 +185,60 @@ const REPAIR_BOUNDARIES: Record<string, RepairBoundary> = {
 };
 ```
 
+### Design Prompt Variants
+
+```typescript
+type DesignPromptVariant = 'editorial' | 'neo-brutal' | 'aura-glass' | string;
+
+interface DesignVariantConfig {
+  id: DesignPromptVariant;
+  enabled: boolean;
+  weight: number;
+  stylePackId?: string;
+  buildDesignCues: (context: {
+    prompt: string;
+    theme: string;
+    seed: string;
+  }) => {
+    typography: string;
+    layout: string;
+    visualHierarchy: string;
+    motion: string;
+  };
+  description: string;
+}
+
+interface DesignVariantRegistry {
+  variants: Map<DesignPromptVariant, DesignVariantConfig>;
+  defaultVariant: DesignPromptVariant;
+}
+```
+
+### Design Variant Selector
+
+```typescript
+interface DesignVariantSelectorOptions {
+  prompt: string;
+  timestampBucketMs?: number;
+  forceVariant?: DesignPromptVariant;
+}
+
+function selectDesignVariant(options: DesignVariantSelectorOptions): DesignPromptVariant;
+```
+
+### Design Variant Ranking
+
+```typescript
+interface DesignVariantCandidate {
+  variant: DesignPromptVariant;
+  stylePackId: string;
+  designQualityScore: number;
+  layoutUniquenessHash: string;
+}
+
+function pickBestDesignVariant(candidates: DesignVariantCandidate[]): DesignVariantCandidate;
+```
+
 ### Extended Telemetry
 
 ```typescript
@@ -189,6 +251,12 @@ interface PipelineRunEvent {
   // A/B testing
   promptVariant?: PromptVariant;
   repairAttempt?: number; // which attempt (1, 2, 3, fallback)
+
+  // Design experiments
+  designVariantId?: DesignPromptVariant;
+  stylePackId?: string;
+  designQualityScore?: number;
+  layoutUniquenessHash?: string;
 }
 
 /**
@@ -198,6 +266,7 @@ interface QuarantineEvent {
   // ... existing fields ...
   
   promptVariant?: PromptVariant;
+  designVariantId?: DesignPromptVariant;
 }
 
 /**
@@ -212,7 +281,15 @@ interface VariantStats {
   avgRepairLatencyMs: number;
 }
 
+interface DesignVariantStats {
+  variant: DesignPromptVariant;
+  totalRuns: number;
+  avgDesignQualityScore: number;
+  uniquenessRate: number; // ratio of unique layout hashes
+}
+
 function getVariantStats(): VariantStats[];
+function getDesignVariantStats(): DesignVariantStats[];
 ```
 
 ## Data Models
@@ -238,6 +315,40 @@ export const VARIANT_REGISTRY: VariantRegistry = {
       weight: 50,
       builder: buildRepairPromptWithFewShot,
       description: 'Prompt with few-shot examples for top ViolationCodes',
+    }],
+  ]),
+};
+```
+
+### Design Variant Registry Configuration
+
+```typescript
+export const DESIGN_VARIANT_REGISTRY: DesignVariantRegistry = {
+  defaultVariant: 'editorial',
+  variants: new Map([
+    ['editorial', {
+      id: 'editorial',
+      enabled: true,
+      weight: 40,
+      stylePackId: 'editorial-serif',
+      buildDesignCues: buildEditorialCues,
+      description: 'Editorial typography, balanced grid, refined whitespace',
+    }],
+    ['neo-brutal', {
+      id: 'neo-brutal',
+      enabled: true,
+      weight: 30,
+      stylePackId: 'neo-brutal-bold',
+      buildDesignCues: buildNeoBrutalCues,
+      description: 'Bold typography, heavy borders, playful asymmetry',
+    }],
+    ['aura-glass', {
+      id: 'aura-glass',
+      enabled: true,
+      weight: 30,
+      stylePackId: 'aura-glass',
+      buildDesignCues: buildAuraGlassCues,
+      description: 'Glassmorphism, luminous effects, soft gradients',
     }],
   ]),
 };
@@ -301,6 +412,18 @@ export const FEW_SHOT_EXAMPLES: FewShotExample[] = [
 
 **Validates: Requirements 5.1, 5.2**
 
+### Property 5: Design variant determinism
+
+*For any* given (prompt, timestamp_bucket) pair, the Design_Variant_Selector SHALL always return the same design variant.
+
+**Validates: Requirements 8.1, 8.2**
+
+### Property 6: Design variant ranking
+
+*For any* set of design variant candidates, pickBestDesignVariant SHALL return the candidate with the highest designQualityScore, preferring unique layout hashes on ties.
+
+**Validates: Requirements 9.1, 9.2**
+
 ## Error Handling
 
 ### Variant Not Found
@@ -326,14 +449,19 @@ export const FEW_SHOT_EXAMPLES: FewShotExample[] = [
 - Few-shot example filtering
 - Boundary instruction generation
 - Telemetry field population
+- Design variant selector determinism
+- Design variant ranking
 
 ### Property Tests
 
 - Deterministic selection across many inputs
 - Few-shot relevance filtering
 - Boundary enforcement for all risk levels
+- Design variant selector determinism
+- Design variant ranking
 
 ### Integration Tests
 
 - End-to-end A/B flow with telemetry
 - Variant stats aggregation accuracy
+- Design variants recorded in telemetry

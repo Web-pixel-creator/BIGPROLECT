@@ -11,6 +11,9 @@ This specification defines a telemetry system for the Production-Grade Quality P
 - **ViolationCode**: Structured error code (e.g., SYNTAX_UNCLOSED_TAG, CONTRACT_HERO_MISSING_H1)
 - **Telemetry_Store**: In-memory storage for aggregated metrics with optional persistence
 - **Privacy_Filter**: Component that strips sensitive data before logging
+- **Design_Quality_Score**: Heuristic score (0-100) indicating expected visual quality
+- **Layout_Uniqueness_Hash**: Hash of layout structure for uniqueness tracking
+- **Design_Quality_Event**: Telemetry event for design-quality metrics (no prompts/code)
 
 ## Requirements
 
@@ -81,4 +84,15 @@ This specification defines a telemetry system for the Production-Grade Quality P
 2. WHEN ActionRunner quarantines a file THEN it SHALL call emitQuarantineWritten automatically
 3. THE integration SHALL NOT change existing function signatures or return types
 4. THE integration SHALL have minimal performance impact (< 1ms overhead)
+
+### Requirement 7: Design Quality Telemetry
+
+**User Story:** As a product owner, I want design-quality metrics collected, so that I can track WOW-quality improvements over time.
+
+#### Acceptance Criteria
+
+1. WHEN a prompt is enhanced THEN the Telemetry_Service SHALL emit a design_quality event
+2. WHEN design_quality event is emitted THEN it SHALL include designQualityScore, stylePackId, designCuesCoverage, and layoutUniquenessHash
+3. THE Telemetry_Service SHALL aggregate average designQualityScore and uniqueness rate
+4. THE Telemetry_Service SHALL expose getDesignQualityStats() returning aggregated design metrics
 

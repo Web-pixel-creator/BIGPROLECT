@@ -89,6 +89,23 @@ interface QuarantineEvent {
   riskLevel: 'low' | 'medium' | 'high';
   autoFixAttempts: number;
 }
+
+/**
+ * Event emitted after prompt enhancement for design quality.
+ */
+interface DesignQualityEvent {
+  timestamp: string;
+  theme?: string;
+  stylePackId: string;
+  designQualityScore: number;
+  designCuesCoverage: {
+    typography: boolean;
+    layout: boolean;
+    visualHierarchy: boolean;
+    motion: boolean;
+  };
+  layoutUniquenessHash: string;
+}
 ```
 
 ### Telemetry Store
@@ -104,6 +121,12 @@ interface TelemetryStore {
   failureCount: number;
   quarantineCount: number;
   fallbackUsedCount: number;
+
+  // Design quality tracking
+  designQualityRuns: number;
+  designQualityTotal: number;
+  designStylePackCounts: Map<string, number>;
+  layoutUniquenessHashes: Set<string>;
   
   // ViolationCode tracking
   violationFrequency: Map<string, number>;
@@ -123,6 +146,7 @@ interface TelemetryStore {
   
   // Recent events (ring buffer, last N)
   recentEvents: PipelineRunEvent[];
+  recentDesignEvents: DesignQualityEvent[];
 }
 ```
 
@@ -147,6 +171,24 @@ interface TelemetrySummary {
     total: number;
   };
   autoFixSuccessRate: number;
+}
+
+/**
+ * Get aggregated design quality summary.
+ */
+function getDesignQualityStats(): DesignQualityStats;
+
+interface DesignQualityStats {
+  totalRuns: number;
+  avgDesignQualityScore: number;
+  uniquenessRate: number; // unique layout hashes / total runs
+  topStylePacks: { id: string; count: number }[];
+  designCuesCoverageRate: {
+    typography: number;
+    layout: number;
+    visualHierarchy: number;
+    motion: number;
+  };
 }
 
 /**
@@ -200,6 +242,10 @@ const ALLOWED_FIELDS = [
   'timings',        // ms values
   'riskLevel',      // low/medium/high
   'attempts',       // numeric
+  'stylePackId',
+  'designQualityScore',
+  'designCuesCoverage',
+  'layoutUniquenessHash',
 ];
 
 /**
@@ -242,6 +288,12 @@ const FORBIDDEN_FIELDS = [
 *For any* ViolationCode that appears in pipeline runs, getTopViolations() SHALL return accurate frequency counts matching the sum of occurrences across all events.
 
 **Validates: Requirements 4.2, 4.3**
+
+### Property 5: Design quality aggregation
+
+*For any* design_quality events emitted, getDesignQualityStats() SHALL report totalRuns equal to the number of events, and avgDesignQualityScore equal to total score / runs.
+
+**Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
 ## Error Handling
 

@@ -101,6 +101,31 @@ Implement a prompt tuning system with A/B testing, few-shot examples, and risk-b
   - Prompt tuning tests: 58 passed (fewShotExamples + autoFixLoop + promptVariants)
   - Telemetry captures promptVariant correctly
 
+- [ ] 9. Add design prompt variant system
+  - [ ] 9.1 Create `Projects/bolt.diy/app/utils/designVariants.ts`
+    - Define DesignPromptVariant type and DesignVariantConfig
+    - Create DESIGN_VARIANT_REGISTRY with 3+ variants
+    - _Requirements: 7.1, 7.2, 7.3_
+  - [ ] 9.2 Implement selectDesignVariant()
+    - Deterministic hash selection with timestamp bucketing
+    - Support forceVariant override
+    - _Requirements: 8.1, 8.2_
+  - [ ] 9.3 Implement pickBestDesignVariant()
+    - Select highest designQualityScore, prefer unique layout hash on ties
+    - _Requirements: 9.1, 9.2_
+
+- [ ] 10. Integrate design variants + telemetry
+  - [ ] 10.1 Pass designVariantId/stylePackId/layoutUniquenessHash into telemetry events
+  - [ ] 10.2 Record design variant stats via getDesignVariantStats()
+  - [ ] 10.3 Add frontend-only guardrail to design prompts
+  - _Requirements: 8.3, 9.3_
+
+- [ ] 11. Design variant tests
+  - [ ] 11.1 Unit tests for selectDesignVariant() determinism
+  - [ ] 11.2 Unit tests for pickBestDesignVariant() ranking
+  - [ ] 11.3 Integration test: design variants recorded in telemetry
+  - _Requirements: 8.1, 9.1, 9.2_
+
 ## Notes
 
 - Start with 50/50 split between baseline and fewshot-v1

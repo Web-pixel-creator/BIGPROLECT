@@ -15,6 +15,8 @@ This specification defines E2E (end-to-end) integration tests for the Production
 - **LlmRepairFn**: Function type that receives a prompt string and returns raw LLM response
 - **Quarantine**: Failed code storage with sidecar metadata files for debugging
 - **UnifiedViolation**: Structured error format with code, severity, message, autoFixable flag
+- **Design_Cues**: Design directives (typography, layout, visualHierarchy, motion) emitted by prompt enhancer
+- **Layout_Uniqueness_Hash**: Hash of layout structure used to validate variant uniqueness
 
 ## Requirements
 
@@ -107,3 +109,22 @@ This specification defines E2E (end-to-end) integration tests for the Production
 2. WHEN mock returns code in markdown block THEN the Auto_Fix_Loop SHALL extract the code correctly
 3. WHEN mock returns plain code THEN the Auto_Fix_Loop SHALL use it directly
 4. WHEN mock throws error THEN the Router SHALL handle it gracefully and try next attempt
+
+### Requirement 9: Prompt-to-Design Integrity
+
+**User Story:** As a product owner, I want design cues preserved across the pipeline, so that enhanced prompts result in WOW-quality output.
+
+#### Acceptance Criteria
+
+1. WHEN a prompt includes explicit sections THEN the enhanced prompt SHALL include matching section order and section contract
+2. WHEN enhanced prompt includes Design_Cues THEN the downstream pipeline SHALL preserve these directives in the generation request
+3. WHEN Design_Cues are missing THEN the test SHALL fail with a descriptive message
+
+### Requirement 10: Layout Uniqueness Across Variants
+
+**User Story:** As a product owner, I want multiple variants to have distinct layouts, so that outputs avoid template repetition.
+
+#### Acceptance Criteria
+
+1. WHEN generating 3 variants for the same prompt THEN at least 2 distinct Layout_Uniqueness_Hash values SHALL be recorded
+2. WHEN Layout_Uniqueness_Hash values are identical THEN the system SHALL retry with a new seed (up to 2 retries)

@@ -12,9 +12,15 @@
 - **Encoding_Fix**: \u0412\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u043e\u0439 UTF-8 \u043a\u043e\u0434\u0438\u0440\u043e\u0432\u043a\u0438 \u0440\u0443\u0441\u0441\u043a\u0438\u0445 \u0441\u0442\u0440\u043e\u043a
 - **Data_Split**: \u0420\u0430\u0437\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u0434\u0430\u043d\u043d\u044b\u0445 (\u0441\u043b\u043e\u0432\u0430\u0440\u0435\u0439) \u0438 \u043b\u043e\u0433\u0438\u043a\u0438 (\u0444\u0443\u043d\u043a\u0446\u0438\u0439) \u043d\u0430 \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u044b\u0435 \u043c\u043e\u0434\u0443\u043b\u0438
 - **Circular_Dependency**: \u0426\u0438\u043a\u043b\u0438\u0447\u0435\u0441\u043a\u0430\u044f \u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e\u0441\u0442\u044c \u043c\u0435\u0436\u0434\u0443 \u043c\u043e\u0434\u0443\u043b\u044f\u043c\u0438
-- **Structural_Invariants**: \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c\u044b\u0435 \u0441\u0432\u043e\u0439\u0441\u0442\u0432\u0430 \u0432\u044b\u0432\u043e\u0434\u0430: theme, sectionsCount, hasRequiredKeys (palette, images)
+- **Structural_Invariants**: \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c\u044b\u0435 \u0441\u0432\u043e\u0439\u0441\u0442\u0432\u0430 \u0432\u044b\u0432\u043e\u0434\u0430: theme, sectionsCount, hasRequiredKeys (palette, images), designCues
 - **Cold_Import_Time**: \u0412\u0440\u0435\u043c\u044f \u043f\u0435\u0440\u0432\u043e\u0433\u043e \u0438\u043c\u043f\u043e\u0440\u0442\u0430 \u043c\u043e\u0434\u0443\u043b\u044f (median \u0438\u0437 5 \u043f\u0440\u043e\u0433\u043e\u043d\u043e\u0432)
 - **Bundle_Size**: \u0420\u0430\u0437\u043c\u0435\u0440 \u0444\u0430\u0439\u043b\u0430 promptEnhancer.ts \u0432 \u0431\u0430\u0439\u0442\u0430\u0445
+- **Design_Cues**: \u0414\u0438\u0440\u0435\u043a\u0442\u0438\u0432\u044b \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u0430 \u0434\u0438\u0437\u0430\u0439\u043d\u0430 (typography, layout, visualHierarchy, motion)
+- **Style_Pack**: \u041d\u0430\u0431\u043e\u0440 Design DNA (font pairing, type scale, grid style, spacing scale, shape language, effects, motion notes)
+- **Layout_Uniqueness_Hash**: \u0425\u044d\u0448 \u0441\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u044b layout (sections order + grid/archetype + key layout choices)
+- **Design_Quality_Score**: \u042d\u0432\u0440\u0438\u0441\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0441\u043a\u043e\u0440 0-100 \u0434\u043b\u044f \u043e\u0446\u0435\u043d\u043a\u0438 \u0432\u0438\u0437\u0443\u0430\u043b\u044c\u043d\u043e\u0433\u043e \u043a\u0430\u0447\u0435\u0441\u0442\u0432\u0430
+- **Variant_Seed**: \u0421\u0438\u0434 \u0434\u043b\u044f \u0434\u0435\u0442\u0435\u0440\u043c\u0438\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u043e\u0439 \u0432\u0430\u0440\u0438\u0430\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u0438 \u043a\u043e\u043c\u043f\u043e\u0437\u0438\u0446\u0438\u0439
+- **Component_Memory**: \u041a\u0443\u0440\u0438\u0440\u0443\u0435\u043c\u044b\u0439 \u043a\u0430\u0442\u0430\u043b\u043e\u0433 \u0441\u0438\u043b\u044c\u043d\u044b\u0445 UI-\u0441\u0435\u043a\u0446\u0438\u0439 \u0434\u043b\u044f \u043f\u0435\u0440\u0435\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f
 
 ## Requirements
 
@@ -94,3 +100,45 @@
 2. THE Documentation SHALL describe structure of each data file
 3. THE Documentation SHALL specify encoding rules (UTF-8, no BOM, \\uXXXX for special chars)
 4. THE Documentation SHALL explain how to add new themes/colors with RU/EN synchronization
+
+### Requirement 7: Design DNA enrichment
+
+**User Story:** As a product owner, I want enhanced prompts to include explicit design cues, so that generated UIs are visually intentional and non-template.
+
+#### Acceptance Criteria
+
+1. WHEN enhancePrompt returns, THE Prompt_Enhancer SHALL include designCues (typography, layout, visualHierarchy, motion)
+2. WHEN enhancePrompt returns, THE Prompt_Enhancer SHALL include stylePackId and stylePack details (fontPairing, typeScale, gridStyle, spacingScale, shapeLanguage, effects, motionNotes)
+3. WHEN a style pack cannot be selected, THEN THE Prompt_Enhancer SHALL fall back to a default style pack
+4. WHEN baseline is captured, THE Baseline_System SHALL record designCues coverage and stylePackId per run
+
+### Requirement 8: Layout uniqueness and variant seeds
+
+**User Story:** As a product owner, I want multiple prompt variants with distinct layouts, so that outputs avoid template repetition.
+
+#### Acceptance Criteria
+
+1. WHEN a variantSeed is provided, THE Prompt_Enhancer SHALL use it to deterministically drive layout and section variant selection
+2. WHEN a layout strategy is generated, THE Prompt_Enhancer SHALL compute layoutUniquenessHash based on section order, layout archetype, and key layout choices
+3. WHEN generating N variants (N \u2265 3), THE Prompt_Enhancer SHALL produce at least 3 unique layoutUniquenessHash values OR retry with a new seed up to 3 times
+4. WHEN baseline:compare runs, THE Validation_System SHALL report layoutUniquenessHash drift as a WARNING (not ERROR)
+
+### Requirement 9: Design quality scoring
+
+**User Story:** As a product owner, I want a quality score for design output, so that I can tune prompt variants and detect quality regression.
+
+#### Acceptance Criteria
+
+1. WHEN enhancePrompt returns, THE Prompt_Enhancer SHALL include designQualityScore (0-100) and designQualityReasons
+2. THE designQualityScore SHALL be derived from designCues coverage, hierarchy clarity, and layout diversity heuristics
+3. WHEN baseline:compare runs, THE Validation_System SHALL warn if designQualityScore drops by >15% or falls below 60
+
+### Requirement 10: Component memory directives
+
+**User Story:** As a product owner, I want the enhancer to reuse strong UI blocks safely, so that outputs are high quality but still varied.
+
+#### Acceptance Criteria
+
+1. WHEN Component_Memory has matches for detected theme or section, THE Prompt_Enhancer SHALL include up to 3 component directives
+2. THE component selection SHALL be deterministic for a given seed
+3. THE Prompt_Enhancer SHALL exclude components flagged unsafe or with forbidden imports

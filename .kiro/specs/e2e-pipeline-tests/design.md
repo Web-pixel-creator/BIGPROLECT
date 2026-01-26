@@ -116,6 +116,7 @@ const UNFIXABLE_CODE = {
 5. **Failure Tests** - Unfixable code fails gracefully
 6. **Contract Tests** - Section-specific validation
 7. **Statistics Tests** - Pipeline metrics recording
+8. **Design Quality Tests** - Design cues preservation and layout uniqueness
 
 ## Data Models
 
@@ -159,6 +160,14 @@ function assertPipelineFailure(result: PipelineResult, expected: {
   hasUnifiedViolations?: boolean;
   hasWarnings?: boolean;
 }): void;
+
+/**
+ * Assert design cues and layout uniqueness for enhanced prompts.
+ */
+function assertDesignQuality(result: PipelineResult, expected: {
+  hasDesignCues?: boolean;
+  layoutUniquenessHash?: string;
+}): void;
 ```
 
 ## Correctness Properties
@@ -194,6 +203,18 @@ function assertPipelineFailure(result: PipelineResult, expected: {
 *For any* LLM repair attempt, the repaired code SHALL be validated before being accepted. If validation fails, another attempt SHALL be made (up to MAX_FIX_ATTEMPTS).
 
 **Validates: Requirements 3.2**
+
+### Property 6: Design cues preserved
+
+*For any* enhanced prompt with Design_Cues, the pipeline request SHALL preserve the cues and record them in test metadata.
+
+**Validates: Requirements 9.1, 9.2**
+
+### Property 7: Layout uniqueness across variants
+
+*For any* set of 3 variants, at least two unique Layout_Uniqueness_Hash values SHALL be observed, or a retry SHALL occur.
+
+**Validates: Requirements 10.1, 10.2**
 
 ## Error Handling
 

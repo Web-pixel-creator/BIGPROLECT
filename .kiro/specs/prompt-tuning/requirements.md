@@ -11,6 +11,10 @@ This specification defines a prompt tuning system for the quality pipeline's aut
 - **Repair_Boundary**: Constraints on how aggressively LLM can modify code based on risk level
 - **Variant_Selector**: Component that deterministically assigns runs to prompt variants
 - **Telemetry_Tag**: Field in telemetry events that identifies which variant was used
+- **Design_Prompt_Variant**: Identifier for a design guidance variant used by the prompt enhancer
+- **Design_Variant_Selector**: Deterministic selector for design variants based on prompt hash and seed
+- **Design_Quality_Score**: Heuristic score (0-100) indicating expected visual quality
+- **Layout_Uniqueness_Hash**: Hash representing layout structure for uniqueness checks
 
 ## Requirements
 
@@ -79,3 +83,34 @@ This specification defines a prompt tuning system for the quality pipeline's aut
 2. WHEN adding a new variant THEN only the config module SHALL need modification
 3. THE config SHALL support enabling/disabling variants without removing them
 4. THE config SHALL support setting variant weights for non-50/50 splits
+
+### Requirement 7: Design Prompt Variant System
+
+**User Story:** As a product owner, I want multiple design prompt variants, so that I can A/B test style guidance for WOW-quality UI.
+
+#### Acceptance Criteria
+
+1. THE Design_Prompt_Variant registry SHALL support registering named design variants
+2. WHEN a design variant is registered THEN it SHALL include id, stylePackId (or selection strategy), and design cue builder
+3. THE system SHALL support at least three design variants (e.g., editorial, neo-brutal, aura/glass)
+4. WHEN a design variant is not found THEN the system SHALL fall back to the default design variant
+
+### Requirement 8: Deterministic Design Variant Selection + Telemetry
+
+**User Story:** As a product owner, I want deterministic design variant selection and telemetry tracking, so that experiments are reproducible.
+
+#### Acceptance Criteria
+
+1. WHEN selecting a design variant THEN the Design_Variant_Selector SHALL use a deterministic hash of (prompt + timestamp_bucket)
+2. WHEN the same inputs are provided THEN the Design_Variant_Selector SHALL return the same variant
+3. WHEN a design-enhanced prompt is generated THEN telemetry SHALL record designVariantId, stylePackId, and layoutUniquenessHash
+
+### Requirement 9: Design Variant Ranking + Guardrails
+
+**User Story:** As a product owner, I want to rank design variants and enforce UI-only guardrails, so that the best design is selected safely.
+
+#### Acceptance Criteria
+
+1. WHEN multiple design variants are generated THEN the system SHALL select the variant with the highest designQualityScore
+2. IF all variants score below threshold (default: 60) THEN the system SHALL regenerate with a new seed up to 2 times
+3. WHEN building design prompts THEN the system SHALL include a frontend-only guardrail (no backend/API/database changes)

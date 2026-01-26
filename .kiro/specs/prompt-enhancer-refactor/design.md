@@ -41,8 +41,14 @@ graph TB
         CM[color-mappings.ts]
         TP[theme-palettes.ts]
         IQ[image-queries.ts]
+        SP[style-packs.ts]
+        DQ[design-quality.ts]
+        CMEM[component-memory.ts]
         
         PE2 --> PD
+        PE2 --> SP
+        PE2 --> DQ
+        PE2 --> CMEM
         PD --> TK
         PD --> CM
         PD --> TP
@@ -85,6 +91,15 @@ interface BaselineResult {
     palette: boolean;
     images: boolean;
   };
+  hasDesignCues: {
+    typography: boolean;
+    layout: boolean;
+    visualHierarchy: boolean;
+    motion: boolean;
+  };
+  stylePackId: string;
+  layoutUniquenessHash: string;
+  designQualityScore: number;
   durationMs: number;
 }
 
@@ -158,6 +173,8 @@ interface ComparisonReport {
 // - blockFlags changed
 // - colors changed
 // - imageCounts changed
+// - designQualityScore drop >15% or below 60
+// - layoutUniquenessHash drift
 // - cold import time +15% OR +50ms absolute (whichever is larger)
 // - bundle size +5%
 // - output length drift >30% (handle baseline=0: skip comparison if baseline=0)
@@ -184,6 +201,17 @@ export const THEME_PALETTES: Record<string, ThemePalette>;
 
 // prompt-data/image-queries.ts
 export const THEME_IMAGE_QUERIES: Record<string, ImageQuerySet>;
+```
+
+```typescript
+// prompt-data/style-packs.ts
+export const STYLE_PACKS: StylePack[];
+
+// prompt-data/design-quality.ts
+export function scoreDesignQuality(signals: DesignQualitySignals): number;
+
+// prompt-data/component-memory.ts
+export const COMPONENT_MEMORY: ComponentMemoryEntry[];
 ```
 
 ### 3. Validation Tools
@@ -269,14 +297,79 @@ interface StructuralInvariants {
   hasRequiredKeys: {
     palette: boolean;            // \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 palette object
     images: boolean;             // \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 images object
+    designCues: boolean;          // \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u0442 designCues object
+  };
+  hasDesignCues: {
+    typography: boolean;
+    layout: boolean;
+    visualHierarchy: boolean;
+    motion: boolean;
   };
   sectionsCount: number;         // \u043a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e \u0441\u0435\u043a\u0446\u0438\u0439 \u0432 \u0432\u044b\u0432\u043e\u0434\u0435
   outputLengthDelta: number;     // \u0440\u0430\u0437\u043d\u0438\u0446\u0430 \u0432 \u0434\u043b\u0438\u043d\u0435 \u0432\u044b\u0432\u043e\u0434\u0430 (%)
+  stylePackId?: string;
+  layoutUniquenessHash?: string;
+  designQualityScore?: number;
 }
 
 // Required keys \u0432 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0435 enhancePrompt
-const REQUIRED_RESULT_KEYS = ['theme', 'palette', 'images', 'brandName'] as const;
+const REQUIRED_RESULT_KEYS = ['theme', 'palette', 'images', 'brandName', 'designCues', 'stylePackId', 'layoutUniquenessHash', 'designQualityScore'] as const;
 ```
+
+### Design Quality Enrichment
+
+```typescript
+interface DesignCues {
+  typography: string;        // e.g., "editorial serif scale with bold display"
+  layout: string;            // grid, spacing, composition notes
+  visualHierarchy: string;   // primary focus, CTA emphasis, contrast hints
+  motion: string;            // subtle motion/hover guidance
+}
+
+interface StylePack {
+  id: string;
+  fontPairing: string;
+  typeScale: string;
+  gridStyle: string;
+  spacingScale: string;
+  shapeLanguage: string;
+  effects: string[];
+  motionNotes: string[];
+}
+
+interface DesignQualitySignals {
+  designCues: DesignCues;
+  stylePackId: string;
+  layoutUniquenessHash: string;
+  designQualityScore: number;
+  designQualityReasons: string[];
+}
+```
+
+**Notes:**
+- DesignCues are injected into the enhanced prompt as explicit directives.
+- StylePack is selected deterministically using a variant seed and theme.
+- layoutUniquenessHash is derived from section order, layout archetype, and key layout choices.
+- designQualityScore is a heuristic score derived from cue coverage and layout diversity.
+
+### Component Memory Directives
+
+```typescript
+interface ComponentMemoryEntry {
+  id: string;
+  section: string;
+  themes: string[];
+  snippet: string; // short directive or identifier
+  unsafe?: boolean;
+  forbiddenImports?: string[];
+}
+
+function pickComponentDirectives(entries: ComponentMemoryEntry[], seed: string): string[];
+```
+
+**Notes:**
+- Component memory directives are additive; they never override safety rules.
+- Selection is deterministic for a given seed and theme.
 
 ### ThemePalette
 ```typescript
@@ -339,19 +432,27 @@ interface ComparisonReport {
 ### Property 7: Baseline comparison accuracy
 *For any* two baseline runs, the structural comparison SHALL:
 - Report ERRORS for: theme mismatch, missing required keys (palette, images), sectionsCount drift >50%
-- Report WARNINGS for: sectionOrder changes, colors changes, imageCounts changes, output length drift >30%
+- Report WARNINGS for: sectionOrder changes, colors changes, imageCounts changes, output length drift >30%, designQualityScore drop >15% or below 60, layoutUniquenessHash drift
 - Correctly classify identical runs as passing with no errors
 **Validates: Requirements 1.5, 1.6, 4.1, 4.2**
 
-### Property 8: Performance regression detection
+### Property 8: Design cues presence
+*For any* enhancePrompt output, the result SHALL include designCues (typography, layout, visualHierarchy, motion) and stylePackId.
+**Validates: Requirements 7.1, 7.2**
+
+### Property 9: Layout uniqueness hash generation
+*For any* enhanced prompt with layout strategy, the result SHALL include layoutUniquenessHash and a non-null designQualityScore.
+**Validates: Requirements 8.2, 9.1**
+
+### Property 10: Performance regression detection
 *For any* baseline comparison where cold import time exceeds baseline +15% (or +50ms absolute) OR bundle size exceeds baseline +5%, the Validation_System SHALL produce a warning in the comparison report.
 **Validates: Requirements 4.3, 4.6**
 
-### Property 9: EN/RU keyword parity
+### Property 11: EN/RU keyword parity
 *For any* theme in THEME_KEYWORDS, there SHALL exist a corresponding entry in THEME_KEYWORDS_RU with at least one keyword. Conversely, every theme in THEME_KEYWORDS_RU SHALL exist in THEME_KEYWORDS.
 **Validates: Requirements 5.3**
 
-### Property 10: Deterministic RNG
+### Property 12: Deterministic RNG
 *For any* two runs of pickRandom with the same seed value, the function SHALL return identical results. *For any* sequence of N calls with the same seed, the sequence of results SHALL be identical.
 **Validates: Requirements 5.5**
 
@@ -391,7 +492,9 @@ Projects/bolt.diy/app/lib/services/__tests__/
 - Property 2: Russian theme detection across generated prompts
 - Property 3: Encoding validation across all data files
 - Property 9: EN/RU parity check
-- Property 10: RNG determinism with seed
+- Property 8: Design cues presence
+- Property 9: Layout uniqueness hash generation
+- Property 12: RNG determinism with seed
 
 ### Integration Tests
 - Full baseline \u2192 refactor \u2192 compare cycle
