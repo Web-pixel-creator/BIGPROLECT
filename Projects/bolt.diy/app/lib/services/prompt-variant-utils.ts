@@ -27,16 +27,16 @@ const recentSectionVariants = new Map<string, string>();
 /**
  * Pick effect IDs for a theme
  */
-export function pickEffectIds(theme: string, count: number): string[] {
+export function pickEffectIds(theme: string, count: number, rng?: () => number): string[] {
   const list = THEME_EFFECT_IDS[theme] ?? THEME_EFFECT_IDS.default;
-  return pickRandomUnique(list, count);
+  return pickRandomUnique(list, count, rng);
 }
 
 /**
  * Build effect directive block for enhanced prompt
  */
-export function buildEffectDirectiveBlock(theme: string): string {
-  const picks = pickEffectIds(theme, 2);
+export function buildEffectDirectiveBlock(theme: string, rng?: () => number): string {
+  const picks = pickEffectIds(theme, 2, rng);
   if (picks.length === 0) {
     return '';
   }
@@ -66,14 +66,14 @@ export function rememberRecentComponent(name: string) {
 /**
  * Pick a non-repeating variant for a section
  */
-export function pickNonRepeatingVariant(section: string, options: string[]): string {
+export function pickNonRepeatingVariant(section: string, options: string[], rng?: () => number): string {
   if (!options || options.length === 0) {
     return '';
   }
 
   const last = recentSectionVariants.get(section);
   const filtered = last ? options.filter((option) => option !== last) : options;
-  const choice = pickRandomUnique(filtered.length > 0 ? filtered : options, 1)[0] ?? options[0];
+  const choice = pickRandomUnique(filtered.length > 0 ? filtered : options, 1, rng)[0] ?? options[0];
 
   if (choice) {
     recentSectionVariants.set(section, choice);
@@ -118,6 +118,7 @@ export function buildSectionVariantBlock(
   mentionedSections: string[],
   lowerPrompt: string,
   sectionLabels: Record<string, string>,
+  rng?: () => number,
 ): string {
   if (mentionedSections.length === 0) {
     return '';
@@ -130,7 +131,7 @@ export function buildSectionVariantBlock(
         return '';
       }
 
-      const pick = pickNonRepeatingVariant(section, options);
+      const pick = pickNonRepeatingVariant(section, options, rng);
       if (!pick) {
         return '';
       }

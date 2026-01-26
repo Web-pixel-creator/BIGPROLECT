@@ -74,6 +74,7 @@ import {
 } from './prompt-section-utils';
 import { buildSectionVariantBlock, pickEffectIds } from './prompt-variant-utils';
 import { buildComponentDirectives, SAFE_COMPONENT_REGISTRY } from './prompt-component-utils';
+import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 import {
   limitList,
@@ -980,9 +981,42 @@ export async function generateAndRankDesignVariants(
   }
 
   const ranking = rankDesignVariants(variants);
+  const rankingByIndex = new Map(ranking.map((entry) => [entry.variantIndex, entry]));
+  const layoutHashCounts = variants.reduce<Record<string, number>>((acc, variant) => {
+    const key = variant.layoutUniquenessHash || 'unknown';
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
   const topVariantIndex = ranking[0]?.variantIndex ?? variants[0]?.variantIndex ?? 0;
   const selected =
     variants.find((variant) => (variant.variantIndex ?? 0) === topVariantIndex) ?? variants[0];
+
+  try {
+    for (const [index, variant] of variants.entries()) {
+      const variantIndex = variant.variantIndex ?? index;
+      const rankingEntry = rankingByIndex.get(variantIndex);
+      const duplicateLayout = layoutHashCounts[variant.layoutUniquenessHash] > 1;
+      const sectionCount = variant.sectionContract?.order?.length ?? 0;
+
+      emitDesignQualityEvent({
+        variantIndex,
+        variantCount: variants.length,
+        selected: variantIndex === topVariantIndex,
+        designQualityScore: variant.designQualityScore ?? 0,
+        rankingScore: rankingEntry?.score ?? variant.designQualityScore ?? 0,
+        designCueCoverage: variant.designCueCoverage,
+        stylePackId: variant.stylePackId,
+        layoutArchetype: variant.layoutArchetype,
+        duplicateLayout,
+        signatureMoveCount: variant.signatureMoves?.length ?? 0,
+        effectCount: variant.effectIds?.length ?? 0,
+        componentMemoryCount: variant.componentMemory?.length ?? 0,
+        sectionCount,
+      });
+    }
+  } catch (error) {
+    promptWarn('[promptEnhancer] Failed to emit design telemetry', error);
+  }
 
   return {
     selected,

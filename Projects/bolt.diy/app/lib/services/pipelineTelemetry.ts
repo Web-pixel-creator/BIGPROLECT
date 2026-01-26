@@ -9,6 +9,7 @@ import type { PipelineResult } from './generationRouter';
 import type { UnifiedViolation } from './sectionContracts';
 import type { SanitizerWarning, ChangeMetrics } from '~/utils/codeSanitizer';
 import type { PromptVariant } from '~/utils/promptVariants';
+import type { DesignCueCoverage } from './prompt-data';
 
 /*
  * ============================================================================
@@ -69,6 +70,26 @@ export interface QuarantineEvent {
   autoFixAttempts: number;
 }
 
+/**
+ * Event emitted after each design-variant evaluation.
+ */
+export interface DesignQualityEvent {
+  timestamp: string;
+  variantIndex: number;
+  variantCount: number;
+  selected: boolean;
+  designQualityScore: number;
+  rankingScore: number;
+  designCueCoverage: DesignCueCoverage;
+  stylePackId: string;
+  layoutArchetype: string;
+  duplicateLayout: boolean;
+  signatureMoveCount: number;
+  effectCount: number;
+  componentMemoryCount: number;
+  sectionCount: number;
+}
+
 /*
  * ============================================================================
  * Telemetry Store
@@ -113,9 +134,49 @@ interface TelemetryStore {
 
   // Recent events (ring buffer, last 100)
   recentEvents: PipelineRunEvent[];
+
+  // Design quality telemetry
+  designQuality: {
+    totalVariants: number;
+    selectedVariants: number;
+    totalDesignQualityScore: number;
+    minDesignQualityScore: number;
+    maxDesignQualityScore: number;
+    totalRankingScore: number;
+    minRankingScore: number;
+    maxRankingScore: number;
+    totalSelectedScore: number;
+    minSelectedScore: number;
+    maxSelectedScore: number;
+    coverageCounts: DesignCueCoverageCounts;
+    stylePackCounts: Map<string, number>;
+    layoutArchetypeCounts: Map<string, number>;
+    duplicateLayoutCount: number;
+    totalSignatureMoves: number;
+    totalEffects: number;
+    totalComponentMemory: number;
+    totalSectionCount: number;
+    totalVariantCount: number;
+    recentDesignEvents: DesignQualityEvent[];
+  };
 }
 
 const RECENT_EVENTS_LIMIT = 100;
+const RECENT_DESIGN_EVENTS_LIMIT = 100;
+
+type DesignCueCoverageCounts = {
+  typography: number;
+  layout: number;
+  visualHierarchy: number;
+  motion: number;
+};
+
+type DesignCueCoverageRate = {
+  typography: number;
+  layout: number;
+  visualHierarchy: number;
+  motion: number;
+};
 
 let store: TelemetryStore = createEmptyStore();
 
@@ -138,6 +199,38 @@ function createEmptyStore(): TelemetryStore {
       total: 0,
     },
     recentEvents: [],
+    designQuality: {
+      totalVariants: 0,
+      selectedVariants: 0,
+      totalDesignQualityScore: 0,
+      minDesignQualityScore: Number.POSITIVE_INFINITY,
+      maxDesignQualityScore: 0,
+      totalRankingScore: 0,
+      minRankingScore: Number.POSITIVE_INFINITY,
+      maxRankingScore: 0,
+      totalSelectedScore: 0,
+      minSelectedScore: Number.POSITIVE_INFINITY,
+      maxSelectedScore: 0,
+      coverageCounts: createEmptyCoverageCounts(),
+      stylePackCounts: new Map(),
+      layoutArchetypeCounts: new Map(),
+      duplicateLayoutCount: 0,
+      totalSignatureMoves: 0,
+      totalEffects: 0,
+      totalComponentMemory: 0,
+      totalSectionCount: 0,
+      totalVariantCount: 0,
+      recentDesignEvents: [],
+    },
+  };
+}
+
+function createEmptyCoverageCounts(): DesignCueCoverageCounts {
+  return {
+    typography: 0,
+    layout: 0,
+    visualHierarchy: 0,
+    motion: 0,
   };
 }
 
@@ -253,6 +346,20 @@ export function emitPipelineRun(options: EmitPipelineRunOptions): PipelineRunEve
   return event;
 }
 
+/**
+ * Emit a design-quality telemetry event.
+ */
+export function emitDesignQualityEvent(options: EmitDesignQualityOptions): DesignQualityEvent {
+  const event: DesignQualityEvent = {
+    timestamp: new Date().toISOString(),
+    ...options,
+  };
+
+  aggregateDesignQualityEvent(event);
+
+  return event;
+}
+
 export interface EmitQuarantineOptions {
   filename: string;
   violations: UnifiedViolation[];
@@ -260,6 +367,22 @@ export interface EmitQuarantineOptions {
   metrics?: ChangeMetrics;
   autoFixAttempts?: number;
   promptVariant?: PromptVariant;
+}
+
+export interface EmitDesignQualityOptions {
+  variantIndex: number;
+  variantCount: number;
+  selected: boolean;
+  designQualityScore: number;
+  rankingScore: number;
+  designCueCoverage: DesignCueCoverage;
+  stylePackId: string;
+  layoutArchetype: string;
+  duplicateLayout: boolean;
+  signatureMoveCount: number;
+  effectCount: number;
+  componentMemoryCount: number;
+  sectionCount: number;
 }
 
 /**
@@ -387,6 +510,58 @@ function aggregatePipelineEvent(event: PipelineRunEvent, violations: UnifiedViol
   }
 }
 
+function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
+  const design = store.designQuality;
+  design.totalVariants++;
+  design.totalDesignQualityScore += event.designQualityScore;
+  design.totalRankingScore += event.rankingScore;
+  design.totalSignatureMoves += event.signatureMoveCount;
+  design.totalEffects += event.effectCount;
+  design.totalComponentMemory += event.componentMemoryCount;
+  design.totalSectionCount += event.sectionCount;
+  design.totalVariantCount += event.variantCount;
+
+  if (event.selected) {
+    design.selectedVariants++;
+    design.totalSelectedScore += event.designQualityScore;
+    design.minSelectedScore = Math.min(design.minSelectedScore, event.designQualityScore);
+    design.maxSelectedScore = Math.max(design.maxSelectedScore, event.designQualityScore);
+  }
+
+  design.minDesignQualityScore = Math.min(design.minDesignQualityScore, event.designQualityScore);
+  design.maxDesignQualityScore = Math.max(design.maxDesignQualityScore, event.designQualityScore);
+  design.minRankingScore = Math.min(design.minRankingScore, event.rankingScore);
+  design.maxRankingScore = Math.max(design.maxRankingScore, event.rankingScore);
+
+  if (event.designCueCoverage.typography) {
+    design.coverageCounts.typography += 1;
+  }
+  if (event.designCueCoverage.layout) {
+    design.coverageCounts.layout += 1;
+  }
+  if (event.designCueCoverage.visualHierarchy) {
+    design.coverageCounts.visualHierarchy += 1;
+  }
+  if (event.designCueCoverage.motion) {
+    design.coverageCounts.motion += 1;
+  }
+
+  design.stylePackCounts.set(event.stylePackId, (design.stylePackCounts.get(event.stylePackId) || 0) + 1);
+  design.layoutArchetypeCounts.set(
+    event.layoutArchetype,
+    (design.layoutArchetypeCounts.get(event.layoutArchetype) || 0) + 1,
+  );
+
+  if (event.duplicateLayout) {
+    design.duplicateLayoutCount += 1;
+  }
+
+  design.recentDesignEvents.push(event);
+  if (design.recentDesignEvents.length > RECENT_DESIGN_EVENTS_LIMIT) {
+    design.recentDesignEvents.shift();
+  }
+}
+
 function aggregateQuarantineEvent(event: QuarantineEvent): void {
   /*
    * Quarantine count already updated in pipeline event
@@ -439,6 +614,29 @@ export interface TelemetrySummary {
   autoFixSuccessRate: number;
 }
 
+export interface DesignTelemetrySummary {
+  totalVariants: number;
+  selectedVariantRate: number;
+  avgDesignQualityScore: number;
+  minDesignQualityScore: number;
+  maxDesignQualityScore: number;
+  avgRankingScore: number;
+  minRankingScore: number;
+  maxRankingScore: number;
+  avgSelectedQualityScore: number;
+  minSelectedQualityScore: number;
+  maxSelectedQualityScore: number;
+  avgVariantCount: number;
+  duplicateLayoutRate: number;
+  coverageRate: DesignCueCoverageRate;
+  avgSignatureMoves: number;
+  avgEffects: number;
+  avgComponentMemory: number;
+  avgSectionCount: number;
+  topStylePacks: Array<{ id: string; count: number }>;
+  topLayoutArchetypes: Array<{ id: string; count: number }>;
+}
+
 /**
  * Get aggregated telemetry summary.
  */
@@ -467,6 +665,40 @@ export function getTelemetrySummary(): TelemetrySummary {
       total: totalRuns > 0 ? timingTotals.total / totalRuns : 0,
     },
     autoFixSuccessRate: totalAttempts > 0 ? totalSuccesses / totalAttempts : 0,
+  };
+}
+
+export function getDesignTelemetrySummary(): DesignTelemetrySummary {
+  const design = store.designQuality;
+  const totalVariants = design.totalVariants;
+  const selectedVariants = design.selectedVariants;
+
+  return {
+    totalVariants,
+    selectedVariantRate: totalVariants > 0 ? selectedVariants / totalVariants : 0,
+    avgDesignQualityScore: totalVariants > 0 ? design.totalDesignQualityScore / totalVariants : 0,
+    minDesignQualityScore: totalVariants > 0 ? design.minDesignQualityScore : 0,
+    maxDesignQualityScore: totalVariants > 0 ? design.maxDesignQualityScore : 0,
+    avgRankingScore: totalVariants > 0 ? design.totalRankingScore / totalVariants : 0,
+    minRankingScore: totalVariants > 0 ? design.minRankingScore : 0,
+    maxRankingScore: totalVariants > 0 ? design.maxRankingScore : 0,
+    avgSelectedQualityScore: selectedVariants > 0 ? design.totalSelectedScore / selectedVariants : 0,
+    minSelectedQualityScore: selectedVariants > 0 ? design.minSelectedScore : 0,
+    maxSelectedQualityScore: selectedVariants > 0 ? design.maxSelectedScore : 0,
+    avgVariantCount: totalVariants > 0 ? design.totalVariantCount / totalVariants : 0,
+    duplicateLayoutRate: totalVariants > 0 ? design.duplicateLayoutCount / totalVariants : 0,
+    coverageRate: {
+      typography: totalVariants > 0 ? design.coverageCounts.typography / totalVariants : 0,
+      layout: totalVariants > 0 ? design.coverageCounts.layout / totalVariants : 0,
+      visualHierarchy: totalVariants > 0 ? design.coverageCounts.visualHierarchy / totalVariants : 0,
+      motion: totalVariants > 0 ? design.coverageCounts.motion / totalVariants : 0,
+    },
+    avgSignatureMoves: totalVariants > 0 ? design.totalSignatureMoves / totalVariants : 0,
+    avgEffects: totalVariants > 0 ? design.totalEffects / totalVariants : 0,
+    avgComponentMemory: totalVariants > 0 ? design.totalComponentMemory / totalVariants : 0,
+    avgSectionCount: totalVariants > 0 ? design.totalSectionCount / totalVariants : 0,
+    topStylePacks: summarizeCountMap(design.stylePackCounts, 5),
+    topLayoutArchetypes: summarizeCountMap(design.layoutArchetypeCounts, 5),
   };
 }
 
@@ -560,6 +792,10 @@ export function getVariantStats(): VariantStats[] {
     .sort((a, b) => b.totalRuns - a.totalRuns);
 }
 
+export function getRecentDesignEvents(): DesignQualityEvent[] {
+  return [...store.designQuality.recentDesignEvents];
+}
+
 /**
  * Reset telemetry (for testing).
  */
@@ -586,4 +822,11 @@ function trackQuarantineDetailsInternal(event: QuarantineEvent): void {
  */
 export function getRecentEvents(): PipelineRunEvent[] {
   return [...store.recentEvents];
+}
+
+function summarizeCountMap(map: Map<string, number>, limit: number): Array<{ id: string; count: number }> {
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id, count]) => ({ id, count }));
 }

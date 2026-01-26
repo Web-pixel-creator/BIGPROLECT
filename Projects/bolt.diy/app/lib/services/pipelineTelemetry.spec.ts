@@ -4,11 +4,14 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  emitDesignQualityEvent,
   emitPipelineRun,
   emitQuarantineWritten,
+  getDesignTelemetrySummary,
   getTelemetrySummary,
   getTopViolations,
   getQuarantineStats,
+  getRecentDesignEvents,
   getVariantStats,
   resetTelemetry,
   getRecentEvents,
@@ -216,6 +219,7 @@ describe('Privacy Filter', () => {
       expect(JSON.stringify(event)).not.toContain('/path/to/secret');
     });
   });
+
 });
 
 /*
@@ -337,6 +341,75 @@ describe('Event Emitters', () => {
       });
 
       expect(event.riskLevel).toBe('low');
+    });
+  });
+
+  describe('emitDesignQualityEvent', () => {
+    it('tracks design quality metrics', () => {
+      emitDesignQualityEvent({
+        variantIndex: 0,
+        variantCount: 3,
+        selected: true,
+        designQualityScore: 72,
+        rankingScore: 78,
+        designCueCoverage: {
+          typography: true,
+          layout: true,
+          visualHierarchy: false,
+          motion: false,
+        },
+        stylePackId: 'pack-a',
+        layoutArchetype: 'stacked-grid',
+        duplicateLayout: false,
+        signatureMoveCount: 2,
+        effectCount: 1,
+        componentMemoryCount: 1,
+        sectionCount: 5,
+      });
+
+      emitDesignQualityEvent({
+        variantIndex: 1,
+        variantCount: 3,
+        selected: false,
+        designQualityScore: 60,
+        rankingScore: 55,
+        designCueCoverage: {
+          typography: true,
+          layout: false,
+          visualHierarchy: true,
+          motion: true,
+        },
+        stylePackId: 'pack-b',
+        layoutArchetype: 'split-hero',
+        duplicateLayout: true,
+        signatureMoveCount: 1,
+        effectCount: 0,
+        componentMemoryCount: 0,
+        sectionCount: 4,
+      });
+
+      const summary = getDesignTelemetrySummary();
+      expect(summary.totalVariants).toBe(2);
+      expect(summary.selectedVariantRate).toBeCloseTo(0.5);
+      expect(summary.avgDesignQualityScore).toBeCloseTo(66);
+      expect(summary.minDesignQualityScore).toBe(60);
+      expect(summary.maxDesignQualityScore).toBe(72);
+      expect(summary.avgSelectedQualityScore).toBeCloseTo(72);
+      expect(summary.duplicateLayoutRate).toBeCloseTo(0.5);
+      expect(summary.coverageRate.typography).toBeCloseTo(1);
+      expect(summary.coverageRate.layout).toBeCloseTo(0.5);
+      expect(summary.coverageRate.visualHierarchy).toBeCloseTo(0.5);
+      expect(summary.coverageRate.motion).toBeCloseTo(0.5);
+      expect(summary.topStylePacks).toEqual(
+        expect.arrayContaining([
+          { id: 'pack-a', count: 1 },
+          { id: 'pack-b', count: 1 },
+        ]),
+      );
+
+      const recent = getRecentDesignEvents();
+      expect(recent).toHaveLength(2);
+      expect(recent[0]).toHaveProperty('designQualityScore', 72);
     });
   });
 });
