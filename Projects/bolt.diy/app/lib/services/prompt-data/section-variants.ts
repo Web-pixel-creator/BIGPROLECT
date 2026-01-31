@@ -1,6 +1,12 @@
 export const COMPONENT_SECTION_KEYWORDS: Record<string, string[]> = {
   navigation: ['navbar', 'nav', 'menu', 'header'],
   hero: ['hero', 'headline', 'banner', 'spotlight', 'aurora', 'beams', 'particles', 'text'],
+  logos: ['logo', 'logos', 'clients', 'partners', 'brands', 'marquee'],
+  marquee: ['marquee', 'ticker', 'scrolling', 'running line'],
+  'how-it-works': ['steps', 'timeline', 'process', 'workflow'],
+  comparison: ['comparison', 'compare', 'versus', 'before', 'after', 'table'],
+  integration: ['integration', 'integrations', 'connectors', 'apps'],
+  newsletter: ['newsletter', 'subscribe', 'signup', 'email'],
   categories: ['carousel', 'tag', 'pill', 'chip', 'filter', 'tabs'],
   products: ['product', 'card', 'grid', 'bento', 'gallery'],
   features: ['feature', 'bento', 'grid', 'timeline', 'list'],

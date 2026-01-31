@@ -164,6 +164,13 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
         );
       }
 
+      // Log detailed error info for debugging
+      logger.error('Streaming LLM call failed with unexpected error:', {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 3).join('\n') : undefined,
+      });
+
       throw new Response(null, {
         status: 500,
         statusText: 'Internal Server Error',
@@ -372,6 +379,18 @@ async function llmCallAction({ context, request }: ActionFunctionArgs) {
           },
         );
       }
+
+      // Log detailed error info for debugging non-streaming calls
+      logger.error('Non-streaming LLM call failed:', {
+        message: errorResponse.message,
+        statusCode: errorResponse.statusCode,
+        provider: errorResponse.provider,
+        model: model,
+        errorDetails: error instanceof Error ? {
+          name: error.name,
+          stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+        } : undefined,
+      });
 
       return new Response(JSON.stringify(errorResponse), {
         status: errorResponse.statusCode,

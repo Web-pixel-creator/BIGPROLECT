@@ -530,9 +530,15 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
         };
       }
 
-      logger.debug(`Attempt ${attempts} still has ${validation.errors.length} error(s)`);
+      logger.debug(`Attempt ${attempts} still has ${validation.errors.length} error(s):`, {
+        remainingErrors: validation.errors.slice(0, 3).map(e => e.message),
+      });
     } catch (error) {
-      logger.error(`Auto-fix attempt ${attempts} failed:`, error);
+      logger.error(`Auto-fix attempt ${attempts} failed:`, {
+        error: error instanceof Error ? error.message : String(error),
+        filename,
+        variant: promptVariant,
+      });
     }
   }
 
@@ -571,12 +577,19 @@ export async function autoFixWithLlm(options: AutoFixOptions): Promise<AutoFixRe
         };
       }
     } catch (error) {
-      logger.error(`Fallback model failed:`, error);
+      logger.error(`Fallback model failed:`, {
+        error: error instanceof Error ? error.message : String(error),
+        filename,
+      });
     }
   }
 
   // All attempts failed
-  logger.warn(`Auto-fix failed after ${attempts} attempts for ${filename}`);
+  logger.warn(`Auto-fix failed after ${attempts} attempts for ${filename}`, {
+    remainingErrors: lastErrors?.slice(0, 3).map(e => e.message),
+    usedFallback,
+    variant: promptVariant,
+  });
 
   return {
     success: false,

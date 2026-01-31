@@ -1,5 +1,8 @@
 import { path as nodePath } from './path';
 import { WEB_BASELINE_FILES } from './templateBaseline';
+import { createScopedLogger } from './logger';
+
+const logger = createScopedLogger('CodeSanitizer');
 
 /**
  * Risk level for sanitizer changes.
@@ -535,6 +538,16 @@ export function sanitizeGeneratedFile(relativePath: string, content: string): Sa
   // Calculate change metrics for risk assessment
   const metrics = calculateChangeMetrics(content, next, warnings);
 
+  // Log sanitization results if changes were made
+  if (next !== content && warnings.length > 0) {
+    logger.debug(`Sanitized ${normalizedPath}:`, {
+      warningsCount: warnings.length,
+      changedLinesPercent: metrics.changedLinesPercent,
+      riskLevel: metrics.riskLevel,
+      topWarnings: warnings.slice(0, 3),
+    });
+  }
+
   return {
     content: next,
     changed: next !== content,
@@ -614,21 +627,21 @@ function parseWarningsToStructured(warnings: string[]): SanitizerWarning[] {
     code: SanitizerWarningCode;
     risk: RiskLevel;
   }> = [
-    { pattern: /truncated.*<butt/i, code: 'SANITIZER_FIX_TRUNCATED_BUTTON', risk: 'low' },
-    { pattern: /truncated closing tags/i, code: 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG', risk: 'low' },
-    { pattern: /broken arrow|= \/>.*=>/i, code: 'SANITIZER_FIX_BROKEN_ARROW', risk: 'medium' },
-    { pattern: /merged.*JSX.*attr|split JSX attr/i, code: 'SANITIZER_FIX_MERGED_JSX_ATTR', risk: 'low' },
-    { pattern: /hoisted.*import|late import/i, code: 'SANITIZER_FIX_IMPORTS_HOISTED', risk: 'low' },
-    { pattern: /malformed import/i, code: 'SANITIZER_FIX_IMPORTS_MALFORMED', risk: 'medium' },
-    { pattern: /duplicate import/i, code: 'SANITIZER_FIX_IMPORTS_DUPLICATE', risk: 'low' },
-    { pattern: /duplicate.*export|multiple export default/i, code: 'SANITIZER_FIX_EXPORT_DUPLICATE', risk: 'medium' },
-    { pattern: /unbalanced.*brace|closing brace/i, code: 'SANITIZER_FIX_UNBALANCED_BRACES', risk: 'medium' },
-    { pattern: /unterminated.*string|unclosed.*string/i, code: 'SANITIZER_FIX_UNTERMINATED_STRING', risk: 'high' },
-    { pattern: /LLM text|removed.*text response/i, code: 'SANITIZER_FIX_LLM_TEXT_REMOVED', risk: 'medium' },
-    { pattern: /replaced.*baseline|baseline.*replaced/i, code: 'SANITIZER_FIX_BASELINE_REPLACED', risk: 'high' },
-    { pattern: /component.*typo|typo.*component/i, code: 'SANITIZER_FIX_COMPONENT_TYPO', risk: 'low' },
-    { pattern: /garbage.*removed|removed.*garbage/i, code: 'SANITIZER_FIX_GARBAGE_REMOVED', risk: 'medium' },
-  ];
+      { pattern: /truncated.*<butt/i, code: 'SANITIZER_FIX_TRUNCATED_BUTTON', risk: 'low' },
+      { pattern: /truncated closing tags/i, code: 'SANITIZER_FIX_TRUNCATED_CLOSING_TAG', risk: 'low' },
+      { pattern: /broken arrow|= \/>.*=>/i, code: 'SANITIZER_FIX_BROKEN_ARROW', risk: 'medium' },
+      { pattern: /merged.*JSX.*attr|split JSX attr/i, code: 'SANITIZER_FIX_MERGED_JSX_ATTR', risk: 'low' },
+      { pattern: /hoisted.*import|late import/i, code: 'SANITIZER_FIX_IMPORTS_HOISTED', risk: 'low' },
+      { pattern: /malformed import/i, code: 'SANITIZER_FIX_IMPORTS_MALFORMED', risk: 'medium' },
+      { pattern: /duplicate import/i, code: 'SANITIZER_FIX_IMPORTS_DUPLICATE', risk: 'low' },
+      { pattern: /duplicate.*export|multiple export default/i, code: 'SANITIZER_FIX_EXPORT_DUPLICATE', risk: 'medium' },
+      { pattern: /unbalanced.*brace|closing brace/i, code: 'SANITIZER_FIX_UNBALANCED_BRACES', risk: 'medium' },
+      { pattern: /unterminated.*string|unclosed.*string/i, code: 'SANITIZER_FIX_UNTERMINATED_STRING', risk: 'high' },
+      { pattern: /LLM text|removed.*text response/i, code: 'SANITIZER_FIX_LLM_TEXT_REMOVED', risk: 'medium' },
+      { pattern: /replaced.*baseline|baseline.*replaced/i, code: 'SANITIZER_FIX_BASELINE_REPLACED', risk: 'high' },
+      { pattern: /component.*typo|typo.*component/i, code: 'SANITIZER_FIX_COMPONENT_TYPO', risk: 'low' },
+      { pattern: /garbage.*removed|removed.*garbage/i, code: 'SANITIZER_FIX_GARBAGE_REMOVED', risk: 'medium' },
+    ];
 
   for (const warning of warnings) {
     let matched = false;
@@ -913,7 +926,7 @@ function sanitizeBoltTags(code: string, warnings: string[]): string {
 
   if (next !== before) {
     warnings.push('Removed leaked boltAction/boltArtifact tags from file content');
-    console.log('[CodeSanitizer] Removed boltAction/boltArtifact tags from content');
+    logger.debug('Removed boltAction/boltArtifact tags from content');
   }
 
   return next;
@@ -2305,8 +2318,8 @@ function sanitizeJsxSyntaxErrors(code: string, warnings: string[]) {
      */
     const tagPattern = new RegExp(
       `(<${tag})` + // Opening tag name
-        `(\\s+[^>]*)` + // Required: space followed by attributes (no empty tags without space)
-        `(>)`, // Closing bracket (not self-closing variant />)
+      `(\\s+[^>]*)` + // Required: space followed by attributes (no empty tags without space)
+      `(>)`, // Closing bracket (not self-closing variant />)
       'gi',
     );
 

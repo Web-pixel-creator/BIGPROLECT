@@ -35,6 +35,8 @@ import { useMCPStore } from '~/lib/stores/mcp';
 import type { LlmErrorAlertType } from '~/types/actions';
 import { createLayoutSeed, generateLayoutStrategy, getLayoutInstructions } from '~/lib/services/layout-mutator';
 import type { GenerationSummary } from './GenerationSummaryCard';
+import { enhancedPromptGenerator, type Brief } from '~/lib/services/enhancedPromptGenerator';
+import type { InputMode } from './InputModeSelector';
 
 const logger = createScopedLogger('Chat');
 const STREAM_STALL_MS = 180000;
@@ -110,6 +112,11 @@ function extractSectionsFromPrompt(prompt: string): string[] {
   }
 
   return unique.slice(0, 8);
+}
+
+function buildBriefDisplay(brief: Brief): string {
+  const colors = brief.colors?.length ? ` · colors: ${brief.colors.join(', ')}` : '';
+  return `Brief: ${brief.theme} (${brief.type}, ${brief.style}${colors})`;
 }
 
 function buildGenerationSummary(prompt: string, enhanced?: EnhancedPrompt): GenerationSummary {
@@ -197,6 +204,7 @@ export const ChatImpl = memo(
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [chatStarted, setChatStarted] = useState(initialMessages.length > 0);
+    const [inputMode, setInputMode] = useState<InputMode>(initialMessages.length > 0 ? 'chat' : 'brief');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -249,7 +257,6 @@ export const ChatImpl = memo(
       addToolResult,
     } = useChat({
       api: '/api/chat',
-      maxRetries: 0,
       experimental_throttle: streamThrottle,
       body: {
         apiKeys,
@@ -458,6 +465,20 @@ export const ChatImpl = memo(
       if (textarea) {
         textarea.scrollTop = textarea.scrollHeight;
       }
+    };
+
+    useEffect(() => {
+      if (chatStarted && inputMode === 'brief') {
+        setInputMode('chat');
+      }
+    }, [chatStarted, inputMode]);
+
+    const handleBriefSubmit = async (brief: Brief) => {
+      const generated = enhancedPromptGenerator.generate(brief);
+      await sendMessage({} as React.UIEvent, generated.prompt, {
+        displayOverride: buildBriefDisplay(brief),
+      });
+      setInputMode('chat');
     };
 
     const abort = () => {
@@ -680,7 +701,11 @@ export const ChatImpl = memo(
       return attachments;
     };
 
-    const sendMessage = async (_event: React.UIEvent, messageInput?: string): Promise<boolean> => {
+    const sendMessage = async (
+      _event: React.UIEvent,
+      messageInput?: string,
+      options?: { displayOverride?: string },
+    ): Promise<boolean> => {
       const messageContent = messageInput || input;
       const originalInput = messageContent;
 
@@ -695,7 +720,7 @@ export const ChatImpl = memo(
 
       try {
         let finalMessageContent = messageContent;
-        let displayMessageContent = messageContent; // What user sees in chat
+        let displayMessageContent = options?.displayOverride ?? messageContent; // What user sees in chat
         let summary: GenerationSummary | null = null;
         const isDesignPrompt = shouldEnhancePrompt(messageContent);
 
@@ -1004,6 +1029,9 @@ export const ChatImpl = memo(
         enhancingPrompt={enhancingPrompt}
         promptEnhanced={promptEnhanced}
         sendMessage={sendMessage}
+        inputMode={inputMode}
+        setInputMode={setInputMode}
+        onBriefSubmit={handleBriefSubmit}
         model={model}
         setModel={handleModelChange}
         provider={provider}

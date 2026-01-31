@@ -382,6 +382,12 @@ export function Test() {
         'team',
         'stats',
         'blog',
+        'logos',
+        'marquee',
+        'how-it-works',
+        'comparison',
+        'integration',
+        'newsletter',
         'services',
       ];
 

@@ -24,6 +24,18 @@
       "меню",
       "навигация"
     ],
+    "navigation": [
+      "navigation",
+      "navbar",
+      "nav",
+      "nav bar",
+      "menu",
+      "site navigation",
+      "навигация",
+      "меню",
+      "навигационная панель",
+      "верхнее меню"
+    ],
     "features": [
       "features",
       "services",
@@ -32,6 +44,18 @@
       "фичи",
       "услуги",
       "преимущества"
+    ],
+    "services": [
+      "services",
+      "service",
+      "offerings",
+      "solutions",
+      "what we do",
+      "our services",
+      "услуги",
+      "сервисы",
+      "решения",
+      "наши услуги"
     ],
     "pricing": [
       "pricing",
@@ -54,6 +78,17 @@
       "our team",
       "команда",
       "о нас"
+    ],
+    "about": [
+      "about",
+      "about us",
+      "our story",
+      "mission",
+      "company",
+      "о нас",
+      "о компании",
+      "история",
+      "миссия"
     ],
     "contact": [
       "contact",
@@ -91,14 +126,68 @@
       "статистика",
       "цифры"
     ],
-    "logo": [
+    "logos": [
       "logo",
       "logos",
+      "clients",
       "partners",
       "brands",
       "лого",
       "логотип",
+      "клиенты",
       "партнеры"
+    ],
+    "marquee": [
+      "marquee",
+      "ticker",
+      "scrolling text",
+      "running line",
+      "бегущая строка",
+      "тикер"
+    ],
+    "how-it-works": [
+      "how it works",
+      "steps",
+      "process",
+      "workflow",
+      "как это работает",
+      "этапы",
+      "процесс"
+    ],
+    "comparison": [
+      "comparison",
+      "compare",
+      "versus",
+      "vs",
+      "сравнение",
+      "сравнить"
+    ],
+    "integration": [
+      "integration",
+      "integrations",
+      "connectors",
+      "connect",
+      "интеграция",
+      "интеграции",
+      "подключение"
+    ],
+    "newsletter": [
+      "newsletter",
+      "subscribe",
+      "email signup",
+      "mailing list",
+      "рассылка",
+      "подписка"
+    ],
+    "blog": [
+      "blog",
+      "news",
+      "articles",
+      "posts",
+      "блог",
+      "новости",
+      "статьи",
+      "посты"
     ],
     "card": [
       "card",

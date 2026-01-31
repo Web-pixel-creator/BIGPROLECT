@@ -944,6 +944,26 @@ export class ActionRunner {
           // Alert user about the invalid file
           const errorSummary = formatUnifiedErrorsSummary(finalValidation.unifiedViolations, 5);
 
+          // Enhanced logging for debugging
+          logger.warn(`[HARD GATE] Blocked invalid file: ${relativePath}`, {
+            errorCount,
+            quarantinePath,
+            firstError: finalValidation.unifiedViolations?.[0]?.message,
+            autoFixAttempts: autoFixAttemptsCount,
+            promptVariant,
+            metrics: metrics ? {
+              changedLinesPercent: metrics.changedLinesPercent,
+              riskLevel: metrics.riskLevel,
+              highRiskFixes: metrics.highRiskFixes,
+            } : undefined,
+          });
+
+          // Log to console for browser DevTools visibility
+          console.warn(`[Bolt.diy] Invalid code blocked: ${relativePath}`, {
+            errors: finalValidation.unifiedViolations?.slice(0, 3).map(v => v.message),
+            quarantinePath,
+          });
+
           this.onAlert?.({
             type: 'validation',
             title: 'Invalid Code Blocked',

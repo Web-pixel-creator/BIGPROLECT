@@ -5,7 +5,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { classNames } from '~/utils/classNames';
-import type { Brief, SiteType, DesignStyle } from '~/lib/services/promptGenerator';
+import type { Brief, SiteType, DesignStyle } from '~/lib/services/enhancedPromptGenerator';
 
 type Locale = 'en' | 'ru';
 

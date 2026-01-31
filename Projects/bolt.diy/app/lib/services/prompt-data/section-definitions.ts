@@ -17,6 +17,12 @@ export type SectionType =
   | 'team'
   | 'stats'
   | 'blog'
+  | 'logos'
+  | 'marquee'
+  | 'how-it-works'
+  | 'comparison'
+  | 'integration'
+  | 'newsletter'
   | 'services';
 
 export interface SectionDefinition {
@@ -139,6 +145,54 @@ export const SECTION_DEFINITIONS: Record<SectionType, SectionDefinition> = {
     description: 'Blog posts preview grid',
     requiredProps: ['posts'],
     optionalProps: ['title', 'showMore'],
+    defaultExport: false,
+  },
+  logos: {
+    type: 'logos',
+    name: 'LogoCloudSection',
+    description: 'Logo cloud of partners or clients',
+    requiredProps: ['logos'],
+    optionalProps: ['title', 'subtitle'],
+    defaultExport: false,
+  },
+  marquee: {
+    type: 'marquee',
+    name: 'MarqueeSection',
+    description: 'Scrolling marquee text or logos',
+    requiredProps: ['items'],
+    optionalProps: ['speed', 'direction'],
+    defaultExport: false,
+  },
+  'how-it-works': {
+    type: 'how-it-works',
+    name: 'HowItWorksSection',
+    description: 'Step-by-step process timeline',
+    requiredProps: ['steps'],
+    optionalProps: ['title', 'subtitle'],
+    defaultExport: false,
+  },
+  comparison: {
+    type: 'comparison',
+    name: 'ComparisonSection',
+    description: 'Side-by-side comparison table or before/after',
+    requiredProps: ['rows'],
+    optionalProps: ['title', 'highlights'],
+    defaultExport: false,
+  },
+  integration: {
+    type: 'integration',
+    name: 'IntegrationSection',
+    description: 'Integration logos with short descriptions',
+    requiredProps: ['integrations'],
+    optionalProps: ['title', 'subtitle'],
+    defaultExport: false,
+  },
+  newsletter: {
+    type: 'newsletter',
+    name: 'NewsletterSection',
+    description: 'Email signup form with CTA',
+    requiredProps: ['ctaText'],
+    optionalProps: ['title', 'subtitle', 'placeholder'],
     defaultExport: false,
   },
   services: {

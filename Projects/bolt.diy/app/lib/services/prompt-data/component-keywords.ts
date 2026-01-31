@@ -9,6 +9,7 @@ export const COMPONENT_KEYWORDS_EN: Record<string, string[]> = {
   header: ['header', 'head', 'top bar', 'top section', 'site header', 'page header'],
   hero: ['hero', 'hero section', 'hero banner', 'main banner', 'landing section', 'above the fold', 'first screen', 'splash'],
   navbar: ['navbar', 'navigation', 'nav', 'nav bar', 'navigation bar', 'top menu', 'main menu', 'site menu'],
+  navigation: ['navigation', 'navbar', 'nav', 'nav bar', 'navigation bar', 'menu', 'site menu'],
   features: ['features', 'feature', 'benefits', 'advantages', 'services', 'what we offer', 'capabilities'],
   pricing: ['pricing', 'plans', 'prices', 'tiers', 'subscription'],
   testimonials: ['testimonials', 'reviews', 'feedback', 'quotes'],
@@ -24,6 +25,10 @@ export const COMPONENT_KEYWORDS_EN: Record<string, string[]> = {
   gallery: ['gallery', 'grid', 'masonry', 'carousel', 'slider'],
   blog: ['blog', 'articles', 'news', 'posts'],
   logos: ['logos', 'logo cloud', 'partners', 'clients'],
+  marquee: ['marquee', 'ticker', 'scrolling text', 'running line'],
+  'how-it-works': ['how it works', 'steps', 'process', 'workflow'],
+  comparison: ['comparison', 'compare', 'versus', 'vs', 'comparison table'],
+  integration: ['integration', 'integrations', 'connectors', 'connect'],
   products: ['products', 'catalog', 'shop', 'store'],
   categories: ['categories', 'collections', 'filters'],
   newsletter: ['newsletter', 'subscribe', 'email signup'],
@@ -47,6 +52,12 @@ export const COMPONENT_KEYWORDS_RU: Record<string, string[]> = {
     '\u043c\u0435\u043d\u044e',                          // меню
     '\u0433\u043b\u0430\u0432\u043d\u043e\u0435 \u043c\u0435\u043d\u044e', // главное меню
     '\u0432\u0435\u0440\u0445\u043d\u0435\u0435 \u043c\u0435\u043d\u044e', // верхнее меню
+  ],
+  navigation: [
+    '\u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u044f', // навигация
+    '\u043c\u0435\u043d\u044e',                          // меню
+    '\u0432\u0435\u0440\u0445\u043d\u0435\u0435 \u043c\u0435\u043d\u044e', // верхнее меню
+    '\u043d\u0430\u0432\u0438\u0433\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f \u043f\u0430\u043d\u0435\u043b\u044c', // навигационная панель
   ],
   features: [
     '\u0444\u0438\u0447\u0438',                          // фичи
@@ -132,6 +143,24 @@ export const COMPONENT_KEYWORDS_RU: Record<string, string[]> = {
     '\u043b\u043e\u0433\u043e\u0442\u0438\u043f\u044b',  // логотипы
     '\u043f\u0430\u0440\u0442\u043d\u0435\u0440\u044b',  // партнеры
     '\u043a\u043b\u0438\u0435\u043d\u0442\u044b',        // клиенты
+  ],
+  marquee: [
+    '\u0431\u0435\u0433\u0443\u0449\u0430\u044f \u0441\u0442\u0440\u043e\u043a\u0430', // бегущая строка
+    '\u0442\u0438\u043a\u0435\u0440',                    // тикер
+  ],
+  'how-it-works': [
+    '\u043a\u0430\u043a \u044d\u0442\u043e \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442', // как это работает
+    '\u044d\u0442\u0430\u043f\u044b',                    // этапы
+    '\u043f\u0440\u043e\u0446\u0435\u0441\u0441',       // процесс
+  ],
+  comparison: [
+    '\u0441\u0440\u0430\u0432\u043d\u0435\u043d\u0438\u0435', // сравнение
+    '\u0441\u0440\u0430\u0432\u043d\u0438\u0442\u044c',       // сравнить
+  ],
+  integration: [
+    '\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u044f', // интеграция
+    '\u0438\u043d\u0442\u0435\u0433\u0440\u0430\u0446\u0438\u0438', // интеграции
+    '\u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435', // подключение
   ],
   products: [
     '\u0442\u043e\u0432\u0430\u0440\u044b',              // товары

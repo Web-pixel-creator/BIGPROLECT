@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 const CUSTOM_MODELS = [
   { name: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { name: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', provider: 'Google' },
+  { name: 'moonshotai/kimi-k2.5', label: 'Kimi K2.5 (SOTA)', provider: 'OpenRouter' },
   { name: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq)', provider: 'Groq' },
   { name: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B (Groq)', provider: 'Groq' },
   { name: 'mistral-large-latest', label: 'Mistral Large', provider: 'Mistral' },

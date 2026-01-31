@@ -301,6 +301,13 @@ export class PromptGenerator {
     lines.push('- Framer Motion (for animations)');
     lines.push('- Lucide React (for icons)');
 
+    const intentTheme = themeKey !== 'default' ? themeKey : brief.type;
+    const paletteTag = [palette.accent, ...palette.supportingColors].filter(Boolean).join(', ');
+    lines.push('');
+    lines.push(
+      `[design: ${intentTheme} | type: ${brief.type} | style: ${brief.style} | colors: ${paletteTag || 'auto'}]`,
+    );
+
     return lines.join('\n');
   }
 }

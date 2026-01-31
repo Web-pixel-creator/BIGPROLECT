@@ -36,6 +36,8 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
 import { workbenchStore } from '~/lib/stores/workbench';
+import type { InputMode } from './InputModeSelector';
+import type { Brief } from '~/lib/services/promptGenerator';
 
 
 const TEXTAREA_MIN_HEIGHT = 76;
@@ -89,6 +91,9 @@ interface BaseChatProps {
   selectedElement?: ElementInfo | null;
   setSelectedElement?: (element: ElementInfo | null) => void;
   addToolResult?: ({ toolCallId, result }: { toolCallId: string; result: any }) => void;
+  inputMode?: InputMode;
+  setInputMode?: (mode: InputMode) => void;
+  onBriefSubmit?: (brief: Brief) => void;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -136,6 +141,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       setDesignScheme,
       selectedElement,
       setSelectedElement,
+      inputMode,
+      setInputMode,
+      onBriefSubmit,
       addToolResult = () => {
         throw new Error('addToolResult not implemented');
       },
@@ -628,6 +636,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   setDesignScheme={setDesignScheme}
                   selectedElement={selectedElement}
                   setSelectedElement={setSelectedElement}
+                  inputMode={inputMode}
+                  setInputMode={setInputMode}
+                  onBriefSubmit={onBriefSubmit}
                 />
               </div>
             </StickToBottom>

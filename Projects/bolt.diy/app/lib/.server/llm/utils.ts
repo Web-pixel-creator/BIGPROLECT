@@ -63,6 +63,13 @@ export function extractPropertiesFromMessage(message: Omit<Message, 'id'>): {
     }
   }
 
+  // Moonshot models (Kimi K2.5) should use OpenRouter
+  if (lowerModel.startsWith('moonshotai/')) {
+    if (provider === DEFAULT_PROVIDER.name || provider === 'Google') {
+      provider = 'OpenRouter';
+    }
+  }
+
   const cleanedContent = textContent.replace(MODEL_REGEX, '').replace(PROVIDER_REGEX, '').trim();
 
   return { model, provider, content: cleanedContent };

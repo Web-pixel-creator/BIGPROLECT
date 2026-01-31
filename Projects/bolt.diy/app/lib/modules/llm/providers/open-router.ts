@@ -45,6 +45,14 @@ export default class OpenRouterProvider extends BaseProvider {
       provider: 'OpenRouter',
       maxTokenAllowed: 128000,
     },
+
+    // Kimi K2.5 - SOTA open-source model: 262k context, excellent for coding & agentic tasks
+    {
+      name: 'moonshotai/kimi-k2.5',
+      label: 'Kimi K2.5 (SOTA)',
+      provider: 'OpenRouter',
+      maxTokenAllowed: 262144,
+    },
   ];
 
   async getDynamicModels(

@@ -34,6 +34,10 @@ export const SECTION_SCORING_PRIORITY: Record<string, number> = {
   projects: 2,
   blog: 2,
   logos: 1,
+  marquee: 1,
+  'how-it-works': 2,
+  comparison: 2,
+  integration: 2,
   newsletter: 1,
 };
 
@@ -72,6 +76,12 @@ export const STRONG_SECTION_KEYWORDS: Record<string, string[]> = {
   pricing: ['pricing', 'price', 'plan', 'tier', 'subscription'],
   testimonials: ['testimonial', 'review', 'feedback', 'quote', 'customer-story'],
   footer: ['footer', 'site-footer', 'page-footer'],
+  logos: ['logo', 'logos', 'clients', 'partners', 'brands'],
+  marquee: ['marquee', 'ticker', 'running line'],
+  'how-it-works': ['how it works', 'steps', 'process', 'workflow'],
+  comparison: ['comparison', 'compare', 'versus', 'vs'],
+  integration: ['integration', 'integrations', 'connectors', 'connect'],
+  newsletter: ['newsletter', 'subscribe', 'email signup', 'mailing list'],
 };
 
 /**
