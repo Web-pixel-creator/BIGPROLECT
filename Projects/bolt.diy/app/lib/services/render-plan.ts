@@ -3,6 +3,7 @@ import { buildComponentSelectionPlan } from './prompt-component-utils';
 import type { SectionType } from './prompt-data/section-definitions';
 import type { ComponentSource } from './prompt-data/component-index';
 import { hashString } from './prompt-theme-utils';
+import { applyStyleTokens, type StyleTokenVariables } from './style-token-utils';
 
 export type StyleTokens = {
   typography: string;
@@ -18,6 +19,7 @@ export type RenderPlanSection = {
   layoutArchetype: string;
   propsContract: string[];
   styleTokens: StyleTokens;
+  styleVariables: StyleTokenVariables;
 };
 
 export type RenderPlan = {
@@ -50,14 +52,19 @@ export function buildRenderPlan(options: BuildRenderPlanOptions): RenderPlan {
     colors: [],
   };
 
-  const sections: RenderPlanSection[] = componentPlan.selections.map((selection) => ({
-    sectionType: selection.sectionType,
-    componentId: selection.componentId,
-    source: selection.source as ComponentSource,
-    layoutArchetype: selection.layoutArchetype,
-    propsContract: selection.propsContract,
-    styleTokens: tokens,
-  }));
+  const sections: RenderPlanSection[] = componentPlan.selections.map((selection) => {
+    const styleVariables = applyStyleTokens(selection.componentId, tokens);
+
+    return {
+      sectionType: selection.sectionType,
+      componentId: selection.componentId,
+      source: selection.source as ComponentSource,
+      layoutArchetype: selection.layoutArchetype,
+      propsContract: selection.propsContract,
+      styleTokens: tokens,
+      styleVariables,
+    };
+  });
 
   const layoutUniquenessHash = hashString(
     JSON.stringify({

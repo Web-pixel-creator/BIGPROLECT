@@ -22,5 +22,6 @@ describe('render plan builder', () => {
     expect(plan.layoutUniquenessHash.length).toBeGreaterThan(0);
     expect(plan.sections.length).toBeGreaterThan(0);
     expect(plan.componentPlan.matchRate).toBeGreaterThan(0);
+    expect(Object.keys(plan.sections[0]?.styleVariables ?? {})).toContain('--ds-typography');
   });
 });
