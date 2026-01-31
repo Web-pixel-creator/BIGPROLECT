@@ -274,7 +274,7 @@ describe('Prompt Data Property Tests', () => {
           (arr, seed) => {
             const rng = createSeededRandom(seed);
             const picked = pickRandom(arr, rng);
-            expect(arr).toContain(picked);
+            expect(arr.some((value) => Object.is(value, picked))).toBe(true);
           },
         ),
         { numRuns: 50 },

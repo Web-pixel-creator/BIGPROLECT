@@ -111,6 +111,13 @@ export {
   type ComponentMemoryEntry,
 } from './component-memory';
 
+// Component index (approved component catalog)
+export {
+  COMPONENT_INDEX,
+  type ComponentIndexEntry,
+  type ComponentSource,
+} from './component-index';
+
 // Prompt hints (layout/navigation/image keywords)
 export {
   IMAGE_KEYWORDS,
