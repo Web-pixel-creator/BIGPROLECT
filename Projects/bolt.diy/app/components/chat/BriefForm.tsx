@@ -3,7 +3,8 @@
  * Converts structured input into a Brief object for PromptGenerator
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from '@remix-run/react';
 import { classNames } from '~/utils/classNames';
 import type { Brief, SiteType, DesignStyle } from '~/lib/services/enhancedPromptGenerator';
 import { resolveBriefSeed } from '~/lib/services/brief-utils';
@@ -43,6 +44,7 @@ const PRESET_COLORS = [
 ];
 
 export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormProps) {
+  const [searchParams] = useSearchParams();
   const [locale, setLocale] = useState<Locale>('en');
   const [siteType, setSiteType] = useState<SiteType>('landing');
   const [theme, setTheme] = useState('');
@@ -52,11 +54,81 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   const [wishes, setWishes] = useState('');
   const [lockDesign, setLockDesign] = useState(false);
   const [lockedSeed, setLockedSeed] = useState<number | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
     setLocale(browserLang?.startsWith('ru') ? 'ru' : 'en');
   }, []);
+
+  useEffect(() => {
+    if (initializedRef.current) {
+      return;
+    }
+
+    const hasParams = [
+      'theme',
+      'type',
+      'style',
+      'colors',
+      'wishes',
+      'seed',
+      'lock',
+    ].some((key) => searchParams.get(key));
+
+    if (!hasParams) {
+      return;
+    }
+
+    initializedRef.current = true;
+
+    const themeParam = searchParams.get('theme');
+    const typeParam = searchParams.get('type');
+    const styleParam = searchParams.get('style');
+    const colorsParam = searchParams.get('colors');
+    const wishesParam = searchParams.get('wishes');
+    const seedParam = searchParams.get('seed');
+    const lockParam = searchParams.get('lock');
+
+    if (themeParam) {
+      setTheme(themeParam.trim());
+    }
+
+    if (typeParam && SITE_TYPES.some((item) => item.value === typeParam)) {
+      setSiteType(typeParam as SiteType);
+    }
+
+    if (styleParam && DESIGN_STYLES.some((item) => item.value === styleParam)) {
+      setStyle(styleParam as DesignStyle);
+    }
+
+    if (colorsParam) {
+      const parsedColors = colorsParam
+        .split(',')
+        .map((color) => color.trim())
+        .filter((color) => /^#[0-9A-Fa-f]{6}$/.test(color))
+        .slice(0, 3);
+
+      if (parsedColors.length > 0) {
+        setSelectedColors(parsedColors);
+      }
+    }
+
+    if (wishesParam) {
+      setWishes(wishesParam.trim());
+    }
+
+    const numericSeed = seedParam ? Number(seedParam) : NaN;
+    const shouldLock = lockParam === '1' || lockParam === 'true' || Number.isFinite(numericSeed);
+
+    if (shouldLock) {
+      setLockDesign(true);
+      if (Number.isFinite(numericSeed)) {
+        setLockedSeed(numericSeed);
+      }
+    }
+  }, [searchParams]);
 
   const t = useCallback((en: string, ru: string) => locale === 'ru' ? ru : en, [locale]);
   const handleColorToggle = useCallback((hex: string) => {
@@ -107,6 +179,69 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
 
     onSubmit(brief);
   }, [siteType, theme, selectedColors, style, wishes, lockDesign, lockedSeed, onSubmit]);
+
+  const buildShareUrl = useCallback(
+    (seedValue: number | null) => {
+      if (typeof window === 'undefined') {
+        return '';
+      }
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('theme', theme.trim());
+      url.searchParams.set('type', siteType);
+      url.searchParams.set('style', style);
+      url.searchParams.set('lock', lockDesign ? '1' : '0');
+
+      if (selectedColors.length > 0) {
+        url.searchParams.set('colors', selectedColors.join(','));
+      } else {
+        url.searchParams.delete('colors');
+      }
+
+      if (wishes.trim()) {
+        url.searchParams.set('wishes', wishes.trim());
+      } else {
+        url.searchParams.delete('wishes');
+      }
+
+      if (lockDesign && seedValue !== null) {
+        url.searchParams.set('seed', seedValue.toString());
+      } else {
+        url.searchParams.delete('seed');
+      }
+
+      return url.toString();
+    },
+    [theme, siteType, style, lockDesign, selectedColors, wishes],
+  );
+
+  const handleCopyShareLink = useCallback(async () => {
+    let seedValue = lockedSeed;
+
+    if (lockDesign && seedValue === null) {
+      seedValue = Date.now();
+      setLockedSeed(seedValue);
+    }
+
+    const url = buildShareUrl(seedValue);
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        return;
+      }
+    } catch {
+      // fallback below
+    }
+
+    window.prompt('Copy this link', url);
+  }, [buildShareUrl, lockDesign, lockedSeed]);
 
   const isValid = theme.trim().length > 0;
 
@@ -316,6 +451,9 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
             if (!nextValue) {
               setLockedSeed(null);
             }
+            if (nextValue && lockedSeed === null) {
+              setLockedSeed(Date.now());
+            }
           }}
           className="h-4 w-4 rounded border-bolt-elements-borderColor text-bolt-elements-button-primary-background focus:ring-bolt-elements-button-primary-background"
         />
@@ -323,6 +461,25 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
           {t('Lock design (repeatable result)', '\u0417\u0430\u0444\u0438\u043A\u0441\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0437\u0430\u0439\u043D (\u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u043C\u044B\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442)')}
         </span>
       </label>
+      {lockDesign && lockedSeed !== null && (
+        <div className="flex items-center justify-between rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-3 px-3 py-2 text-xs text-bolt-elements-textSecondary">
+          <span>{t(`Seed: ${lockedSeed}`, `Seed: ${lockedSeed}`)}</span>
+          <button
+            type="button"
+            onClick={handleCopyShareLink}
+            className={classNames(
+              'px-2 py-1 rounded-md border text-xs font-medium transition-all',
+              shareCopied
+                ? 'bg-bolt-elements-button-primary-background text-bolt-elements-button-primary-text border-transparent'
+                : 'bg-transparent text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive',
+            )}
+          >
+            {shareCopied
+              ? t('Copied', '\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u043E')
+              : t('Copy share link', '\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443')}
+          </button>
+        </div>
+      )}
 
       {/* Submit */}
       <button

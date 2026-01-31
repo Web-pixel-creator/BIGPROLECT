@@ -19,10 +19,11 @@ import {
   getVariantsByCategory,
   seededRandom,
 } from '~/lib/design-system';
-import { THEME_PALETTES } from './prompt-data';
+import { THEME_PALETTES, buildDesignQualityScore, type DesignCues } from './prompt-data';
 import { createSeededRandom } from './prompt-data/seeded-random';
 import { buildComponentSelectionPlan, type ComponentSelectionPlan } from './prompt-component-utils';
 import { buildRenderPlan, type RenderPlan } from './render-plan';
+import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 // ============================================================================
 // Types (Extended)
@@ -147,6 +148,8 @@ export class EnhancedPromptGenerator {
       componentPlan,
     });
 
+    this.emitBriefTelemetry(renderPlan, componentPlan);
+
     const prompt = this.buildEnhancedPrompt(brief, themeKey, palette, sections, extendedLibrary, componentPlan);
 
     return {
@@ -163,6 +166,50 @@ export class EnhancedPromptGenerator {
       extendedLibrary,
       renderPlan,
     };
+  }
+
+  private emitBriefTelemetry(renderPlan: RenderPlan, componentPlan: ComponentSelectionPlan): void {
+    if (!this.designSystem) {
+      return;
+    }
+
+    const typography = this.designSystem.tokens.typography.fontFamily;
+    const designCues: DesignCues = {
+      typography: `${typography.heading} / ${typography.body}`,
+      layout: this.designSystem.layout.pattern.name,
+      visualHierarchy: this.designSystem.styleProfile.description || this.designSystem.styleProfile.name,
+      motion: this.designSystem.animations.selectAnimationSet().entrance.name,
+    };
+    const signatureMoves = this.designSystem.styleProfile.baseStyles.map((style) => style.name).slice(0, 3);
+    const effectIds = this.designSystem.styleProfile.features.map((feature) => feature.id).slice(0, 3);
+    const layoutArchetype = renderPlan.layoutArchetype ?? this.designSystem.layout.pattern.name;
+    const quality = buildDesignQualityScore({
+      designCues,
+      stylePackId: this.designSystem.styleProfile.id,
+      layoutArchetype,
+      layoutUniquenessHash: renderPlan.layoutUniquenessHash,
+      signatureMoves,
+      effectIds,
+      sectionOrder: renderPlan.sections.map((section) => section.sectionType),
+    });
+
+    emitDesignQualityEvent({
+      variantIndex: 0,
+      variantCount: 1,
+      selected: true,
+      designQualityScore: quality.score,
+      rankingScore: quality.score,
+      designCueCoverage: quality.coverage,
+      stylePackId: this.designSystem.styleProfile.id,
+      layoutArchetype,
+      duplicateLayout: false,
+      signatureMoveCount: signatureMoves.length,
+      effectCount: effectIds.length,
+      componentMemoryCount: 0,
+      sectionCount: renderPlan.sections.length,
+      componentMatchRate: componentPlan.matchRate,
+      componentFallbackRate: componentPlan.fallbackRate,
+    });
   }
 
   /**
