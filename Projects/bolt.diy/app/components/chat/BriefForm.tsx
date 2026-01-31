@@ -6,6 +6,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { classNames } from '~/utils/classNames';
 import type { Brief, SiteType, DesignStyle } from '~/lib/services/enhancedPromptGenerator';
+import { resolveBriefSeed } from '~/lib/services/brief-utils';
 
 type Locale = 'en' | 'ru';
 
@@ -49,6 +50,8 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   const [customColor, setCustomColor] = useState('');
   const [style, setStyle] = useState<DesignStyle>('modern');
   const [wishes, setWishes] = useState('');
+  const [lockDesign, setLockDesign] = useState(false);
+  const [lockedSeed, setLockedSeed] = useState<number | null>(null);
 
   useEffect(() => {
     const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
@@ -84,16 +87,26 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       return;
     }
 
+    const { seed, nextLockedSeed } = resolveBriefSeed({
+      lockDesign,
+      lockedSeed,
+    });
+
+    if (lockedSeed !== nextLockedSeed) {
+      setLockedSeed(nextLockedSeed);
+    }
+
     const brief: Brief = {
       type: siteType,
       theme: theme.trim(),
       colors: selectedColors,
       style,
       wishes: wishes.trim() || undefined,
+      seed,
     };
 
     onSubmit(brief);
-  }, [siteType, theme, selectedColors, style, wishes, onSubmit]);
+  }, [siteType, theme, selectedColors, style, wishes, lockDesign, lockedSeed, onSubmit]);
 
   const isValid = theme.trim().length > 0;
 
@@ -291,6 +304,25 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
           )}
         />
       </div>
+
+      {/* Lock Design */}
+      <label className="flex items-center gap-3 text-sm text-bolt-elements-textSecondary">
+        <input
+          type="checkbox"
+          checked={lockDesign}
+          onChange={(e) => {
+            const nextValue = e.target.checked;
+            setLockDesign(nextValue);
+            if (!nextValue) {
+              setLockedSeed(null);
+            }
+          }}
+          className="h-4 w-4 rounded border-bolt-elements-borderColor text-bolt-elements-button-primary-background focus:ring-bolt-elements-button-primary-background"
+        />
+        <span>
+          {t('Lock design (repeatable result)', '\u0417\u0430\u0444\u0438\u043A\u0441\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0437\u0430\u0439\u043D (\u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u043C\u044B\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442)')}
+        </span>
+      </label>
 
       {/* Submit */}
       <button

@@ -2,8 +2,10 @@ import type { ComponentSelectionPlan } from './prompt-component-utils';
 import { buildComponentSelectionPlan } from './prompt-component-utils';
 import type { SectionType } from './prompt-data/section-definitions';
 import type { ComponentSource } from './prompt-data/component-index';
+import { SECTION_LABELS } from './prompt-data';
 import { hashString } from './prompt-theme-utils';
 import { applyStyleTokens, type StyleTokenVariables } from './style-token-utils';
+import type { SectionContract } from '~/types/section-contract';
 
 export type StyleTokens = {
   typography: string;
@@ -84,5 +86,18 @@ export function buildRenderPlan(options: BuildRenderPlanOptions): RenderPlan {
     layoutUniquenessHash,
     sections,
     componentPlan,
+  };
+}
+
+export function buildSectionContractFromRenderPlan(renderPlan: RenderPlan): SectionContract | undefined {
+  const order = renderPlan.sections.map((section) => section.sectionType);
+
+  if (order.length === 0) {
+    return undefined;
+  }
+
+  return {
+    order,
+    labels: SECTION_LABELS,
   };
 }

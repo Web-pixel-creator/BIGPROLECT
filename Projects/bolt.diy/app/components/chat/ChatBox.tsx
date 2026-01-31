@@ -23,7 +23,7 @@ import { CustomModelSelector } from './CustomModelSelector';
 import { PROMPT_PRESETS, EFFECT_PRESETS, SECTION_PRESETS, THEME_PRESETS } from '~/lib/constants/promptPresets';
 import { InputModeSelector, type InputMode } from './InputModeSelector';
 import { BriefForm } from './BriefForm';
-import type { Brief } from '~/lib/services/promptGenerator';
+import type { Brief } from '~/lib/services/enhancedPromptGenerator';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
