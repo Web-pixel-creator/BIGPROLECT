@@ -29,6 +29,8 @@ describe('component index', () => {
       'cta',
       'logos',
       'team',
+      'stats',
+      'contact',
     ] as const;
 
     for (const source of sources) {
