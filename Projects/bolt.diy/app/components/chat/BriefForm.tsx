@@ -590,12 +590,20 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
           <p className="text-xs text-amber-500">{analysisMessage}</p>
         )}
         {analysisStatus === 'success' && (analysisFallbackProvider || analysisFallbackModel) && (
-          <p className="text-xs text-bolt-elements-textTertiary">
-            {t(
-              `Fallback model used: ${analysisFallbackProvider ?? 'Unknown'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
-              `Использован fallback: ${analysisFallbackProvider ?? '\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+          <div
+            className={classNames(
+              'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs',
+              'bg-bolt-elements-background-depth-3 border-bolt-elements-borderColor text-bolt-elements-textSecondary',
             )}
-          </p>
+          >
+            <span className="i-ph:info text-xs" />
+            <span>
+              {t(
+                `Fallback model used: ${analysisFallbackProvider ?? 'Unknown'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+                `Использован fallback: ${analysisFallbackProvider ?? '\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+              )}
+            </span>
+          </div>
         )}
       </div>
 
