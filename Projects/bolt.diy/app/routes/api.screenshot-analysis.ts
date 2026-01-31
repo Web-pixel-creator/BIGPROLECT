@@ -5,6 +5,7 @@ import type { ProviderInfo } from '~/types/model';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constants';
 import { getApiKeysFromCookie, getProviderSettingsFromCookie } from '~/lib/api/cookies';
 import { createScopedLogger } from '~/utils/logger';
+import { LLMManager } from '~/lib/modules/llm/manager';
 
 const logger = createScopedLogger('api.screenshot-analysis');
 
@@ -33,6 +34,98 @@ const SYSTEM_PROMPT = [
   '- style: short label (e.g., editorial, minimal, bold, futuristic)',
   'Return ONLY the JSON object. Keep arrays concise.',
 ].join('\n');
+
+const FALLBACK_PROVIDER_ORDER = ['OpenAI', 'OpenRouter', 'Google', 'Anthropic', 'Together', 'Moonshot'];
+
+const VISION_NAME_HINTS = [
+  'vision',
+  'gpt-4o',
+  'gpt-4.1',
+  'gpt-4-turbo',
+  'gpt-4',
+  'claude-3',
+  'gemini',
+  'pixtral',
+  'llama-3.2-90b-vision',
+  'qwen-vl',
+  'phi-3-vision',
+  'moonshot-v1',
+];
+
+const isLikelyVisionModel = (name: string): boolean => {
+  const lower = name.toLowerCase();
+  return VISION_NAME_HINTS.some((hint) => lower.includes(hint));
+};
+
+const isVisionSupportError = (message: string): boolean => {
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes('api key') ||
+    lower.includes('unauthorized') ||
+    lower.includes('authentication') ||
+    lower.includes('rate limit') ||
+    lower.includes('quota') ||
+    lower.includes('resource_exhausted') ||
+    lower.includes('too many requests') ||
+    lower.includes('tokens per minute') ||
+    lower.includes('token limit')
+  ) {
+    return false;
+  }
+
+  if (lower.includes('image_url') || lower.includes('multimodal') || lower.includes('vision')) {
+    return true;
+  }
+
+  return lower.includes('image') && (lower.includes('unsupported') || lower.includes('invalid') || lower.includes('type'));
+};
+
+const pickVisionModelFromList = (models: Array<{ name: string }>, currentModel?: string): string | undefined => {
+  const filtered = models.filter((model) => model.name && model.name !== currentModel);
+  const preferred = filtered.find((model) => isLikelyVisionModel(model.name));
+  return preferred?.name ?? filtered[0]?.name;
+};
+
+const getProviderModels = async (options: {
+  provider: ProviderInfo;
+  apiKeys: Record<string, string>;
+  providerSettings: Record<string, any>;
+  serverEnv: Record<string, string>;
+}): Promise<Array<{ name: string }>> => {
+  const { provider, apiKeys, providerSettings, serverEnv } = options;
+
+  const staticModels = Array.isArray((provider as any).staticModels) ? (provider as any).staticModels : [];
+  if (staticModels.length > 0) {
+    return staticModels;
+  }
+
+  try {
+    const manager = LLMManager.getInstance(import.meta.env);
+    const dynamicModels = await manager.getModelListFromProvider(provider, {
+      apiKeys,
+      providerSettings,
+      serverEnv,
+    });
+    return dynamicModels ?? [];
+  } catch (error) {
+    logger.warn('Failed to fetch dynamic models for provider', { provider: provider.name, error });
+    return [];
+  }
+};
+
+const pickFallbackProvider = (apiKeys: Record<string, string>): ProviderInfo | undefined => {
+  for (const name of FALLBACK_PROVIDER_ORDER) {
+    if (apiKeys?.[name]) {
+      const provider = PROVIDER_LIST.find((item) => item.name === name);
+      if (provider) {
+        return provider;
+      }
+    }
+  }
+
+  return undefined;
+};
 
 function parseDataUrl(input: string): { data: string; mimeType: string } | null {
   if (typeof input !== 'string') {
@@ -88,27 +181,27 @@ export async function action({ context, request }: ActionFunctionArgs) {
   const apiKeys = getApiKeysFromCookie(cookieHeader);
   const providerSettings = getProviderSettingsFromCookie(cookieHeader);
 
-  try {
-    const contentParts: Array<TextPart | ImagePart> = [
-      {
-        type: 'text',
-        text: SYSTEM_PROMPT,
-      },
-      ...parsedImages.map((image) => ({
-        type: 'image',
-        image: image.data,
-        mimeType: image.mimeType,
-      })),
-    ];
+  const contentParts: Array<TextPart | ImagePart> = [
+    {
+      type: 'text',
+      text: SYSTEM_PROMPT,
+    },
+    ...parsedImages.map((image) => ({
+      type: 'image',
+      image: image.data,
+      mimeType: image.mimeType,
+    })),
+  ];
 
-    const modelInstance = providerInfo.getModelInstance({
-      model,
+  const runAnalysis = async (targetProvider: ProviderInfo, targetModel: string) => {
+    const modelInstance = targetProvider.getModelInstance({
+      model: targetModel,
       serverEnv: context.cloudflare?.env as any,
       apiKeys,
       providerSettings,
     });
 
-    const result = await generateObject<ScreenshotAnalysis>({
+    return generateObject<ScreenshotAnalysis>({
       model: modelInstance,
       schema: ScreenshotAnalysisSchema,
       schemaName: 'ScreenshotAnalysis',
@@ -122,6 +215,10 @@ export async function action({ context, request }: ActionFunctionArgs) {
         },
       ],
     });
+  };
+
+  try {
+    const result = await runAnalysis(providerInfo, model);
 
     return new Response(JSON.stringify({ analysis: result.object }), {
       status: 200,
@@ -129,7 +226,65 @@ export async function action({ context, request }: ActionFunctionArgs) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Screenshot analysis failed';
-    logger.error('Screenshot analysis failed', { message });
+    logger.warn('Screenshot analysis failed', { message });
+
+    if (isVisionSupportError(message)) {
+      const availableModels = await getProviderModels({
+        provider: providerInfo,
+        apiKeys,
+        providerSettings,
+        serverEnv: context.cloudflare?.env as any,
+      });
+      const fallbackModel = pickVisionModelFromList(availableModels, model);
+
+      if (fallbackModel) {
+        try {
+          const result = await runAnalysis(providerInfo, fallbackModel);
+
+          return new Response(JSON.stringify({ analysis: result.object, fallbackModel }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (fallbackError: unknown) {
+          const fallbackMessage =
+            fallbackError instanceof Error ? fallbackError.message : 'Fallback analysis failed';
+          logger.warn('Screenshot analysis fallback failed', { fallbackMessage });
+        }
+      }
+
+      const fallbackProvider = pickFallbackProvider(apiKeys);
+      if (fallbackProvider && fallbackProvider.name !== providerInfo.name) {
+        const fallbackModels = await getProviderModels({
+          provider: fallbackProvider,
+          apiKeys,
+          providerSettings,
+          serverEnv: context.cloudflare?.env as any,
+        });
+        const fallbackModelFromProvider = pickVisionModelFromList(fallbackModels);
+
+        if (fallbackModelFromProvider) {
+          try {
+            const result = await runAnalysis(fallbackProvider, fallbackModelFromProvider);
+
+            return new Response(
+              JSON.stringify({
+                analysis: result.object,
+                fallbackModel: fallbackModelFromProvider,
+                fallbackProvider: fallbackProvider.name,
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              },
+            );
+          } catch (fallbackError: unknown) {
+            const fallbackMessage =
+              fallbackError instanceof Error ? fallbackError.message : 'Fallback analysis failed';
+            logger.warn('Screenshot analysis fallback provider failed', { fallbackMessage });
+          }
+        }
+      }
+    }
 
     const status =
       typeof message === 'string' && message.toLowerCase().includes('api key') ? 401 : 503;
