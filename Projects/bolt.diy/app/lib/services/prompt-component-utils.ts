@@ -262,6 +262,15 @@ function extractPromptTokens(prompt: string): string[] {
   return Array.from(new Set(tokens));
 }
 
+export type ComponentSelectionPlan = {
+  planText: string;
+  eligibleSections: number;
+  matchedSections: number;
+  fallbackCount: number;
+  matchRate: number;
+  fallbackRate: number;
+};
+
 /**
  * Build a component selection plan from the curated component index
  */
@@ -270,21 +279,27 @@ export function buildComponentSelectionPlan(
   mentionedSections: string[],
   styleTags: string[] = [],
   seed: number = Date.now(),
-): string {
+): ComponentSelectionPlan {
   if (!prompt || mentionedSections.length === 0) {
-    return '';
+    return {
+      planText: '',
+      eligibleSections: 0,
+      matchedSections: 0,
+      fallbackCount: 0,
+      matchRate: 0,
+      fallbackRate: 0,
+    };
   }
 
   const sectionSet = new Set(COMPONENT_INDEX.map((entry) => entry.sectionType));
   const tokens = extractPromptTokens(prompt);
   const recentIds = getRecentComponentIds();
   const planLines: string[] = [];
+  const uniqueSections = Array.from(new Set(mentionedSections));
+  const eligibleSections = uniqueSections.filter((section) => sectionSet.has(section as SectionType));
+  let matchedSections = 0;
 
-  for (const section of mentionedSections) {
-    if (!sectionSet.has(section as SectionType)) {
-      continue;
-    }
-
+  for (const section of eligibleSections) {
     const context = {
       sectionType: section as SectionType,
       promptKeywords: tokens,
@@ -305,13 +320,23 @@ export function buildComponentSelectionPlan(
       continue;
     }
 
+    matchedSections += 1;
     planLines.push(`- ${section}: ${selected.id} (${selected.source}, ${selected.layoutArchetype})`);
     rememberRecentComponent(selected.id);
   }
 
-  if (planLines.length === 0) {
-    return '';
-  }
+  const fallbackCount = eligibleSections.length - matchedSections;
+  const matchRate = eligibleSections.length > 0 ? matchedSections / eligibleSections.length : 0;
+  const fallbackRate = eligibleSections.length > 0 ? fallbackCount / eligibleSections.length : 0;
+  const planText =
+    planLines.length > 0 ? `\nCOMPONENT PLAN (use these component archetypes):\n${planLines.join('\n')}` : '';
 
-  return `\nCOMPONENT PLAN (use these component archetypes):\n${planLines.join('\n')}`;
+  return {
+    planText,
+    eligibleSections: eligibleSections.length,
+    matchedSections,
+    fallbackCount,
+    matchRate,
+    fallbackRate,
+  };
 }

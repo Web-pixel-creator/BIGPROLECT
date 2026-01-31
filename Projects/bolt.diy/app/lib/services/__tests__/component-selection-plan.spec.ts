@@ -9,10 +9,11 @@ describe('component selection plan', () => {
     const mentionedSections = ['hero', 'features', 'pricing'];
     const styleTags = ['modern', 'bold'];
 
-    const block = buildComponentSelectionPlan(prompt, mentionedSections, styleTags, 12345);
+    const plan = buildComponentSelectionPlan(prompt, mentionedSections, styleTags, 12345);
 
-    expect(block).toContain('COMPONENT PLAN');
-    const lines = block.split('\n').filter((line) => line.trim().startsWith('- '));
+    expect(plan.planText).toContain('COMPONENT PLAN');
+    expect(plan.matchRate).toBeGreaterThan(0);
+    const lines = plan.planText.split('\n').filter((line) => line.trim().startsWith('- '));
 
     const ids = new Set(COMPONENT_INDEX.map((entry) => entry.id));
     const sections = new Set<string>();

@@ -380,6 +380,15 @@ export interface EnhancedPrompt {
 
   componentMemory: ComponentMemoryEntry[];
 
+  componentPlan?: {
+    planText: string;
+    eligibleSections: number;
+    matchedSections: number;
+    fallbackCount: number;
+    matchRate: number;
+    fallbackRate: number;
+  };
+
   sectionContract?: SectionContract;
 }
 
@@ -829,12 +838,13 @@ export async function enhancePromptWithDesignSystem(
   const selectionStyleTags = stylePack
     ? [stylePack.id, stylePack.label, ...(stylePack.effects ?? [])]
     : [];
-  const componentPlanBlock = buildComponentSelectionPlan(
+  const componentPlan = buildComponentSelectionPlan(
     analysisPrompt,
     mentionedSections,
     selectionStyleTags,
     designSeed,
   );
+  const componentPlanBlock = componentPlan.planText;
   const layoutUniquenessHash = buildLayoutUniquenessHash({
     stylePackId,
     layoutArchetype,
@@ -971,6 +981,7 @@ ${layoutSuggestions}`
     effectIds,
 
     componentMemory: componentMemoryEntries,
+    componentPlan,
 
     sectionContract: sectionContractData,
   };
@@ -1025,6 +1036,8 @@ export async function generateAndRankDesignVariants(
         effectCount: variant.effectIds?.length ?? 0,
         componentMemoryCount: variant.componentMemory?.length ?? 0,
         sectionCount,
+        componentMatchRate: variant.componentPlan?.matchRate ?? 0,
+        componentFallbackRate: variant.componentPlan?.fallbackRate ?? 0,
       });
     }
   } catch (error) {

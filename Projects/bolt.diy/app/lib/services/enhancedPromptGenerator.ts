@@ -379,8 +379,8 @@ export class EnhancedPromptGenerator {
       lines.push('');
     });
 
-    if (componentPlan) {
-      lines.push(componentPlan.trim());
+    if (componentPlan.planText) {
+      lines.push(componentPlan.planText.trim());
       lines.push('');
     }
 

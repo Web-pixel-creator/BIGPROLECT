@@ -88,6 +88,8 @@ export interface DesignQualityEvent {
   effectCount: number;
   componentMemoryCount: number;
   sectionCount: number;
+  componentMatchRate: number;
+  componentFallbackRate: number;
 }
 
 /*
@@ -157,6 +159,8 @@ interface TelemetryStore {
     totalComponentMemory: number;
     totalSectionCount: number;
     totalVariantCount: number;
+    totalComponentMatchRate: number;
+    totalComponentFallbackRate: number;
     recentDesignEvents: DesignQualityEvent[];
   };
 }
@@ -220,6 +224,8 @@ function createEmptyStore(): TelemetryStore {
       totalComponentMemory: 0,
       totalSectionCount: 0,
       totalVariantCount: 0,
+      totalComponentMatchRate: 0,
+      totalComponentFallbackRate: 0,
       recentDesignEvents: [],
     },
   };
@@ -383,6 +389,8 @@ export interface EmitDesignQualityOptions {
   effectCount: number;
   componentMemoryCount: number;
   sectionCount: number;
+  componentMatchRate: number;
+  componentFallbackRate: number;
 }
 
 /**
@@ -520,6 +528,8 @@ function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
   design.totalComponentMemory += event.componentMemoryCount;
   design.totalSectionCount += event.sectionCount;
   design.totalVariantCount += event.variantCount;
+  design.totalComponentMatchRate += event.componentMatchRate;
+  design.totalComponentFallbackRate += event.componentFallbackRate;
 
   if (event.selected) {
     design.selectedVariants++;
@@ -633,6 +643,8 @@ export interface DesignTelemetrySummary {
   avgEffects: number;
   avgComponentMemory: number;
   avgSectionCount: number;
+  avgComponentMatchRate: number;
+  avgComponentFallbackRate: number;
   topStylePacks: Array<{ id: string; count: number }>;
   topLayoutArchetypes: Array<{ id: string; count: number }>;
 }
@@ -697,6 +709,8 @@ export function getDesignTelemetrySummary(): DesignTelemetrySummary {
     avgEffects: totalVariants > 0 ? design.totalEffects / totalVariants : 0,
     avgComponentMemory: totalVariants > 0 ? design.totalComponentMemory / totalVariants : 0,
     avgSectionCount: totalVariants > 0 ? design.totalSectionCount / totalVariants : 0,
+    avgComponentMatchRate: totalVariants > 0 ? design.totalComponentMatchRate / totalVariants : 0,
+    avgComponentFallbackRate: totalVariants > 0 ? design.totalComponentFallbackRate / totalVariants : 0,
     topStylePacks: summarizeCountMap(design.stylePackCounts, 5),
     topLayoutArchetypes: summarizeCountMap(design.layoutArchetypeCounts, 5),
   };
