@@ -66,6 +66,8 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'error' | 'success'>('idle');
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
+  const [analysisFallbackProvider, setAnalysisFallbackProvider] = useState<string | null>(null);
+  const [analysisFallbackModel, setAnalysisFallbackModel] = useState<string | null>(null);
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const initializedRef = useRef(false);
 
@@ -78,6 +80,8 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
     if (screenshotPreviews.length === 0) {
       setAnalysisStatus('idle');
       setAnalysisMessage(null);
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
     }
   }, [screenshotPreviews.length]);
 
@@ -199,6 +203,8 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
         const previews = await Promise.all(selected.map(readFileAsDataUrl));
         setAnalysisStatus('idle');
         setAnalysisMessage(null);
+        setAnalysisFallbackProvider(null);
+        setAnalysisFallbackModel(null);
         setScreenshotFiles((prev) => [...prev, ...selected]);
         setScreenshotPreviews((prev) => [...prev, ...previews]);
       } catch (error) {
@@ -222,6 +228,8 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
   const handleRemoveScreenshot = useCallback((index: number) => {
     setAnalysisStatus('idle');
     setAnalysisMessage(null);
+    setAnalysisFallbackProvider(null);
+    setAnalysisFallbackModel(null);
     setScreenshotFiles((prev) => prev.filter((_, i) => i !== index));
     setScreenshotPreviews((prev) => prev.filter((_, i) => i !== index));
   }, []);
@@ -247,15 +255,22 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
     if (screenshotPreviews.length > 0) {
       setAnalysisStatus('analyzing');
       setAnalysisMessage(null);
-      const analysis = await analyzeScreenshots({
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
+
+      const analysisResult = await analyzeScreenshots({
         images: screenshotPreviews,
         model,
         provider,
       });
 
-      if (analysis) {
-        screenshotAnalysis = analysis;
+      if (analysisResult.analysis) {
+        screenshotAnalysis = analysisResult.analysis;
         setAnalysisStatus('success');
+        if (analysisResult.fallbackProvider || analysisResult.fallbackModel) {
+          setAnalysisFallbackProvider(analysisResult.fallbackProvider ?? null);
+          setAnalysisFallbackModel(analysisResult.fallbackModel ?? null);
+        }
       } else {
         setAnalysisStatus('error');
         setAnalysisMessage(
@@ -268,6 +283,8 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
     } else {
       setAnalysisStatus('idle');
       setAnalysisMessage(null);
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
     }
 
     const brief: Brief = {
@@ -571,6 +588,14 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
         )}
         {analysisStatus === 'error' && analysisMessage && (
           <p className="text-xs text-amber-500">{analysisMessage}</p>
+        )}
+        {analysisStatus === 'success' && (analysisFallbackProvider || analysisFallbackModel) && (
+          <p className="text-xs text-bolt-elements-textTertiary">
+            {t(
+              `Fallback model used: ${analysisFallbackProvider ?? 'Unknown'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+              `Использован fallback: ${analysisFallbackProvider ?? '\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+            )}
+          </p>
         )}
       </div>
 

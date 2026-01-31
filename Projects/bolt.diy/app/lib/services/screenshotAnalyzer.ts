@@ -7,6 +7,12 @@ export interface ScreenshotAnalyzerInput {
   provider?: ProviderInfo;
 }
 
+export interface ScreenshotAnalysisResult {
+  analysis: ScreenshotAnalysis | null;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}
+
 const MAX_IMAGES = 3;
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -48,13 +54,13 @@ export async function analyzeScreenshots({
   images,
   model,
   provider,
-}: ScreenshotAnalyzerInput): Promise<ScreenshotAnalysis | null> {
+}: ScreenshotAnalyzerInput): Promise<ScreenshotAnalysisResult> {
   const sanitizedImages = Array.isArray(images)
     ? images.filter(isNonEmptyString).slice(0, MAX_IMAGES)
     : [];
 
   if (sanitizedImages.length === 0) {
-    return null;
+    return { analysis: null };
   }
 
   try {
@@ -71,17 +77,21 @@ export async function analyzeScreenshots({
     });
 
     if (!response.ok) {
-      return null;
+      return { analysis: null };
     }
 
     const payload = await response.json().catch(() => null);
     if (!payload) {
-      return null;
+      return { analysis: null };
     }
 
-    return normalizeAnalysis(payload.analysis ?? payload);
+    return {
+      analysis: normalizeAnalysis(payload.analysis ?? payload),
+      fallbackProvider: isNonEmptyString(payload.fallbackProvider) ? payload.fallbackProvider : undefined,
+      fallbackModel: isNonEmptyString(payload.fallbackModel) ? payload.fallbackModel : undefined,
+    };
   } catch (error) {
     console.warn('Screenshot analysis failed:', error);
-    return null;
+    return { analysis: null };
   }
 }
