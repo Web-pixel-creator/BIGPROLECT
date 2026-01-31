@@ -18,7 +18,18 @@ describe('component index', () => {
 
   it('includes core sections for shadcn and magicui', () => {
     const sources = ['shadcn', 'magicui'] as const;
-    const sections = ['hero', 'features', 'pricing', 'testimonials', 'faq', 'footer'] as const;
+    const sections = [
+      'hero',
+      'features',
+      'pricing',
+      'testimonials',
+      'faq',
+      'footer',
+      'navigation',
+      'cta',
+      'logos',
+      'team',
+    ] as const;
 
     for (const source of sources) {
       for (const sectionType of sections) {
