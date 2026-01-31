@@ -31,6 +31,15 @@ describe('component index', () => {
       'team',
       'stats',
       'contact',
+      'about',
+      'blog',
+      'gallery',
+      'marquee',
+      'how-it-works',
+      'comparison',
+      'integration',
+      'newsletter',
+      'services',
     ] as const;
 
     for (const source of sources) {
