@@ -8,13 +8,18 @@ import { useSearchParams } from '@remix-run/react';
 import { classNames } from '~/utils/classNames';
 import type { Brief, SiteType, DesignStyle } from '~/lib/services/enhancedPromptGenerator';
 import { resolveBriefSeed } from '~/lib/services/brief-utils';
+import { analyzeScreenshots } from '~/lib/services/screenshotAnalyzer';
+import type { ProviderInfo } from '~/types/model';
+import FilePreview from './FilePreview';
 
 type Locale = 'en' | 'ru';
 
 interface BriefFormProps {
-  onSubmit: (brief: Brief) => void;
+  onSubmit: (brief: Brief) => Promise<void> | void;
   isLoading?: boolean;
   className?: string;
+  model?: string;
+  provider?: ProviderInfo;
 }
 
 const SITE_TYPES: { value: SiteType; label: string; labelRu: string }[] = [
@@ -43,7 +48,9 @@ const PRESET_COLORS = [
   { name: 'Indigo', hex: '#6366F1' },
 ];
 
-export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormProps) {
+const MAX_SCREENSHOTS = 3;
+
+export function BriefForm({ onSubmit, isLoading = false, className, model, provider }: BriefFormProps) {
   const [searchParams] = useSearchParams();
   const [locale, setLocale] = useState<Locale>('en');
   const [siteType, setSiteType] = useState<SiteType>('landing');
@@ -55,12 +62,24 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   const [lockDesign, setLockDesign] = useState(false);
   const [lockedSeed, setLockedSeed] = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'error' | 'success'>('idle');
+  const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
+  const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const initializedRef = useRef(false);
 
   useEffect(() => {
     const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
     setLocale(browserLang?.startsWith('ru') ? 'ru' : 'en');
   }, []);
+
+  useEffect(() => {
+    if (screenshotPreviews.length === 0) {
+      setAnalysisStatus('idle');
+      setAnalysisMessage(null);
+    }
+  }, [screenshotPreviews.length]);
 
   useEffect(() => {
     if (initializedRef.current) {
@@ -152,7 +171,62 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
     }
   }, [customColor, selectedColors]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const readFileAsDataUrl = useCallback((file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const addScreenshots = useCallback(
+    async (files: FileList | File[]) => {
+      const incoming = Array.from(files).filter((file) => file.type.startsWith('image/'));
+      if (incoming.length === 0) {
+        return;
+      }
+
+      const availableSlots = Math.max(0, MAX_SCREENSHOTS - screenshotFiles.length);
+      const selected = incoming.slice(0, availableSlots);
+
+      if (selected.length === 0) {
+        return;
+      }
+
+      try {
+        const previews = await Promise.all(selected.map(readFileAsDataUrl));
+        setAnalysisStatus('idle');
+        setAnalysisMessage(null);
+        setScreenshotFiles((prev) => [...prev, ...selected]);
+        setScreenshotPreviews((prev) => [...prev, ...previews]);
+      } catch (error) {
+        console.warn('Failed to read screenshot files', error);
+      }
+    },
+    [readFileAsDataUrl, screenshotFiles.length],
+  );
+
+  const handleScreenshotChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (event.target.files) {
+        void addScreenshots(event.target.files);
+      }
+
+      event.target.value = '';
+    },
+    [addScreenshots],
+  );
+
+  const handleRemoveScreenshot = useCallback((index: number) => {
+    setAnalysisStatus('idle');
+    setAnalysisMessage(null);
+    setScreenshotFiles((prev) => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!theme.trim()) {
@@ -168,6 +242,34 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       setLockedSeed(nextLockedSeed);
     }
 
+    let screenshotAnalysis: Brief['screenshotAnalysis'] | undefined;
+
+    if (screenshotPreviews.length > 0) {
+      setAnalysisStatus('analyzing');
+      setAnalysisMessage(null);
+      const analysis = await analyzeScreenshots({
+        images: screenshotPreviews,
+        model,
+        provider,
+      });
+
+      if (analysis) {
+        screenshotAnalysis = analysis;
+        setAnalysisStatus('success');
+      } else {
+        setAnalysisStatus('error');
+        setAnalysisMessage(
+          t(
+            'Could not analyze screenshots. Continuing without them.',
+            '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u044B. \u041F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u043C \u0431\u0435\u0437 \u043D\u0438\u0445.',
+          ),
+        );
+      }
+    } else {
+      setAnalysisStatus('idle');
+      setAnalysisMessage(null);
+    }
+
     const brief: Brief = {
       type: siteType,
       theme: theme.trim(),
@@ -175,10 +277,24 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       style,
       wishes: wishes.trim() || undefined,
       seed,
+      screenshotAnalysis,
     };
 
-    onSubmit(brief);
-  }, [siteType, theme, selectedColors, style, wishes, lockDesign, lockedSeed, onSubmit]);
+    await onSubmit(brief);
+  }, [
+    siteType,
+    theme,
+    selectedColors,
+    style,
+    wishes,
+    lockDesign,
+    lockedSeed,
+    screenshotPreviews,
+    model,
+    provider,
+    onSubmit,
+    t,
+  ]);
 
   const buildShareUrl = useCallback(
     (seedValue: number | null) => {
@@ -244,6 +360,7 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   }, [buildShareUrl, lockDesign, lockedSeed]);
 
   const isValid = theme.trim().length > 0;
+  const isBusy = isLoading || analysisStatus === 'analyzing';
 
   return (
     <form 
@@ -417,6 +534,46 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
         )}
       </div>
 
+      {/* Reference Screenshots */}
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-bolt-elements-textPrimary">
+          {t('Reference Screenshots (optional)', '\u0420\u0435\u0444\u0435\u0440\u0435\u043D\u0441\u044B (\u043D\u0435\u043E\u0431\u044F\u0437.)')}
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={screenshotInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleScreenshotChange}
+          />
+          <button
+            type="button"
+            onClick={() => screenshotInputRef.current?.click()}
+            className={classNames(
+              'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+              'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary',
+              'border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive'
+            )}
+          >
+            {t('Upload screenshots', '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u044B')}
+          </button>
+          <span className="text-xs text-bolt-elements-textTertiary">
+            {t('Up to 3 images', '\u0414\u043E 3 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439')}
+          </span>
+        </div>
+        <FilePreview files={screenshotFiles} imageDataList={screenshotPreviews} onRemove={handleRemoveScreenshot} />
+        {analysisStatus === 'analyzing' && (
+          <p className="text-xs text-bolt-elements-textTertiary">
+            {t('Analyzing screenshots...', '\u0410\u043D\u0430\u043B\u0438\u0437 \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u043E\u0432...')}
+          </p>
+        )}
+        {analysisStatus === 'error' && analysisMessage && (
+          <p className="text-xs text-amber-500">{analysisMessage}</p>
+        )}
+      </div>
+
       {/* Additional Wishes */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
@@ -484,19 +641,21 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       {/* Submit */}
       <button
         type="submit"
-        disabled={!isValid || isLoading}
+        disabled={!isValid || isBusy}
         className={classNames(
           'w-full py-3 px-4 rounded-lg font-medium text-base transition-all',
           'flex items-center justify-center gap-2',
-          isValid && !isLoading
+          isValid && !isBusy
             ? 'bg-bolt-elements-button-primary-background text-bolt-elements-button-primary-text hover:bg-bolt-elements-button-primary-backgroundHover'
             : 'bg-bolt-elements-button-secondary-background text-bolt-elements-button-secondary-text opacity-50 cursor-not-allowed'
         )}
       >
-        {isLoading ? (
+        {isBusy ? (
           <>
             <span className="i-svg-spinners:90-ring-with-bg" />
-            {t('Generating...', '\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F...')}
+            {analysisStatus === 'analyzing'
+              ? t('Analyzing references...', '\u0410\u043D\u0430\u043B\u0438\u0437 \u0440\u0435\u0444\u0435\u0440\u0435\u043D\u0441\u043E\u0432...')
+              : t('Generating...', '\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F...')}
           </>
         ) : (
           <>

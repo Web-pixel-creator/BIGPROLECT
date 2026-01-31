@@ -257,7 +257,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         <InputModeSelector mode={props.inputMode} onChange={props.setInputMode} className="mx-1.5" />
       )}
       {isBriefMode ? (
-        <BriefForm onSubmit={handleBriefSubmit} isLoading={props.isStreaming} className="mx-1.5" />
+        <BriefForm
+          onSubmit={handleBriefSubmit}
+          isLoading={props.isStreaming}
+          className="mx-1.5"
+          model={props.model}
+          provider={props.provider}
+        />
       ) : (
         <>
           <FilePreview
