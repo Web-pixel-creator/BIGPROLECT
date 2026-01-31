@@ -621,6 +621,8 @@ export async function enhancePromptWithDesignSystem(
 
   const brandName = extractBrandName(analysisPrompt) ?? generateBrandName(detectedTheme, analysisPrompt);
   const lowerPrompt = analysisPrompt.toLowerCase();
+  const sectionPrompt = userPrompt;
+  const sectionLowerPrompt = sectionPrompt.toLowerCase();
   const hasUserColors = hasUserSpecifiedColors(analysisPrompt);
 
   // Check if user already specified colors (priority: HEX codes > color words > theme defaults)
@@ -697,11 +699,11 @@ export async function enhancePromptWithDesignSystem(
   const sectionKeywords = SECTION_KEYWORDS;
 
   // Find which sections are mentioned
-  const sectionSpecs = extractSectionSpecs(analysisPrompt, sectionKeywords);
+  const sectionSpecs = extractSectionSpecs(sectionPrompt, sectionKeywords);
   promptLog('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
 
   const orderedSections =
-    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(analysisPrompt, sectionKeywords);
+    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(sectionPrompt, sectionKeywords);
   promptLog('[promptEnhancer] orderedSections:', orderedSections);
 
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
@@ -710,7 +712,7 @@ export async function enhancePromptWithDesignSystem(
     // Fallback scan when section extraction found nothing.
     for (const [section, keywords] of Object.entries(sectionKeywords)) {
       if (!mentionedSections.includes(section)) {
-        if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
+        if (keywords.some((kw) => matchesKeyword(sectionLowerPrompt, kw))) {
           promptLog('[promptEnhancer] Fallback found section:', section);
           mentionedSections.push(section);
         }
