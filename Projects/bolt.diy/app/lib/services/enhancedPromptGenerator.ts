@@ -21,6 +21,7 @@ import {
 } from '~/lib/design-system';
 import { THEME_PALETTES } from './prompt-data';
 import { createSeededRandom } from './prompt-data/seeded-random';
+import { buildComponentSelectionPlan } from './prompt-component-utils';
 
 // ============================================================================
 // Types (Extended)
@@ -268,6 +269,40 @@ export class EnhancedPromptGenerator {
     return styles.join('; ');
   }
 
+  private buildSelectionStyleTags(brief: Brief): string[] {
+    const tags: string[] = [];
+
+    if (brief.style) {
+      tags.push(brief.style);
+    }
+
+    if (this.designSystem?.styleProfile?.id) {
+      tags.push(this.designSystem.styleProfile.id);
+    }
+
+    if (this.designSystem?.styleProfile?.name) {
+      tags.push(this.designSystem.styleProfile.name);
+    }
+
+    if (this.designSystem?.layout?.pattern?.category) {
+      tags.push(this.designSystem.layout.pattern.category);
+    }
+
+    if (this.designSystem?.layout?.pattern?.complexity) {
+      tags.push(this.designSystem.layout.pattern.complexity);
+    }
+
+    if (this.designSystem?.layout?.pattern?.name) {
+      tags.push(this.designSystem.layout.pattern.name);
+    }
+
+    if (this.designSystem?.layout?.pattern?.globalFeatures?.length) {
+      tags.push(...this.designSystem.layout.pattern.globalFeatures);
+    }
+
+    return tags;
+  }
+
   /**
    * Build the enhanced prompt string
    */
@@ -280,6 +315,13 @@ export class EnhancedPromptGenerator {
   ): string {
     const typeLabel = this.getSiteTypeLabel(brief.type);
     const styleLabel = this.getDesignStyleLabel(brief.style);
+    const styleTags = this.buildSelectionStyleTags(brief);
+    const componentPlan = buildComponentSelectionPlan(
+      `${brief.theme} ${typeLabel} ${styleLabel} ${brief.wishes ?? ''}`.trim(),
+      sections.map((section) => section.name),
+      styleTags,
+      this.designSystem?.seed ?? brief.seed ?? Date.now(),
+    );
 
     const lines: string[] = [
       `Create a ${typeLabel} for "${brief.theme}" using Vite + React + TypeScript.`,
@@ -337,6 +379,11 @@ export class EnhancedPromptGenerator {
       lines.push('');
     });
 
+    if (componentPlan) {
+      lines.push(componentPlan.trim());
+      lines.push('');
+    }
+
     // Add style mixer features
     if (this.designSystem?.styleProfile.features) {
       lines.push('STYLE FEATURES:');
@@ -369,6 +416,7 @@ export class EnhancedPromptGenerator {
     lines.push('- Apply hover and scroll effects as specified');
     lines.push('- Ensure responsive design at all breakpoints');
     lines.push('- Use CSS custom properties for theming');
+    lines.push('- Frontend-only: do not modify backend, API routes, or database logic.');
     lines.push('');
     lines.push('QUALITY REQUIREMENTS:');
     lines.push('- Professional, polished appearance');
