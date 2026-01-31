@@ -17,6 +17,12 @@ export type SelectionContext = {
   layoutTags?: string[];
   styleTags?: string[];
   recentComponentIds?: string[] | Set<string>;
+  requiredTokens?: {
+    typography?: boolean;
+    spacing?: boolean;
+    radius?: boolean;
+    colors?: boolean;
+  };
 };
 
 export type SelectionOptions = {
@@ -39,6 +45,8 @@ const DEFAULT_WEIGHTS: SelectionWeights = {
 };
 
 const MAX_SECTION_PRIORITY = Math.max(...Object.values(SECTION_SCORING_PRIORITY));
+const ALLOWED_DEPENDENCIES = new Set(['react', 'framer-motion', 'lucide-react', 'clsx', 'tailwind-merge']);
+const ALLOWED_DEP_PREFIXES = ['@radix-ui/'];
 
 function normalizeTokens(tokens: string[] | undefined): string[] {
   if (!tokens || tokens.length === 0) {
@@ -101,12 +109,77 @@ function isRecent(entryId: string, recent: string[] | Set<string> | undefined): 
   return recent.has(entryId);
 }
 
+function isDependencyAllowed(dep: string): boolean {
+  if (!dep) {
+    return true;
+  }
+
+  if (dep.startsWith('.') || dep.startsWith('@/')) {
+    return true;
+  }
+
+  if (ALLOWED_DEPENDENCIES.has(dep)) {
+    return true;
+  }
+
+  for (const prefix of ALLOWED_DEP_PREFIXES) {
+    if (dep.startsWith(prefix)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasAllowedDependencies(entry: ComponentIndexEntry): boolean {
+  if (!entry.dependencies || entry.dependencies.length === 0) {
+    return true;
+  }
+
+  return entry.dependencies.every((dep) => isDependencyAllowed(dep));
+}
+
+function isTokenCompatible(
+  entry: ComponentIndexEntry,
+  required: SelectionContext['requiredTokens'],
+): boolean {
+  if (!required) {
+    return true;
+  }
+
+  const compatibility = entry.tokenCompatibility;
+  if (!compatibility) {
+    return true;
+  }
+
+  if (required.typography && compatibility.typography === false) {
+    return false;
+  }
+  if (required.spacing && compatibility.spacing === false) {
+    return false;
+  }
+  if (required.radius && compatibility.radius === false) {
+    return false;
+  }
+  if (required.colors && compatibility.colors === false) {
+    return false;
+  }
+
+  return true;
+}
+
 export function scoreComponentCandidate(
   entry: ComponentIndexEntry,
   context: SelectionContext,
   weights: SelectionWeights = DEFAULT_WEIGHTS,
 ): number {
   if (entry.sectionType !== context.sectionType) {
+    return 0;
+  }
+  if (!hasAllowedDependencies(entry)) {
+    return 0;
+  }
+  if (!isTokenCompatible(entry, context.requiredTokens)) {
     return 0;
   }
 

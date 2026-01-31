@@ -72,6 +72,34 @@ describe('component selection policy', () => {
     expect(recentScore).toBeLessThan(freshScore);
   });
 
+  it('filters out disallowed dependencies', () => {
+    const bad = makeEntry({ id: 'bad', dependencies: ['react-router-dom'] });
+    const good = makeEntry({ id: 'good', dependencies: ['lucide-react'] });
+    const context = { sectionType: 'hero' as const, promptKeywords: ['grid'] };
+
+    const badScore = scoreComponentCandidate(bad, context);
+    const goodScore = scoreComponentCandidate(good, context);
+
+    expect(badScore).toBe(0);
+    expect(goodScore).toBeGreaterThan(0);
+  });
+
+  it('filters out incompatible token hooks', () => {
+    const entry = makeEntry({
+      id: 'token-mismatch',
+      tokenCompatibility: { typography: false, spacing: true, radius: true, colors: true },
+    });
+    const context = {
+      sectionType: 'hero' as const,
+      promptKeywords: ['grid'],
+      requiredTokens: { typography: true, spacing: true, radius: true, colors: true },
+    };
+
+    const score = scoreComponentCandidate(entry, context);
+
+    expect(score).toBe(0);
+  });
+
   it('selects deterministically from top-k with seed', () => {
     const entries = [
       makeEntry({ id: 'a', visualTags: ['grid'], styleTags: ['modern'] }),

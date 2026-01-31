@@ -291,6 +291,12 @@ export function buildComponentSelectionPlan(
       layoutTags: COMPONENT_SECTION_KEYWORDS[section] ?? [],
       styleTags,
       recentComponentIds: recentIds,
+      requiredTokens: {
+        typography: true,
+        spacing: true,
+        radius: true,
+        colors: true,
+      },
     };
     const sectionSeed = hashString(`${seed}:${section}:${prompt}`);
     const { selected } = selectComponentCandidate(COMPONENT_INDEX, context, { topK: 4, seed: sectionSeed });

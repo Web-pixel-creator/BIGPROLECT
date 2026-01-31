@@ -11,6 +11,12 @@ export type ComponentIndexEntry = {
   styleTags: string[];
   layoutArchetype: string;
   dependencies: string[];
+  tokenCompatibility?: {
+    typography?: boolean;
+    spacing?: boolean;
+    radius?: boolean;
+    colors?: boolean;
+  };
 };
 
 export const COMPONENT_INDEX: ComponentIndexEntry[] = [
