@@ -64,6 +64,13 @@ export function rememberRecentComponent(name: string) {
 }
 
 /**
+ * Get recent component ids (for selection penalty)
+ */
+export function getRecentComponentIds(): string[] {
+  return [...recentComponentQueue];
+}
+
+/**
  * Pick a non-repeating variant for a section
  */
 export function pickNonRepeatingVariant(section: string, options: string[], rng?: () => number): string {

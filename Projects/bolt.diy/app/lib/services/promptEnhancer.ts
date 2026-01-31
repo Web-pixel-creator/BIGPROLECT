@@ -73,7 +73,11 @@ import {
   buildSectionBlueprint,
 } from './prompt-section-utils';
 import { buildSectionVariantBlock, pickEffectIds } from './prompt-variant-utils';
-import { buildComponentDirectives, SAFE_COMPONENT_REGISTRY } from './prompt-component-utils';
+import {
+  buildComponentDirectives,
+  buildComponentSelectionPlan,
+  SAFE_COMPONENT_REGISTRY,
+} from './prompt-component-utils';
 import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 import {
@@ -822,6 +826,15 @@ export async function enhancePromptWithDesignSystem(
   const designDnaBlock = buildDesignDnaBlock(stylePack, designCues);
   const componentMemoryEntries = pickComponentMemoryEntries(detectedTheme, mentionedSections, designRng);
   const componentMemoryBlock = buildComponentMemoryBlock(componentMemoryEntries);
+  const selectionStyleTags = stylePack
+    ? [stylePack.id, stylePack.label, ...(stylePack.effects ?? [])]
+    : [];
+  const componentPlanBlock = buildComponentSelectionPlan(
+    analysisPrompt,
+    mentionedSections,
+    selectionStyleTags,
+    designSeed,
+  );
   const layoutUniquenessHash = buildLayoutUniquenessHash({
     stylePackId,
     layoutArchetype,
@@ -853,7 +866,7 @@ ${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChec
       ? `
 ${layoutSuggestions}`
       : ''
-  }${effectDirectiveBlock}${componentMemoryBlock}${componentDirectivesBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
+  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${componentDirectivesBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));

@@ -44,6 +44,7 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.sectionContract?.order).toEqual(['hero', 'features', 'pricing']);
     expect(result.enhancedPrompt).toContain('SECTION ORDER');
     expect(result.enhancedPrompt).toContain('SECTION COUNT: 3');
+    expect(result.enhancedPrompt).toContain('COMPONENT PLAN');
     expect(result.stylePackId.length).toBeGreaterThan(0);
     expect(result.layoutUniquenessHash.length).toBeGreaterThan(0);
     expect(result.designQualityScore).toBeGreaterThan(0);

@@ -12,7 +12,11 @@ import {
   STRONG_SECTION_KEYWORDS,
 } from './prompt-data';
 import { pickRandomUnique } from './prompt-random-utils';
-import { rememberRecentComponent } from './prompt-variant-utils';
+import { rememberRecentComponent, getRecentComponentIds } from './prompt-variant-utils';
+import { COMPONENT_INDEX } from './prompt-data/component-index';
+import { selectComponentCandidate } from './component-selection-policy';
+import { hashString } from './prompt-theme-utils';
+import type { SectionType } from './prompt-data/section-definitions';
 
 // Types
 export type RegistryComponent = {
@@ -242,4 +246,66 @@ export function buildComponentDirectives(
     '- Do NOT import new dependencies; recreate with React + Tailwind + framer-motion.',
     ...lines,
   ].join('\n');
+}
+
+function extractPromptTokens(prompt: string): string[] {
+  if (!prompt) {
+    return [];
+  }
+
+  const tokens = prompt
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3);
+
+  return Array.from(new Set(tokens));
+}
+
+/**
+ * Build a component selection plan from the curated component index
+ */
+export function buildComponentSelectionPlan(
+  prompt: string,
+  mentionedSections: string[],
+  styleTags: string[] = [],
+  seed: number = Date.now(),
+): string {
+  if (!prompt || mentionedSections.length === 0) {
+    return '';
+  }
+
+  const sectionSet = new Set(COMPONENT_INDEX.map((entry) => entry.sectionType));
+  const tokens = extractPromptTokens(prompt);
+  const recentIds = getRecentComponentIds();
+  const planLines: string[] = [];
+
+  for (const section of mentionedSections) {
+    if (!sectionSet.has(section as SectionType)) {
+      continue;
+    }
+
+    const context = {
+      sectionType: section as SectionType,
+      promptKeywords: tokens,
+      layoutTags: COMPONENT_SECTION_KEYWORDS[section] ?? [],
+      styleTags,
+      recentComponentIds: recentIds,
+    };
+    const sectionSeed = hashString(`${seed}:${section}:${prompt}`);
+    const { selected } = selectComponentCandidate(COMPONENT_INDEX, context, { topK: 4, seed: sectionSeed });
+
+    if (!selected) {
+      continue;
+    }
+
+    planLines.push(`- ${section}: ${selected.id} (${selected.source}, ${selected.layoutArchetype})`);
+    rememberRecentComponent(selected.id);
+  }
+
+  if (planLines.length === 0) {
+    return '';
+  }
+
+  return `\nCOMPONENT PLAN (use these component archetypes):\n${planLines.join('\n')}`;
 }
