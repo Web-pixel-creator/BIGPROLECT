@@ -151,7 +151,7 @@ function parseDataUrl(input: string): { data: string; mimeType: string } | null 
 }
 
 export async function action({ context, request }: ActionFunctionArgs) {
-  let payload: { images?: string[]; model?: string; provider?: ProviderInfo };
+  let payload: { images?: string[]; model?: string; provider?: ProviderInfo; allowFallback?: boolean };
 
   try {
     payload = (await request.json()) as { images?: string[]; model?: string; provider?: ProviderInfo };
@@ -177,6 +177,7 @@ export async function action({ context, request }: ActionFunctionArgs) {
   const providerName = payload.provider?.name ?? DEFAULT_PROVIDER.name;
   const providerInfo = PROVIDER_LIST.find((p) => p.name === providerName) ?? DEFAULT_PROVIDER;
   const model = payload.model ?? DEFAULT_MODEL;
+  const allowFallback = payload.allowFallback !== false;
 
   const cookieHeader = request.headers.get('Cookie');
   const apiKeys = getApiKeysFromCookie(cookieHeader);
@@ -237,7 +238,7 @@ export async function action({ context, request }: ActionFunctionArgs) {
     const message = error instanceof Error ? error.message : 'Screenshot analysis failed';
     logger.warn('Screenshot analysis failed', { message });
 
-    if (isVisionSupportError(message)) {
+    if (allowFallback && isVisionSupportError(message)) {
       const availableModels = await getProviderModels({
         provider: providerInfo,
         apiKeys,

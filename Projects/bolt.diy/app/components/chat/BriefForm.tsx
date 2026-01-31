@@ -68,6 +68,7 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [analysisFallbackProvider, setAnalysisFallbackProvider] = useState<string | null>(null);
   const [analysisFallbackModel, setAnalysisFallbackModel] = useState<string | null>(null);
+  const [allowFallback, setAllowFallback] = useState(true);
   const [analysisHistory, setAnalysisHistory] = useState<
     Array<{
       id: string;
@@ -287,6 +288,7 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
         images: screenshotPreviews,
         model,
         provider,
+        allowFallback,
       });
 
       const providerName = provider?.name ?? 'Unknown';
@@ -632,6 +634,20 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
             {t('Up to 3 images', '\u0414\u043E 3 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439')}
           </span>
         </div>
+        <label className="flex items-center gap-2 text-xs text-bolt-elements-textSecondary">
+          <input
+            type="checkbox"
+            checked={allowFallback}
+            onChange={(e) => setAllowFallback(e.target.checked)}
+            className="h-4 w-4 rounded border-bolt-elements-borderColor text-bolt-elements-button-primary-background focus:ring-bolt-elements-button-primary-background"
+          />
+          <span>
+            {t(
+              'Allow fallback vision models if needed',
+              '\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C fallback-\u043C\u043E\u0434\u0435\u043B\u0438, \u0435\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E',
+            )}
+          </span>
+        </label>
         <FilePreview files={screenshotFiles} imageDataList={screenshotPreviews} onRemove={handleRemoveScreenshot} />
         {analysisStatus === 'analyzing' && (
           <p className="text-xs text-bolt-elements-textTertiary">

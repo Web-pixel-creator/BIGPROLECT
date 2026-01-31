@@ -5,6 +5,7 @@ export interface ScreenshotAnalyzerInput {
   images: string[];
   model?: string;
   provider?: ProviderInfo;
+  allowFallback?: boolean;
 }
 
 export interface ScreenshotAnalysisResult {
@@ -54,6 +55,7 @@ export async function analyzeScreenshots({
   images,
   model,
   provider,
+  allowFallback = true,
 }: ScreenshotAnalyzerInput): Promise<ScreenshotAnalysisResult> {
   const sanitizedImages = Array.isArray(images)
     ? images.filter(isNonEmptyString).slice(0, MAX_IMAGES)
@@ -73,6 +75,7 @@ export async function analyzeScreenshots({
         images: sanitizedImages,
         model,
         provider,
+        allowFallback,
       }),
     });
 
