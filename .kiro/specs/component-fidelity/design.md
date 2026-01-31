@@ -55,6 +55,21 @@ export type RenderPlan = {
 };
 ```
 
+### ComponentIndex Example
+
+```ts
+const exampleEntry: ComponentIndexEntry = {
+  id: 'magicui-hero-full-bleed',
+  sectionType: 'hero',
+  source: 'magicui',
+  propsContract: ['title', 'subtitle', 'ctaText', 'backgroundImage?'],
+  visualTags: ['full-bleed', 'gradient-overlay', 'centered'],
+  styleTags: ['modern', 'bold', 'high-contrast'],
+  layoutArchetype: 'hero-full-bleed',
+  dependencies: ['framer-motion', 'lucide-react'],
+};
+```
+
 ## Selection Policy
 
 1. Filter by sectionType and required props coverage.
@@ -62,11 +77,48 @@ export type RenderPlan = {
 3. Select from Top-K candidates (K >= 3) using the current seed.
 4. Apply a recency penalty to recently used component ids.
 
+### Scoring Weights
+
+```ts
+score =
+  0.4 * keywordMatch +
+  0.3 * tagMatch +
+  0.2 * styleCompatibility +
+  0.1 * sectionAffinity -
+  recencyPenalty;
+```
+
 ## Diversity Strategy
 
 - Each run uses a new seed by default.
 - LayoutUniquenessHash is computed from section order, layout archetype, and selected component ids.
 - If a hash matches a recent run, regenerate with a new seed up to 2 times.
+
+## Style Normalization Details
+
+Components receive a normalized token bundle derived from the design system. Tokens are applied via adapter functions that map into component props or class tokens.
+
+```ts
+type StyleTokens = {
+  typography: string;
+  spacing: string;
+  radius: string;
+  colors: string[];
+};
+
+function applyStyleTokens(componentId: string, tokens: StyleTokens): Record<string, string> {
+  return {
+    '--ds-typography': tokens.typography,
+    '--ds-spacing': tokens.spacing,
+    '--ds-radius': tokens.radius,
+    '--ds-color-1': tokens.colors[0] ?? '',
+  };
+}
+```
+
+### Token Compatibility Validation
+
+Components are incompatible if required token hooks (typography, spacing, radius, colors) cannot be applied. Incompatible components are excluded and replaced by the selector.
 
 ## Guardrails
 

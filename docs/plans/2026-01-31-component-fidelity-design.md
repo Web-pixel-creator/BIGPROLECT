@@ -15,10 +15,13 @@ Inputs (prompt or Brief) flow through theme detection and layout strategy, then 
 - RenderPlan: structured mapping of sections to components and tokens.
 - Style normalization: enforces consistent typography, spacing, radius, and colors.
 - Guardrails: frontend-only constraints and dependency allowlist.
+- Token compatibility validator: excludes components that cannot accept required tokens.
 
 ## Diversity Strategy
 
 Each run uses a new seed by default. A layoutUniquenessHash is computed from section order, layout archetype, and component ids. If a recent hash repeats, the system regenerates with a new seed (up to 2 retries).
+
+Scoring weights start with keywordMatch (0.4), tagMatch (0.3), styleCompatibility (0.2), sectionAffinity (0.1), minus recencyPenalty.
 
 ## Error Handling
 
@@ -34,3 +37,4 @@ Record componentMatchRate, fallbackRate, repeatPenaltyTriggered, and avgCandidat
 - Property tests for diversity under repeated prompts
 - Contract tests for required props coverage
 - E2E tests to verify RenderPlan integration in both prompt paths
+- Golden set regression tests to prevent fidelity drift

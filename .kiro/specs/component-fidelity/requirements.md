@@ -69,6 +69,7 @@ This specification defines a component-first fidelity pipeline for the design sy
 #### Acceptance Criteria
 1. All selected components SHALL receive a normalized style token set (typography, spacing, radius, colors).
 2. If a component cannot accept required tokens, it SHALL be excluded or replaced.
+3. A component SHALL be considered incompatible when token overrides cannot be applied for typography, spacing, radius, or colors via a defined compatibility validator.
 
 ### Requirement 7: Frontend-Only Guardrail
 
@@ -96,3 +97,12 @@ This specification defines a component-first fidelity pipeline for the design sy
 2. Property tests SHALL verify diversity across repeated runs of the same prompt.
 3. Contract tests SHALL verify required props coverage for each selected section.
 4. E2E tests SHALL verify RenderPlan integration into promptEnhancer and enhancedPromptGenerator.
+
+### Requirement 10: Golden Set Regression
+
+**User Story:** As a developer, I want regression tests against a golden set of designs, so that fidelity does not degrade.
+
+#### Acceptance Criteria
+1. The golden set SHALL include at least 10 reference prompts with expected LayoutUniquenessHash values.
+2. The pipeline SHALL maintain componentMatchRate >= 0.85 on the golden set.
+3. Any change that breaks golden set thresholds SHALL be blocked by CI.

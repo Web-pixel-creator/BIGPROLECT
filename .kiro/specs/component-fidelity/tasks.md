@@ -6,6 +6,11 @@ Implement a component-first fidelity pipeline using a shared RenderPlan and a st
 
 ## Tasks
 
+- [ ] 0.5 Seed ComponentIndex examples
+  - [ ] 0.5.1 Add 2 hero entries (Shadcn + MagicUI)
+  - [ ] 0.5.2 Add 2 features entries (Shadcn + MagicUI)
+  - [ ] 0.5.3 Document metadata format in component-index.ts
+
 - [ ] 1. Create ComponentIndex data
   - [ ] 1.1 Add `app/lib/services/prompt-data/component-index.ts`
     - Include Shadcn + MagicUI entries for hero, features, testimonials, pricing, cta, faq, footer
@@ -16,6 +21,7 @@ Implement a component-first fidelity pipeline using a shared RenderPlan and a st
   - [ ] 2.1 Add selector module (filter + score + top-K selection)
   - [ ] 2.2 Add recency penalty and allowlist checks
   - [ ] 2.3 Unit tests for filtering and scoring
+  - [ ] 2.4 Add scoring weights config
 
 - [ ] 3. Build RenderPlan
   - [ ] 3.1 Add RenderPlan builder module (seed, layout, selection)
@@ -30,6 +36,7 @@ Implement a component-first fidelity pipeline using a shared RenderPlan and a st
 - [ ] 5. Add style normalization
   - [ ] 5.1 Token normalization layer for typography, spacing, radius, colors
   - [ ] 5.2 Guardrail to reject components that cannot accept tokens
+  - [ ] 5.2.1 Implement token compatibility validator
   - [ ] 5.3 Contract tests for required props coverage
 
 - [ ] 6. Extend telemetry
@@ -40,6 +47,7 @@ Implement a component-first fidelity pipeline using a shared RenderPlan and a st
 - [ ] 7. Quality gate and validation
   - [ ] 7.1 Add curated fallback pool for missing candidates
   - [ ] 7.2 Update existing design quality tests to include match metrics
+  - [ ] 7.3 Add golden set regression tests (>= 10 prompts)
 
 - [ ] 8. Run checks
   - [ ] 8.1 pnpm test
