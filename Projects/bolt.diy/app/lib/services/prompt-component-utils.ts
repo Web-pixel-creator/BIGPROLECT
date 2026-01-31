@@ -269,6 +269,13 @@ export type ComponentSelectionPlan = {
   fallbackCount: number;
   matchRate: number;
   fallbackRate: number;
+  selections: Array<{
+    sectionType: SectionType;
+    componentId: string;
+    source: string;
+    layoutArchetype: string;
+    propsContract: string[];
+  }>;
 };
 
 /**
@@ -288,6 +295,7 @@ export function buildComponentSelectionPlan(
       fallbackCount: 0,
       matchRate: 0,
       fallbackRate: 0,
+      selections: [],
     };
   }
 
@@ -298,6 +306,7 @@ export function buildComponentSelectionPlan(
   const uniqueSections = Array.from(new Set(mentionedSections));
   const eligibleSections = uniqueSections.filter((section) => sectionSet.has(section as SectionType));
   let matchedSections = 0;
+  const selections: ComponentSelectionPlan['selections'] = [];
 
   for (const section of eligibleSections) {
     const context = {
@@ -321,6 +330,13 @@ export function buildComponentSelectionPlan(
     }
 
     matchedSections += 1;
+    selections.push({
+      sectionType: selected.sectionType,
+      componentId: selected.id,
+      source: selected.source,
+      layoutArchetype: selected.layoutArchetype,
+      propsContract: selected.propsContract,
+    });
     planLines.push(`- ${section}: ${selected.id} (${selected.source}, ${selected.layoutArchetype})`);
     rememberRecentComponent(selected.id);
   }
@@ -338,5 +354,6 @@ export function buildComponentSelectionPlan(
     fallbackCount,
     matchRate,
     fallbackRate,
+    selections,
   };
 }

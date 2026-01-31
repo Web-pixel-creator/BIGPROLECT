@@ -13,6 +13,7 @@ describe('component selection plan', () => {
 
     expect(plan.planText).toContain('COMPONENT PLAN');
     expect(plan.matchRate).toBeGreaterThan(0);
+    expect(plan.selections.length).toBe(plan.matchedSections);
     const lines = plan.planText.split('\n').filter((line) => line.trim().startsWith('- '));
 
     const ids = new Set(COMPONENT_INDEX.map((entry) => entry.id));

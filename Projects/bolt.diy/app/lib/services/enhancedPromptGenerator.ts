@@ -21,7 +21,8 @@ import {
 } from '~/lib/design-system';
 import { THEME_PALETTES } from './prompt-data';
 import { createSeededRandom } from './prompt-data/seeded-random';
-import { buildComponentSelectionPlan } from './prompt-component-utils';
+import { buildComponentSelectionPlan, type ComponentSelectionPlan } from './prompt-component-utils';
+import { buildRenderPlan, type RenderPlan } from './render-plan';
 
 // ============================================================================
 // Types (Extended)
@@ -69,6 +70,7 @@ export interface EnhancedGeneratedPrompt {
   componentVariants: Record<string, string>;
   animations: string[];
   extendedLibrary: ExtendedLibrarySelections;
+  renderPlan: RenderPlan;
 }
 
 export interface SectionSpec {
@@ -127,8 +129,25 @@ export class EnhancedPromptGenerator {
     const palette = this.selectPalette(brief.colors, themeKey);
     const sections = this.generateSections(brief);
     const extendedLibrary = this.selectExtendedLibraryVariants(seed);
+    const styleTags = this.buildSelectionStyleTags(brief);
+    const planPrompt = `${brief.theme} ${brief.type} ${brief.style} ${brief.wishes ?? ''}`.trim();
+    const componentPlan = buildComponentSelectionPlan(
+      planPrompt,
+      sections.map((section) => section.name),
+      styleTags,
+      seed,
+    );
+    const renderPlan = buildRenderPlan({
+      prompt: planPrompt,
+      sections: sections.map((section) => section.name),
+      seed,
+      styleTags,
+      styleTokens: this.buildRenderPlanTokens(palette),
+      layoutArchetype: this.designSystem?.layout?.pattern?.name,
+      componentPlan,
+    });
 
-    const prompt = this.buildEnhancedPrompt(brief, themeKey, palette, sections, extendedLibrary);
+    const prompt = this.buildEnhancedPrompt(brief, themeKey, palette, sections, extendedLibrary, componentPlan);
 
     return {
       prompt,
@@ -142,6 +161,7 @@ export class EnhancedPromptGenerator {
       componentVariants: this.extractVariantNames(this.designSystem.variants),
       animations: this.extractAnimationNames(sections),
       extendedLibrary,
+      renderPlan,
     };
   }
 
@@ -303,6 +323,17 @@ export class EnhancedPromptGenerator {
     return tags;
   }
 
+  private buildRenderPlanTokens(
+    palette: EnhancedGeneratedPrompt['palette'],
+  ): RenderPlan['sections'][number]['styleTokens'] {
+    return {
+      typography: this.designSystem?.tokens.typography.fontFamily.heading ?? '',
+      spacing: this.designSystem?.tokens.spacing.base.toString() ?? '',
+      radius: this.designSystem?.tokens.borderRadius.md ?? '',
+      colors: [palette.dark, palette.light, palette.accent],
+    };
+  }
+
   /**
    * Build the enhanced prompt string
    */
@@ -311,17 +342,11 @@ export class EnhancedPromptGenerator {
     themeKey: string,
     palette: EnhancedGeneratedPrompt['palette'],
     sections: SectionSpec[],
-    extendedLibrary: ExtendedLibrarySelections
+    extendedLibrary: ExtendedLibrarySelections,
+    componentPlan: ComponentSelectionPlan
   ): string {
     const typeLabel = this.getSiteTypeLabel(brief.type);
     const styleLabel = this.getDesignStyleLabel(brief.style);
-    const styleTags = this.buildSelectionStyleTags(brief);
-    const componentPlan = buildComponentSelectionPlan(
-      `${brief.theme} ${typeLabel} ${styleLabel} ${brief.wishes ?? ''}`.trim(),
-      sections.map((section) => section.name),
-      styleTags,
-      this.designSystem?.seed ?? brief.seed ?? Date.now(),
-    );
 
     const lines: string[] = [
       `Create a ${typeLabel} for "${brief.theme}" using Vite + React + TypeScript.`,

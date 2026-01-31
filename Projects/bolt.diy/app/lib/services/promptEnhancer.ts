@@ -78,6 +78,8 @@ import {
   buildComponentSelectionPlan,
   SAFE_COMPONENT_REGISTRY,
 } from './prompt-component-utils';
+import type { ComponentSelectionPlan } from './prompt-component-utils';
+import { buildRenderPlan, type RenderPlan } from './render-plan';
 import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 import {
@@ -380,14 +382,9 @@ export interface EnhancedPrompt {
 
   componentMemory: ComponentMemoryEntry[];
 
-  componentPlan?: {
-    planText: string;
-    eligibleSections: number;
-    matchedSections: number;
-    fallbackCount: number;
-    matchRate: number;
-    fallbackRate: number;
-  };
+  componentPlan?: ComponentSelectionPlan;
+
+  renderPlan?: RenderPlan;
 
   sectionContract?: SectionContract;
 }
@@ -845,6 +842,20 @@ export async function enhancePromptWithDesignSystem(
     designSeed,
   );
   const componentPlanBlock = componentPlan.planText;
+  const renderPlan = buildRenderPlan({
+    prompt: analysisPrompt,
+    sections: mentionedSections,
+    seed: designSeed,
+    styleTags: selectionStyleTags,
+    styleTokens: {
+      typography: stylePack.fontPairing,
+      spacing: stylePack.spacingScale,
+      radius: stylePack.shapeLanguage,
+      colors: [finalColors.dark, finalColors.light, finalColors.accent],
+    },
+    layoutArchetype,
+    componentPlan,
+  });
   const layoutUniquenessHash = buildLayoutUniquenessHash({
     stylePackId,
     layoutArchetype,
@@ -982,6 +993,7 @@ ${layoutSuggestions}`
 
     componentMemory: componentMemoryEntries,
     componentPlan,
+    renderPlan,
 
     sectionContract: sectionContractData,
   };
