@@ -73,11 +73,7 @@ import {
   buildSectionBlueprint,
 } from './prompt-section-utils';
 import { buildSectionVariantBlock, pickEffectIds } from './prompt-variant-utils';
-import {
-  buildComponentDirectives,
-  buildComponentSelectionPlan,
-  SAFE_COMPONENT_REGISTRY,
-} from './prompt-component-utils';
+import { buildComponentSelectionPlan } from './prompt-component-utils';
 import type { ComponentSelectionPlan } from './prompt-component-utils';
 import { buildRenderPlan, type RenderPlan } from './render-plan';
 import { emitDesignQualityEvent } from './pipelineTelemetry';
@@ -877,7 +873,6 @@ export async function enhancePromptWithDesignSystem(
   });
   const layoutUniquenessLine = `\nLAYOUT UNIQUENESS HASH: ${layoutUniquenessHash}`;
   const designQualityLine = `\nDESIGN QUALITY SCORE (informational): ${designQualityResult.score}/100`;
-  const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, SECTION_LABELS);
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
@@ -889,7 +884,7 @@ ${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChec
       ? `
 ${layoutSuggestions}`
       : ''
-  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${componentDirectivesBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
+  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
