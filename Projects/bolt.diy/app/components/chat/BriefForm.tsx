@@ -68,6 +68,18 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [analysisFallbackProvider, setAnalysisFallbackProvider] = useState<string | null>(null);
   const [analysisFallbackModel, setAnalysisFallbackModel] = useState<string | null>(null);
+  const [analysisHistory, setAnalysisHistory] = useState<
+    Array<{
+      id: string;
+      timestamp: string;
+      status: 'success' | 'error';
+      imageCount: number;
+      provider: string;
+      model: string;
+      fallbackProvider?: string;
+      fallbackModel?: string;
+    }>
+  >([]);
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
   const initializedRef = useRef(false);
 
@@ -154,6 +166,19 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
   }, [searchParams]);
 
   const t = useCallback((en: string, ru: string) => locale === 'ru' ? ru : en, [locale]);
+  const formatTime = useCallback(
+    (timestamp: string) => {
+      try {
+        return new Date(timestamp).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return timestamp;
+      }
+    },
+    [locale],
+  );
   const handleColorToggle = useCallback((hex: string) => {
     setSelectedColors(prev => {
       if (prev.includes(hex)) {
@@ -264,6 +289,9 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
         provider,
       });
 
+      const providerName = provider?.name ?? 'Unknown';
+      const modelName = model ?? 'default';
+
       if (analysisResult.analysis) {
         screenshotAnalysis = analysisResult.analysis;
         setAnalysisStatus('success');
@@ -271,6 +299,19 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
           setAnalysisFallbackProvider(analysisResult.fallbackProvider ?? null);
           setAnalysisFallbackModel(analysisResult.fallbackModel ?? null);
         }
+        setAnalysisHistory((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            status: 'success',
+            imageCount: screenshotPreviews.length,
+            provider: providerName,
+            model: modelName,
+            fallbackProvider: analysisResult.fallbackProvider,
+            fallbackModel: analysisResult.fallbackModel,
+          },
+          ...prev,
+        ].slice(0, 5));
       } else {
         setAnalysisStatus('error');
         setAnalysisMessage(
@@ -279,6 +320,17 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
             '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u044B. \u041F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u043C \u0431\u0435\u0437 \u043D\u0438\u0445.',
           ),
         );
+        setAnalysisHistory((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            status: 'error',
+            imageCount: screenshotPreviews.length,
+            provider: providerName,
+            model: modelName,
+          },
+          ...prev,
+        ].slice(0, 5));
       }
     } else {
       setAnalysisStatus('idle');
@@ -603,6 +655,42 @@ export function BriefForm({ onSubmit, isLoading = false, className, model, provi
                 `Использован fallback: ${analysisFallbackProvider ?? '\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
               )}
             </span>
+          </div>
+        )}
+        {analysisHistory.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-wide text-bolt-elements-textTertiary">
+              {t('Analysis history', '\u0418\u0441\u0442\u043E\u0440\u0438\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u043E\u0432')}
+            </span>
+            <ul className="space-y-1">
+              {analysisHistory.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex flex-col gap-0.5 rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-3 px-2 py-1 text-xs text-bolt-elements-textSecondary"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={entry.status === 'success' ? 'i-ph:check-circle text-emerald-400' : 'i-ph:warning-circle text-amber-400'} />
+                      <span>
+                        {entry.status === 'success'
+                          ? t('Success', '\u0423\u0441\u043F\u0435\u0445')
+                          : t('Failed', '\u041E\u0448\u0438\u0431\u043A\u0430')}
+                      </span>
+                      <span className="text-bolt-elements-textTertiary">
+                        {t(`${entry.imageCount} images`, `${entry.imageCount} \u0438\u0437\u043E\u0431\u0440\u0430\u0436.`)}
+                      </span>
+                    </div>
+                    <span className="text-bolt-elements-textTertiary">{formatTime(entry.timestamp)}</span>
+                  </div>
+                  <div className="text-[11px] text-bolt-elements-textTertiary">
+                    {entry.provider} / {entry.model}
+                    {entry.fallbackProvider || entry.fallbackModel
+                      ? ` \u2192 ${entry.fallbackProvider ?? entry.provider}${entry.fallbackModel ? ` / ${entry.fallbackModel}` : ''}`
+                      : ''}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
