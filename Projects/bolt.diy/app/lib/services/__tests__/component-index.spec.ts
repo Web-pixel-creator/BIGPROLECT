@@ -16,23 +16,18 @@ describe('component index', () => {
     }
   });
 
-  it('includes hero and features entries for shadcn and magicui', () => {
-    const shadcnHeroes = COMPONENT_INDEX.filter(
-      (entry) => entry.source === 'shadcn' && entry.sectionType === 'hero',
-    );
-    const shadcnFeatures = COMPONENT_INDEX.filter(
-      (entry) => entry.source === 'shadcn' && entry.sectionType === 'features',
-    );
-    const magicuiHeroes = COMPONENT_INDEX.filter(
-      (entry) => entry.source === 'magicui' && entry.sectionType === 'hero',
-    );
-    const magicuiFeatures = COMPONENT_INDEX.filter(
-      (entry) => entry.source === 'magicui' && entry.sectionType === 'features',
-    );
+  it('includes core sections for shadcn and magicui', () => {
+    const sources = ['shadcn', 'magicui'] as const;
+    const sections = ['hero', 'features', 'pricing', 'testimonials', 'faq', 'footer'] as const;
 
-    expect(shadcnHeroes.length).toBeGreaterThan(0);
-    expect(shadcnFeatures.length).toBeGreaterThan(0);
-    expect(magicuiHeroes.length).toBeGreaterThan(0);
-    expect(magicuiFeatures.length).toBeGreaterThan(0);
+    for (const source of sources) {
+      for (const sectionType of sections) {
+        const matches = COMPONENT_INDEX.filter(
+          (entry) => entry.source === source && entry.sectionType === sectionType,
+        );
+
+        expect(matches.length).toBeGreaterThan(0);
+      }
+    }
   });
 });
