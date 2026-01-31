@@ -92,6 +92,20 @@ export interface DesignQualityEvent {
   componentFallbackRate: number;
 }
 
+/**
+ * Event emitted after each screenshot analysis attempt.
+ */
+export interface ScreenshotAnalysisEvent {
+  timestamp: string;
+  success: boolean;
+  usedFallback: boolean;
+  imageCount: number;
+  provider: string;
+  model: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}
+
 /*
  * ============================================================================
  * Telemetry Store
@@ -163,10 +177,21 @@ interface TelemetryStore {
     totalComponentFallbackRate: number;
     recentDesignEvents: DesignQualityEvent[];
   };
+
+  screenshotAnalysis: {
+    totalRuns: number;
+    successCount: number;
+    fallbackCount: number;
+    totalImages: number;
+    fallbackProviderCounts: Map<string, number>;
+    fallbackModelCounts: Map<string, number>;
+    recentScreenshotEvents: ScreenshotAnalysisEvent[];
+  };
 }
 
 const RECENT_EVENTS_LIMIT = 100;
 const RECENT_DESIGN_EVENTS_LIMIT = 100;
+const RECENT_SCREENSHOT_EVENTS_LIMIT = 100;
 
 type DesignCueCoverageCounts = {
   typography: number;
@@ -227,6 +252,15 @@ function createEmptyStore(): TelemetryStore {
       totalComponentMatchRate: 0,
       totalComponentFallbackRate: 0,
       recentDesignEvents: [],
+    },
+    screenshotAnalysis: {
+      totalRuns: 0,
+      successCount: 0,
+      fallbackCount: 0,
+      totalImages: 0,
+      fallbackProviderCounts: new Map(),
+      fallbackModelCounts: new Map(),
+      recentScreenshotEvents: [],
     },
   };
 }
@@ -393,6 +427,16 @@ export interface EmitDesignQualityOptions {
   componentFallbackRate: number;
 }
 
+export interface EmitScreenshotAnalysisOptions {
+  success: boolean;
+  usedFallback: boolean;
+  imageCount: number;
+  provider: string;
+  model: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}
+
 /**
  * Emit a quarantine event.
  */
@@ -414,6 +458,20 @@ export function emitQuarantineWritten(options: EmitQuarantineOptions): Quarantin
 
   // Track quarantine-specific details
   trackQuarantineDetailsInternal(event);
+
+  return event;
+}
+
+/**
+ * Emit a screenshot-analysis telemetry event.
+ */
+export function emitScreenshotAnalysisEvent(options: EmitScreenshotAnalysisOptions): ScreenshotAnalysisEvent {
+  const event: ScreenshotAnalysisEvent = {
+    timestamp: new Date().toISOString(),
+    ...options,
+  };
+
+  aggregateScreenshotAnalysisEvent(event);
 
   return event;
 }
@@ -572,6 +630,39 @@ function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
   }
 }
 
+function aggregateScreenshotAnalysisEvent(event: ScreenshotAnalysisEvent): void {
+  const screenshots = store.screenshotAnalysis;
+  screenshots.totalRuns += 1;
+  screenshots.totalImages += event.imageCount;
+
+  if (event.success) {
+    screenshots.successCount += 1;
+  }
+
+  if (event.usedFallback) {
+    screenshots.fallbackCount += 1;
+  }
+
+  if (event.fallbackProvider) {
+    screenshots.fallbackProviderCounts.set(
+      event.fallbackProvider,
+      (screenshots.fallbackProviderCounts.get(event.fallbackProvider) || 0) + 1,
+    );
+  }
+
+  if (event.fallbackModel) {
+    screenshots.fallbackModelCounts.set(
+      event.fallbackModel,
+      (screenshots.fallbackModelCounts.get(event.fallbackModel) || 0) + 1,
+    );
+  }
+
+  screenshots.recentScreenshotEvents.push(event);
+  if (screenshots.recentScreenshotEvents.length > RECENT_SCREENSHOT_EVENTS_LIMIT) {
+    screenshots.recentScreenshotEvents.shift();
+  }
+}
+
 function aggregateQuarantineEvent(event: QuarantineEvent): void {
   /*
    * Quarantine count already updated in pipeline event
@@ -649,6 +740,15 @@ export interface DesignTelemetrySummary {
   topLayoutArchetypes: Array<{ id: string; count: number }>;
 }
 
+export interface ScreenshotTelemetrySummary {
+  totalRuns: number;
+  successRate: number;
+  fallbackRate: number;
+  avgImageCount: number;
+  topFallbackProviders: Array<{ id: string; count: number }>;
+  topFallbackModels: Array<{ id: string; count: number }>;
+}
+
 /**
  * Get aggregated telemetry summary.
  */
@@ -713,6 +813,20 @@ export function getDesignTelemetrySummary(): DesignTelemetrySummary {
     avgComponentFallbackRate: totalVariants > 0 ? design.totalComponentFallbackRate / totalVariants : 0,
     topStylePacks: summarizeCountMap(design.stylePackCounts, 5),
     topLayoutArchetypes: summarizeCountMap(design.layoutArchetypeCounts, 5),
+  };
+}
+
+export function getScreenshotTelemetrySummary(): ScreenshotTelemetrySummary {
+  const screenshots = store.screenshotAnalysis;
+  const totalRuns = screenshots.totalRuns;
+
+  return {
+    totalRuns,
+    successRate: totalRuns > 0 ? screenshots.successCount / totalRuns : 0,
+    fallbackRate: totalRuns > 0 ? screenshots.fallbackCount / totalRuns : 0,
+    avgImageCount: totalRuns > 0 ? screenshots.totalImages / totalRuns : 0,
+    topFallbackProviders: summarizeCountMap(screenshots.fallbackProviderCounts, 5),
+    topFallbackModels: summarizeCountMap(screenshots.fallbackModelCounts, 5),
   };
 }
 
@@ -808,6 +922,10 @@ export function getVariantStats(): VariantStats[] {
 
 export function getRecentDesignEvents(): DesignQualityEvent[] {
   return [...store.designQuality.recentDesignEvents];
+}
+
+export function getRecentScreenshotEvents(): ScreenshotAnalysisEvent[] {
+  return [...store.screenshotAnalysis.recentScreenshotEvents];
 }
 
 /**

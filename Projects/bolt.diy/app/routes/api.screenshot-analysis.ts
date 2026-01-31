@@ -6,6 +6,7 @@ import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constant
 import { getApiKeysFromCookie, getProviderSettingsFromCookie } from '~/lib/api/cookies';
 import { createScopedLogger } from '~/utils/logger';
 import { LLMManager } from '~/lib/modules/llm/manager';
+import { emitScreenshotAnalysisEvent } from '~/lib/services/pipelineTelemetry';
 
 const logger = createScopedLogger('api.screenshot-analysis');
 
@@ -220,6 +221,14 @@ export async function action({ context, request }: ActionFunctionArgs) {
   try {
     const result = await runAnalysis(providerInfo, model);
 
+    emitScreenshotAnalysisEvent({
+      success: true,
+      usedFallback: false,
+      imageCount: parsedImages.length,
+      provider: providerInfo.name,
+      model,
+    });
+
     return new Response(JSON.stringify({ analysis: result.object }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -240,6 +249,16 @@ export async function action({ context, request }: ActionFunctionArgs) {
       if (fallbackModel) {
         try {
           const result = await runAnalysis(providerInfo, fallbackModel);
+
+          emitScreenshotAnalysisEvent({
+            success: true,
+            usedFallback: true,
+            imageCount: parsedImages.length,
+            provider: providerInfo.name,
+            model,
+            fallbackProvider: providerInfo.name,
+            fallbackModel,
+          });
 
           return new Response(JSON.stringify({ analysis: result.object, fallbackModel }), {
             status: 200,
@@ -266,6 +285,16 @@ export async function action({ context, request }: ActionFunctionArgs) {
           try {
             const result = await runAnalysis(fallbackProvider, fallbackModelFromProvider);
 
+            emitScreenshotAnalysisEvent({
+              success: true,
+              usedFallback: true,
+              imageCount: parsedImages.length,
+              provider: providerInfo.name,
+              model,
+              fallbackProvider: fallbackProvider.name,
+              fallbackModel: fallbackModelFromProvider,
+            });
+
             return new Response(
               JSON.stringify({
                 analysis: result.object,
@@ -288,6 +317,14 @@ export async function action({ context, request }: ActionFunctionArgs) {
 
     const status =
       typeof message === 'string' && message.toLowerCase().includes('api key') ? 401 : 503;
+
+    emitScreenshotAnalysisEvent({
+      success: false,
+      usedFallback: false,
+      imageCount: parsedImages.length,
+      provider: providerInfo.name,
+      model,
+    });
 
     return new Response(JSON.stringify({ error: true, message }), {
       status,
