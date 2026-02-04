@@ -106,6 +106,17 @@ export interface ScreenshotAnalysisEvent {
   fallbackModel?: string;
 }
 
+/**
+ * Event emitted when component context is generated for chat.
+ */
+export interface ComponentContextEvent {
+  timestamp: string;
+  used: boolean;
+  truncated: boolean;
+  componentCount: number;
+  charCount: number;
+}
+
 /*
  * ============================================================================
  * Telemetry Store
@@ -187,11 +198,21 @@ interface TelemetryStore {
     fallbackModelCounts: Map<string, number>;
     recentScreenshotEvents: ScreenshotAnalysisEvent[];
   };
+
+  componentContext: {
+    totalRuns: number;
+    usedCount: number;
+    truncatedCount: number;
+    totalComponents: number;
+    totalChars: number;
+    recentContextEvents: ComponentContextEvent[];
+  };
 }
 
 const RECENT_EVENTS_LIMIT = 100;
 const RECENT_DESIGN_EVENTS_LIMIT = 100;
 const RECENT_SCREENSHOT_EVENTS_LIMIT = 100;
+const RECENT_COMPONENT_CONTEXT_EVENTS_LIMIT = 100;
 
 type DesignCueCoverageCounts = {
   typography: number;
@@ -261,6 +282,14 @@ function createEmptyStore(): TelemetryStore {
       fallbackProviderCounts: new Map(),
       fallbackModelCounts: new Map(),
       recentScreenshotEvents: [],
+    },
+    componentContext: {
+      totalRuns: 0,
+      usedCount: 0,
+      truncatedCount: 0,
+      totalComponents: 0,
+      totalChars: 0,
+      recentContextEvents: [],
     },
   };
 }
@@ -437,6 +466,13 @@ export interface EmitScreenshotAnalysisOptions {
   fallbackModel?: string;
 }
 
+export interface EmitComponentContextOptions {
+  used: boolean;
+  truncated: boolean;
+  componentCount: number;
+  charCount: number;
+}
+
 /**
  * Emit a quarantine event.
  */
@@ -472,6 +508,20 @@ export function emitScreenshotAnalysisEvent(options: EmitScreenshotAnalysisOptio
   };
 
   aggregateScreenshotAnalysisEvent(event);
+
+  return event;
+}
+
+/**
+ * Emit a component-context telemetry event.
+ */
+export function emitComponentContextEvent(options: EmitComponentContextOptions): ComponentContextEvent {
+  const event: ComponentContextEvent = {
+    timestamp: new Date().toISOString(),
+    ...options,
+  };
+
+  aggregateComponentContextEvent(event);
 
   return event;
 }
@@ -663,6 +713,26 @@ function aggregateScreenshotAnalysisEvent(event: ScreenshotAnalysisEvent): void 
   }
 }
 
+function aggregateComponentContextEvent(event: ComponentContextEvent): void {
+  const context = store.componentContext;
+  context.totalRuns += 1;
+  context.totalComponents += event.componentCount;
+  context.totalChars += event.charCount;
+
+  if (event.used) {
+    context.usedCount += 1;
+  }
+
+  if (event.truncated) {
+    context.truncatedCount += 1;
+  }
+
+  context.recentContextEvents.push(event);
+  if (context.recentContextEvents.length > RECENT_COMPONENT_CONTEXT_EVENTS_LIMIT) {
+    context.recentContextEvents.shift();
+  }
+}
+
 function aggregateQuarantineEvent(event: QuarantineEvent): void {
   /*
    * Quarantine count already updated in pipeline event
@@ -749,6 +819,14 @@ export interface ScreenshotTelemetrySummary {
   topFallbackModels: Array<{ id: string; count: number }>;
 }
 
+export interface ComponentContextSummary {
+  totalRuns: number;
+  usageRate: number;
+  truncationRate: number;
+  avgComponents: number;
+  avgChars: number;
+}
+
 /**
  * Get aggregated telemetry summary.
  */
@@ -827,6 +905,19 @@ export function getScreenshotTelemetrySummary(): ScreenshotTelemetrySummary {
     avgImageCount: totalRuns > 0 ? screenshots.totalImages / totalRuns : 0,
     topFallbackProviders: summarizeCountMap(screenshots.fallbackProviderCounts, 5),
     topFallbackModels: summarizeCountMap(screenshots.fallbackModelCounts, 5),
+  };
+}
+
+export function getComponentContextSummary(): ComponentContextSummary {
+  const context = store.componentContext;
+  const usedCount = context.usedCount;
+
+  return {
+    totalRuns: context.totalRuns,
+    usageRate: context.totalRuns > 0 ? context.usedCount / context.totalRuns : 0,
+    truncationRate: usedCount > 0 ? context.truncatedCount / usedCount : 0,
+    avgComponents: usedCount > 0 ? context.totalComponents / usedCount : 0,
+    avgChars: usedCount > 0 ? context.totalChars / usedCount : 0,
   };
 }
 
@@ -926,6 +1017,10 @@ export function getRecentDesignEvents(): DesignQualityEvent[] {
 
 export function getRecentScreenshotEvents(): ScreenshotAnalysisEvent[] {
   return [...store.screenshotAnalysis.recentScreenshotEvents];
+}
+
+export function getRecentComponentContextEvents(): ComponentContextEvent[] {
+  return [...store.componentContext.recentContextEvents];
 }
 
 /**

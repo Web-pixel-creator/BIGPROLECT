@@ -4,13 +4,16 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  emitComponentContextEvent,
   emitDesignQualityEvent,
   emitPipelineRun,
   emitQuarantineWritten,
+  getComponentContextSummary,
   getDesignTelemetrySummary,
   getTelemetrySummary,
   getTopViolations,
   getQuarantineStats,
+  getRecentComponentContextEvents,
   getRecentDesignEvents,
   getVariantStats,
   resetTelemetry,
@@ -416,6 +419,40 @@ describe('Event Emitters', () => {
       const recent = getRecentDesignEvents();
       expect(recent).toHaveLength(2);
       expect(recent[0]).toHaveProperty('designQualityScore', 72);
+    });
+  });
+
+  describe('emitComponentContextEvent', () => {
+    it('tracks usage and truncation metrics', () => {
+      emitComponentContextEvent({
+        used: true,
+        truncated: false,
+        componentCount: 3,
+        charCount: 900,
+      });
+      emitComponentContextEvent({
+        used: true,
+        truncated: true,
+        componentCount: 2,
+        charCount: 12000,
+      });
+      emitComponentContextEvent({
+        used: false,
+        truncated: false,
+        componentCount: 0,
+        charCount: 0,
+      });
+
+      const summary = getComponentContextSummary();
+      expect(summary.totalRuns).toBe(3);
+      expect(summary.usageRate).toBeCloseTo(2 / 3);
+      expect(summary.truncationRate).toBeCloseTo(1 / 2);
+      expect(summary.avgComponents).toBeCloseTo(2.5);
+      expect(summary.avgChars).toBeCloseTo((900 + 12000) / 2);
+
+      const recent = getRecentComponentContextEvents();
+      expect(recent).toHaveLength(3);
+      expect(recent[0]).toHaveProperty('used', true);
     });
   });
 });

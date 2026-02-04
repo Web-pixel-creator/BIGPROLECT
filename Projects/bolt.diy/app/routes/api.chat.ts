@@ -15,6 +15,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import { MCPService } from '~/lib/services/mcpService';
 import { StreamRecoveryManager } from '~/lib/.server/llm/stream-recovery';
 import { componentMatcher } from '~/lib/services/componentMatcher.server';
+import { emitComponentContextEvent } from '~/lib/services/pipelineTelemetry';
 
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
@@ -506,7 +507,14 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           if (rawPrompt && isDesignPrompt(rawPrompt)) {
             try {
               await componentMatcher.loadAllComponentFiles();
-              componentContext = componentMatcher.generateContextForPrompt(rawPrompt, 5);
+              const contextResult = componentMatcher.generateContextForPromptWithMeta(rawPrompt, 5);
+              componentContext = contextResult.context;
+              emitComponentContextEvent({
+                used: Boolean(componentContext),
+                truncated: contextResult.truncated,
+                componentCount: contextResult.componentCount,
+                charCount: componentContext.length,
+              });
             } catch (error) {
               logger.warn('Failed to build component matcher context', { error });
               componentContext = '';

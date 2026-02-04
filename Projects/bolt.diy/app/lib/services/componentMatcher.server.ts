@@ -164,6 +164,12 @@ export interface ComponentMatch {
   tags?: string[];
 }
 
+export type ComponentContextResult = {
+  context: string;
+  truncated: boolean;
+  componentCount: number;
+};
+
 type ComponentIndexCache = {
   components: ComponentMeta[];
   generatedAt: number | null;
@@ -603,10 +609,14 @@ export class ComponentMatcher {
   }
 
   generateContextForPrompt(request: string, maxComponents: number = 5): string {
+    return this.generateContextForPromptWithMeta(request, maxComponents).context;
+  }
+
+  generateContextForPromptWithMeta(request: string, maxComponents: number = 5): ComponentContextResult {
     const { components: componentTypes, theme } = this.analyzeUserRequest(request);
 
     if (componentTypes.length === 0) {
-      return '';
+      return { context: '', truncated: false, componentCount: 0 };
     }
 
     const seed = hashString(request.toLowerCase());
@@ -614,7 +624,7 @@ export class ComponentMatcher {
     const matchedComponents = shuffleArraySeeded(this.findMatchingComponents(componentTypes, theme, maxComponents), rng);
 
     if (matchedComponents.length === 0) {
-      return '';
+      return { context: '', truncated: false, componentCount: 0 };
     }
 
     const requestLower = request.toLowerCase();
@@ -698,7 +708,7 @@ export class ComponentMatcher {
     }
 
     if (addedComponents === 0) {
-      return '';
+      return { context: '', truncated: false, componentCount: 0 };
     }
 
     if (truncated) {
@@ -711,7 +721,11 @@ export class ComponentMatcher {
 
     parts.push(footer);
 
-    return parts.join('');
+    return {
+      context: parts.join(''),
+      truncated,
+      componentCount: addedComponents,
+    };
   }
 
   getStats(): { categories: number; totalComponents: number } {
