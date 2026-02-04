@@ -14,6 +14,7 @@ import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
 import type { DesignScheme } from '~/types/design-scheme';
 import { MCPService } from '~/lib/services/mcpService';
 import { StreamRecoveryManager } from '~/lib/.server/llm/stream-recovery';
+import { componentMatcher } from '~/lib/services/componentMatcher.server';
 
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
@@ -62,6 +63,88 @@ function getMessageTextContent(message: Messages[number] | undefined): string {
   }
 
   return '';
+}
+
+function stripPromptMeta(input: string): string {
+  return input
+    .replace(/\[Model:[^\]]+\]\s*/gi, '')
+    .replace(/\[Provider:[^\]]+\]\s*/gi, '')
+    .trim();
+}
+
+function isDesignPrompt(input: string): boolean {
+  const lower = input.toLowerCase();
+  const keywords = [
+    'website',
+    'site',
+    'landing',
+    'landing page',
+    'web page',
+    'homepage',
+    'page',
+    'layout',
+    'design',
+    'ui',
+    'interface',
+    'hero',
+    'section',
+    'mockup',
+    'prototype',
+    'wireframe',
+    'сайт',
+    'лендинг',
+    'главная',
+    'страница',
+    'дизайн',
+    'интерфейс',
+    'секция',
+    'экран',
+    'макет',
+    'прототип',
+  ];
+
+  return keywords.some((keyword) => lower.includes(keyword));
+}
+
+function appendContextToMessage(message: Messages[number], context: string): Messages[number] {
+  if (!context.trim()) {
+    return message;
+  }
+
+  const content: any = (message as any).content;
+
+  if (typeof content === 'string') {
+    return { ...message, content: `${content}\n\n${context}` };
+  }
+
+  if (Array.isArray(content)) {
+    return {
+      ...message,
+      content: [
+        ...content,
+        {
+          type: 'text',
+          text: `\n\n${context}`,
+        },
+      ],
+    };
+  }
+
+  return { ...message, content: `${String(content ?? '')}\n\n${context}` };
+}
+
+function appendContextToLastUserMessage(messages: Messages, context: string): Messages {
+  const lastIndex = [...messages].reduce((last, message, index) => {
+    return message.role === 'user' ? index : last;
+  }, -1);
+
+  if (lastIndex < 0) {
+    return messages;
+  }
+
+  const next = [...messages];
+  next[lastIndex] = appendContextToMessage(next[lastIndex], context);
+  return next;
 }
 
 function heuristicSelectContextFiles(args: {
@@ -246,7 +329,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         let summary: string | undefined = undefined;
         let messageSliceId = 0;
 
-        const processedMessages = await mcpService.processToolInvocations(messages, dataStream);
+        let processedMessages = await mcpService.processToolInvocations(messages, dataStream);
 
         const lastUserMessage = [...processedMessages].reverse().find((message) => message.role === 'user');
         const selectedMeta = lastUserMessage ? extractPropertiesFromMessage(lastUserMessage) : undefined;
@@ -411,6 +494,28 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
             // logger.debug('Code Files Selected');
           }
+        }
+
+        let componentContext = '';
+        if (chatMode === 'build') {
+          const lastUserMessageForComponents = [...processedMessages]
+            .reverse()
+            .find((message) => message.role === 'user');
+          const rawPrompt = stripPromptMeta(getMessageTextContent(lastUserMessageForComponents));
+
+          if (rawPrompt && isDesignPrompt(rawPrompt)) {
+            try {
+              await componentMatcher.loadAllComponentFiles();
+              componentContext = componentMatcher.generateContextForPrompt(rawPrompt, 5);
+            } catch (error) {
+              logger.warn('Failed to build component matcher context', { error });
+              componentContext = '';
+            }
+          }
+        }
+
+        if (componentContext) {
+          processedMessages = appendContextToLastUserMessage(processedMessages, componentContext);
         }
 
         const options: StreamingOptions = {

@@ -13,6 +13,47 @@ import { detectTheme } from './prompt-theme-utils';
 
 const logger = createScopedLogger('component-matcher');
 const MAX_CODE_LENGTH = 3200;
+const MAX_CONTEXT_CHARS = 12000;
+const MIN_COMPONENT_CONTEXT_CHARS = 400;
+const CODE_TRUNCATION_SUFFIX = '\n// ... code continues ...';
+const INDEX_STALE_THRESHOLD_HOURS = 72;
+const INDEX_REFRESH_TTL_MS = INDEX_STALE_THRESHOLD_HOURS * 60 * 60 * 1000;
+
+function truncateWithSuffix(input: string, maxChars: number, suffix: string = ''): string {
+  if (maxChars <= 0) {
+    return '';
+  }
+
+  if (input.length <= maxChars) {
+    return input;
+  }
+
+  if (!suffix) {
+    return input.slice(0, maxChars);
+  }
+
+  if (suffix.length >= maxChars) {
+    return input.slice(0, maxChars);
+  }
+
+  return input.slice(0, maxChars - suffix.length) + suffix;
+}
+
+function getIndexAgeHours(generatedAt: number | null | undefined): number | null {
+  if (!generatedAt) {
+    return null;
+  }
+
+  return Math.round((Date.now() - generatedAt) / (1000 * 60 * 60));
+}
+
+function isIndexStale(generatedAt: number | null | undefined): boolean {
+  if (!generatedAt) {
+    return true;
+  }
+
+  return Date.now() - generatedAt > INDEX_REFRESH_TTL_MS;
+}
 
 function hashString(str: string): number {
   let h = 0;
@@ -354,28 +395,42 @@ export class ComponentMatcher {
   }
 
   async loadAllComponentFiles(): Promise<void> {
-    // Try prebuilt index first
-    if (!this._prebuilt) {
-      try {
-        if (SHARED_COMPONENT_INDEX) {
-          this._prebuilt = SHARED_COMPONENT_INDEX.components;
-          this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
-          this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
-          logger.info(`Loaded cached component index: ${SHARED_COMPONENT_INDEX.components.length} items`);
-          return;
-        }
+    const sharedStale = SHARED_COMPONENT_INDEX ? isIndexStale(SHARED_COMPONENT_INDEX.generatedAt ?? null) : false;
+    const localStale = this._prebuilt ? isIndexStale(this._prebuiltGeneratedAt ?? null) : false;
 
-        const idx = buildIndex(BOLT_ROOT, true);
-        SHARED_COMPONENT_INDEX = buildComponentIndexCache(idx.components, idx.generatedAt || null);
-        this._prebuilt = SHARED_COMPONENT_INDEX.components;
-        this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
-        this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
-        logger.info(`Loaded prebuilt component index: ${idx.total} items`);
+    if (this._prebuilt && !localStale && (!SHARED_COMPONENT_INDEX || !sharedStale)) {
+      return;
+    }
 
-        return;
-      } catch (e) {
-        logger.warn('Failed to load prebuilt index, fallback to MD parsing');
-      }
+    if (SHARED_COMPONENT_INDEX && !sharedStale) {
+      this._prebuilt = SHARED_COMPONENT_INDEX.components;
+      this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
+      this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
+      logger.info(`Loaded cached component index: ${SHARED_COMPONENT_INDEX.components.length} items`);
+      return;
+    }
+
+    const forceRefresh = sharedStale || localStale;
+    const ageHours = getIndexAgeHours(SHARED_COMPONENT_INDEX?.generatedAt ?? this._prebuiltGeneratedAt);
+
+    if (forceRefresh) {
+      logger.info(
+        `Component index stale${ageHours !== null ? ` (~${ageHours}h)` : ''}, refreshing cache...`,
+      );
+    }
+
+    try {
+      const idx = buildIndex(BOLT_ROOT, !forceRefresh);
+      SHARED_COMPONENT_INDEX = buildComponentIndexCache(idx.components, idx.generatedAt || null);
+      this._prebuilt = SHARED_COMPONENT_INDEX.components;
+      this._prebuiltGeneratedAt = SHARED_COMPONENT_INDEX.generatedAt;
+      this._componentsIndex = cloneComponentIndexMap(SHARED_COMPONENT_INDEX.byCategory);
+      logger.info(
+        `${forceRefresh ? 'Refreshed' : 'Loaded'} component index: ${idx.total} items`,
+      );
+      return;
+    } catch (e) {
+      logger.warn('Failed to load prebuilt index, fallback to MD parsing');
     }
 
     /*
@@ -568,15 +623,13 @@ export class ComponentMatcher {
     const presetHint = buildPresetHint(theme);
     let freshnessHint = '';
 
-    if (this._prebuiltGeneratedAt) {
-      const ageHours = Math.round((Date.now() - this._prebuiltGeneratedAt) / (1000 * 60 * 60));
+    const ageHours = getIndexAgeHours(this._prebuiltGeneratedAt);
 
-      if (ageHours > 72) {
-        freshnessHint = `Index age: ~${ageHours}h (consider refreshing components).`;
-      }
+    if (ageHours !== null && ageHours > INDEX_STALE_THRESHOLD_HOURS) {
+      freshnessHint = `Index age: ~${ageHours}h (consider refreshing components).`;
     }
 
-    let context = `
+    const header = `
 <matched_ui_components>
   IMPORTANT: Use these components as DIRECT REFERENCE for your implementation.
 
@@ -595,25 +648,70 @@ export class ComponentMatcher {
   4. Keep the animation/styling approach
 `;
 
+    const footer = `</matched_ui_components>`;
+    const parts: string[] = [header];
+    let usedChars = header.length + footer.length;
+    let addedComponents = 0;
+    let truncated = false;
+
     for (const comp of matchedComponents.slice(0, maxComponents)) {
-      const code =
-        comp.code.length > MAX_CODE_LENGTH
-          ? comp.code.substring(0, MAX_CODE_LENGTH) + '\n// ... code continues ...'
-          : comp.code;
-      context += `
+      const blockHeader = `
   ---
   ${comp.description.toUpperCase()} (${comp.name})
   Category: ${comp.category}
   ---
 
-${code}
-
 `;
+      const blockFooter = `\n`;
+      const remaining = MAX_CONTEXT_CHARS - usedChars - blockHeader.length - blockFooter.length;
+
+      if (remaining <= MIN_COMPONENT_CONTEXT_CHARS) {
+        truncated = true;
+        break;
+      }
+
+      const rawCode = comp.code ?? '';
+      const preTrimmed =
+        rawCode.length > MAX_CODE_LENGTH
+          ? truncateWithSuffix(rawCode, MAX_CODE_LENGTH, CODE_TRUNCATION_SUFFIX)
+          : rawCode;
+      const code = truncateWithSuffix(preTrimmed, remaining, CODE_TRUNCATION_SUFFIX);
+
+      if (!code.trim()) {
+        truncated = true;
+        break;
+      }
+
+      if (code.length < preTrimmed.length) {
+        truncated = true;
+      }
+
+      const block = `${blockHeader}${code}${blockFooter}`;
+      parts.push(block);
+      usedChars += block.length;
+      addedComponents += 1;
+
+      if (usedChars >= MAX_CONTEXT_CHARS) {
+        truncated = true;
+        break;
+      }
     }
 
-    context += `</matched_ui_components>`;
+    if (addedComponents === 0) {
+      return '';
+    }
 
-    return context;
+    if (truncated) {
+      const note = '\n  NOTE: Component context was truncated to fit the prompt budget.\n';
+      if (usedChars + note.length <= MAX_CONTEXT_CHARS) {
+        parts.push(note);
+        usedChars += note.length;
+      }
+    }
+
+    parts.push(footer);
+
+    return parts.join('');
   }
 
   getStats(): { categories: number; totalComponents: number } {

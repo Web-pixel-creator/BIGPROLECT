@@ -415,6 +415,18 @@ const LAYOUT_MARKER = 'CREATIVE DIRECTION (Unique Layout Strategy):';
 
 const DEFAULT_VARIANT_COUNT = 3;
 const MAX_VARIANT_COUNT = 5;
+const MAX_UNIQUENESS_RETRIES = 2;
+
+function buildVariantSalt(baseSalt: string, variantIndex: number, attempt: number): string {
+  if (attempt <= 0) {
+    return baseSalt;
+  }
+
+  const retrySeed = hashString(`${baseSalt}:${variantIndex}:retry:${attempt}`);
+  const retryRng = createSeededRandom(retrySeed);
+  const retrySuffix = randomSeedString(4, retryRng);
+  return `${baseSalt}-r${attempt}-${retrySuffix}`;
+}
 
 function resolveVariationSeed(prompt: string, options?: EnhancePromptOptions): string {
   if (options?.variationSeed) {
@@ -1002,15 +1014,34 @@ export async function generateAndRankDesignVariants(
 ): Promise<DesignVariantResult> {
   const requestedCount = options?.variantCount ?? DEFAULT_VARIANT_COUNT;
   const variantCount = Math.min(Math.max(1, requestedCount), MAX_VARIANT_COUNT);
-  const variantSalt = options?.variantSalt ?? randomSeedString(4);
+  const baseVariantSalt = options?.variantSalt ?? randomSeedString(4);
   const variants: EnhancedPrompt[] = [];
+  const seenLayoutHashes = new Set<string>();
 
   for (let i = 0; i < variantCount; i += 1) {
-    const variant = await enhancePromptWithDesignSystem(userPrompt, {
-      variantIndex: i,
-      variantSalt,
-    });
-    variants.push(variant);
+    let selectedVariant: EnhancedPrompt | null = null;
+
+    for (let attempt = 0; attempt <= MAX_UNIQUENESS_RETRIES; attempt += 1) {
+      const variantSalt = buildVariantSalt(baseVariantSalt, i, attempt);
+      const candidate = await enhancePromptWithDesignSystem(userPrompt, {
+        variantIndex: i,
+        variantSalt,
+      });
+      const layoutHash = candidate.layoutUniquenessHash || 'unknown';
+
+      if (!seenLayoutHashes.has(layoutHash) || attempt === MAX_UNIQUENESS_RETRIES) {
+        selectedVariant = candidate;
+        break;
+      }
+    }
+
+    if (!selectedVariant) {
+      continue;
+    }
+
+    const finalHash = selectedVariant.layoutUniquenessHash || 'unknown';
+    seenLayoutHashes.add(finalHash);
+    variants.push(selectedVariant);
   }
 
   const ranking = rankDesignVariants(variants);
