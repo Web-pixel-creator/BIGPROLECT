@@ -51,6 +51,15 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
+      - name: Run encoding check
+        run: pnpm run encoding:check
+
+      - name: Run keyword consistency check
+        run: pnpm run keywords:test
+
+      - name: Run prompt baseline compare
+        run: pnpm run baseline:compare
+
       - name: Upload test coverage
         uses: actions/upload-artifact@v4
         if: always()
