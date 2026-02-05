@@ -90,6 +90,8 @@ export interface DesignQualityEvent {
   sectionCount: number;
   componentMatchRate: number;
   componentFallbackRate: number;
+  repeatPenaltyTriggered: boolean;
+  avgCandidatesPerSection: number;
 }
 
 /**
@@ -186,6 +188,8 @@ interface TelemetryStore {
     totalVariantCount: number;
     totalComponentMatchRate: number;
     totalComponentFallbackRate: number;
+    repeatPenaltyTriggeredCount: number;
+    totalAvgCandidatesPerSection: number;
     recentDesignEvents: DesignQualityEvent[];
   };
 
@@ -272,6 +276,8 @@ function createEmptyStore(): TelemetryStore {
       totalVariantCount: 0,
       totalComponentMatchRate: 0,
       totalComponentFallbackRate: 0,
+      repeatPenaltyTriggeredCount: 0,
+      totalAvgCandidatesPerSection: 0,
       recentDesignEvents: [],
     },
     screenshotAnalysis: {
@@ -454,6 +460,8 @@ export interface EmitDesignQualityOptions {
   sectionCount: number;
   componentMatchRate: number;
   componentFallbackRate: number;
+  repeatPenaltyTriggered: boolean;
+  avgCandidatesPerSection: number;
 }
 
 export interface EmitScreenshotAnalysisOptions {
@@ -638,6 +646,11 @@ function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
   design.totalVariantCount += event.variantCount;
   design.totalComponentMatchRate += event.componentMatchRate;
   design.totalComponentFallbackRate += event.componentFallbackRate;
+  design.totalAvgCandidatesPerSection += event.avgCandidatesPerSection;
+
+  if (event.repeatPenaltyTriggered) {
+    design.repeatPenaltyTriggeredCount += 1;
+  }
 
   if (event.selected) {
     design.selectedVariants++;
@@ -806,6 +819,8 @@ export interface DesignTelemetrySummary {
   avgSectionCount: number;
   avgComponentMatchRate: number;
   avgComponentFallbackRate: number;
+  repeatPenaltyRate: number;
+  avgCandidatesPerSection: number;
   topStylePacks: Array<{ id: string; count: number }>;
   topLayoutArchetypes: Array<{ id: string; count: number }>;
 }
@@ -889,6 +904,8 @@ export function getDesignTelemetrySummary(): DesignTelemetrySummary {
     avgSectionCount: totalVariants > 0 ? design.totalSectionCount / totalVariants : 0,
     avgComponentMatchRate: totalVariants > 0 ? design.totalComponentMatchRate / totalVariants : 0,
     avgComponentFallbackRate: totalVariants > 0 ? design.totalComponentFallbackRate / totalVariants : 0,
+    repeatPenaltyRate: totalVariants > 0 ? design.repeatPenaltyTriggeredCount / totalVariants : 0,
+    avgCandidatesPerSection: totalVariants > 0 ? design.totalAvgCandidatesPerSection / totalVariants : 0,
     topStylePacks: summarizeCountMap(design.stylePackCounts, 5),
     topLayoutArchetypes: summarizeCountMap(design.layoutArchetypeCounts, 5),
   };

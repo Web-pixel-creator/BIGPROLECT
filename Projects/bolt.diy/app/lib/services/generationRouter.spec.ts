@@ -137,6 +137,65 @@ export function HeroSection() {
       expect(result.warnings.length).toBeGreaterThan(0);
     });
 
+    it('adds backend artifact warnings for section-generated code', async () => {
+      const code = `
+export function HeroSection() {
+  const app = {
+    get: (_path: string, _handler: () => void) => undefined,
+  };
+  app.get('/api/users', () => undefined);
+
+  return (
+    <section className="py-20 md:py-32">
+      <h1>Welcome</h1>
+      <button>Start</button>
+    </section>
+  );
+}`;
+      const result = await routeThroughPipeline(code, 'HeroSection.tsx', {
+        sectionType: 'hero',
+      });
+
+      expect(result.warnings.some((warning) => warning.includes('Backend artifact detected'))).toBe(true);
+    });
+
+    it('adds backend artifact warnings for backend-like file paths in section flow', async () => {
+      const code = `
+export function HeroSection() {
+  return (
+    <section className="py-20 md:py-32">
+      <h1>Welcome</h1>
+      <button>Start</button>
+    </section>
+  );
+}`;
+      const result = await routeThroughPipeline(code, 'api/HeroSection.tsx', {
+        sectionType: 'hero',
+      });
+
+      expect(result.warnings.some((warning) => warning.includes('file path'))).toBe(true);
+    });
+
+    it('does not add backend artifact warnings outside section-generation flow', async () => {
+      const code = `
+export function HeroSection() {
+  const app = {
+    get: (_path: string, _handler: () => void) => undefined,
+  };
+  app.get('/api/users', () => undefined);
+
+  return (
+    <section className="py-20 md:py-32">
+      <h1>Welcome</h1>
+      <button>Start</button>
+    </section>
+  );
+}`;
+      const result = await routeThroughPipeline(code, 'HeroSection.tsx');
+
+      expect(result.warnings.some((warning) => warning.includes('Backend artifact detected'))).toBe(false);
+    });
+
     it('handles CSS files', async () => {
       const code = `.button { color: red; }`;
       const result = await routeThroughPipeline(code, 'styles.css');

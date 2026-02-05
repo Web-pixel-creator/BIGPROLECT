@@ -370,6 +370,8 @@ describe('Event Emitters', () => {
         sectionCount: 5,
         componentMatchRate: 0.8,
         componentFallbackRate: 0.2,
+        repeatPenaltyTriggered: true,
+        avgCandidatesPerSection: 4,
       });
 
       emitDesignQualityEvent({
@@ -393,6 +395,8 @@ describe('Event Emitters', () => {
         sectionCount: 4,
         componentMatchRate: 0.5,
         componentFallbackRate: 0.5,
+        repeatPenaltyTriggered: false,
+        avgCandidatesPerSection: 2,
       });
 
       const summary = getDesignTelemetrySummary();
@@ -409,6 +413,8 @@ describe('Event Emitters', () => {
       expect(summary.coverageRate.motion).toBeCloseTo(0.5);
       expect(summary.avgComponentMatchRate).toBeCloseTo(0.65);
       expect(summary.avgComponentFallbackRate).toBeCloseTo(0.35);
+      expect(summary.repeatPenaltyRate).toBeCloseTo(0.5);
+      expect(summary.avgCandidatesPerSection).toBeCloseTo(3);
       expect(summary.topStylePacks).toEqual(
         expect.arrayContaining([
           { id: 'pack-a', count: 1 },

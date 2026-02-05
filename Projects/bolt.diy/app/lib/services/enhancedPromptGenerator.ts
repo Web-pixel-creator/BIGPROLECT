@@ -209,6 +209,8 @@ export class EnhancedPromptGenerator {
       sectionCount: renderPlan.sections.length,
       componentMatchRate: componentPlan.matchRate,
       componentFallbackRate: componentPlan.fallbackRate,
+      repeatPenaltyTriggered: componentPlan.repeatPenaltyTriggered,
+      avgCandidatesPerSection: componentPlan.avgCandidatesPerSection,
     });
   }
 

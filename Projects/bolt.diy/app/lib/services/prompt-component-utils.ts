@@ -128,6 +128,8 @@ export type ComponentSelectionPlan = {
   fallbackCount: number;
   matchRate: number;
   fallbackRate: number;
+  repeatPenaltyTriggered: boolean;
+  avgCandidatesPerSection: number;
   selections: Array<{
     sectionType: SectionType;
     componentId: string;
@@ -154,6 +156,8 @@ export function buildComponentSelectionPlan(
       fallbackCount: 0,
       matchRate: 0,
       fallbackRate: 0,
+      repeatPenaltyTriggered: false,
+      avgCandidatesPerSection: 0,
       selections: [],
     };
   }
@@ -166,6 +170,8 @@ export function buildComponentSelectionPlan(
   const eligibleSections = uniqueSections.filter((section) => sectionSet.has(section as SectionType));
   let matchedSections = 0;
   let fallbackCount = 0;
+  let totalCandidates = 0;
+  let repeatPenaltyTriggered = false;
   const selections: ComponentSelectionPlan['selections'] = [];
 
   for (const section of eligibleSections) {
@@ -184,7 +190,15 @@ export function buildComponentSelectionPlan(
       requiredTokens,
     };
     const sectionSeed = hashString(`${seed}:${section}:${prompt}`);
-    const { selected } = selectComponentCandidate(COMPONENT_INDEX, context, { topK: 4, seed: sectionSeed });
+    const {
+      selected,
+      candidateCount,
+      repeatPenaltyTriggered: sectionRepeatPenaltyTriggered,
+    } = selectComponentCandidate(COMPONENT_INDEX, context, { topK: 4, seed: sectionSeed });
+    totalCandidates += candidateCount;
+    if (sectionRepeatPenaltyTriggered) {
+      repeatPenaltyTriggered = true;
+    }
 
     if (!selected) {
       const fallbackSeed = hashString(`${sectionSeed}:fallback`);
@@ -221,6 +235,7 @@ export function buildComponentSelectionPlan(
 
   const matchRate = eligibleSections.length > 0 ? matchedSections / eligibleSections.length : 0;
   const fallbackRate = eligibleSections.length > 0 ? fallbackCount / eligibleSections.length : 0;
+  const avgCandidatesPerSection = eligibleSections.length > 0 ? totalCandidates / eligibleSections.length : 0;
   const planText =
     planLines.length > 0 ? `\nCOMPONENT PLAN (use these component archetypes):\n${planLines.join('\n')}` : '';
 
@@ -231,6 +246,8 @@ export function buildComponentSelectionPlan(
     fallbackCount,
     matchRate,
     fallbackRate,
+    repeatPenaltyTriggered,
+    avgCandidatesPerSection,
     selections,
   };
 }

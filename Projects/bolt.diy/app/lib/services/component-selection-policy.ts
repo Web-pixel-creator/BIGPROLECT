@@ -34,6 +34,12 @@ export type SelectionOptions = {
 export type ScoredCandidate = {
   entry: ComponentIndexEntry;
   score: number;
+  recencyPenaltyApplied: boolean;
+};
+
+type CandidateScore = {
+  score: number;
+  recencyPenaltyApplied: boolean;
 };
 
 const DEFAULT_WEIGHTS: SelectionWeights = {
@@ -168,19 +174,19 @@ function isTokenCompatible(
   return true;
 }
 
-export function scoreComponentCandidate(
+function scoreComponentCandidateDetailed(
   entry: ComponentIndexEntry,
   context: SelectionContext,
   weights: SelectionWeights = DEFAULT_WEIGHTS,
-): number {
+): CandidateScore {
   if (entry.sectionType !== context.sectionType) {
-    return 0;
+    return { score: 0, recencyPenaltyApplied: false };
   }
   if (!hasAllowedDependencies(entry)) {
-    return 0;
+    return { score: 0, recencyPenaltyApplied: false };
   }
   if (!isTokenCompatible(entry, context.requiredTokens)) {
-    return 0;
+    return { score: 0, recencyPenaltyApplied: false };
   }
 
   const keywordTokens = normalizeTokens(context.promptKeywords);
@@ -200,11 +206,24 @@ export function scoreComponentCandidate(
     styleScore * weights.styleCompatibility +
     sectionScore * weights.sectionAffinity;
 
-  if (isRecent(entry.id, context.recentComponentIds)) {
+  const recencyPenaltyApplied = isRecent(entry.id, context.recentComponentIds);
+
+  if (recencyPenaltyApplied) {
     score -= weights.recencyPenalty;
   }
 
-  return Math.max(0, score);
+  return {
+    score: Math.max(0, score),
+    recencyPenaltyApplied,
+  };
+}
+
+export function scoreComponentCandidate(
+  entry: ComponentIndexEntry,
+  context: SelectionContext,
+  weights: SelectionWeights = DEFAULT_WEIGHTS,
+): number {
+  return scoreComponentCandidateDetailed(entry, context, weights).score;
 }
 
 export function rankComponentCandidates(
@@ -215,9 +234,9 @@ export function rankComponentCandidates(
   const scored: ScoredCandidate[] = [];
 
   for (const entry of entries) {
-    const score = scoreComponentCandidate(entry, context, weights);
+    const { score, recencyPenaltyApplied } = scoreComponentCandidateDetailed(entry, context, weights);
     if (score > 0) {
-      scored.push({ entry, score });
+      scored.push({ entry, score, recencyPenaltyApplied });
     }
   }
 
@@ -229,12 +248,20 @@ export function selectComponentCandidate(
   entries: ComponentIndexEntry[],
   context: SelectionContext,
   options: SelectionOptions = {},
-): { selected: ComponentIndexEntry | null; ranked: ScoredCandidate[]; topK: ScoredCandidate[] } {
+): {
+  selected: ComponentIndexEntry | null;
+  ranked: ScoredCandidate[];
+  topK: ScoredCandidate[];
+  candidateCount: number;
+  repeatPenaltyTriggered: boolean;
+} {
   const weights: SelectionWeights = { ...DEFAULT_WEIGHTS, ...(options.weights ?? {}) };
   const ranked = rankComponentCandidates(entries, context, weights);
+  const repeatPenaltyTriggered = ranked.some((candidate) => candidate.recencyPenaltyApplied);
+  const candidateCount = ranked.length;
 
   if (ranked.length === 0) {
-    return { selected: null, ranked, topK: [] };
+    return { selected: null, ranked, topK: [], candidateCount: 0, repeatPenaltyTriggered: false };
   }
 
   const topKCount = Math.max(1, options.topK ?? 4);
@@ -244,5 +271,5 @@ export function selectComponentCandidate(
   const pickIndex = Math.floor(rng() * topK.length);
   const selected = topK[pickIndex]?.entry ?? topK[0]?.entry ?? null;
 
-  return { selected, ranked, topK };
+  return { selected, ranked, topK, candidateCount, repeatPenaltyTriggered };
 }

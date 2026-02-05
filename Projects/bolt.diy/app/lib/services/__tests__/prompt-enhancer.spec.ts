@@ -45,6 +45,7 @@ describe('Prompt Enhancer Stability', () => {
     expect(result.enhancedPrompt).toContain('SECTION ORDER');
     expect(result.enhancedPrompt).toContain('SECTION COUNT: 3');
     expect(result.enhancedPrompt).toContain('COMPONENT PLAN');
+    expect(result.enhancedPrompt).toContain('FRONTEND-ONLY GUARDRAIL');
     expect(result.stylePackId.length).toBeGreaterThan(0);
     expect(result.layoutUniquenessHash.length).toBeGreaterThan(0);
     expect(result.designQualityScore).toBeGreaterThan(0);

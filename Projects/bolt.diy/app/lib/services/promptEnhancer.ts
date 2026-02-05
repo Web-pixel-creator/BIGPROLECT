@@ -417,6 +417,17 @@ const DEFAULT_VARIANT_COUNT = 3;
 const MAX_VARIANT_COUNT = 5;
 const MAX_UNIQUENESS_RETRIES = 2;
 
+type VariantWithLayoutHash = {
+  layoutUniquenessHash?: string | null;
+};
+
+export type SelectUniqueVariantsWithRetriesOptions<T extends VariantWithLayoutHash> = {
+  variantCount: number;
+  baseVariantSalt: string;
+  maxRetries?: number;
+  buildCandidate: (variantIndex: number, attempt: number, variantSalt: string) => Promise<T>;
+};
+
 function buildVariantSalt(baseSalt: string, variantIndex: number, attempt: number): string {
   if (attempt <= 0) {
     return baseSalt;
@@ -443,6 +454,39 @@ function resolveVariationSeed(prompt: string, options?: EnhancePromptOptions): s
   }
 
   return randomSeedString(6);
+}
+
+export async function selectUniqueVariantsWithRetries<T extends VariantWithLayoutHash>(
+  options: SelectUniqueVariantsWithRetriesOptions<T>,
+): Promise<T[]> {
+  const maxRetries = options.maxRetries ?? MAX_UNIQUENESS_RETRIES;
+  const variants: T[] = [];
+  const seenLayoutHashes = new Set<string>();
+
+  for (let variantIndex = 0; variantIndex < options.variantCount; variantIndex += 1) {
+    let selectedVariant: T | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const variantSalt = buildVariantSalt(options.baseVariantSalt, variantIndex, attempt);
+      const candidate = await options.buildCandidate(variantIndex, attempt, variantSalt);
+      const layoutHash = candidate.layoutUniquenessHash || 'unknown';
+
+      if (!seenLayoutHashes.has(layoutHash) || attempt === maxRetries) {
+        selectedVariant = candidate;
+        break;
+      }
+    }
+
+    if (!selectedVariant) {
+      continue;
+    }
+
+    const finalHash = selectedVariant.layoutUniquenessHash || 'unknown';
+    seenLayoutHashes.add(finalHash);
+    variants.push(selectedVariant);
+  }
+
+  return variants;
 }
 
 function hasFullCueCoverage(coverage?: DesignCueCoverage): boolean {
@@ -886,6 +930,8 @@ export async function enhancePromptWithDesignSystem(
   const layoutUniquenessLine = `\nLAYOUT UNIQUENESS HASH: ${layoutUniquenessHash}`;
   const designQualityLine = `\nDESIGN QUALITY SCORE (informational): ${designQualityResult.score}/100`;
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
+  const frontendOnlyGuardrailLine =
+    '\nFRONTEND-ONLY GUARDRAIL: Do not create or modify backend endpoints, API routes, server actions, database schemas, migrations, or ORM code.';
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
   const variationLine = `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
@@ -896,7 +942,7 @@ ${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChec
       ? `
 ${layoutSuggestions}`
       : ''
-  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
+  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${layoutUniquenessLine}${designQualityLine}${frontendOnlyGuardrailLine}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
@@ -1015,34 +1061,16 @@ export async function generateAndRankDesignVariants(
   const requestedCount = options?.variantCount ?? DEFAULT_VARIANT_COUNT;
   const variantCount = Math.min(Math.max(1, requestedCount), MAX_VARIANT_COUNT);
   const baseVariantSalt = options?.variantSalt ?? randomSeedString(4);
-  const variants: EnhancedPrompt[] = [];
-  const seenLayoutHashes = new Set<string>();
-
-  for (let i = 0; i < variantCount; i += 1) {
-    let selectedVariant: EnhancedPrompt | null = null;
-
-    for (let attempt = 0; attempt <= MAX_UNIQUENESS_RETRIES; attempt += 1) {
-      const variantSalt = buildVariantSalt(baseVariantSalt, i, attempt);
-      const candidate = await enhancePromptWithDesignSystem(userPrompt, {
-        variantIndex: i,
+  const variants = await selectUniqueVariantsWithRetries<EnhancedPrompt>({
+    variantCount,
+    baseVariantSalt,
+    maxRetries: MAX_UNIQUENESS_RETRIES,
+    buildCandidate: async (variantIndex, _attempt, variantSalt) =>
+      enhancePromptWithDesignSystem(userPrompt, {
+        variantIndex,
         variantSalt,
-      });
-      const layoutHash = candidate.layoutUniquenessHash || 'unknown';
-
-      if (!seenLayoutHashes.has(layoutHash) || attempt === MAX_UNIQUENESS_RETRIES) {
-        selectedVariant = candidate;
-        break;
-      }
-    }
-
-    if (!selectedVariant) {
-      continue;
-    }
-
-    const finalHash = selectedVariant.layoutUniquenessHash || 'unknown';
-    seenLayoutHashes.add(finalHash);
-    variants.push(selectedVariant);
-  }
+      }),
+  });
 
   const ranking = rankDesignVariants(variants);
   const rankingByIndex = new Map(ranking.map((entry) => [entry.variantIndex, entry]));
@@ -1078,6 +1106,8 @@ export async function generateAndRankDesignVariants(
         sectionCount,
         componentMatchRate: variant.componentPlan?.matchRate ?? 0,
         componentFallbackRate: variant.componentPlan?.fallbackRate ?? 0,
+        repeatPenaltyTriggered: variant.componentPlan?.repeatPenaltyTriggered ?? false,
+        avgCandidatesPerSection: variant.componentPlan?.avgCandidatesPerSection ?? 0,
       });
     }
   } catch (error) {
