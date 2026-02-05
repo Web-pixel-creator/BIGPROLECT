@@ -19,8 +19,11 @@ import {
   getVariantsByCategory,
   seededRandom,
 } from '~/lib/design-system';
-import { THEME_PALETTES } from './prompt-data';
+import { THEME_PALETTES, buildDesignQualityScore, type DesignCues } from './prompt-data';
 import { createSeededRandom } from './prompt-data/seeded-random';
+import { buildComponentSelectionPlan, type ComponentSelectionPlan } from './prompt-component-utils';
+import { buildRenderPlan, type RenderPlan } from './render-plan';
+import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 // ============================================================================
 // Types (Extended)
@@ -68,6 +71,7 @@ export interface EnhancedGeneratedPrompt {
   componentVariants: Record<string, string>;
   animations: string[];
   extendedLibrary: ExtendedLibrarySelections;
+  renderPlan: RenderPlan;
 }
 
 export interface SectionSpec {
@@ -126,8 +130,27 @@ export class EnhancedPromptGenerator {
     const palette = this.selectPalette(brief.colors, themeKey);
     const sections = this.generateSections(brief);
     const extendedLibrary = this.selectExtendedLibraryVariants(seed);
+    const styleTags = this.buildSelectionStyleTags(brief);
+    const planPrompt = `${brief.theme} ${brief.type} ${brief.style} ${brief.wishes ?? ''}`.trim();
+    const componentPlan = buildComponentSelectionPlan(
+      planPrompt,
+      sections.map((section) => section.name),
+      styleTags,
+      seed,
+    );
+    const renderPlan = buildRenderPlan({
+      prompt: planPrompt,
+      sections: sections.map((section) => section.name),
+      seed,
+      styleTags,
+      styleTokens: this.buildRenderPlanTokens(palette),
+      layoutArchetype: this.designSystem?.layout?.pattern?.name,
+      componentPlan,
+    });
 
-    const prompt = this.buildEnhancedPrompt(brief, themeKey, palette, sections, extendedLibrary);
+    this.emitBriefTelemetry(renderPlan, componentPlan);
+
+    const prompt = this.buildEnhancedPrompt(brief, themeKey, palette, sections, extendedLibrary, componentPlan);
 
     return {
       prompt,
@@ -141,7 +164,54 @@ export class EnhancedPromptGenerator {
       componentVariants: this.extractVariantNames(this.designSystem.variants),
       animations: this.extractAnimationNames(sections),
       extendedLibrary,
+      renderPlan,
     };
+  }
+
+  private emitBriefTelemetry(renderPlan: RenderPlan, componentPlan: ComponentSelectionPlan): void {
+    if (!this.designSystem) {
+      return;
+    }
+
+    const typography = this.designSystem.tokens.typography.fontFamily;
+    const designCues: DesignCues = {
+      typography: `${typography.heading} / ${typography.body}`,
+      layout: this.designSystem.layout.pattern.name,
+      visualHierarchy: this.designSystem.styleProfile.description || this.designSystem.styleProfile.name,
+      motion: this.designSystem.animations.selectAnimationSet().entrance.name,
+    };
+    const signatureMoves = this.designSystem.styleProfile.baseStyles.map((style) => style.name).slice(0, 3);
+    const effectIds = this.designSystem.styleProfile.features.map((feature) => feature.id).slice(0, 3);
+    const layoutArchetype = renderPlan.layoutArchetype ?? this.designSystem.layout.pattern.name;
+    const quality = buildDesignQualityScore({
+      designCues,
+      stylePackId: this.designSystem.styleProfile.id,
+      layoutArchetype,
+      layoutUniquenessHash: renderPlan.layoutUniquenessHash,
+      signatureMoves,
+      effectIds,
+      sectionOrder: renderPlan.sections.map((section) => section.sectionType),
+    });
+
+    emitDesignQualityEvent({
+      variantIndex: 0,
+      variantCount: 1,
+      selected: true,
+      designQualityScore: quality.score,
+      rankingScore: quality.score,
+      designCueCoverage: quality.coverage,
+      stylePackId: this.designSystem.styleProfile.id,
+      layoutArchetype,
+      duplicateLayout: false,
+      signatureMoveCount: signatureMoves.length,
+      effectCount: effectIds.length,
+      componentMemoryCount: 0,
+      sectionCount: renderPlan.sections.length,
+      componentMatchRate: componentPlan.matchRate,
+      componentFallbackRate: componentPlan.fallbackRate,
+      repeatPenaltyTriggered: componentPlan.repeatPenaltyTriggered,
+      avgCandidatesPerSection: componentPlan.avgCandidatesPerSection,
+    });
   }
 
   /**
@@ -268,6 +338,51 @@ export class EnhancedPromptGenerator {
     return styles.join('; ');
   }
 
+  private buildSelectionStyleTags(brief: Brief): string[] {
+    const tags: string[] = [];
+
+    if (brief.style) {
+      tags.push(brief.style);
+    }
+
+    if (this.designSystem?.styleProfile?.id) {
+      tags.push(this.designSystem.styleProfile.id);
+    }
+
+    if (this.designSystem?.styleProfile?.name) {
+      tags.push(this.designSystem.styleProfile.name);
+    }
+
+    if (this.designSystem?.layout?.pattern?.category) {
+      tags.push(this.designSystem.layout.pattern.category);
+    }
+
+    if (this.designSystem?.layout?.pattern?.complexity) {
+      tags.push(this.designSystem.layout.pattern.complexity);
+    }
+
+    if (this.designSystem?.layout?.pattern?.name) {
+      tags.push(this.designSystem.layout.pattern.name);
+    }
+
+    if (this.designSystem?.layout?.pattern?.globalFeatures?.length) {
+      tags.push(...this.designSystem.layout.pattern.globalFeatures);
+    }
+
+    return tags;
+  }
+
+  private buildRenderPlanTokens(
+    palette: EnhancedGeneratedPrompt['palette'],
+  ): RenderPlan['sections'][number]['styleTokens'] {
+    return {
+      typography: this.designSystem?.tokens.typography.fontFamily.heading ?? '',
+      spacing: this.designSystem?.tokens.spacing.base.toString() ?? '',
+      radius: this.designSystem?.tokens.borderRadius.md ?? '',
+      colors: [palette.dark, palette.light, palette.accent],
+    };
+  }
+
   /**
    * Build the enhanced prompt string
    */
@@ -276,7 +391,8 @@ export class EnhancedPromptGenerator {
     themeKey: string,
     palette: EnhancedGeneratedPrompt['palette'],
     sections: SectionSpec[],
-    extendedLibrary: ExtendedLibrarySelections
+    extendedLibrary: ExtendedLibrarySelections,
+    componentPlan: ComponentSelectionPlan
   ): string {
     const typeLabel = this.getSiteTypeLabel(brief.type);
     const styleLabel = this.getDesignStyleLabel(brief.style);
@@ -337,6 +453,11 @@ export class EnhancedPromptGenerator {
       lines.push('');
     });
 
+    if (componentPlan.planText) {
+      lines.push(componentPlan.planText.trim());
+      lines.push('');
+    }
+
     // Add style mixer features
     if (this.designSystem?.styleProfile.features) {
       lines.push('STYLE FEATURES:');
@@ -369,6 +490,7 @@ export class EnhancedPromptGenerator {
     lines.push('- Apply hover and scroll effects as specified');
     lines.push('- Ensure responsive design at all breakpoints');
     lines.push('- Use CSS custom properties for theming');
+    lines.push('- Frontend-only: do not modify backend, API routes, or database logic.');
     lines.push('');
     lines.push('QUALITY REQUIREMENTS:');
     lines.push('- Professional, polished appearance');

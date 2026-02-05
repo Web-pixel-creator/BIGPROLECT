@@ -4,13 +4,16 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  emitComponentContextEvent,
   emitDesignQualityEvent,
   emitPipelineRun,
   emitQuarantineWritten,
+  getComponentContextSummary,
   getDesignTelemetrySummary,
   getTelemetrySummary,
   getTopViolations,
   getQuarantineStats,
+  getRecentComponentContextEvents,
   getRecentDesignEvents,
   getVariantStats,
   resetTelemetry,
@@ -365,6 +368,10 @@ describe('Event Emitters', () => {
         effectCount: 1,
         componentMemoryCount: 1,
         sectionCount: 5,
+        componentMatchRate: 0.8,
+        componentFallbackRate: 0.2,
+        repeatPenaltyTriggered: true,
+        avgCandidatesPerSection: 4,
       });
 
       emitDesignQualityEvent({
@@ -386,6 +393,10 @@ describe('Event Emitters', () => {
         effectCount: 0,
         componentMemoryCount: 0,
         sectionCount: 4,
+        componentMatchRate: 0.5,
+        componentFallbackRate: 0.5,
+        repeatPenaltyTriggered: false,
+        avgCandidatesPerSection: 2,
       });
 
       const summary = getDesignTelemetrySummary();
@@ -400,6 +411,10 @@ describe('Event Emitters', () => {
       expect(summary.coverageRate.layout).toBeCloseTo(0.5);
       expect(summary.coverageRate.visualHierarchy).toBeCloseTo(0.5);
       expect(summary.coverageRate.motion).toBeCloseTo(0.5);
+      expect(summary.avgComponentMatchRate).toBeCloseTo(0.65);
+      expect(summary.avgComponentFallbackRate).toBeCloseTo(0.35);
+      expect(summary.repeatPenaltyRate).toBeCloseTo(0.5);
+      expect(summary.avgCandidatesPerSection).toBeCloseTo(3);
       expect(summary.topStylePacks).toEqual(
         expect.arrayContaining([
           { id: 'pack-a', count: 1 },
@@ -410,6 +425,40 @@ describe('Event Emitters', () => {
       const recent = getRecentDesignEvents();
       expect(recent).toHaveLength(2);
       expect(recent[0]).toHaveProperty('designQualityScore', 72);
+    });
+  });
+
+  describe('emitComponentContextEvent', () => {
+    it('tracks usage and truncation metrics', () => {
+      emitComponentContextEvent({
+        used: true,
+        truncated: false,
+        componentCount: 3,
+        charCount: 900,
+      });
+      emitComponentContextEvent({
+        used: true,
+        truncated: true,
+        componentCount: 2,
+        charCount: 12000,
+      });
+      emitComponentContextEvent({
+        used: false,
+        truncated: false,
+        componentCount: 0,
+        charCount: 0,
+      });
+
+      const summary = getComponentContextSummary();
+      expect(summary.totalRuns).toBe(3);
+      expect(summary.usageRate).toBeCloseTo(2 / 3);
+      expect(summary.truncationRate).toBeCloseTo(1 / 2);
+      expect(summary.avgComponents).toBeCloseTo(2.5);
+      expect(summary.avgChars).toBeCloseTo((900 + 12000) / 2);
+
+      const recent = getRecentComponentContextEvents();
+      expect(recent).toHaveLength(3);
+      expect(recent[0]).toHaveProperty('used', true);
     });
   });
 });

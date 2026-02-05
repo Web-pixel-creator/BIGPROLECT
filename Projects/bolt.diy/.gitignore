@@ -47,4 +47,6 @@ docs/instructions/Roadmap.md
 *.md
 # Allow MkDocs documentation
 !docs/docs/**/*.md
+# Allow tracked spec docs for internal implementation plans
+!.kiro/specs/**/*.md
 .qodo

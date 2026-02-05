@@ -88,6 +88,35 @@ export interface DesignQualityEvent {
   effectCount: number;
   componentMemoryCount: number;
   sectionCount: number;
+  componentMatchRate: number;
+  componentFallbackRate: number;
+  repeatPenaltyTriggered: boolean;
+  avgCandidatesPerSection: number;
+}
+
+/**
+ * Event emitted after each screenshot analysis attempt.
+ */
+export interface ScreenshotAnalysisEvent {
+  timestamp: string;
+  success: boolean;
+  usedFallback: boolean;
+  imageCount: number;
+  provider: string;
+  model: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}
+
+/**
+ * Event emitted when component context is generated for chat.
+ */
+export interface ComponentContextEvent {
+  timestamp: string;
+  used: boolean;
+  truncated: boolean;
+  componentCount: number;
+  charCount: number;
 }
 
 /*
@@ -157,12 +186,37 @@ interface TelemetryStore {
     totalComponentMemory: number;
     totalSectionCount: number;
     totalVariantCount: number;
+    totalComponentMatchRate: number;
+    totalComponentFallbackRate: number;
+    repeatPenaltyTriggeredCount: number;
+    totalAvgCandidatesPerSection: number;
     recentDesignEvents: DesignQualityEvent[];
+  };
+
+  screenshotAnalysis: {
+    totalRuns: number;
+    successCount: number;
+    fallbackCount: number;
+    totalImages: number;
+    fallbackProviderCounts: Map<string, number>;
+    fallbackModelCounts: Map<string, number>;
+    recentScreenshotEvents: ScreenshotAnalysisEvent[];
+  };
+
+  componentContext: {
+    totalRuns: number;
+    usedCount: number;
+    truncatedCount: number;
+    totalComponents: number;
+    totalChars: number;
+    recentContextEvents: ComponentContextEvent[];
   };
 }
 
 const RECENT_EVENTS_LIMIT = 100;
 const RECENT_DESIGN_EVENTS_LIMIT = 100;
+const RECENT_SCREENSHOT_EVENTS_LIMIT = 100;
+const RECENT_COMPONENT_CONTEXT_EVENTS_LIMIT = 100;
 
 type DesignCueCoverageCounts = {
   typography: number;
@@ -220,7 +274,28 @@ function createEmptyStore(): TelemetryStore {
       totalComponentMemory: 0,
       totalSectionCount: 0,
       totalVariantCount: 0,
+      totalComponentMatchRate: 0,
+      totalComponentFallbackRate: 0,
+      repeatPenaltyTriggeredCount: 0,
+      totalAvgCandidatesPerSection: 0,
       recentDesignEvents: [],
+    },
+    screenshotAnalysis: {
+      totalRuns: 0,
+      successCount: 0,
+      fallbackCount: 0,
+      totalImages: 0,
+      fallbackProviderCounts: new Map(),
+      fallbackModelCounts: new Map(),
+      recentScreenshotEvents: [],
+    },
+    componentContext: {
+      totalRuns: 0,
+      usedCount: 0,
+      truncatedCount: 0,
+      totalComponents: 0,
+      totalChars: 0,
+      recentContextEvents: [],
     },
   };
 }
@@ -383,6 +458,27 @@ export interface EmitDesignQualityOptions {
   effectCount: number;
   componentMemoryCount: number;
   sectionCount: number;
+  componentMatchRate: number;
+  componentFallbackRate: number;
+  repeatPenaltyTriggered: boolean;
+  avgCandidatesPerSection: number;
+}
+
+export interface EmitScreenshotAnalysisOptions {
+  success: boolean;
+  usedFallback: boolean;
+  imageCount: number;
+  provider: string;
+  model: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}
+
+export interface EmitComponentContextOptions {
+  used: boolean;
+  truncated: boolean;
+  componentCount: number;
+  charCount: number;
 }
 
 /**
@@ -406,6 +502,34 @@ export function emitQuarantineWritten(options: EmitQuarantineOptions): Quarantin
 
   // Track quarantine-specific details
   trackQuarantineDetailsInternal(event);
+
+  return event;
+}
+
+/**
+ * Emit a screenshot-analysis telemetry event.
+ */
+export function emitScreenshotAnalysisEvent(options: EmitScreenshotAnalysisOptions): ScreenshotAnalysisEvent {
+  const event: ScreenshotAnalysisEvent = {
+    timestamp: new Date().toISOString(),
+    ...options,
+  };
+
+  aggregateScreenshotAnalysisEvent(event);
+
+  return event;
+}
+
+/**
+ * Emit a component-context telemetry event.
+ */
+export function emitComponentContextEvent(options: EmitComponentContextOptions): ComponentContextEvent {
+  const event: ComponentContextEvent = {
+    timestamp: new Date().toISOString(),
+    ...options,
+  };
+
+  aggregateComponentContextEvent(event);
 
   return event;
 }
@@ -520,6 +644,13 @@ function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
   design.totalComponentMemory += event.componentMemoryCount;
   design.totalSectionCount += event.sectionCount;
   design.totalVariantCount += event.variantCount;
+  design.totalComponentMatchRate += event.componentMatchRate;
+  design.totalComponentFallbackRate += event.componentFallbackRate;
+  design.totalAvgCandidatesPerSection += event.avgCandidatesPerSection;
+
+  if (event.repeatPenaltyTriggered) {
+    design.repeatPenaltyTriggeredCount += 1;
+  }
 
   if (event.selected) {
     design.selectedVariants++;
@@ -559,6 +690,59 @@ function aggregateDesignQualityEvent(event: DesignQualityEvent): void {
   design.recentDesignEvents.push(event);
   if (design.recentDesignEvents.length > RECENT_DESIGN_EVENTS_LIMIT) {
     design.recentDesignEvents.shift();
+  }
+}
+
+function aggregateScreenshotAnalysisEvent(event: ScreenshotAnalysisEvent): void {
+  const screenshots = store.screenshotAnalysis;
+  screenshots.totalRuns += 1;
+  screenshots.totalImages += event.imageCount;
+
+  if (event.success) {
+    screenshots.successCount += 1;
+  }
+
+  if (event.usedFallback) {
+    screenshots.fallbackCount += 1;
+  }
+
+  if (event.fallbackProvider) {
+    screenshots.fallbackProviderCounts.set(
+      event.fallbackProvider,
+      (screenshots.fallbackProviderCounts.get(event.fallbackProvider) || 0) + 1,
+    );
+  }
+
+  if (event.fallbackModel) {
+    screenshots.fallbackModelCounts.set(
+      event.fallbackModel,
+      (screenshots.fallbackModelCounts.get(event.fallbackModel) || 0) + 1,
+    );
+  }
+
+  screenshots.recentScreenshotEvents.push(event);
+  if (screenshots.recentScreenshotEvents.length > RECENT_SCREENSHOT_EVENTS_LIMIT) {
+    screenshots.recentScreenshotEvents.shift();
+  }
+}
+
+function aggregateComponentContextEvent(event: ComponentContextEvent): void {
+  const context = store.componentContext;
+  context.totalRuns += 1;
+  context.totalComponents += event.componentCount;
+  context.totalChars += event.charCount;
+
+  if (event.used) {
+    context.usedCount += 1;
+  }
+
+  if (event.truncated) {
+    context.truncatedCount += 1;
+  }
+
+  context.recentContextEvents.push(event);
+  if (context.recentContextEvents.length > RECENT_COMPONENT_CONTEXT_EVENTS_LIMIT) {
+    context.recentContextEvents.shift();
   }
 }
 
@@ -633,8 +817,29 @@ export interface DesignTelemetrySummary {
   avgEffects: number;
   avgComponentMemory: number;
   avgSectionCount: number;
+  avgComponentMatchRate: number;
+  avgComponentFallbackRate: number;
+  repeatPenaltyRate: number;
+  avgCandidatesPerSection: number;
   topStylePacks: Array<{ id: string; count: number }>;
   topLayoutArchetypes: Array<{ id: string; count: number }>;
+}
+
+export interface ScreenshotTelemetrySummary {
+  totalRuns: number;
+  successRate: number;
+  fallbackRate: number;
+  avgImageCount: number;
+  topFallbackProviders: Array<{ id: string; count: number }>;
+  topFallbackModels: Array<{ id: string; count: number }>;
+}
+
+export interface ComponentContextSummary {
+  totalRuns: number;
+  usageRate: number;
+  truncationRate: number;
+  avgComponents: number;
+  avgChars: number;
 }
 
 /**
@@ -697,8 +902,39 @@ export function getDesignTelemetrySummary(): DesignTelemetrySummary {
     avgEffects: totalVariants > 0 ? design.totalEffects / totalVariants : 0,
     avgComponentMemory: totalVariants > 0 ? design.totalComponentMemory / totalVariants : 0,
     avgSectionCount: totalVariants > 0 ? design.totalSectionCount / totalVariants : 0,
+    avgComponentMatchRate: totalVariants > 0 ? design.totalComponentMatchRate / totalVariants : 0,
+    avgComponentFallbackRate: totalVariants > 0 ? design.totalComponentFallbackRate / totalVariants : 0,
+    repeatPenaltyRate: totalVariants > 0 ? design.repeatPenaltyTriggeredCount / totalVariants : 0,
+    avgCandidatesPerSection: totalVariants > 0 ? design.totalAvgCandidatesPerSection / totalVariants : 0,
     topStylePacks: summarizeCountMap(design.stylePackCounts, 5),
     topLayoutArchetypes: summarizeCountMap(design.layoutArchetypeCounts, 5),
+  };
+}
+
+export function getScreenshotTelemetrySummary(): ScreenshotTelemetrySummary {
+  const screenshots = store.screenshotAnalysis;
+  const totalRuns = screenshots.totalRuns;
+
+  return {
+    totalRuns,
+    successRate: totalRuns > 0 ? screenshots.successCount / totalRuns : 0,
+    fallbackRate: totalRuns > 0 ? screenshots.fallbackCount / totalRuns : 0,
+    avgImageCount: totalRuns > 0 ? screenshots.totalImages / totalRuns : 0,
+    topFallbackProviders: summarizeCountMap(screenshots.fallbackProviderCounts, 5),
+    topFallbackModels: summarizeCountMap(screenshots.fallbackModelCounts, 5),
+  };
+}
+
+export function getComponentContextSummary(): ComponentContextSummary {
+  const context = store.componentContext;
+  const usedCount = context.usedCount;
+
+  return {
+    totalRuns: context.totalRuns,
+    usageRate: context.totalRuns > 0 ? context.usedCount / context.totalRuns : 0,
+    truncationRate: usedCount > 0 ? context.truncatedCount / usedCount : 0,
+    avgComponents: usedCount > 0 ? context.totalComponents / usedCount : 0,
+    avgChars: usedCount > 0 ? context.totalChars / usedCount : 0,
   };
 }
 
@@ -794,6 +1030,14 @@ export function getVariantStats(): VariantStats[] {
 
 export function getRecentDesignEvents(): DesignQualityEvent[] {
   return [...store.designQuality.recentDesignEvents];
+}
+
+export function getRecentScreenshotEvents(): ScreenshotAnalysisEvent[] {
+  return [...store.screenshotAnalysis.recentScreenshotEvents];
+}
+
+export function getRecentComponentContextEvents(): ComponentContextEvent[] {
+  return [...store.componentContext.recentContextEvents];
 }
 
 /**

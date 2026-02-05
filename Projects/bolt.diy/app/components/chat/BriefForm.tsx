@@ -3,16 +3,23 @@
  * Converts structured input into a Brief object for PromptGenerator
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from '@remix-run/react';
 import { classNames } from '~/utils/classNames';
 import type { Brief, SiteType, DesignStyle } from '~/lib/services/enhancedPromptGenerator';
+import { resolveBriefSeed } from '~/lib/services/brief-utils';
+import { analyzeScreenshots } from '~/lib/services/screenshotAnalyzer';
+import type { ProviderInfo } from '~/types/model';
+import FilePreview from './FilePreview';
 
 type Locale = 'en' | 'ru';
 
 interface BriefFormProps {
-  onSubmit: (brief: Brief) => void;
+  onSubmit: (brief: Brief) => Promise<void> | void;
   isLoading?: boolean;
   className?: string;
+  model?: string;
+  provider?: ProviderInfo;
 }
 
 const SITE_TYPES: { value: SiteType; label: string; labelRu: string }[] = [
@@ -41,7 +48,10 @@ const PRESET_COLORS = [
   { name: 'Indigo', hex: '#6366F1' },
 ];
 
-export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormProps) {
+const MAX_SCREENSHOTS = 3;
+
+export function BriefForm({ onSubmit, isLoading = false, className, model, provider }: BriefFormProps) {
+  const [searchParams] = useSearchParams();
   const [locale, setLocale] = useState<Locale>('en');
   const [siteType, setSiteType] = useState<SiteType>('landing');
   const [theme, setTheme] = useState('');
@@ -49,13 +59,127 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
   const [customColor, setCustomColor] = useState('');
   const [style, setStyle] = useState<DesignStyle>('modern');
   const [wishes, setWishes] = useState('');
+  const [lockDesign, setLockDesign] = useState(false);
+  const [lockedSeed, setLockedSeed] = useState<number | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'analyzing' | 'error' | 'success'>('idle');
+  const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
+  const [analysisFallbackProvider, setAnalysisFallbackProvider] = useState<string | null>(null);
+  const [analysisFallbackModel, setAnalysisFallbackModel] = useState<string | null>(null);
+  const [allowFallback, setAllowFallback] = useState(true);
+  const [analysisHistory, setAnalysisHistory] = useState<
+    Array<{
+      id: string;
+      timestamp: string;
+      status: 'success' | 'error';
+      imageCount: number;
+      provider: string;
+      model: string;
+      fallbackProvider?: string;
+      fallbackModel?: string;
+    }>
+  >([]);
+  const screenshotInputRef = useRef<HTMLInputElement | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const browserLang = typeof navigator !== 'undefined' ? navigator.language : '';
     setLocale(browserLang?.startsWith('ru') ? 'ru' : 'en');
   }, []);
 
+  useEffect(() => {
+    if (screenshotPreviews.length === 0) {
+      setAnalysisStatus('idle');
+      setAnalysisMessage(null);
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
+    }
+  }, [screenshotPreviews.length]);
+
+  useEffect(() => {
+    if (initializedRef.current) {
+      return;
+    }
+
+    const hasParams = [
+      'theme',
+      'type',
+      'style',
+      'colors',
+      'wishes',
+      'seed',
+      'lock',
+    ].some((key) => searchParams.get(key));
+
+    if (!hasParams) {
+      return;
+    }
+
+    initializedRef.current = true;
+
+    const themeParam = searchParams.get('theme');
+    const typeParam = searchParams.get('type');
+    const styleParam = searchParams.get('style');
+    const colorsParam = searchParams.get('colors');
+    const wishesParam = searchParams.get('wishes');
+    const seedParam = searchParams.get('seed');
+    const lockParam = searchParams.get('lock');
+
+    if (themeParam) {
+      setTheme(themeParam.trim());
+    }
+
+    if (typeParam && SITE_TYPES.some((item) => item.value === typeParam)) {
+      setSiteType(typeParam as SiteType);
+    }
+
+    if (styleParam && DESIGN_STYLES.some((item) => item.value === styleParam)) {
+      setStyle(styleParam as DesignStyle);
+    }
+
+    if (colorsParam) {
+      const parsedColors = colorsParam
+        .split(',')
+        .map((color) => color.trim())
+        .filter((color) => /^#[0-9A-Fa-f]{6}$/.test(color))
+        .slice(0, 3);
+
+      if (parsedColors.length > 0) {
+        setSelectedColors(parsedColors);
+      }
+    }
+
+    if (wishesParam) {
+      setWishes(wishesParam.trim());
+    }
+
+    const numericSeed = seedParam ? Number(seedParam) : NaN;
+    const shouldLock = lockParam === '1' || lockParam === 'true' || Number.isFinite(numericSeed);
+
+    if (shouldLock) {
+      setLockDesign(true);
+      if (Number.isFinite(numericSeed)) {
+        setLockedSeed(numericSeed);
+      }
+    }
+  }, [searchParams]);
+
   const t = useCallback((en: string, ru: string) => locale === 'ru' ? ru : en, [locale]);
+  const formatTime = useCallback(
+    (timestamp: string) => {
+      try {
+        return new Date(timestamp).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return timestamp;
+      }
+    },
+    [locale],
+  );
   const handleColorToggle = useCallback((hex: string) => {
     setSelectedColors(prev => {
       if (prev.includes(hex)) {
@@ -77,11 +201,144 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
     }
   }, [customColor, selectedColors]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const readFileAsDataUrl = useCallback((file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const addScreenshots = useCallback(
+    async (files: FileList | File[]) => {
+      const incoming = Array.from(files).filter((file) => file.type.startsWith('image/'));
+      if (incoming.length === 0) {
+        return;
+      }
+
+      const availableSlots = Math.max(0, MAX_SCREENSHOTS - screenshotFiles.length);
+      const selected = incoming.slice(0, availableSlots);
+
+      if (selected.length === 0) {
+        return;
+      }
+
+      try {
+        const previews = await Promise.all(selected.map(readFileAsDataUrl));
+        setAnalysisStatus('idle');
+        setAnalysisMessage(null);
+        setAnalysisFallbackProvider(null);
+        setAnalysisFallbackModel(null);
+        setScreenshotFiles((prev) => [...prev, ...selected]);
+        setScreenshotPreviews((prev) => [...prev, ...previews]);
+      } catch (error) {
+        console.warn('Failed to read screenshot files', error);
+      }
+    },
+    [readFileAsDataUrl, screenshotFiles.length],
+  );
+
+  const handleScreenshotChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (event.target.files) {
+        void addScreenshots(event.target.files);
+      }
+
+      event.target.value = '';
+    },
+    [addScreenshots],
+  );
+
+  const handleRemoveScreenshot = useCallback((index: number) => {
+    setAnalysisStatus('idle');
+    setAnalysisMessage(null);
+    setAnalysisFallbackProvider(null);
+    setAnalysisFallbackModel(null);
+    setScreenshotFiles((prev) => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!theme.trim()) {
       return;
+    }
+
+    const { seed, nextLockedSeed } = resolveBriefSeed({
+      lockDesign,
+      lockedSeed,
+    });
+
+    if (lockedSeed !== nextLockedSeed) {
+      setLockedSeed(nextLockedSeed);
+    }
+
+    let screenshotAnalysis: Brief['screenshotAnalysis'] | undefined;
+
+    if (screenshotPreviews.length > 0) {
+      setAnalysisStatus('analyzing');
+      setAnalysisMessage(null);
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
+
+      const analysisResult = await analyzeScreenshots({
+        images: screenshotPreviews,
+        model,
+        provider,
+        allowFallback,
+      });
+
+      const providerName = provider?.name ?? 'Unknown';
+      const modelName = model ?? 'default';
+
+      if (analysisResult.analysis) {
+        screenshotAnalysis = analysisResult.analysis;
+        setAnalysisStatus('success');
+        if (analysisResult.fallbackProvider || analysisResult.fallbackModel) {
+          setAnalysisFallbackProvider(analysisResult.fallbackProvider ?? null);
+          setAnalysisFallbackModel(analysisResult.fallbackModel ?? null);
+        }
+        setAnalysisHistory((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            status: 'success',
+            imageCount: screenshotPreviews.length,
+            provider: providerName,
+            model: modelName,
+            fallbackProvider: analysisResult.fallbackProvider,
+            fallbackModel: analysisResult.fallbackModel,
+          },
+          ...prev,
+        ].slice(0, 5));
+      } else {
+        setAnalysisStatus('error');
+        setAnalysisMessage(
+          t(
+            'Could not analyze screenshots. Continuing without them.',
+            '\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u044B. \u041F\u0440\u043E\u0434\u043E\u043B\u0436\u0430\u0435\u043C \u0431\u0435\u0437 \u043D\u0438\u0445.',
+          ),
+        );
+        setAnalysisHistory((prev) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            timestamp: new Date().toISOString(),
+            status: 'error',
+            imageCount: screenshotPreviews.length,
+            provider: providerName,
+            model: modelName,
+          },
+          ...prev,
+        ].slice(0, 5));
+      }
+    } else {
+      setAnalysisStatus('idle');
+      setAnalysisMessage(null);
+      setAnalysisFallbackProvider(null);
+      setAnalysisFallbackModel(null);
     }
 
     const brief: Brief = {
@@ -90,12 +347,91 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
       colors: selectedColors,
       style,
       wishes: wishes.trim() || undefined,
+      seed,
+      screenshotAnalysis,
     };
 
-    onSubmit(brief);
-  }, [siteType, theme, selectedColors, style, wishes, onSubmit]);
+    await onSubmit(brief);
+  }, [
+    siteType,
+    theme,
+    selectedColors,
+    style,
+    wishes,
+    lockDesign,
+    lockedSeed,
+    screenshotPreviews,
+    model,
+    provider,
+    onSubmit,
+    t,
+  ]);
+
+  const buildShareUrl = useCallback(
+    (seedValue: number | null) => {
+      if (typeof window === 'undefined') {
+        return '';
+      }
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('theme', theme.trim());
+      url.searchParams.set('type', siteType);
+      url.searchParams.set('style', style);
+      url.searchParams.set('lock', lockDesign ? '1' : '0');
+
+      if (selectedColors.length > 0) {
+        url.searchParams.set('colors', selectedColors.join(','));
+      } else {
+        url.searchParams.delete('colors');
+      }
+
+      if (wishes.trim()) {
+        url.searchParams.set('wishes', wishes.trim());
+      } else {
+        url.searchParams.delete('wishes');
+      }
+
+      if (lockDesign && seedValue !== null) {
+        url.searchParams.set('seed', seedValue.toString());
+      } else {
+        url.searchParams.delete('seed');
+      }
+
+      return url.toString();
+    },
+    [theme, siteType, style, lockDesign, selectedColors, wishes],
+  );
+
+  const handleCopyShareLink = useCallback(async () => {
+    let seedValue = lockedSeed;
+
+    if (lockDesign && seedValue === null) {
+      seedValue = Date.now();
+      setLockedSeed(seedValue);
+    }
+
+    const url = buildShareUrl(seedValue);
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+        return;
+      }
+    } catch {
+      // fallback below
+    }
+
+    window.prompt('Copy this link', url);
+  }, [buildShareUrl, lockDesign, lockedSeed]);
 
   const isValid = theme.trim().length > 0;
+  const isBusy = isLoading || analysisStatus === 'analyzing';
 
   return (
     <form 
@@ -269,6 +605,112 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
         )}
       </div>
 
+      {/* Reference Screenshots */}
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-bolt-elements-textPrimary">
+          {t('Reference Screenshots (optional)', '\u0420\u0435\u0444\u0435\u0440\u0435\u043D\u0441\u044B (\u043D\u0435\u043E\u0431\u044F\u0437.)')}
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={screenshotInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleScreenshotChange}
+          />
+          <button
+            type="button"
+            onClick={() => screenshotInputRef.current?.click()}
+            className={classNames(
+              'px-3 py-2 rounded-lg text-sm font-medium transition-all',
+              'bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary',
+              'border border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive'
+            )}
+          >
+            {t('Upload screenshots', '\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u044B')}
+          </button>
+          <span className="text-xs text-bolt-elements-textTertiary">
+            {t('Up to 3 images', '\u0414\u043E 3 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0439')}
+          </span>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-bolt-elements-textSecondary">
+          <input
+            type="checkbox"
+            checked={allowFallback}
+            onChange={(e) => setAllowFallback(e.target.checked)}
+            className="h-4 w-4 rounded border-bolt-elements-borderColor text-bolt-elements-button-primary-background focus:ring-bolt-elements-button-primary-background"
+          />
+          <span>
+            {t(
+              'Allow fallback vision models if needed',
+              '\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C fallback-\u043C\u043E\u0434\u0435\u043B\u0438, \u0435\u0441\u043B\u0438 \u043D\u0443\u0436\u043D\u043E',
+            )}
+          </span>
+        </label>
+        <FilePreview files={screenshotFiles} imageDataList={screenshotPreviews} onRemove={handleRemoveScreenshot} />
+        {analysisStatus === 'analyzing' && (
+          <p className="text-xs text-bolt-elements-textTertiary">
+            {t('Analyzing screenshots...', '\u0410\u043D\u0430\u043B\u0438\u0437 \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442\u043E\u0432...')}
+          </p>
+        )}
+        {analysisStatus === 'error' && analysisMessage && (
+          <p className="text-xs text-amber-500">{analysisMessage}</p>
+        )}
+        {analysisStatus === 'success' && (analysisFallbackProvider || analysisFallbackModel) && (
+          <div
+            className={classNames(
+              'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs',
+              'bg-bolt-elements-background-depth-3 border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+            )}
+          >
+            <span className="i-ph:info text-xs" />
+            <span>
+              {t(
+                `Fallback model used: ${analysisFallbackProvider ?? 'Unknown'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+                `Использован fallback: ${analysisFallbackProvider ?? '\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439'}${analysisFallbackModel ? ` / ${analysisFallbackModel}` : ''}`,
+              )}
+            </span>
+          </div>
+        )}
+        {analysisHistory.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-wide text-bolt-elements-textTertiary">
+              {t('Analysis history', '\u0418\u0441\u0442\u043E\u0440\u0438\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u043E\u0432')}
+            </span>
+            <ul className="space-y-1">
+              {analysisHistory.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex flex-col gap-0.5 rounded-md border border-bolt-elements-borderColor bg-bolt-elements-background-depth-3 px-2 py-1 text-xs text-bolt-elements-textSecondary"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={entry.status === 'success' ? 'i-ph:check-circle text-emerald-400' : 'i-ph:warning-circle text-amber-400'} />
+                      <span>
+                        {entry.status === 'success'
+                          ? t('Success', '\u0423\u0441\u043F\u0435\u0445')
+                          : t('Failed', '\u041E\u0448\u0438\u0431\u043A\u0430')}
+                      </span>
+                      <span className="text-bolt-elements-textTertiary">
+                        {t(`${entry.imageCount} images`, `${entry.imageCount} \u0438\u0437\u043E\u0431\u0440\u0430\u0436.`)}
+                      </span>
+                    </div>
+                    <span className="text-bolt-elements-textTertiary">{formatTime(entry.timestamp)}</span>
+                  </div>
+                  <div className="text-[11px] text-bolt-elements-textTertiary">
+                    {entry.provider} / {entry.model}
+                    {entry.fallbackProvider || entry.fallbackModel
+                      ? ` \u2192 ${entry.fallbackProvider ?? entry.provider}${entry.fallbackModel ? ` / ${entry.fallbackModel}` : ''}`
+                      : ''}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       {/* Additional Wishes */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-bolt-elements-textPrimary">
@@ -292,22 +734,65 @@ export function BriefForm({ onSubmit, isLoading = false, className }: BriefFormP
         />
       </div>
 
+      {/* Lock Design */}
+      <label className="flex items-center gap-3 text-sm text-bolt-elements-textSecondary">
+        <input
+          type="checkbox"
+          checked={lockDesign}
+          onChange={(e) => {
+            const nextValue = e.target.checked;
+            setLockDesign(nextValue);
+            if (!nextValue) {
+              setLockedSeed(null);
+            }
+            if (nextValue && lockedSeed === null) {
+              setLockedSeed(Date.now());
+            }
+          }}
+          className="h-4 w-4 rounded border-bolt-elements-borderColor text-bolt-elements-button-primary-background focus:ring-bolt-elements-button-primary-background"
+        />
+        <span>
+          {t('Lock design (repeatable result)', '\u0417\u0430\u0444\u0438\u043A\u0441\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0437\u0430\u0439\u043D (\u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0435\u043C\u044B\u0439 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442)')}
+        </span>
+      </label>
+      {lockDesign && lockedSeed !== null && (
+        <div className="flex items-center justify-between rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-3 px-3 py-2 text-xs text-bolt-elements-textSecondary">
+          <span>{t(`Seed: ${lockedSeed}`, `Seed: ${lockedSeed}`)}</span>
+          <button
+            type="button"
+            onClick={handleCopyShareLink}
+            className={classNames(
+              'px-2 py-1 rounded-md border text-xs font-medium transition-all',
+              shareCopied
+                ? 'bg-bolt-elements-button-primary-background text-bolt-elements-button-primary-text border-transparent'
+                : 'bg-transparent text-bolt-elements-textSecondary border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive',
+            )}
+          >
+            {shareCopied
+              ? t('Copied', '\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u043E')
+              : t('Copy share link', '\u0421\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443')}
+          </button>
+        </div>
+      )}
+
       {/* Submit */}
       <button
         type="submit"
-        disabled={!isValid || isLoading}
+        disabled={!isValid || isBusy}
         className={classNames(
           'w-full py-3 px-4 rounded-lg font-medium text-base transition-all',
           'flex items-center justify-center gap-2',
-          isValid && !isLoading
+          isValid && !isBusy
             ? 'bg-bolt-elements-button-primary-background text-bolt-elements-button-primary-text hover:bg-bolt-elements-button-primary-backgroundHover'
             : 'bg-bolt-elements-button-secondary-background text-bolt-elements-button-secondary-text opacity-50 cursor-not-allowed'
         )}
       >
-        {isLoading ? (
+        {isBusy ? (
           <>
             <span className="i-svg-spinners:90-ring-with-bg" />
-            {t('Generating...', '\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F...')}
+            {analysisStatus === 'analyzing'
+              ? t('Analyzing references...', '\u0410\u043D\u0430\u043B\u0438\u0437 \u0440\u0435\u0444\u0435\u0440\u0435\u043D\u0441\u043E\u0432...')
+              : t('Generating...', '\u0413\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F...')}
           </>
         ) : (
           <>

@@ -21,6 +21,47 @@ import { createScopedLogger } from '~/utils/logger';
 
 const logger = createScopedLogger('GenerationRouter');
 
+const BACKEND_FILE_PATH_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /(^|[\\/])api([\\/]|$)/i, label: 'API directory path' },
+  { pattern: /(^|[\\/])routes?([\\/]|$)/i, label: 'route directory path' },
+  { pattern: /(^|[\\/])(server|backend)([\\/]|$)/i, label: 'backend/server directory path' },
+  { pattern: /(^|[\\/])(db|database|prisma|migrations?)([\\/]|$)/i, label: 'database directory path' },
+  { pattern: /\.(sql|prisma)$/i, label: 'database schema file extension' },
+];
+
+const BACKEND_CODE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /\bexpress\s*\(/i, label: 'Express app initialization' },
+  { pattern: /\bcreateServer\s*\(/i, label: 'server creation call' },
+  { pattern: /\bapp\.(get|post|put|patch|delete|use)\s*\(/i, label: 'backend route handler' },
+  { pattern: /\bnew\s+PrismaClient\b/i, label: 'Prisma client usage' },
+  { pattern: /\b(mongoose|sequelize|typeorm|knex)\b/i, label: 'database ORM usage' },
+  { pattern: /\b(mysql|postgres(?:ql)?|sqlite|mongodb)\b/i, label: 'database engine reference' },
+];
+
+function detectBackendArtifacts(code: string, filename: string, sectionType?: SectionType): string[] {
+  // Apply this guardrail only for section-generation flow.
+  if (!sectionType) {
+    return [];
+  }
+
+  const warnings: string[] = [];
+  const normalizedFilename = filename.replace(/\\/g, '/');
+
+  for (const entry of BACKEND_FILE_PATH_PATTERNS) {
+    if (entry.pattern.test(normalizedFilename)) {
+      warnings.push(`Backend artifact detected (${entry.label}) in file path: ${filename}`);
+    }
+  }
+
+  for (const entry of BACKEND_CODE_PATTERNS) {
+    if (entry.pattern.test(code)) {
+      warnings.push(`Backend artifact detected in generated code: ${entry.label}`);
+    }
+  }
+
+  return Array.from(new Set(warnings));
+}
+
 /**
  * Pipeline result with detailed information about each stage.
  */
@@ -214,6 +255,8 @@ export async function routeThroughPipeline(
   }
 
   // Final validation
+  warnings.push(...detectBackendArtifacts(currentCode, filename, options.sectionType));
+
   result.finalValidation = validateFile(currentCode, filename);
   result.code = currentCode;
   result.success = result.finalValidation.valid;

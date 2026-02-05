@@ -7,14 +7,14 @@
   "summary": {
     "promptCount": 25,
     "durationMs": {
-      "median": 11.014900000000125,
-      "min": 1.7608000000000175,
-      "max": 947.887
+      "median": 4.466400000000249,
+      "min": 1.5191999999997279,
+      "max": 795.9660999999999
     },
     "enhancedPromptLength": {
-      "median": 2636,
-      "min": 872,
-      "max": 4433
+      "median": 3642,
+      "min": 1567,
+      "max": 5041
     },
     "themeCounts": {
       "furniture": 2,
@@ -39,6 +39,6 @@
       "gaming": 1
     }
   },
-  "coldImportTimeMs": 230.1189,
-  "bundleSizeBytes": 23897
+  "coldImportTimeMs": 89.8914,
+  "bundleSizeBytes": 36529
 }

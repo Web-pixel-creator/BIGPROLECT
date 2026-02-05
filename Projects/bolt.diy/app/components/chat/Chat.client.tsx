@@ -36,6 +36,7 @@ import type { LlmErrorAlertType } from '~/types/actions';
 import { createLayoutSeed, generateLayoutStrategy, getLayoutInstructions } from '~/lib/services/layout-mutator';
 import type { GenerationSummary } from './GenerationSummaryCard';
 import { enhancedPromptGenerator, type Brief } from '~/lib/services/enhancedPromptGenerator';
+import { buildSectionContractFromRenderPlan } from '~/lib/services/render-plan';
 import type { InputMode } from './InputModeSelector';
 
 const logger = createScopedLogger('Chat');
@@ -475,8 +476,17 @@ export const ChatImpl = memo(
 
     const handleBriefSubmit = async (brief: Brief) => {
       const generated = enhancedPromptGenerator.generate(brief);
+      const sectionContract = buildSectionContractFromRenderPlan(generated.renderPlan);
+
+      if (sectionContract?.order.length) {
+        workbenchStore.setPendingSectionContract(sectionContract);
+      } else {
+        workbenchStore.clearPendingSectionContract();
+      }
+
       await sendMessage({} as React.UIEvent, generated.prompt, {
         displayOverride: buildBriefDisplay(brief),
+        skipEnhancer: true,
       });
       setInputMode('chat');
     };
@@ -704,7 +714,7 @@ export const ChatImpl = memo(
     const sendMessage = async (
       _event: React.UIEvent,
       messageInput?: string,
-      options?: { displayOverride?: string },
+      options?: { displayOverride?: string; skipEnhancer?: boolean },
     ): Promise<boolean> => {
       const messageContent = messageInput || input;
       const originalInput = messageContent;
@@ -722,10 +732,12 @@ export const ChatImpl = memo(
         let finalMessageContent = messageContent;
         let displayMessageContent = options?.displayOverride ?? messageContent; // What user sees in chat
         let summary: GenerationSummary | null = null;
-        const isDesignPrompt = shouldEnhancePrompt(messageContent);
+        const skipEnhancer = options?.skipEnhancer ?? false;
+        const shouldRunEnhancer = !skipEnhancer && shouldEnhancePrompt(messageContent);
+        const isDesignPrompt = skipEnhancer ? true : shouldRunEnhancer;
 
         // Enhance prompt with design system if it's a design/website request.
-        if (isDesignPrompt) {
+        if (shouldRunEnhancer) {
           try {
             // Inject Layout Mutation to guarantee uniqueness
             const baseSeed = createLayoutSeed(messageContent);
@@ -773,7 +785,9 @@ export const ChatImpl = memo(
             toast.error(`Prompt enhancer failed (${shortMessage}). Using the original prompt.`);
           }
         } else {
-          workbenchStore.clearPendingSectionContract();
+          if (!skipEnhancer) {
+            workbenchStore.clearPendingSectionContract();
+          }
           summary = buildGenerationSummary(messageContent);
         }
 

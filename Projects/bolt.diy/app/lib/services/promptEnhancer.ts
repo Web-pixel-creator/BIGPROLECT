@@ -73,7 +73,9 @@ import {
   buildSectionBlueprint,
 } from './prompt-section-utils';
 import { buildSectionVariantBlock, pickEffectIds } from './prompt-variant-utils';
-import { buildComponentDirectives, SAFE_COMPONENT_REGISTRY } from './prompt-component-utils';
+import { buildComponentSelectionPlan } from './prompt-component-utils';
+import type { ComponentSelectionPlan } from './prompt-component-utils';
+import { buildRenderPlan, type RenderPlan } from './render-plan';
 import { emitDesignQualityEvent } from './pipelineTelemetry';
 
 import {
@@ -376,6 +378,10 @@ export interface EnhancedPrompt {
 
   componentMemory: ComponentMemoryEntry[];
 
+  componentPlan?: ComponentSelectionPlan;
+
+  renderPlan?: RenderPlan;
+
   sectionContract?: SectionContract;
 }
 
@@ -409,6 +415,29 @@ const LAYOUT_MARKER = 'CREATIVE DIRECTION (Unique Layout Strategy):';
 
 const DEFAULT_VARIANT_COUNT = 3;
 const MAX_VARIANT_COUNT = 5;
+const MAX_UNIQUENESS_RETRIES = 2;
+
+type VariantWithLayoutHash = {
+  layoutUniquenessHash?: string | null;
+};
+
+export type SelectUniqueVariantsWithRetriesOptions<T extends VariantWithLayoutHash> = {
+  variantCount: number;
+  baseVariantSalt: string;
+  maxRetries?: number;
+  buildCandidate: (variantIndex: number, attempt: number, variantSalt: string) => Promise<T>;
+};
+
+function buildVariantSalt(baseSalt: string, variantIndex: number, attempt: number): string {
+  if (attempt <= 0) {
+    return baseSalt;
+  }
+
+  const retrySeed = hashString(`${baseSalt}:${variantIndex}:retry:${attempt}`);
+  const retryRng = createSeededRandom(retrySeed);
+  const retrySuffix = randomSeedString(4, retryRng);
+  return `${baseSalt}-r${attempt}-${retrySuffix}`;
+}
 
 function resolveVariationSeed(prompt: string, options?: EnhancePromptOptions): string {
   if (options?.variationSeed) {
@@ -425,6 +454,39 @@ function resolveVariationSeed(prompt: string, options?: EnhancePromptOptions): s
   }
 
   return randomSeedString(6);
+}
+
+export async function selectUniqueVariantsWithRetries<T extends VariantWithLayoutHash>(
+  options: SelectUniqueVariantsWithRetriesOptions<T>,
+): Promise<T[]> {
+  const maxRetries = options.maxRetries ?? MAX_UNIQUENESS_RETRIES;
+  const variants: T[] = [];
+  const seenLayoutHashes = new Set<string>();
+
+  for (let variantIndex = 0; variantIndex < options.variantCount; variantIndex += 1) {
+    let selectedVariant: T | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const variantSalt = buildVariantSalt(options.baseVariantSalt, variantIndex, attempt);
+      const candidate = await options.buildCandidate(variantIndex, attempt, variantSalt);
+      const layoutHash = candidate.layoutUniquenessHash || 'unknown';
+
+      if (!seenLayoutHashes.has(layoutHash) || attempt === maxRetries) {
+        selectedVariant = candidate;
+        break;
+      }
+    }
+
+    if (!selectedVariant) {
+      continue;
+    }
+
+    const finalHash = selectedVariant.layoutUniquenessHash || 'unknown';
+    seenLayoutHashes.add(finalHash);
+    variants.push(selectedVariant);
+  }
+
+  return variants;
 }
 
 function hasFullCueCoverage(coverage?: DesignCueCoverage): boolean {
@@ -611,6 +673,8 @@ export async function enhancePromptWithDesignSystem(
 
   const brandName = extractBrandName(analysisPrompt) ?? generateBrandName(detectedTheme, analysisPrompt);
   const lowerPrompt = analysisPrompt.toLowerCase();
+  const sectionPrompt = userPrompt;
+  const sectionLowerPrompt = sectionPrompt.toLowerCase();
   const hasUserColors = hasUserSpecifiedColors(analysisPrompt);
 
   // Check if user already specified colors (priority: HEX codes > color words > theme defaults)
@@ -687,11 +751,11 @@ export async function enhancePromptWithDesignSystem(
   const sectionKeywords = SECTION_KEYWORDS;
 
   // Find which sections are mentioned
-  const sectionSpecs = extractSectionSpecs(analysisPrompt, sectionKeywords);
+  const sectionSpecs = extractSectionSpecs(sectionPrompt, sectionKeywords);
   promptLog('[promptEnhancer] sectionSpecs result:', JSON.stringify(sectionSpecs, null, 2));
 
   const orderedSections =
-    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(analysisPrompt, sectionKeywords);
+    sectionSpecs.order.length > 0 ? sectionSpecs.order : extractSectionOrder(sectionPrompt, sectionKeywords);
   promptLog('[promptEnhancer] orderedSections:', orderedSections);
 
   const mentionedSections: string[] = orderedSections.length > 0 ? [...orderedSections] : [];
@@ -700,7 +764,7 @@ export async function enhancePromptWithDesignSystem(
     // Fallback scan when section extraction found nothing.
     for (const [section, keywords] of Object.entries(sectionKeywords)) {
       if (!mentionedSections.includes(section)) {
-        if (keywords.some((kw) => matchesKeyword(lowerPrompt, kw))) {
+        if (keywords.some((kw) => matchesKeyword(sectionLowerPrompt, kw))) {
           promptLog('[promptEnhancer] Fallback found section:', section);
           mentionedSections.push(section);
         }
@@ -822,6 +886,30 @@ export async function enhancePromptWithDesignSystem(
   const designDnaBlock = buildDesignDnaBlock(stylePack, designCues);
   const componentMemoryEntries = pickComponentMemoryEntries(detectedTheme, mentionedSections, designRng);
   const componentMemoryBlock = buildComponentMemoryBlock(componentMemoryEntries);
+  const selectionStyleTags = stylePack
+    ? [stylePack.id, stylePack.label, ...(stylePack.effects ?? [])]
+    : [];
+  const componentPlan = buildComponentSelectionPlan(
+    analysisPrompt,
+    mentionedSections,
+    selectionStyleTags,
+    designSeed,
+  );
+  const componentPlanBlock = componentPlan.planText;
+  const renderPlan = buildRenderPlan({
+    prompt: analysisPrompt,
+    sections: mentionedSections,
+    seed: designSeed,
+    styleTags: selectionStyleTags,
+    styleTokens: {
+      typography: stylePack.fontPairing,
+      spacing: stylePack.spacingScale,
+      radius: stylePack.shapeLanguage,
+      colors: [finalColors.dark, finalColors.light, finalColors.accent],
+    },
+    layoutArchetype,
+    componentPlan,
+  });
   const layoutUniquenessHash = buildLayoutUniquenessHash({
     stylePackId,
     layoutArchetype,
@@ -841,8 +929,9 @@ export async function enhancePromptWithDesignSystem(
   });
   const layoutUniquenessLine = `\nLAYOUT UNIQUENESS HASH: ${layoutUniquenessHash}`;
   const designQualityLine = `\nDESIGN QUALITY SCORE (informational): ${designQualityResult.score}/100`;
-  const componentDirectivesBlock = buildComponentDirectives(mentionedSections, detectedTheme, SECTION_LABELS);
   const brandLine = `\nBRAND NAME (use exactly): ${brandName}`;
+  const frontendOnlyGuardrailLine =
+    '\nFRONTEND-ONLY GUARDRAIL: Do not create or modify backend endpoints, API routes, server actions, database schemas, migrations, or ORM code.';
   const templateGuard =
     '\nIMPORTANT: Do not use any generic/default template. Do not use BoltApp/ModernApp/ProjectName. Invent a brand name if none was given. Follow the prompt exactly.';
   const variationLine = `\nVARIATION SEED: ${variationSeed} (must vary layout, imagery, and composition from prior runs).`;
@@ -853,7 +942,7 @@ ${brandLine}${colorDirectiveBlock}${imagePrompt}${sectionBlueprint}${sectionChec
       ? `
 ${layoutSuggestions}`
       : ''
-  }${effectDirectiveBlock}${componentMemoryBlock}${componentDirectivesBlock}${layoutUniquenessLine}${designQualityLine}${templateGuard}${variationLine}
+  }${effectDirectiveBlock}${componentMemoryBlock}${componentPlanBlock}${layoutUniquenessLine}${designQualityLine}${frontendOnlyGuardrailLine}${templateGuard}${variationLine}
 [Style: ${detectedTheme} | Colors: ${finalColors.dark}, ${finalColors.light}, ${finalColors.accent}]`;
 
   promptLog('[promptEnhancer] BEFORE shortSectionsLine, mentionedSections:', JSON.stringify(mentionedSections));
@@ -958,6 +1047,8 @@ ${layoutSuggestions}`
     effectIds,
 
     componentMemory: componentMemoryEntries,
+    componentPlan,
+    renderPlan,
 
     sectionContract: sectionContractData,
   };
@@ -969,16 +1060,17 @@ export async function generateAndRankDesignVariants(
 ): Promise<DesignVariantResult> {
   const requestedCount = options?.variantCount ?? DEFAULT_VARIANT_COUNT;
   const variantCount = Math.min(Math.max(1, requestedCount), MAX_VARIANT_COUNT);
-  const variantSalt = options?.variantSalt ?? randomSeedString(4);
-  const variants: EnhancedPrompt[] = [];
-
-  for (let i = 0; i < variantCount; i += 1) {
-    const variant = await enhancePromptWithDesignSystem(userPrompt, {
-      variantIndex: i,
-      variantSalt,
-    });
-    variants.push(variant);
-  }
+  const baseVariantSalt = options?.variantSalt ?? randomSeedString(4);
+  const variants = await selectUniqueVariantsWithRetries<EnhancedPrompt>({
+    variantCount,
+    baseVariantSalt,
+    maxRetries: MAX_UNIQUENESS_RETRIES,
+    buildCandidate: async (variantIndex, _attempt, variantSalt) =>
+      enhancePromptWithDesignSystem(userPrompt, {
+        variantIndex,
+        variantSalt,
+      }),
+  });
 
   const ranking = rankDesignVariants(variants);
   const rankingByIndex = new Map(ranking.map((entry) => [entry.variantIndex, entry]));
@@ -1012,6 +1104,10 @@ export async function generateAndRankDesignVariants(
         effectCount: variant.effectIds?.length ?? 0,
         componentMemoryCount: variant.componentMemory?.length ?? 0,
         sectionCount,
+        componentMatchRate: variant.componentPlan?.matchRate ?? 0,
+        componentFallbackRate: variant.componentPlan?.fallbackRate ?? 0,
+        repeatPenaltyTriggered: variant.componentPlan?.repeatPenaltyTriggered ?? false,
+        avgCandidatesPerSection: variant.componentPlan?.avgCandidatesPerSection ?? 0,
       });
     }
   } catch (error) {
