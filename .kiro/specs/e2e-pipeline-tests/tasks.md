@@ -29,7 +29,7 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
     - _Requirements: 1.1, 1.3_
   - [x] 3.2 Test valid code doesn't invoke auto-fix
     - _Requirements: 1.2_
-  - [ ]* 3.3 Write property test for valid code passthrough (optional)
+  - [x]* 3.3 Write property test for valid code passthrough (optional)
     - **Property 1: Valid Code Passthrough Invariant**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
@@ -40,7 +40,7 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
     - _Requirements: 2.2_
   - [x] 4.3 Test llmRepairFn not called when sanitizer succeeds
     - _Requirements: 2.3_
-  - [ ]* 4.4 Write property test for sanitizer-fixed code (optional)
+  - [x]* 4.4 Write property test for sanitizer-fixed code (optional)
     - **Property 2: Sanitizer-Fixed Code Success**
     - **Validates: Requirements 2.1, 2.2**
 
@@ -53,7 +53,7 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
     - _Requirements: 3.4_
   - [x] 5.4 Test repair prompt includes UNIFIED_VIOLATIONS
     - _Requirements: 3.5_
-  - [ ]* 5.5 Write property test for LLM repair validation (optional)
+  - [x]* 5.5 Write property test for LLM repair validation (optional)
     - **Property 5: LLM Repair Validates Output**
     - **Validates: Requirements 3.2**
 
@@ -75,7 +75,7 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
   - [x] 7.3 Test failure includes warnings
     - _Requirements: 5.4_
   - [x] 7.4 Test LLM throwing errors handled gracefully
-  - [ ]* 7.5 Write property test for failure error details (optional)
+  - [x]* 7.5 Write property test for failure error details (optional)
     - **Property 3: Failure Includes Error Details**
     - **Validates: Requirements 5.1, 5.2, 5.3**
 
@@ -88,7 +88,7 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
     - _Requirements: 6.3_
   - [x] 8.4 Test contractValidation object populated
     - _Requirements: 6.4_
-  - [ ]* 8.5 Write property test for contract validation (optional)
+  - [x]* 8.5 Write property test for contract validation (optional)
     - **Property 4: Contract Validation Runs When Configured**
     - **Validates: Requirements 6.1, 6.4**
 

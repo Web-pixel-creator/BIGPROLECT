@@ -8,10 +8,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as fc from 'fast-check';
 import { routeThroughPipeline, recordPipelineResult, getPipelineStats, resetPipelineStats } from './generationRouter';
 import type { LlmRepairFn } from '~/utils/autoFixLoop';
 import { generateAndRankDesignVariants, selectUniqueVariantsWithRetries } from './promptEnhancer';
-import { resetGlobalRng, setGlobalSeed } from './prompt-data';
+import { resetGlobalRng, setGlobalSeed, SECTION_DEFINITIONS, type SectionType } from './prompt-data';
 
 /*
  * ============================================================================
@@ -226,6 +227,27 @@ describe('E2E Pipeline Tests', () => {
       expect(result.processingTimeMs).toBeGreaterThan(0);
     });
 
+    it('3.3 property: valid TSX passthrough invariant', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom(
+            VALID_CODE_SAMPLES.simpleComponent,
+            VALID_CODE_SAMPLES.heroSection,
+            VALID_CODE_SAMPLES.withProps,
+          ),
+          async (code) => {
+            const result = await routeThroughPipeline(code, 'Component.tsx');
+
+            expect(result.success).toBe(true);
+            expect(result.code).toBe(code);
+            expect(result.stages.validator.valid).toBe(true);
+            expect(result.stages.autoFix.ran).toBe(false);
+          },
+        ),
+        { numRuns: 30 },
+      );
+    });
+
     it('handles valid CSS files', async () => {
       const result = await routeThroughPipeline(VALID_CODE_SAMPLES.validCSS, 'styles.css');
 
@@ -282,6 +304,31 @@ describe('E2E Pipeline Tests', () => {
          */
         expect(result.stages.sanitizer.changed).toBe(true);
       }
+    });
+
+    it('4.4 property: sanitizer-fixed code succeeds without LLM calls', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom(SANITIZER_FIXABLE.truncatedTag, SANITIZER_FIXABLE.truncatedButton),
+          async (code) => {
+            const calls: string[] = [];
+            const llmRepairFn: LlmRepairFn = async (prompt) => {
+              calls.push(prompt);
+              return 'export const NeverUsed = () => <div />;';
+            };
+
+            const result = await routeThroughPipeline(code, 'SanitizerFix.tsx', {
+              llmRepairFn,
+            });
+
+            expect(result.stages.sanitizer.ran).toBe(true);
+            expect(result.stages.sanitizer.changed).toBe(true);
+            expect(result.success).toBe(true);
+            expect(calls.length).toBe(0);
+          },
+        ),
+        { numRuns: 20 },
+      );
     });
   });
 
@@ -342,6 +389,43 @@ describe('E2E Pipeline Tests', () => {
         expect(prompt).toContain('ERRORS:');
         expect(prompt).toContain('BROKEN CODE:');
       }
+    });
+
+    it('5.5 property: LLM repair output must pass validation before success', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.boolean(),
+          fc.stringMatching(/^[a-zA-Z0-9 ]{1,24}$/),
+          async (shouldReturnValid, label) => {
+            const llmRepairFn: LlmRepairFn = async () => {
+              if (shouldReturnValid) {
+                return `\`\`\`tsx
+export function Fixed() {
+  return <div className="p-4">${label}</div>;
+}
+\`\`\``;
+              }
+
+              return `\`\`\`tsx
+export const Broken = () = > <div>${label}</div>;
+\`\`\``;
+            };
+
+            const result = await routeThroughPipeline(LLM_REPAIR_NEEDED.syntaxError, 'Repair.tsx', {
+              llmRepairFn,
+            });
+
+            if (shouldReturnValid) {
+              expect(result.success).toBe(true);
+              expect(result.finalValidation.valid).toBe(true);
+            } else {
+              expect(result.success).toBe(false);
+              expect(result.finalValidation.valid).toBe(false);
+            }
+          },
+        ),
+        { numRuns: 25 },
+      );
     });
   });
 
@@ -467,6 +551,23 @@ describe('E2E Pipeline Tests', () => {
 
       expect(result.success).toBe(false);
     });
+
+    it('7.5 property: failure always exposes validation error details', async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.stringMatching(/^[a-zA-Z0-9]{1,16}$/), async (suffix) => {
+          const code = `export const Broken${suffix} = () = > <div>${suffix}</div>;`;
+          const result = await routeThroughPipeline(code, 'Broken.tsx', {
+            skipAutoFix: true,
+          });
+
+          expect(result.success).toBe(false);
+          expect(result.finalValidation.valid).toBe(false);
+          expect(result.finalValidation.errors.length).toBeGreaterThan(0);
+          expect(result.stages.validator.errors).toBeGreaterThan(0);
+        }),
+        { numRuns: 25 },
+      );
+    });
   });
 
   /*
@@ -520,6 +621,28 @@ describe('E2E Pipeline Tests', () => {
       expect(result.contractValidation).toBeDefined();
       expect(typeof result.contractValidation?.score).toBe('number');
       expect(Array.isArray(result.contractValidation?.violations)).toBe(true);
+    });
+
+    it('8.5 property: contract validation runs whenever sectionType is configured', async () => {
+      const sectionTypes = Object.keys(SECTION_DEFINITIONS) as SectionType[];
+
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom(...sectionTypes),
+          fc.constantFrom(VALID_CODE_SAMPLES.simpleComponent, VALID_CODE_SAMPLES.heroSection),
+          async (sectionType, code) => {
+            const result = await routeThroughPipeline(code, 'Section.tsx', {
+              sectionType,
+            });
+
+            expect(result.stages.contract.ran).toBe(true);
+            expect(result.contractValidation).toBeDefined();
+            expect(typeof result.contractValidation?.score).toBe('number');
+            expect(Array.isArray(result.contractValidation?.violations)).toBe(true);
+          },
+        ),
+        { numRuns: 30 },
+      );
     });
   });
 
