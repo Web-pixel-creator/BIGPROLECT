@@ -105,20 +105,20 @@ Create a telemetry service that collects anonymized metrics from the quality pip
   - Existing pipeline tests still pass
   - Telemetry overhead < 1ms (try-catch wrapped)
 
-- [ ] 9. Add design quality telemetry events
-  - [ ] 9.1 Define DesignQualityEvent interface in pipelineTelemetry.ts
-  - [ ] 9.2 Implement emitDesignQuality() for prompt enhancer outputs
-  - [ ] 9.3 Add privacy filter support for designQuality fields
+- [x] 9. Add design quality telemetry events
+  - [x] 9.1 Define DesignQualityEvent interface in pipelineTelemetry.ts
+  - [x] 9.2 Implement emitDesignQuality() for prompt enhancer outputs
+  - [x] 9.3 Add privacy filter support for designQuality fields
   - _Requirements: 7.1, 7.2_
 
-- [ ] 10. Aggregate design quality stats
-  - [ ] 10.1 Extend TelemetryStore with design quality counters
-  - [ ] 10.2 Implement getDesignQualityStats() API
+- [x] 10. Aggregate design quality stats
+  - [x] 10.1 Extend TelemetryStore with design quality counters
+  - [x] 10.2 Implement getDesignQualityStats() API
   - _Requirements: 7.3, 7.4_
 
-- [ ] 11. Tests for design quality telemetry
-  - [ ] 11.1 Unit test: design quality events recorded
-  - [ ] 11.2 Property test: design quality aggregation accuracy
+- [x] 11. Tests for design quality telemetry
+  - [x] 11.1 Unit test: design quality events recorded
+  - [x] 11.2 Property test: design quality aggregation accuracy
   - _Requirements: 7.1, 7.3, 7.4_
 
 ## Notes

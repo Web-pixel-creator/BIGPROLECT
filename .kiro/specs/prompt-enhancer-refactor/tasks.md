@@ -186,26 +186,26 @@
   - Убедиться что метрики в пределах: cold import +15%, bundle size +5% ✓
   - _Requirements: 3.1, 4.3, 4.6_
 
-- [ ] 11. Design quality data modules
-  - [ ] 11.1 Add prompt-data/style-packs.ts with 10-20 initial Style Packs (editorial, neo-brutal, aura/glass, swiss minimal, bold typographic)
-  - [ ] 11.2 Add prompt-data/design-quality.ts scoring helper (designQualityScore + reasons)
-  - [ ] 11.3 Add prompt-data/component-memory.ts with curated UI section directives
+- [x] 11. Design quality data modules
+  - [x] 11.1 Add prompt-data/style-packs.ts with 10-20 initial Style Packs (editorial, neo-brutal, aura/glass, swiss minimal, bold typographic)
+  - [x] 11.2 Add prompt-data/design-quality.ts scoring helper (designQualityScore + reasons)
+  - [x] 11.3 Add prompt-data/component-memory.ts with curated UI section directives
   - _Requirements: 7.1, 7.2, 9.1, 10.1_
 
-- [ ] 12. Design cues and layout uniqueness integration
-  - [ ] 12.1 Inject designCues and stylePack details into enhanced prompt output
-  - [ ] 12.2 Compute layoutUniquenessHash (sections order + archetype + key layout choices)
-  - [ ] 12.3 Use variantSeed to deterministically drive layout + style pack selection
+- [x] 12. Design cues and layout uniqueness integration
+  - [x] 12.1 Inject designCues and stylePack details into enhanced prompt output
+  - [x] 12.2 Compute layoutUniquenessHash (sections order + archetype + key layout choices)
+  - [x] 12.3 Use variantSeed to deterministically drive layout + style pack selection
   - _Requirements: 7.1, 8.1, 8.2_
 
-- [ ] 13. Baseline + validation updates for design quality
-  - [ ] 13.1 Extend baseline output to include designCues coverage, stylePackId, layoutUniquenessHash, designQualityScore
-  - [ ] 13.2 Update baseline compare warnings for designQualityScore drop and layoutUniquenessHash drift
+- [x] 13. Baseline + validation updates for design quality
+  - [x] 13.1 Extend baseline output to include designCues coverage, stylePackId, layoutUniquenessHash, designQualityScore
+  - [x] 13.2 Update baseline compare warnings for designQualityScore drop and layoutUniquenessHash drift
   - _Requirements: 7.4, 8.4, 9.3_
 
-- [ ] 14. Design quality tests
-  - [ ] 14.1 Add property tests for design cues presence and layoutUniquenessHash generation
-  - [ ] 14.2 Update baseline fixtures with design-quality fields
+- [x] 14. Design quality tests
+  - [x] 14.1 Add property tests for design cues presence and layoutUniquenessHash generation
+  - [x] 14.2 Update baseline fixtures with design-quality fields
   - _Requirements: 7.1, 8.2, 9.1_
 
 ## Notes
