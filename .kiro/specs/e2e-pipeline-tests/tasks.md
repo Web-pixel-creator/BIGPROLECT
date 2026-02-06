@@ -108,13 +108,13 @@ Create end-to-end integration tests for the quality pipeline using mock LLM func
   - All 39 E2E tests pass
   - All 205 quality pipeline tests pass (1 skipped)
 
-- [ ] 11. Add design quality E2E tests
-  - [ ] 11.1 Add fixtures with Design_Cues metadata
+- [x] 11. Add design quality E2E tests
+  - [x] 11.1 Add fixtures with Design_Cues metadata
     - _Requirements: 9.1, 9.2_
-  - [ ] 11.2 Test design cues preserved in pipeline requests
+  - [x] 11.2 Test design cues preserved in pipeline requests
     - **Property 6: Design cues preserved**
     - _Requirements: 9.1, 9.2_
-  - [ ] 11.3 Test layout uniqueness across variants
+  - [x] 11.3 Test layout uniqueness across variants
     - **Property 7: Layout uniqueness across variants**
     - _Requirements: 10.1, 10.2_
 

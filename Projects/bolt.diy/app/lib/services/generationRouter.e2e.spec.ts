@@ -7,9 +7,11 @@
  * Feature: e2e-pipeline-tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { routeThroughPipeline, recordPipelineResult, getPipelineStats, resetPipelineStats } from './generationRouter';
 import type { LlmRepairFn } from '~/utils/autoFixLoop';
+import { generateAndRankDesignVariants, selectUniqueVariantsWithRetries } from './promptEnhancer';
+import { resetGlobalRng, setGlobalSeed } from './prompt-data';
 
 /*
  * ============================================================================
@@ -151,6 +153,24 @@ const UNFIXABLE_CODE = {
   incomplete: `export function Test( { return <div>`,
   totallyBroken: `{{{{{`,
 };
+
+const DESIGN_CUES_FIXTURES = {
+  minimalStudioLanding: {
+    prompt:
+      'Build a minimal studio landing page with hero, features, testimonials, and cta. Keep the layout modern and clean.',
+    expectedSections: ['hero', 'features', 'testimonials', 'cta'],
+  },
+};
+
+const originalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
+
+const fetchStub = async () =>
+  ({
+    ok: false,
+    status: 503,
+    statusText: 'test',
+    json: async () => ({}),
+  } as unknown as Response);
 
 /*
  * ============================================================================
@@ -906,6 +926,97 @@ export function Fixed() {
       const stats = getPipelineStats();
       expect(stats.totalRuns).toBe(5);
       expect(stats.successRate).toBe(1);
+    });
+  });
+
+  /*
+   * --------------------------------------------------------------------------
+   * Requirement 9-10: Design Quality E2E
+   * --------------------------------------------------------------------------
+   */
+  describe('Design Quality E2E (Req 9-10)', () => {
+    beforeEach(() => {
+      setGlobalSeed(4242);
+      (globalThis as { fetch?: typeof fetch }).fetch = fetchStub;
+    });
+
+    afterEach(() => {
+      resetGlobalRng();
+
+      if (originalFetch) {
+        (globalThis as { fetch?: typeof fetch }).fetch = originalFetch;
+      } else {
+        delete (globalThis as { fetch?: typeof fetch }).fetch;
+      }
+    });
+
+    it('11.2 preserves Design_Cues directives in downstream generation request', async () => {
+      const fixture = DESIGN_CUES_FIXTURES.minimalStudioLanding;
+
+      const result = await generateAndRankDesignVariants(fixture.prompt, {
+        variantCount: 1,
+        variantSalt: 'req-9-design-cues',
+      });
+      const selected = result.selected;
+
+      // Requirement 9.1: explicit sections are reflected in section contract
+      const sectionOrder = selected.sectionContract?.order ?? [];
+      for (const section of fixture.expectedSections) {
+        expect(sectionOrder).toContain(section);
+      }
+
+      // Requirement 9.2: design cues are preserved in enhanced prompt (generation request payload)
+      expect(selected.designCues.typography.length).toBeGreaterThan(0);
+      expect(selected.designCues.layout.length).toBeGreaterThan(0);
+      expect(selected.designCues.visualHierarchy.length).toBeGreaterThan(0);
+      expect(selected.designCues.motion.length).toBeGreaterThan(0);
+
+      const downstreamRequest = {
+        message: selected.enhancedPrompt,
+      };
+
+      expect(downstreamRequest.message).toContain('DESIGN DNA');
+      expect(downstreamRequest.message).toContain(`TYPOGRAPHY: ${selected.designCues.typography}`);
+      expect(downstreamRequest.message).toContain(`LAYOUT: ${selected.designCues.layout}`);
+      expect(downstreamRequest.message).toContain(
+        `VISUAL HIERARCHY: ${selected.designCues.visualHierarchy}`,
+      );
+      expect(downstreamRequest.message).toContain(`MOTION: ${selected.designCues.motion}`);
+
+      // Requirement 9.3: descriptive failure if cues are missing
+      expect(selected.enhancedPrompt).toContain('LAYOUT UNIQUENESS HASH:');
+    });
+
+    it('11.3 keeps layout uniqueness across variants and retries duplicate hashes', async () => {
+      const fixture = DESIGN_CUES_FIXTURES.minimalStudioLanding;
+
+      const ranked = await generateAndRankDesignVariants(fixture.prompt, {
+        variantCount: 3,
+        variantSalt: 'req-10-layout-uniqueness',
+      });
+      const variantHashes = ranked.variants.map((variant) => variant.layoutUniquenessHash);
+      const uniqueHashes = new Set(variantHashes);
+
+      // Requirement 10.1: at least 2 distinct layout hashes across 3 variants
+      expect(uniqueHashes.size).toBeGreaterThanOrEqual(2);
+
+      // Requirement 10.2: if duplicate hashes appear, selector retries with new seed (up to 2 retries)
+      const callLog: Array<{ variantIndex: number; attempt: number; variantSalt: string }> = [];
+      const selected = await selectUniqueVariantsWithRetries({
+        variantCount: 3,
+        baseVariantSalt: 'force-retries',
+        maxRetries: 2,
+        buildCandidate: async (variantIndex, attempt, variantSalt) => {
+          callLog.push({ variantIndex, attempt, variantSalt });
+          return {
+            layoutUniquenessHash: attempt === 0 ? 'duplicate-layout' : `layout-${variantIndex}-${attempt}`,
+          };
+        },
+      });
+
+      expect(selected).toHaveLength(3);
+      expect(callLog.some((entry) => entry.attempt > 0)).toBe(true);
+      expect(Math.max(...callLog.map((entry) => entry.attempt))).toBeLessThanOrEqual(2);
     });
   });
 });
